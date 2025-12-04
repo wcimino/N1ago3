@@ -1,7 +1,7 @@
 import os
 import logging
 import json
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from datetime import datetime
 from src.n1ago.config import *
 from src.n1ago.knowledge_base import KnowledgeBase
@@ -44,6 +44,11 @@ except Exception as e:
     logger.info("Continuando em modo demo")
 
 # ===== ROTAS =====
+
+@app.route('/', methods=['GET'])
+def serve_frontend():
+    """Serve o frontend de teste"""
+    return send_file('index.html', mimetype='text/html')
 
 @app.route('/health', methods=['GET'])
 def health_check():
