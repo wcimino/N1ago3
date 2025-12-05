@@ -38,19 +38,26 @@ The frontend dashboard provides a real-time view of events and conversations, wi
 *   **Real-time Dashboard:** Displays events and conversation metrics.
 *   **User Management:** Secure authentication and authorization for system access.
 *   **Extensibility:** Designed to easily integrate new communication channels via adapters.
-*   **AI-Powered Conversation Summaries:** Automatically generates and updates summaries of customer conversations using OpenAI API.
-    *   **Architecture (3 Layers):**
+*   **AI-Powered Features:** Unified architecture for multiple AI capabilities (summary and classification).
+    *   **Unified Configuration:** All AI features use a single `openai_api_config` table with `config_type` discriminator.
+    *   **Architecture (3 Layers per Feature):**
         *   `openaiApiService.ts`: Pure API layer - makes OpenAI calls and saves complete logs to `openai_api_logs` table.
-        *   `summaryAdapter.ts`: Business logic layer - prepares prompts, calls API service, saves summaries to `conversations_summary`.
-        *   `summaryOrchestrator.ts`: Orchestration layer - determines when to generate summaries based on event triggers.
-    *   **API Logging:** All OpenAI calls are logged with: request_type, model, prompts, full response, tokens used, duration, success/error status.
+        *   `*Adapter.ts`: Business logic layer - prepares prompts, calls API service, saves results.
+        *   `*Orchestrator.ts`: Orchestration layer - determines when to trigger based on event type/author.
+    *   **Conversation Summaries:**
+        *   Auto-generates summaries using `summaryAdapter.ts` and `summaryOrchestrator.ts`
+        *   Saves to `conversations_summary` table
+    *   **Product Classification:**
+        *   Auto-classifies products using `productClassificationAdapter.ts` and `classificationOrchestrator.ts`
+        *   Saves to `conversation_classifications` table
+    *   **API Logging:** All OpenAI calls logged with: request_type, model, prompts, full response, tokens used, duration, success/error status.
     *   **Endpoints:**
         *   `GET /api/openai-logs` - List all API call logs (supports ?limit and ?request_type filters)
         *   `GET /api/openai-logs/:id` - Get full details of a specific API call
-    *   **Payload Structure:** Includes current summary, last 20 messages, and the last message for context.
-    *   **Configurable Triggers:** Summaries triggered by `zendesk:message` events from `customer` author type.
+        *   `GET/PUT /api/openai-config/:configType` - Generic config endpoints for all AI features
+    *   **Configurable Triggers:** Each feature can be configured with specific event types and author types.
     *   **Lazy Initialization:** OpenAI client is only initialized when needed, preventing startup errors when API key is not configured.
-    *   **Configuration UI:** Available at /events/settings/openai-summary with toggle, event type selection, model choice, and custom prompt editor.
+    *   **Configuration UI:** Available at `/ai/settings/summary` and `/ai/settings/classification` with tabbed navigation.
 
 ## Development Conventions
 
@@ -114,7 +121,7 @@ client/src/
   │   ├── ui/           # Componentes base (Badge, Pagination, DataTable, LoadingSpinner)
   │   └── *.tsx         # Badges especializados, modais (EventDetailModal, UserDetailModal, etc)
   ├── pages/          # Páginas/views
-  ├── hooks/          # Hooks customizados (usePaginatedQuery, useAuth, useOpenaiSummaryConfig)
+  ├── hooks/          # Hooks customizados (usePaginatedQuery, useAuth, useOpenaiApiConfig)
   └── lib/            # Utilitários e helpers
       ├── dateUtils.ts  # Formatação de datas
       ├── userUtils.ts  # Formatação e extração de dados de usuário
