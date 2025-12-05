@@ -1,4 +1,4 @@
-import { useState, useEffect, type KeyboardEvent } from "react";
+import { useState, useEffect, useRef, type KeyboardEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { RefreshCw, XCircle, MessageCircle, ChevronLeft, Sparkles, Clock, Package, Target, MessageSquare } from "lucide-react";
@@ -148,6 +148,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
   const userId = decodeURIComponent(params.userId);
   const [expandedImage, setExpandedImage] = useState<ImagePayload | null>(null);
   const [selectedConversationIndex, setSelectedConversationIndex] = useState(0);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, error } = useQuery<UserConversationsMessagesResponse>({
     queryKey: ["user-conversations-messages", userId],
@@ -156,14 +157,26 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
     ),
   });
 
+  const sortedConversations = data?.conversations
+    ? [...data.conversations].sort((a, b) => 
+        new Date(b.conversation.created_at).getTime() - new Date(a.conversation.created_at).getTime()
+      )
+    : [];
+
   useEffect(() => {
-    if (data?.conversations && data.conversations.length > 0) {
+    if (sortedConversations.length > 0) {
       setSelectedConversationIndex(0);
     }
   }, [data]);
 
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [selectedConversationIndex, sortedConversations]);
+
   const totalMessages = data?.conversations.reduce((acc, conv) => acc + conv.messages.length, 0) || 0;
-  const selectedConversation = data?.conversations[selectedConversationIndex];
+  const selectedConversation = sortedConversations[selectedConversationIndex];
 
   return (
     <div className="h-[calc(100vh-180px)] flex flex-col">
@@ -218,11 +231,11 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
               </div>
               
               <div className="flex-1 overflow-y-auto p-3 space-y-3 max-h-[200px] lg:max-h-none">
-                {data.conversations.map((convItem, index) => (
+                {sortedConversations.map((convItem, index) => (
                   <SummaryCard
                     key={convItem.conversation.id}
                     summary={convItem.summary}
-                    conversationNumber={index + 1}
+                    conversationNumber={sortedConversations.length - index}
                     conversationDate={convItem.conversation.created_at}
                     conversationStatus={convItem.conversation.status}
                     messagesCount={convItem.messages.length}
@@ -273,6 +286,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                           />
                         ))
                       )}
+                      <div ref={chatEndRef} />
                     </div>
                   </div>
                 </>
