@@ -949,29 +949,31 @@ function UserConversationsPage({ params }: { params: { userId: string } }) {
               <div key={convItem.conversation.id}>
                 <div className="flex items-center gap-3 my-6">
                   <div className="flex-1 h-px bg-gray-300"></div>
-                  <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border">
-                    <MessageCircle className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm font-medium text-gray-700">
-                      Conversa #{convIndex + 1}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {format(new Date(convItem.conversation.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                    </span>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                      convItem.conversation.status === "active" 
-                        ? "bg-green-100 text-green-700" 
-                        : "bg-gray-100 text-gray-600"
-                    }`}>
-                      {convItem.conversation.status}
-                    </span>
+                  <div className="flex flex-col items-center px-4 py-2 bg-white rounded-xl shadow-sm border">
+                    <div className="flex items-center gap-2">
+                      <MessageCircle className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium text-gray-700">
+                        Conversa #{convIndex + 1}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {format(new Date(convItem.conversation.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      </span>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        convItem.conversation.status === "active" 
+                          ? "bg-green-100 text-green-700" 
+                          : "bg-gray-100 text-gray-600"
+                      }`}>
+                        {convItem.conversation.status}
+                      </span>
+                    </div>
                     <span 
-                      className="text-[10px] text-gray-400 cursor-pointer hover:text-gray-600 border-l pl-2 ml-1"
+                      className="text-[10px] text-gray-400 cursor-pointer hover:text-gray-600 mt-1"
                       title="Clique para copiar o ID"
                       onClick={() => {
                         navigator.clipboard.writeText(convItem.conversation.zendesk_conversation_id);
                       }}
                     >
-                      ID: {convItem.conversation.zendesk_conversation_id.slice(-8)}
+                      {convItem.conversation.zendesk_conversation_id}
                     </span>
                   </div>
                   <div className="flex-1 h-px bg-gray-300"></div>
