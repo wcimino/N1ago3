@@ -3,7 +3,7 @@ import { generateAndSaveSummary, type SummaryPayload } from "./summaryAdapter.js
 import type { EventStandard } from "../../shared/schema.js";
 
 export async function shouldGenerateSummary(event: EventStandard): Promise<boolean> {
-  const config = await storage.getOpenaiSummaryConfig();
+  const config = await storage.getOpenaiApiConfig("summary");
   
   if (!config || !config.enabled) {
     return false;
@@ -40,7 +40,7 @@ export async function generateConversationSummary(event: EventStandard): Promise
     return;
   }
 
-  const config = await storage.getOpenaiSummaryConfig();
+  const config = await storage.getOpenaiApiConfig("summary");
   if (!config) {
     console.log("[Summary Orchestrator] Cannot generate summary: no config found");
     return;

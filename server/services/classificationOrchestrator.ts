@@ -3,7 +3,7 @@ import { classifyAndSave, type ClassificationPayload } from "./productClassifica
 import type { EventStandard } from "../../shared/schema.js";
 
 export async function shouldClassify(event: EventStandard): Promise<boolean> {
-  const config = await storage.getOpenaiSummaryConfig();
+  const config = await storage.getOpenaiApiConfig("classification");
   
   if (!config || !config.enabled) {
     return false;
@@ -40,7 +40,7 @@ export async function classifyConversationProduct(event: EventStandard): Promise
     return;
   }
 
-  const config = await storage.getOpenaiSummaryConfig();
+  const config = await storage.getOpenaiApiConfig("classification");
   if (!config) {
     console.log("[Classification Orchestrator] Cannot classify: no config found");
     return;
@@ -64,6 +64,7 @@ export async function classifyConversationProduct(event: EventStandard): Promise
 
     const result = await classifyAndSave(
       payload,
+      config.promptTemplate,
       config.modelName,
       event.conversationId,
       event.externalConversationId

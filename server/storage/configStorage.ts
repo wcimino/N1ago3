@@ -1,7 +1,7 @@
 import { db } from "../db.js";
-import { conversationsSummary, openaiSummaryConfig, openaiApiLogs } from "../../shared/schema.js";
+import { conversationsSummary, openaiApiConfig, openaiApiLogs } from "../../shared/schema.js";
 import { eq, desc } from "drizzle-orm";
-import type { ConversationSummary, InsertConversationSummary, OpenaiSummaryConfig, InsertOpenaiSummaryConfig, OpenaiApiLog, InsertOpenaiApiLog } from "../../shared/schema.js";
+import type { ConversationSummary, InsertConversationSummary, OpenaiApiConfig, InsertOpenaiApiConfig, OpenaiApiLog, InsertOpenaiApiLog } from "../../shared/schema.js";
 
 export const configStorage = {
   async getConversationSummary(conversationId: number): Promise<ConversationSummary | null> {
@@ -38,18 +38,18 @@ export const configStorage = {
     return summary;
   },
 
-  async getOpenaiSummaryConfig(): Promise<OpenaiSummaryConfig | null> {
+  async getOpenaiApiConfig(configType: string): Promise<OpenaiApiConfig | null> {
     const [config] = await db.select()
-      .from(openaiSummaryConfig)
-      .limit(1);
+      .from(openaiApiConfig)
+      .where(eq(openaiApiConfig.configType, configType));
     return config || null;
   },
 
-  async upsertOpenaiSummaryConfig(data: InsertOpenaiSummaryConfig): Promise<OpenaiSummaryConfig> {
-    const existing = await this.getOpenaiSummaryConfig();
+  async upsertOpenaiApiConfig(configType: string, data: Omit<InsertOpenaiApiConfig, 'configType'>): Promise<OpenaiApiConfig> {
+    const existing = await this.getOpenaiApiConfig(configType);
     
     if (existing) {
-      const [updated] = await db.update(openaiSummaryConfig)
+      const [updated] = await db.update(openaiApiConfig)
         .set({
           enabled: data.enabled,
           triggerEventTypes: data.triggerEventTypes,
@@ -58,13 +58,13 @@ export const configStorage = {
           modelName: data.modelName,
           updatedAt: new Date(),
         })
-        .where(eq(openaiSummaryConfig.id, existing.id))
+        .where(eq(openaiApiConfig.id, existing.id))
         .returning();
       return updated;
     }
     
-    const [created] = await db.insert(openaiSummaryConfig)
-      .values(data)
+    const [created] = await db.insert(openaiApiConfig)
+      .values({ ...data, configType })
       .returning();
     return created;
   },

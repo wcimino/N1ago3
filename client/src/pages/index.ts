@@ -6,6 +6,7 @@ export { EventsStandardPage } from "./EventsStandardPage";
 export { ZendeskConversationsRawPage } from "./ZendeskConversationsRawPage";
 export { EventTypeMappingsPage } from "./EventTypeMappingsPage";
 export { OpenaiSummaryConfigPage } from "./OpenaiSummaryConfigPage";
+export { ClassificationConfigPage } from "./ClassificationConfigPage";
 export { AIPage } from "./AIPage";
 export { EventsLayout } from "./EventsLayout";
 export { UsersPage } from "./UsersPage";

@@ -157,16 +157,19 @@ export const conversationsSummary = pgTable("conversations_summary", {
   conversationIdIdx: uniqueIndex("idx_conversations_summary_conversation_id").on(table.conversationId),
 }));
 
-export const openaiSummaryConfig = pgTable("openai_summary_config", {
+export const openaiApiConfig = pgTable("openai_api_config", {
   id: serial("id").primaryKey(),
+  configType: text("config_type").notNull(),
   enabled: boolean("enabled").default(false).notNull(),
   triggerEventTypes: json("trigger_event_types").$type<string[]>().default([]).notNull(),
   triggerAuthorTypes: json("trigger_author_types").$type<string[]>().default([]).notNull(),
   promptTemplate: text("prompt_template").notNull(),
-  modelName: text("model_name").default("gpt-5").notNull(),
+  modelName: text("model_name").default("gpt-4o-mini").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  configTypeIdx: uniqueIndex("idx_openai_api_config_type").on(table.configType),
+}));
 
 export const openaiApiLogs = pgTable("openai_api_logs", {
   id: serial("id").primaryKey(),
@@ -211,8 +214,8 @@ export type InsertEventTypeMapping = Omit<typeof eventTypeMappings.$inferInsert,
 export type ConversationSummary = typeof conversationsSummary.$inferSelect;
 export type InsertConversationSummary = Omit<typeof conversationsSummary.$inferInsert, "id" | "createdAt" | "updatedAt" | "generatedAt">;
 
-export type OpenaiSummaryConfig = typeof openaiSummaryConfig.$inferSelect;
-export type InsertOpenaiSummaryConfig = Omit<typeof openaiSummaryConfig.$inferInsert, "id" | "createdAt" | "updatedAt">;
+export type OpenaiApiConfig = typeof openaiApiConfig.$inferSelect;
+export type InsertOpenaiApiConfig = Omit<typeof openaiApiConfig.$inferInsert, "id" | "createdAt" | "updatedAt">;
 
 export type OpenaiApiLog = typeof openaiApiLogs.$inferSelect;
 export type InsertOpenaiApiLog = Omit<typeof openaiApiLogs.$inferInsert, "id" | "createdAt">;

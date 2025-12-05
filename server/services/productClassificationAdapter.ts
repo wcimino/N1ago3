@@ -19,32 +19,9 @@ export interface ClassificationResult {
   error?: string;
 }
 
-const DEFAULT_CLASSIFICATION_PROMPT = `Analise a conversa de atendimento ao cliente abaixo e identifique:
-
-1. **Produto**: Qual produto ou serviço o cliente está buscando ajuda? Exemplos: Conta Digital, Pix, Crédito, Cartão, Empréstimo, Investimentos, Seguros, etc.
-
-2. **Intenção**: Qual é a intenção do cliente? Use uma das opções:
-   - "contratar" - cliente quer adquirir/ativar um produto novo
-   - "suporte" - cliente já tem o produto e precisa de ajuda
-   - "cancelar" - cliente quer cancelar/encerrar um produto
-   - "duvida" - cliente está tirando dúvidas antes de decidir
-   - "reclamacao" - cliente está reclamando de algo
-   - "outros" - outras situações
-
-3. **Confiança**: De 0 a 100, qual a sua confiança na classificação?
-
-**Mensagens da conversa:**
-{{MENSAGENS}}
-
-**Responda APENAS no formato JSON abaixo, sem texto adicional:**
-{
-  "product": "nome do produto",
-  "intent": "tipo da intenção",
-  "confidence": número de 0 a 100
-}`;
-
 export async function classifyConversation(
   payload: ClassificationPayload,
+  promptTemplate: string,
   modelName: string = "gpt-4o-mini",
   conversationId?: number,
   externalConversationId?: string
@@ -53,7 +30,7 @@ export async function classifyConversation(
     .map(m => `[${m.authorType}${m.authorName ? ` - ${m.authorName}` : ''}]: ${m.contentText || '(sem texto)'}`)
     .join('\n');
 
-  const promptUser = DEFAULT_CLASSIFICATION_PROMPT
+  const promptUser = promptTemplate
     .replace('{{MENSAGENS}}', messagesContext || 'Nenhuma mensagem disponível.');
 
   const promptSystem = "Você é um assistente especializado em classificar conversas de atendimento ao cliente de serviços financeiros. Responda sempre em JSON válido.";
@@ -113,12 +90,14 @@ export async function classifyConversation(
 
 export async function classifyAndSave(
   payload: ClassificationPayload,
+  promptTemplate: string,
   modelName: string,
   conversationId: number,
   externalConversationId: string | null
 ): Promise<ClassificationResult> {
   const result = await classifyConversation(
     payload,
+    promptTemplate,
     modelName,
     conversationId,
     externalConversationId || undefined

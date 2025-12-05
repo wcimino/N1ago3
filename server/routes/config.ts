@@ -5,7 +5,8 @@ import { getOpenaiLogs, getOpenaiLogById } from "../services/openaiApiService.js
 
 const router = Router();
 
-const DEFAULT_PROMPT_TEMPLATE = `Você receberá informações sobre uma conversa de atendimento ao cliente.
+const DEFAULT_PROMPTS: Record<string, string> = {
+  summary: `Você receberá informações sobre uma conversa de atendimento ao cliente.
 
 RESUMO ATUAL:
 {{RESUMO_ATUAL}}
@@ -20,23 +21,37 @@ Por favor, gere um resumo atualizado e conciso desta conversa, destacando:
 - O problema ou solicitação principal do cliente
 - As ações tomadas pelo atendente
 - O status atual da conversa
-- Informações importantes mencionadas`;
+- Informações importantes mencionadas`,
 
-router.get("/api/openai-summary-config", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  const config = await storage.getOpenaiSummaryConfig();
-  
-  if (!config) {
-    return res.json({
-      enabled: false,
-      trigger_event_types: [],
-      trigger_author_types: [],
-      prompt_template: DEFAULT_PROMPT_TEMPLATE,
-      model_name: "gpt-4o-mini",
-    });
-  }
+  classification: `Analise a conversa de atendimento ao cliente abaixo e identifique:
 
-  res.json({
+1. **Produto**: Qual produto ou serviço o cliente está buscando ajuda? Exemplos: Conta Digital, Pix, Crédito, Cartão, Empréstimo, Investimentos, Seguros, etc.
+
+2. **Intenção**: Qual é a intenção do cliente? Use uma das opções:
+   - "contratar" - cliente quer adquirir/ativar um produto novo
+   - "suporte" - cliente já tem o produto e precisa de ajuda
+   - "cancelar" - cliente quer cancelar/encerrar um produto
+   - "duvida" - cliente está tirando dúvidas antes de decidir
+   - "reclamacao" - cliente está reclamando de algo
+   - "outros" - outras situações
+
+3. **Confiança**: De 0 a 100, qual a sua confiança na classificação?
+
+**Mensagens da conversa:**
+{{MENSAGENS}}
+
+**Responda APENAS no formato JSON abaixo, sem texto adicional:**
+{
+  "product": "nome do produto",
+  "intent": "tipo da intenção",
+  "confidence": número de 0 a 100
+}`,
+};
+
+function formatConfigResponse(config: any) {
+  return {
     id: config.id,
+    config_type: config.configType,
     enabled: config.enabled,
     trigger_event_types: config.triggerEventTypes,
     trigger_author_types: config.triggerAuthorTypes,
@@ -44,7 +59,68 @@ router.get("/api/openai-summary-config", isAuthenticated, requireAuthorizedUser,
     model_name: config.modelName,
     created_at: config.createdAt?.toISOString(),
     updated_at: config.updatedAt?.toISOString(),
+  };
+}
+
+function getDefaultConfig(configType: string) {
+  return {
+    enabled: false,
+    trigger_event_types: [],
+    trigger_author_types: [],
+    prompt_template: DEFAULT_PROMPTS[configType] || "",
+    model_name: "gpt-4o-mini",
+    config_type: configType,
+  };
+}
+
+router.get("/api/openai-config/:configType", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  const { configType } = req.params;
+  
+  if (!["summary", "classification"].includes(configType)) {
+    return res.status(400).json({ error: "Invalid config type. Must be 'summary' or 'classification'" });
+  }
+
+  const config = await storage.getOpenaiApiConfig(configType);
+  
+  if (!config) {
+    return res.json(getDefaultConfig(configType));
+  }
+
+  res.json(formatConfigResponse(config));
+});
+
+router.put("/api/openai-config/:configType", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  const { configType } = req.params;
+  
+  if (!["summary", "classification"].includes(configType)) {
+    return res.status(400).json({ error: "Invalid config type. Must be 'summary' or 'classification'" });
+  }
+
+  const { enabled, trigger_event_types, trigger_author_types, prompt_template, model_name } = req.body;
+
+  if (prompt_template !== undefined && !prompt_template.trim()) {
+    return res.status(400).json({ error: "prompt_template cannot be empty" });
+  }
+
+  const config = await storage.upsertOpenaiApiConfig(configType, {
+    enabled: enabled ?? false,
+    triggerEventTypes: trigger_event_types || [],
+    triggerAuthorTypes: trigger_author_types || [],
+    promptTemplate: prompt_template || DEFAULT_PROMPTS[configType] || "",
+    modelName: model_name || "gpt-4o-mini",
   });
+
+  res.json(formatConfigResponse(config));
+});
+
+router.get("/api/openai-summary-config", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  const config = await storage.getOpenaiApiConfig("summary");
+  
+  if (!config) {
+    return res.json(getDefaultConfig("summary"));
+  }
+
+  res.json(formatConfigResponse(config));
 });
 
 router.put("/api/openai-summary-config", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
@@ -54,24 +130,15 @@ router.put("/api/openai-summary-config", isAuthenticated, requireAuthorizedUser,
     return res.status(400).json({ error: "prompt_template cannot be empty" });
   }
 
-  const config = await storage.upsertOpenaiSummaryConfig({
+  const config = await storage.upsertOpenaiApiConfig("summary", {
     enabled: enabled ?? false,
     triggerEventTypes: trigger_event_types || [],
     triggerAuthorTypes: trigger_author_types || [],
-    promptTemplate: prompt_template || DEFAULT_PROMPT_TEMPLATE,
+    promptTemplate: prompt_template || DEFAULT_PROMPTS.summary,
     modelName: model_name || "gpt-4o-mini",
   });
 
-  res.json({
-    id: config.id,
-    enabled: config.enabled,
-    trigger_event_types: config.triggerEventTypes,
-    trigger_author_types: config.triggerAuthorTypes,
-    prompt_template: config.promptTemplate,
-    model_name: config.modelName,
-    created_at: config.createdAt?.toISOString(),
-    updated_at: config.updatedAt?.toISOString(),
-  });
+  res.json(formatConfigResponse(config));
 });
 
 router.get("/api/openai-logs", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {

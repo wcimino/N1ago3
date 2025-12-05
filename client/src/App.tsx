@@ -70,6 +70,7 @@ function AuthenticatedApp() {
         <Switch>
           <Route path="/" component={HomePage} />
           <Route path="/ai" component={AIPage} />
+          <Route path="/ai/settings/:rest*" component={AIPage} />
           <Route path="/events" component={EventsLayout} />
           <Route path="/events/:rest*" component={EventsLayout} />
           <Route path="/users" component={UsersPage} />
