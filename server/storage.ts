@@ -710,7 +710,7 @@ export const storage = {
         m.show_in_list,
         m.icon
       FROM events_standard e
-      LEFT JOIN event_type_mapping m ON e.source = m.source AND e.event_type = m.event_type
+      LEFT JOIN event_type_mappings m ON e.source = m.source AND e.event_type = m.event_type
       ${whereClause}
       ORDER BY e.occurred_at DESC
       LIMIT ${limit} OFFSET ${offset}
@@ -719,7 +719,7 @@ export const storage = {
     const countResult = await db.execute(sql`
       SELECT COUNT(*) as count
       FROM events_standard e
-      LEFT JOIN event_type_mapping m ON e.source = m.source AND e.event_type = m.event_type
+      LEFT JOIN event_type_mappings m ON e.source = m.source AND e.event_type = m.event_type
       ${whereClause}
     `);
     
