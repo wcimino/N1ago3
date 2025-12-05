@@ -212,9 +212,15 @@ npm run db:push      # Sincroniza schema do banco
 ---
 
 **Última atualização**: 2025-12-05
-**Versão**: 2.2.0
+**Versão**: 2.3.0
 
 ## Changelog
+
+### v2.3.0 (2025-12-05)
+- Nova página "Conversas" em `/conversation` com listagem de todas as conversas
+- Página de detalhes da conversa em `/conversation/:id` com layout estilo WhatsApp
+- Balões de chat: mensagens do usuário à esquerda, respostas do business/app à direita
+- Navegação adicionada ao menu principal
 
 ### v2.2.0 (2025-12-05)
 - Sistema de autenticação com Replit Auth (Google Login)
