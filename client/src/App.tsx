@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { RefreshCw, CheckCircle, XCircle, Clock, Eye, ChevronLeft, ChevronRight, Users, Activity, UserCheck, UserX } from "lucide-react";
+import { RefreshCw, CheckCircle, XCircle, Clock, Eye, ChevronLeft, ChevronRight, Users, Activity, UserCheck, UserX, ArrowDown } from "lucide-react";
 
 interface WebhookLog {
   id: number;
@@ -395,7 +395,12 @@ function UsersPage() {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Primeira vez</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Última vez</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      <span className="inline-flex items-center gap-1">
+                        Última vez
+                        <ArrowDown className="w-3 h-3" />
+                      </span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
