@@ -25,13 +25,20 @@ function verifyWebhookSignature(
     .update(payloadBody)
     .digest("hex");
   
-  const isValid = crypto.timingSafeEqual(
-    Buffer.from(`sha256=${expectedSignature}`),
-    Buffer.from(signature)
-  );
+  const normalizedSignature = signature.startsWith("sha256=") 
+    ? signature.slice(7) 
+    : signature;
   
-  if (isValid) {
-    return { isValid: true };
+  try {
+    const isValid = crypto.timingSafeEqual(
+      Buffer.from(expectedSignature, "hex"),
+      Buffer.from(normalizedSignature, "hex")
+    );
+    
+    if (isValid) {
+      return { isValid: true };
+    }
+  } catch {
   }
   
   return { isValid: false, errorMessage: "Assinatura inválida" };
