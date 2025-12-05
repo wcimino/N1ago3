@@ -635,6 +635,21 @@ export const storage = {
     return true;
   },
 
+  async ensureEventTypeMapping(source: string, eventType: string): Promise<void> {
+    await db.insert(eventTypeMapping)
+      .values({
+        source,
+        eventType,
+        displayName: eventType,
+        description: null,
+        showInList: true,
+        icon: null,
+      })
+      .onConflictDoNothing({
+        target: [eventTypeMapping.source, eventTypeMapping.eventType],
+      });
+  },
+
   async getStandardEventsWithMappings(limit = 50, offset = 0, filters?: { source?: string; eventType?: string; showInListOnly?: boolean }) {
     const conditions: any[] = [];
     

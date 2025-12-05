@@ -50,6 +50,8 @@ export async function processRawEvent(rawId: number, source: string): Promise<vo
         conversationId,
         userId,
       });
+      
+      await storage.ensureEventTypeMapping(event.source, event.eventType);
     }
 
     await storage.updateWebhookRawStatus(rawId, source, "success");
