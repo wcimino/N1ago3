@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { Route, Switch, Link, useLocation } from "wouter";
+import { useEffect, useMemo } from "react";
+import { Link, useLocation } from "wouter";
 import { EventsStandardPage } from "./EventsStandardPage";
 import { ZendeskConversationsRawPage } from "./ZendeskConversationsRawPage";
 import { EventTypeMappingsPage } from "./EventTypeMappingsPage";
@@ -7,15 +7,21 @@ import { EventTypeMappingsPage } from "./EventTypeMappingsPage";
 export function EventsLayout() {
   const [location, setLocation] = useLocation();
   
-  const isEventsStandard = location === "/events" || location === "/events/" || location === "/events/events_standard";
-  const isZendeskRaw = location === "/events/zendesk_conversations_raw";
-  const isSettings = location === "/events/settings";
+  const isEventsStandard = location === "/events" || location === "/events/" || location.startsWith("/events/events_standard");
+  const isZendeskRaw = location.startsWith("/events/zendesk_conversations_raw");
+  const isSettings = location.startsWith("/events/settings");
 
   useEffect(() => {
     if (location === "/events" || location === "/events/") {
       setLocation("/events/events_standard", { replace: true });
     }
   }, [location, setLocation]);
+
+  const CurrentPage = useMemo(() => {
+    if (isZendeskRaw) return ZendeskConversationsRawPage;
+    if (isSettings) return EventTypeMappingsPage;
+    return EventsStandardPage;
+  }, [isZendeskRaw, isSettings]);
 
   return (
     <div>
@@ -57,12 +63,7 @@ export function EventsLayout() {
         </div>
       </div>
 
-      <Switch>
-        <Route path="/events/events_standard" component={EventsStandardPage} />
-        <Route path="/events/zendesk_conversations_raw" component={ZendeskConversationsRawPage} />
-        <Route path="/events/settings" component={EventTypeMappingsPage} />
-        <Route path="/events" component={EventsStandardPage} />
-      </Switch>
+      <CurrentPage />
     </div>
   );
 }
