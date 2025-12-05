@@ -1402,7 +1402,9 @@ function EventsLayout() {
       <Switch>
         <Route path="/events/events_standard" component={EventsStandardPage} />
         <Route path="/events/zendesk_conversations_raw" component={ZendeskConversationsRawPage} />
-        <Route path="/events/settings/:subpage?" component={SettingsPage} />
+        <Route path="/events/settings/openai-summary" component={SettingsPage} />
+        <Route path="/events/settings/event-mappings" component={SettingsPage} />
+        <Route path="/events/settings" component={SettingsPage} />
         <Route path="/events" component={EventsStandardPage} />
       </Switch>
     </div>
