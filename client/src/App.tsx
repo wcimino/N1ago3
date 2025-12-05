@@ -212,7 +212,7 @@ function HomePage() {
             <Users className="w-5 h-5 text-blue-600" />
             Usuários
           </h2>
-          <Link href="/usuarios" className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
+          <Link href="/users" className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
             Ver todos <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -238,7 +238,7 @@ function HomePage() {
             <Activity className="w-5 h-5 text-purple-600" />
             Eventos
           </h2>
-          <Link href="/eventos" className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
+          <Link href="/events" className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
             Ver todos <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -519,11 +519,11 @@ export default function App() {
               <Home className="w-4 h-4" />
               Home
             </NavLink>
-            <NavLink href="/usuarios">
+            <NavLink href="/users">
               <Users className="w-4 h-4" />
               Usuários
             </NavLink>
-            <NavLink href="/eventos">
+            <NavLink href="/events">
               <Activity className="w-4 h-4" />
               Eventos
             </NavLink>
@@ -534,8 +534,8 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         <Switch>
           <Route path="/" component={HomePage} />
-          <Route path="/usuarios" component={UsersPage} />
-          <Route path="/eventos" component={EventsPage} />
+          <Route path="/users" component={UsersPage} />
+          <Route path="/events" component={EventsPage} />
         </Switch>
       </main>
     </div>
