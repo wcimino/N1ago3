@@ -788,6 +788,7 @@ export const storage = {
         .set({
           enabled: data.enabled,
           triggerEventTypes: data.triggerEventTypes,
+          triggerAuthorTypes: data.triggerAuthorTypes,
           promptTemplate: data.promptTemplate,
           modelName: data.modelName,
           updatedAt: new Date(),

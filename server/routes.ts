@@ -471,6 +471,7 @@ router.get("/api/openai-summary-config", isAuthenticated, requireAuthorizedUser,
     return res.json({
       enabled: false,
       trigger_event_types: [],
+      trigger_author_types: [],
       prompt_template: `Você receberá informações sobre uma conversa de atendimento ao cliente.
 
 RESUMO ATUAL:
@@ -495,6 +496,7 @@ Por favor, gere um resumo atualizado e conciso desta conversa, destacando:
     id: config.id,
     enabled: config.enabled,
     trigger_event_types: config.triggerEventTypes,
+    trigger_author_types: config.triggerAuthorTypes,
     prompt_template: config.promptTemplate,
     model_name: config.modelName,
     created_at: config.createdAt?.toISOString(),
@@ -503,7 +505,7 @@ Por favor, gere um resumo atualizado e conciso desta conversa, destacando:
 });
 
 router.put("/api/openai-summary-config", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  const { enabled, trigger_event_types, prompt_template, model_name } = req.body;
+  const { enabled, trigger_event_types, trigger_author_types, prompt_template, model_name } = req.body;
 
   if (prompt_template !== undefined && !prompt_template.trim()) {
     return res.status(400).json({ error: "prompt_template cannot be empty" });
@@ -512,6 +514,7 @@ router.put("/api/openai-summary-config", isAuthenticated, requireAuthorizedUser,
   const config = await storage.upsertOpenaiSummaryConfig({
     enabled: enabled ?? false,
     triggerEventTypes: trigger_event_types || [],
+    triggerAuthorTypes: trigger_author_types || [],
     promptTemplate: prompt_template || `Você receberá informações sobre uma conversa de atendimento ao cliente.
 
 RESUMO ATUAL:
@@ -531,6 +534,7 @@ Por favor, gere um resumo atualizado e conciso desta conversa.`,
     id: config.id,
     enabled: config.enabled,
     trigger_event_types: config.triggerEventTypes,
+    trigger_author_types: config.triggerAuthorTypes,
     prompt_template: config.promptTemplate,
     model_name: config.modelName,
     created_at: config.createdAt?.toISOString(),
