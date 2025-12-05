@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
+import { fetchApi, apiRequest } from "../lib/queryClient";
+import { ToggleSwitch } from "../components/ui/ToggleSwitch";
 import type { EventTypeMapping, EventTypeMappingsResponse } from "../types";
 
 export function EventTypeMappingsPage() {
@@ -10,20 +12,12 @@ export function EventTypeMappingsPage() {
 
   const { data, isLoading } = useQuery<EventTypeMappingsResponse>({
     queryKey: ["event-type-mappings"],
-    queryFn: async () => {
-      const res = await fetch("/api/event-type-mappings", { credentials: "include" });
-      return res.json();
-    },
+    queryFn: () => fetchApi<EventTypeMappingsResponse>("/api/event-type-mappings"),
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      const res = await fetch(`/api/event-type-mappings/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(data),
-      });
+      const res = await apiRequest("PUT", `/api/event-type-mappings/${id}`, data);
       return res.json();
     },
     onSuccess: () => {
@@ -34,12 +28,7 @@ export function EventTypeMappingsPage() {
 
   const toggleShowMutation = useMutation({
     mutationFn: async ({ id, show_in_list }: { id: number; show_in_list: boolean }) => {
-      const res = await fetch(`/api/event-type-mappings/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ show_in_list }),
-      });
+      const res = await apiRequest("PUT", `/api/event-type-mappings/${id}`, { show_in_list });
       return res.json();
     },
     onSuccess: () => {

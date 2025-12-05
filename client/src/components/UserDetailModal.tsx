@@ -1,7 +1,6 @@
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { Users } from "lucide-react";
 import { AuthBadge } from "./AuthBadge";
+import { formatDateTimeWithPrefix } from "../lib/dateUtils";
 import type { User } from "../types";
 
 interface UserDetailModalProps {
@@ -72,13 +71,13 @@ export function UserDetailModal({ user, onClose }: UserDetailModalProps) {
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Primeira interação</p>
                   <p className="text-sm font-medium text-gray-900 mt-1">
-                    {format(new Date(user.first_seen_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    {formatDateTimeWithPrefix(user.first_seen_at)}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Última interação</p>
                   <p className="text-sm font-medium text-gray-900 mt-1">
-                    {format(new Date(user.last_seen_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    {formatDateTimeWithPrefix(user.last_seen_at)}
                   </p>
                 </div>
               </div>
