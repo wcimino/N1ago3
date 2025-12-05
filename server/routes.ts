@@ -273,3 +273,30 @@ router.get("/api/conversations/:zendeskId/messages", async (req: Request, res: R
     })),
   });
 });
+
+router.get("/api/users", async (req: Request, res: Response) => {
+  const limit = parseInt(req.query.limit as string) || 50;
+  const offset = parseInt(req.query.offset as string) || 0;
+
+  const { users, total } = await storage.getUsers(limit, offset);
+
+  res.json({
+    total,
+    offset,
+    limit,
+    users: users.map((user) => ({
+      id: user.id,
+      sunshine_id: user.sunshineId,
+      external_id: user.externalId,
+      authenticated: user.authenticated,
+      profile: user.profile,
+      first_seen_at: user.firstSeenAt?.toISOString(),
+      last_seen_at: user.lastSeenAt?.toISOString(),
+    })),
+  });
+});
+
+router.get("/api/users/stats", async (req: Request, res: Response) => {
+  const stats = await storage.getUsersStats();
+  res.json(stats);
+});

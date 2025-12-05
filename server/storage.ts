@@ -177,4 +177,28 @@ export const storage = {
     
     return { conversation, messages: msgs };
   },
+
+  async getUsers(limit = 50, offset = 0) {
+    const usersList = await db.select().from(users)
+      .orderBy(desc(users.lastSeenAt))
+      .limit(limit)
+      .offset(offset);
+    
+    const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(users);
+    
+    return { users: usersList, total: Number(count) };
+  },
+
+  async getUsersStats() {
+    const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(users);
+    const [{ authenticated }] = await db.select({ 
+      authenticated: sql<number>`count(*) filter (where authenticated = true)` 
+    }).from(users);
+    
+    return {
+      total: Number(total),
+      authenticated: Number(authenticated),
+      anonymous: Number(total) - Number(authenticated),
+    };
+  },
 };
