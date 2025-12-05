@@ -44,12 +44,12 @@ localPort = 5001
 externalPort = 3002
 
 [[ports]]
-localPort = 41015
-externalPort = 3001
+localPort = 39335
+externalPort = 3003
 
 [[ports]]
-localPort = 46105
-externalPort = 3003
+localPort = 41015
+externalPort = 3001
 
 [userenv]
 
