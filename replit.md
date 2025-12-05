@@ -39,9 +39,16 @@ The frontend dashboard provides a real-time view of events and conversations, wi
 *   **User Management:** Secure authentication and authorization for system access.
 *   **Extensibility:** Designed to easily integrate new communication channels via adapters.
 *   **AI-Powered Conversation Summaries:** Automatically generates and updates summaries of customer conversations using OpenAI API.
-    *   **Architecture:** Separates AI service layer (openaiSummaryService.ts) from business logic (summaryOrchestrator.ts) to allow future support for other AI providers.
+    *   **Architecture (3 Layers):**
+        *   `openaiApiService.ts`: Pure API layer - makes OpenAI calls and saves complete logs to `openai_api_logs` table.
+        *   `summaryAdapter.ts`: Business logic layer - prepares prompts, calls API service, saves summaries to `conversations_summary`.
+        *   `summaryOrchestrator.ts`: Orchestration layer - determines when to generate summaries based on event triggers.
+    *   **API Logging:** All OpenAI calls are logged with: request_type, model, prompts, full response, tokens used, duration, success/error status.
+    *   **Endpoints:**
+        *   `GET /api/openai-logs` - List all API call logs (supports ?limit and ?request_type filters)
+        *   `GET /api/openai-logs/:id` - Get full details of a specific API call
     *   **Payload Structure:** Includes current summary, last 20 messages, and the last message for context.
-    *   **Configurable Triggers:** Summaries can be triggered by specific event types (configured via UI).
+    *   **Configurable Triggers:** Summaries triggered by `zendesk:message` events from `customer` author type.
     *   **Lazy Initialization:** OpenAI client is only initialized when needed, preventing startup errors when API key is not configured.
     *   **Configuration UI:** Available at /events/settings/openai-summary with toggle, event type selection, model choice, and custom prompt editor.
 
