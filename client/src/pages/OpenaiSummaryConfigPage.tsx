@@ -1,6 +1,6 @@
 import { RefreshCw } from "lucide-react";
 import { CheckboxListItem } from "../components";
-import { useOpenaiSummaryConfig } from "../hooks/useOpenaiSummaryConfig";
+import { useOpenaiApiConfig } from "../hooks/useOpenaiApiConfig";
 
 const AUTHOR_TYPE_OPTIONS = [
   { value: "customer", label: "Cliente" },
@@ -10,7 +10,7 @@ const AUTHOR_TYPE_OPTIONS = [
 ];
 
 export function OpenaiSummaryConfigPage() {
-  const { state, actions, eventTypes, isLoading, isSaving } = useOpenaiSummaryConfig();
+  const { state, actions, eventTypes, isLoading, isSaving } = useOpenaiApiConfig("summary");
 
   if (isLoading) {
     return (
