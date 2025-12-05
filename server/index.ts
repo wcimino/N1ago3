@@ -3,12 +3,6 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { router } from "./routes";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const app = express();
-const PORT = 3000;
-
 declare global {
   namespace Express {
     interface Request {
@@ -16,6 +10,12 @@ declare global {
     }
   }
 }
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+const PORT = 3000;
 
 app.use(express.json({
   verify: (req: express.Request, res, buf) => {
