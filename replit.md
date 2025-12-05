@@ -82,12 +82,24 @@ The frontend dashboard provides a real-time view of events and conversations, wi
 server/
   ├── services/       # Lógica de negócio (orchestrators, processors)
   ├── adapters/       # Transformadores de dados por source
-  ├── routes.ts       # Definição de endpoints
-  └── storage.ts      # Operações de banco de dados
+  ├── routes/         # Rotas modularizadas por domínio
+  │   ├── index.ts      # Registrador central de rotas
+  │   ├── auth.ts       # Endpoints de autenticação
+  │   ├── webhooks.ts   # Webhook consolidado (/webhook/zendesk)
+  │   ├── events.ts     # Eventos padronizados
+  │   ├── conversations.ts # Conversas e mensagens
+  │   ├── config.ts     # Configurações (OpenAI, event types)
+  │   └── webhookLogs.ts # Logs de webhook
+  ├── middleware/     # Middlewares compartilhados
+  │   └── auth.ts       # Guards: isAuthenticated, requireAuthorizedUser
+  └── storage.ts      # Operações de banco de dados (facade)
 client/src/
   ├── components/     # Componentes React reutilizáveis
-  ├── pages/          # Páginas/views (dentro de App.tsx atualmente)
-  └── lib/            # Utilitários e helpers
+  │   ├── ui/           # Componentes base (Pagination, DataTable, LoadingSpinner)
+  │   └── *.tsx         # Badges, modais e outros componentes
+  ├── pages/          # Páginas/views
+  ├── hooks/          # Hooks customizados (usePaginatedQuery)
+  └── lib/            # Utilitários e helpers (dateUtils, queryClient)
 shared/
   └── schema.ts       # Definições de tabelas Drizzle (fonte única)
 ```

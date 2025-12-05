@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { RefreshCw, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { apiRequest } from "../lib/queryClient";
+import { formatShortDateTime } from "../lib/dateUtils";
+import { LoadingState, EmptyState, LoadingSpinner } from "../components";
 import type { AuthorizedUser } from "../types";
 
 export function AuthorizedUsersPage() {
@@ -48,12 +48,12 @@ export function AuthorizedUsersPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
+
     if (!newEmail.toLowerCase().endsWith("@ifood.com.br")) {
       setError("Email deve ser do domínio @ifood.com.br");
       return;
     }
-    
+
     addMutation.mutate({ email: newEmail, name: newName });
   };
 
@@ -64,13 +64,11 @@ export function AuthorizedUsersPage() {
           <Plus className="w-5 h-5" />
           Adicionar Usuário Autorizado
         </h2>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
               <input
                 type="email"
                 value={newEmail}
@@ -81,9 +79,7 @@ export function AuthorizedUsersPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nome
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
               <input
                 type="text"
                 value={newName}
@@ -93,21 +89,15 @@ export function AuthorizedUsersPage() {
               />
             </div>
           </div>
-          
-          {error && (
-            <p className="text-sm text-red-600">{error}</p>
-          )}
-          
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
           <button
             type="submit"
             disabled={addMutation.isPending}
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
           >
-            {addMutation.isPending ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : (
-              <Plus className="w-4 h-4" />
-            )}
+            {addMutation.isPending ? <LoadingSpinner size="sm" /> : <Plus className="w-4 h-4" />}
             Adicionar
           </button>
         </form>
@@ -119,14 +109,12 @@ export function AuthorizedUsersPage() {
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
-          </div>
+          <LoadingState />
         ) : !authorizedUsers || authorizedUsers.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <p>Nenhum usuário autorizado cadastrado.</p>
-            <p className="text-sm mt-1">Adicione usuários usando o formulário acima.</p>
-          </div>
+          <EmptyState
+            title="Nenhum usuário autorizado cadastrado."
+            description="Adicione usuários usando o formulário acima."
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -145,7 +133,7 @@ export function AuthorizedUsersPage() {
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{user.email}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">{user.name || "-"}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">
-                      {user.createdAt ? format(new Date(user.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR }) : "-"}
+                      {user.createdAt ? formatShortDateTime(user.createdAt) : "-"}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500">{user.createdBy || "-"}</td>
                     <td className="px-4 py-3">

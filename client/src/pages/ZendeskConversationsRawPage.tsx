@@ -1,40 +1,91 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { RefreshCw, Eye, ChevronLeft, ChevronRight, ArrowDown } from "lucide-react";
-import { StatusBadge, LogDetailModal } from "../components";
-import type { WebhookLogsResponse } from "../types";
+import { Eye } from "lucide-react";
+import { StatusBadge, LogDetailModal, DataTable, type Column } from "../components";
+import { formatDateTime } from "../lib/dateUtils";
+import { usePaginatedQuery } from "../hooks/usePaginatedQuery";
+import type { WebhookLog } from "../types";
 
 export function ZendeskConversationsRawPage() {
-  const [page, setPage] = useState(0);
   const [selectedLogId, setSelectedLogId] = useState<number | null>(null);
   const [, navigate] = useLocation();
-  const limit = 20;
 
   const urlParams = new URLSearchParams(window.location.search);
   const userFilter = urlParams.get("user");
 
-  const { data: logsData, isLoading } = useQuery<WebhookLogsResponse>({
-    queryKey: ["webhook-logs", page, userFilter],
-    queryFn: async () => {
-      let url = `/api/webhook-logs?limit=${limit}&offset=${page * limit}`;
-      if (userFilter) {
-        url += `&user=${encodeURIComponent(userFilter)}`;
-      }
-      const res = await fetch(url, { credentials: "include" });
-      return res.json();
-    },
-    refetchInterval: 5000,
-  });
+  const endpoint = userFilter ? `/api/webhook-logs?user=${encodeURIComponent(userFilter)}` : "/api/webhook-logs";
 
-  const totalPages = logsData ? Math.ceil(logsData.total / limit) : 0;
+  const {
+    data: logs,
+    total,
+    page,
+    totalPages,
+    isLoading,
+    nextPage,
+    previousPage,
+    hasNextPage,
+    hasPreviousPage,
+    showingFrom,
+    showingTo,
+  } = usePaginatedQuery<WebhookLog>({
+    queryKey: `webhook-logs-${userFilter || "all"}`,
+    endpoint,
+    limit: 20,
+    dataKey: "logs",
+  });
 
   const clearFilter = () => {
     navigate("/events/zendesk_conversations_raw");
-    setPage(0);
   };
+
+  const columns: Column<WebhookLog>[] = [
+    {
+      key: "id",
+      header: "ID",
+      className: "text-sm font-medium text-gray-900",
+      render: (log) => `#${log.id}`,
+    },
+    {
+      key: "received_at",
+      header: "Recebido",
+      sortable: true,
+      className: "text-sm text-gray-500",
+      render: (log) => formatDateTime(log.received_at),
+    },
+    {
+      key: "source_ip",
+      header: "IP",
+      className: "text-sm text-gray-500",
+      render: (log) => log.source_ip,
+    },
+    {
+      key: "processing_status",
+      header: "Status",
+      render: (log) => <StatusBadge status={log.processing_status} />,
+    },
+    {
+      key: "error_message",
+      header: "Erro",
+      className: "text-sm text-red-500 max-w-xs truncate",
+      render: (log) => log.error_message || "-",
+    },
+    {
+      key: "actions",
+      header: "Ações",
+      render: (log) => (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedLogId(log.id);
+          }}
+          className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
+        >
+          <Eye className="w-4 h-4" />
+          Ver
+        </button>
+      ),
+    },
+  ];
 
   return (
     <>
@@ -57,94 +108,29 @@ export function ZendeskConversationsRawPage() {
           )}
         </div>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
-          </div>
-        ) : !logsData?.logs || logsData.logs.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <p>Nenhum evento recebido ainda.</p>
-            <p className="text-sm mt-1">Configure o webhook no Zendesk para começar a receber eventos.</p>
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      <span className="inline-flex items-center gap-1">
-                        Recebido
-                        <ArrowDown className="w-3 h-3" />
-                      </span>
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Erro</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {logsData.logs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">#{log.id}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
-                        {format(new Date(log.received_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{log.source_ip}</td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={log.processing_status} />
-                      </td>
-                      <td className="px-4 py-3 text-sm text-red-500 max-w-xs truncate">
-                        {log.error_message || "-"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => setSelectedLogId(log.id)}
-                          className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
-                        >
-                          <Eye className="w-4 h-4" />
-                          Ver
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="px-4 py-3 border-t flex items-center justify-between">
-              <p className="text-sm text-gray-500">
-                Mostrando {page * limit + 1} - {Math.min((page + 1) * limit, logsData?.total || 0)} de{" "}
-                {logsData?.total || 0}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                  className="inline-flex items-center gap-1 px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Anterior
-                </button>
-                <button
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page >= totalPages - 1}
-                  className="inline-flex items-center gap-1 px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  Próximo
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </>
-        )}
+        <DataTable
+          columns={columns}
+          data={logs}
+          keyExtractor={(log) => log.id}
+          isLoading={isLoading}
+          emptyTitle="Nenhum evento recebido ainda."
+          emptyDescription="Configure o webhook no Zendesk para começar a receber eventos."
+          pagination={{
+            page,
+            totalPages,
+            showingFrom,
+            showingTo,
+            total,
+            onPreviousPage: previousPage,
+            onNextPage: nextPage,
+            hasPreviousPage,
+            hasNextPage,
+            itemLabel: "eventos",
+          }}
+        />
       </div>
 
-      {selectedLogId !== null && (
-        <LogDetailModal logId={selectedLogId} onClose={() => setSelectedLogId(null)} />
-      )}
+      {selectedLogId !== null && <LogDetailModal logId={selectedLogId} onClose={() => setSelectedLogId(null)} />}
     </>
   );
 }

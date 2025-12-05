@@ -1,28 +1,33 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { RefreshCw, Users, MessageCircle, Activity, User, UserCheck, ChevronLeft, ChevronRight } from "lucide-react";
-import { UserDetailModal } from "../components";
+import { Users, MessageCircle, Activity, User, UserCheck } from "lucide-react";
+import { UserDetailModal, LoadingState, EmptyState, Pagination } from "../components";
+import { formatShortDateTime } from "../lib/dateUtils";
+import { usePaginatedQuery } from "../hooks/usePaginatedQuery";
 import type { User as UserType, UserProfile, UserGroup, UserConversation, GroupedConversationsResponse } from "../types";
 
 export function UsersPage() {
-  const [page, setPage] = useState(0);
   const [, navigate] = useLocation();
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
-  const limit = 20;
 
-  const { data: groupedData, isLoading } = useQuery<GroupedConversationsResponse>({
-    queryKey: ["conversations-grouped", page],
-    queryFn: async () => {
-      const res = await fetch(`/api/conversations/grouped?limit=${limit}&offset=${page * limit}`, { credentials: "include" });
-      return res.json();
-    },
-    refetchInterval: 5000,
+  const {
+    data: userGroups,
+    total,
+    page,
+    totalPages,
+    isLoading,
+    nextPage,
+    previousPage,
+    hasNextPage,
+    hasPreviousPage,
+    showingFrom,
+    showingTo,
+  } = usePaginatedQuery<UserGroup>({
+    queryKey: "conversations-grouped",
+    endpoint: "/api/conversations/grouped",
+    limit: 20,
+    dataKey: "user_groups",
   });
-
-  const totalPages = groupedData ? Math.ceil(groupedData.total / limit) : 0;
 
   const getUserDisplayName = (group: UserGroup) => {
     if (group.user_info?.profile) {
@@ -38,7 +43,7 @@ export function UsersPage() {
   };
 
   const getActiveCount = (conversations: UserConversation[]) => {
-    return conversations.filter(c => c.status === "active").length;
+    return conversations.filter((c) => c.status === "active").length;
   };
 
   const getUserFromGroup = (group: UserGroup): UserType | null => {
@@ -62,19 +67,17 @@ export function UsersPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
-        </div>
-      ) : !groupedData?.user_groups || groupedData.user_groups.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          <MessageCircle className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-          <p>Nenhuma conversa registrada ainda.</p>
-          <p className="text-sm mt-1">As conversas serão criadas quando mensagens chegarem via webhook.</p>
-        </div>
+        <LoadingState />
+      ) : userGroups.length === 0 ? (
+        <EmptyState
+          icon={<MessageCircle className="w-12 h-12 text-gray-300" />}
+          title="Nenhuma conversa registrada ainda."
+          description="As conversas serão criadas quando mensagens chegarem via webhook."
+        />
       ) : (
         <>
           <div className="divide-y divide-gray-200">
-            {groupedData.user_groups.map((group) => (
+            {userGroups.map((group) => (
               <div key={group.user_id} className="p-4 hover:bg-gray-50 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -99,12 +102,11 @@ export function UsersPage() {
                         {getActiveCount(group.conversations) > 0 && (
                           <span className="inline-flex items-center gap-1 text-green-600">
                             <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                            {getActiveCount(group.conversations)} ativa{getActiveCount(group.conversations) > 1 ? "s" : ""}
+                            {getActiveCount(group.conversations)} ativa
+                            {getActiveCount(group.conversations) > 1 ? "s" : ""}
                           </span>
                         )}
-                        <span>
-                          Última atividade: {format(new Date(group.last_activity), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                        </span>
+                        <span>Última atividade: {formatShortDateTime(group.last_activity)}</span>
                       </div>
                     </div>
                   </div>
@@ -137,7 +139,7 @@ export function UsersPage() {
                     </Link>
                   </div>
                 </div>
-                
+
                 {group.conversations.length > 1 && (
                   <div className="mt-3 ml-14 flex flex-wrap gap-2">
                     {group.conversations.map((conv, idx) => (
@@ -147,7 +149,7 @@ export function UsersPage() {
                           conv.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"
                         }`}
                       >
-                        #{idx + 1} - {format(new Date(conv.created_at), "dd/MM HH:mm", { locale: ptBR })}
+                        #{idx + 1} - {formatShortDateTime(conv.created_at)}
                       </span>
                     ))}
                   </div>
@@ -156,36 +158,22 @@ export function UsersPage() {
             ))}
           </div>
 
-          <div className="px-4 py-3 border-t flex items-center justify-between">
-            <p className="text-sm text-gray-500">
-              Mostrando {page * limit + 1} - {Math.min((page + 1) * limit, groupedData?.total || 0)} de{" "}
-              {groupedData?.total || 0} usuários
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-                disabled={page === 0}
-                className="inline-flex items-center gap-1 px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Anterior
-              </button>
-              <button
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= totalPages - 1}
-                className="inline-flex items-center gap-1 px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                Próximo
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            showingFrom={showingFrom}
+            showingTo={showingTo}
+            total={total}
+            onPreviousPage={previousPage}
+            onNextPage={nextPage}
+            hasPreviousPage={hasPreviousPage}
+            hasNextPage={hasNextPage}
+            itemLabel="usuários"
+          />
         </>
       )}
 
-      {selectedUser !== null && (
-        <UserDetailModal user={selectedUser} onClose={() => setSelectedUser(null)} />
-      )}
+      {selectedUser !== null && <UserDetailModal user={selectedUser} onClose={() => setSelectedUser(null)} />}
     </div>
   );
 }
