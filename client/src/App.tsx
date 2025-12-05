@@ -598,9 +598,24 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
   );
 }
 
+function EnvironmentBadge() {
+  const isDev = import.meta.env.DEV;
+  
+  return (
+    <div className={`fixed top-0 right-0 z-50 px-3 py-1 text-xs font-bold uppercase tracking-wide ${
+      isDev 
+        ? "bg-yellow-500 text-yellow-900" 
+        : "bg-green-500 text-white"
+    }`}>
+      {isDev ? "Ambiente de Desenvolvimento" : "Ambiente de Produção"}
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <div className="min-h-screen bg-gray-50">
+      <EnvironmentBadge />
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
