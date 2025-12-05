@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Route, Switch, Link, useLocation } from "wouter";
-import { RefreshCw, CheckCircle, XCircle, Clock, Eye, ChevronLeft, ChevronRight, Users, User, Activity, UserCheck, UserX, ArrowDown, Home, ChevronRight as ArrowRight, LogOut, Shield, Plus, Trash2, LogIn, MessageCircle, Settings } from "lucide-react";
+import { RefreshCw, CheckCircle, XCircle, Clock, Eye, ChevronLeft, ChevronRight, Users, User, Activity, UserCheck, UserX, ArrowDown, Home, ChevronRight as ArrowRight, LogOut, Shield, Plus, Trash2, LogIn, MessageCircle, Settings, Sparkles } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { apiRequest } from "./lib/queryClient";
 
@@ -2096,6 +2096,10 @@ function AuthenticatedApp() {
             <NavLink href="/events">
               <Activity className="w-4 h-4" />
               Eventos
+            </NavLink>
+            <NavLink href="/events/settings/openai-summary">
+              <Sparkles className="w-4 h-4" />
+              AI
             </NavLink>
           </nav>
         </div>
