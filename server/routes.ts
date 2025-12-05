@@ -4,44 +4,55 @@ import { storage } from "./storage";
 
 export const router = Router();
 
-function verifyWebhookSignature(
+function verifyWebhookAuth(
   payloadBody: Buffer,
-  signature: string | undefined,
+  headers: {
+    signature?: string;
+    apiKey?: string;
+  },
   secret: string | undefined
 ): { isValid: boolean; errorMessage?: string } {
   if (!secret) {
     return { isValid: true };
   }
   
-  if (!signature) {
-    return { 
-      isValid: false, 
-      errorMessage: "Assinatura ausente - header X-Smooch-Signature ou X-Zendesk-Webhook-Signature não encontrado" 
-    };
-  }
-  
-  const expectedSignature = crypto
-    .createHmac("sha256", secret)
-    .update(payloadBody)
-    .digest("hex");
-  
-  const normalizedSignature = signature.startsWith("sha256=") 
-    ? signature.slice(7) 
-    : signature;
-  
-  try {
-    const isValid = crypto.timingSafeEqual(
-      Buffer.from(expectedSignature, "hex"),
-      Buffer.from(normalizedSignature, "hex")
-    );
-    
+  if (headers.apiKey) {
+    const isValid = headers.apiKey === secret;
     if (isValid) {
       return { isValid: true };
     }
-  } catch {
+    return { isValid: false, errorMessage: "x-api-key inválida" };
   }
   
-  return { isValid: false, errorMessage: "Assinatura inválida" };
+  if (headers.signature) {
+    const expectedSignature = crypto
+      .createHmac("sha256", secret)
+      .update(payloadBody)
+      .digest("hex");
+    
+    const normalizedSignature = headers.signature.startsWith("sha256=") 
+      ? headers.signature.slice(7) 
+      : headers.signature;
+    
+    try {
+      const isValid = crypto.timingSafeEqual(
+        Buffer.from(expectedSignature, "hex"),
+        Buffer.from(normalizedSignature, "hex")
+      );
+      
+      if (isValid) {
+        return { isValid: true };
+      }
+    } catch {
+    }
+    
+    return { isValid: false, errorMessage: "Assinatura HMAC inválida" };
+  }
+  
+  return { 
+    isValid: false, 
+    errorMessage: "Autenticação ausente - header x-api-key, X-Smooch-Signature ou X-Zendesk-Webhook-Signature não encontrado" 
+  };
 }
 
 router.get("/health", (req: Request, res: Response) => {
@@ -72,13 +83,15 @@ router.post("/webhook/zendesk", async (req: Request, res: Response) => {
 
   try {
     const webhookSecret = process.env.ZENDESK_WEBHOOK_SECRET;
-    const signature =
-      (req.headers["x-smooch-signature"] as string) ||
-      (req.headers["x-zendesk-webhook-signature"] as string);
+    const authHeaders = {
+      apiKey: req.headers["x-api-key"] as string | undefined,
+      signature: (req.headers["x-smooch-signature"] as string) ||
+                 (req.headers["x-zendesk-webhook-signature"] as string),
+    };
 
-    const { isValid, errorMessage } = verifyWebhookSignature(
+    const { isValid, errorMessage } = verifyWebhookAuth(
       rawBodyBuffer,
-      signature,
+      authHeaders,
       webhookSecret
     );
 
