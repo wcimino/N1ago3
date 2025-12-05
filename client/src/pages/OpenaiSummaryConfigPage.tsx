@@ -1,7 +1,15 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
+import { CheckboxListItem } from "../components";
 import type { OpenaiSummaryConfigResponse, EventTypeMappingsResponse } from "../types";
+
+const AUTHOR_TYPE_OPTIONS = [
+  { value: "customer", label: "Cliente" },
+  { value: "agent", label: "Agente" },
+  { value: "bot", label: "Bot" },
+  { value: "system", label: "Sistema" },
+];
 
 export function OpenaiSummaryConfigPage() {
   const queryClient = useQueryClient();
@@ -61,27 +69,23 @@ export function OpenaiSummaryConfigPage() {
     },
   });
 
+  const handleChange = () => setHasChanges(true);
+
   const toggleAuthorType = (authorType: string) => {
-    setTriggerAuthorTypes(prev => {
-      if (prev.includes(authorType)) {
-        return prev.filter(a => a !== authorType);
-      }
-      return [...prev, authorType];
-    });
+    setTriggerAuthorTypes(prev =>
+      prev.includes(authorType)
+        ? prev.filter(a => a !== authorType)
+        : [...prev, authorType]
+    );
     handleChange();
   };
 
-  const handleChange = () => {
-    setHasChanges(true);
-  };
-
   const toggleEventType = (eventKey: string) => {
-    setTriggerEventTypes(prev => {
-      if (prev.includes(eventKey)) {
-        return prev.filter(e => e !== eventKey);
-      }
-      return [...prev, eventKey];
-    });
+    setTriggerEventTypes(prev =>
+      prev.includes(eventKey)
+        ? prev.filter(e => e !== eventKey)
+        : [...prev, eventKey]
+    );
     handleChange();
   };
 
@@ -109,9 +113,7 @@ export function OpenaiSummaryConfigPage() {
             </div>
             <button
               onClick={() => { setEnabled(!enabled); handleChange(); }}
-              className={`w-12 h-6 rounded-full transition-colors ${
-                enabled ? "bg-green-500" : "bg-gray-300"
-              }`}
+              className={`w-12 h-6 rounded-full transition-colors ${enabled ? "bg-green-500" : "bg-gray-300"}`}
             >
               <span
                 className={`block w-5 h-5 bg-white rounded-full shadow transform transition-transform ${
@@ -142,23 +144,14 @@ export function OpenaiSummaryConfigPage() {
               <div className="border rounded-lg divide-y max-h-60 overflow-auto">
                 {eventTypes.mappings.map((mapping) => {
                   const eventKey = `${mapping.source}:${mapping.event_type}`;
-                  const isSelected = triggerEventTypes.includes(eventKey);
                   return (
-                    <label
+                    <CheckboxListItem
                       key={mapping.id}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleEventType(eventKey)}
-                        className="w-4 h-4 text-blue-600 rounded border-gray-300"
-                      />
-                      <div className="flex-1">
-                        <span className="text-sm font-medium text-gray-900">{mapping.display_name}</span>
-                        <span className="ml-2 text-xs text-gray-500">({mapping.source}:{mapping.event_type})</span>
-                      </div>
-                    </label>
+                      label={mapping.display_name}
+                      sublabel={`${mapping.source}:${mapping.event_type}`}
+                      checked={triggerEventTypes.includes(eventKey)}
+                      onChange={() => toggleEventType(eventKey)}
+                    />
                   );
                 })}
               </div>
@@ -172,54 +165,15 @@ export function OpenaiSummaryConfigPage() {
             <p className="text-sm text-gray-500 mb-3">Selecione quais tipos de autor devem disparar a geração de resumo. Se nenhum for selecionado, todos os autores serão considerados.</p>
             
             <div className="border rounded-lg divide-y">
-              <label className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={triggerAuthorTypes.includes("customer")}
-                  onChange={() => toggleAuthorType("customer")}
-                  className="w-4 h-4 text-blue-600 rounded border-gray-300"
+              {AUTHOR_TYPE_OPTIONS.map(({ value, label }) => (
+                <CheckboxListItem
+                  key={value}
+                  label={label}
+                  sublabel={value}
+                  checked={triggerAuthorTypes.includes(value)}
+                  onChange={() => toggleAuthorType(value)}
                 />
-                <div className="flex-1">
-                  <span className="text-sm font-medium text-gray-900">Cliente</span>
-                  <span className="ml-2 text-xs text-gray-500">(customer)</span>
-                </div>
-              </label>
-              <label className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={triggerAuthorTypes.includes("agent")}
-                  onChange={() => toggleAuthorType("agent")}
-                  className="w-4 h-4 text-blue-600 rounded border-gray-300"
-                />
-                <div className="flex-1">
-                  <span className="text-sm font-medium text-gray-900">Agente</span>
-                  <span className="ml-2 text-xs text-gray-500">(agent)</span>
-                </div>
-              </label>
-              <label className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={triggerAuthorTypes.includes("bot")}
-                  onChange={() => toggleAuthorType("bot")}
-                  className="w-4 h-4 text-blue-600 rounded border-gray-300"
-                />
-                <div className="flex-1">
-                  <span className="text-sm font-medium text-gray-900">Bot</span>
-                  <span className="ml-2 text-xs text-gray-500">(bot)</span>
-                </div>
-              </label>
-              <label className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={triggerAuthorTypes.includes("system")}
-                  onChange={() => toggleAuthorType("system")}
-                  className="w-4 h-4 text-blue-600 rounded border-gray-300"
-                />
-                <div className="flex-1">
-                  <span className="text-sm font-medium text-gray-900">Sistema</span>
-                  <span className="ml-2 text-xs text-gray-500">(system)</span>
-                </div>
-              </label>
+              ))}
             </div>
           </div>
 
