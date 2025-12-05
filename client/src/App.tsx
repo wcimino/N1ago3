@@ -964,6 +964,15 @@ function UserConversationsPage({ params }: { params: { userId: string } }) {
                     }`}>
                       {convItem.conversation.status}
                     </span>
+                    <span 
+                      className="text-[10px] text-gray-400 cursor-pointer hover:text-gray-600 border-l pl-2 ml-1"
+                      title="Clique para copiar o ID"
+                      onClick={() => {
+                        navigator.clipboard.writeText(convItem.conversation.zendesk_conversation_id);
+                      }}
+                    >
+                      ID: {convItem.conversation.zendesk_conversation_id.slice(-8)}
+                    </span>
                   </div>
                   <div className="flex-1 h-px bg-gray-300"></div>
                 </div>
