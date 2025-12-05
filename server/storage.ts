@@ -686,7 +686,7 @@ export const storage = {
     const conditions: any[] = [];
     
     if (filters?.showInListOnly) {
-      conditions.push(sql`(m.show_in_list = true OR m.show_in_list IS NULL)`);
+      conditions.push(sql`m.show_in_list = true`);
     }
     if (filters?.source) {
       conditions.push(sql`e.source = ${filters.source}`);

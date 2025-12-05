@@ -349,14 +349,15 @@ router.get("/api/users/stats", isAuthenticated, requireAuthorizedUser, async (re
 });
 
 // Standard events API routes
-router.get("/api/events", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+router.get("/api/events/events_standard", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 50;
   const offset = parseInt(req.query.offset as string) || 0;
   const source = req.query.source as string | undefined;
   const eventType = req.query.event_type as string | undefined;
   const conversationId = req.query.conversation_id ? parseInt(req.query.conversation_id as string) : undefined;
+  const showInListOnly = req.query.show_all !== "true";
 
-  const { events, total } = await storage.getStandardEventsWithMappings(limit, offset, { source, eventType, conversationId });
+  const { events, total } = await storage.getStandardEventsWithMappings(limit, offset, { source, eventType, conversationId, showInListOnly });
 
   res.json({
     total,
@@ -451,24 +452,6 @@ router.delete("/api/event-type-mappings/:id", isAuthenticated, requireAuthorized
   const id = parseInt(req.params.id);
   await storage.deleteEventTypeMapping(id);
   res.json({ success: true });
-});
-
-// Updated events endpoint with mappings
-router.get("/api/events-with-mappings", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  const limit = parseInt(req.query.limit as string) || 50;
-  const offset = parseInt(req.query.offset as string) || 0;
-  const source = req.query.source as string | undefined;
-  const eventType = req.query.event_type as string | undefined;
-  const showInListOnly = req.query.show_in_list_only === "true";
-
-  const { events, total } = await storage.getStandardEventsWithMappings(limit, offset, { source, eventType, showInListOnly });
-
-  res.json({
-    total,
-    offset,
-    limit,
-    events,
-  });
 });
 
 export function registerRoutes(app: Express) {

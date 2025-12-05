@@ -560,7 +560,7 @@ function EventsStandardPage() {
   const { data: eventsData, isLoading } = useQuery<StandardEventsResponse>({
     queryKey: ["standard-events", page],
     queryFn: async () => {
-      const res = await fetch(`/api/events?limit=${limit}&offset=${page * limit}`, { credentials: "include" });
+      const res = await fetch(`/api/events/events_standard?limit=${limit}&offset=${page * limit}`, { credentials: "include" });
       return res.json();
     },
     refetchInterval: 5000,
