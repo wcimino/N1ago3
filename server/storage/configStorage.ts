@@ -1,7 +1,7 @@
 import { db } from "../db.js";
-import { conversationsSummary, openaiSummaryConfig } from "../../shared/schema.js";
-import { eq } from "drizzle-orm";
-import type { ConversationSummary, InsertConversationSummary, OpenaiSummaryConfig, InsertOpenaiSummaryConfig } from "../../shared/schema.js";
+import { conversationsSummary, openaiSummaryConfig, openaiApiLogs } from "../../shared/schema.js";
+import { eq, desc } from "drizzle-orm";
+import type { ConversationSummary, InsertConversationSummary, OpenaiSummaryConfig, InsertOpenaiSummaryConfig, OpenaiApiLog, InsertOpenaiApiLog } from "../../shared/schema.js";
 
 export const configStorage = {
   async getConversationSummary(conversationId: number): Promise<ConversationSummary | null> {
@@ -67,5 +67,34 @@ export const configStorage = {
       .values(data)
       .returning();
     return created;
+  },
+
+  async saveOpenaiApiLog(data: InsertOpenaiApiLog): Promise<OpenaiApiLog> {
+    const [log] = await db.insert(openaiApiLogs)
+      .values(data)
+      .returning();
+    return log;
+  },
+
+  async getOpenaiApiLogs(limit: number = 100, requestType?: string): Promise<OpenaiApiLog[]> {
+    if (requestType) {
+      return db.select()
+        .from(openaiApiLogs)
+        .where(eq(openaiApiLogs.requestType, requestType))
+        .orderBy(desc(openaiApiLogs.createdAt))
+        .limit(limit);
+    }
+    
+    return db.select()
+      .from(openaiApiLogs)
+      .orderBy(desc(openaiApiLogs.createdAt))
+      .limit(limit);
+  },
+
+  async getOpenaiApiLogById(id: number): Promise<OpenaiApiLog | null> {
+    const [log] = await db.select()
+      .from(openaiApiLogs)
+      .where(eq(openaiApiLogs.id, id));
+    return log || null;
   },
 };

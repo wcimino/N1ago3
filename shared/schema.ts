@@ -164,6 +164,25 @@ export const openaiSummaryConfig = pgTable("openai_summary_config", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const openaiApiLogs = pgTable("openai_api_logs", {
+  id: serial("id").primaryKey(),
+  requestType: text("request_type").notNull(),
+  modelName: text("model_name").notNull(),
+  promptSystem: text("prompt_system"),
+  promptUser: text("prompt_user").notNull(),
+  responseRaw: json("response_raw"),
+  responseContent: text("response_content"),
+  tokensPrompt: integer("tokens_prompt"),
+  tokensCompletion: integer("tokens_completion"),
+  tokensTotal: integer("tokens_total"),
+  durationMs: integer("duration_ms"),
+  success: boolean("success").notNull(),
+  errorMessage: text("error_message"),
+  contextType: text("context_type"),
+  contextId: text("context_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Types
 export type AuthUser = typeof authUsers.$inferSelect;
 export type UpsertAuthUser = typeof authUsers.$inferInsert;
@@ -190,3 +209,6 @@ export type InsertConversationSummary = Omit<typeof conversationsSummary.$inferI
 
 export type OpenaiSummaryConfig = typeof openaiSummaryConfig.$inferSelect;
 export type InsertOpenaiSummaryConfig = Omit<typeof openaiSummaryConfig.$inferInsert, "id" | "createdAt" | "updatedAt">;
+
+export type OpenaiApiLog = typeof openaiApiLogs.$inferSelect;
+export type InsertOpenaiApiLog = Omit<typeof openaiApiLogs.$inferInsert, "id" | "createdAt">;

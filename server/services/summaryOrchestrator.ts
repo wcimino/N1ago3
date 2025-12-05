@@ -1,5 +1,5 @@
 import { storage } from "../storage.js";
-import { generateSummary, type SummaryPayload } from "./openaiSummaryService.js";
+import { generateAndSaveSummary, type SummaryPayload } from "./summaryAdapter.js";
 import type { EventStandard } from "../../shared/schema.js";
 
 export async function shouldGenerateSummary(event: EventStandard): Promise<boolean> {
@@ -36,13 +36,13 @@ export async function shouldGenerateSummary(event: EventStandard): Promise<boole
 
 export async function generateConversationSummary(event: EventStandard): Promise<void> {
   if (!event.conversationId) {
-    console.log("Cannot generate summary: no conversationId");
+    console.log("[Summary Orchestrator] Cannot generate summary: no conversationId");
     return;
   }
 
   const config = await storage.getOpenaiSummaryConfig();
   if (!config) {
-    console.log("Cannot generate summary: no config found");
+    console.log("[Summary Orchestrator] Cannot generate summary: no config found");
     return;
   }
 
@@ -69,24 +69,24 @@ export async function generateConversationSummary(event: EventStandard): Promise
       }
     };
 
-    console.log(`Generating summary for conversation ${event.conversationId} with ${reversedMessages.length} messages`);
+    console.log(`[Summary Orchestrator] Generating summary for conversation ${event.conversationId} with ${reversedMessages.length} messages`);
 
-    const result = await generateSummary(payload, config.promptTemplate, config.modelName);
+    const result = await generateAndSaveSummary(
+      payload,
+      config.promptTemplate,
+      config.modelName,
+      event.conversationId,
+      event.externalConversationId,
+      event.id
+    );
 
     if (result.success) {
-      await storage.upsertConversationSummary({
-        conversationId: event.conversationId,
-        externalConversationId: event.externalConversationId || undefined,
-        summary: result.summary,
-        lastEventId: event.id,
-      });
-
-      console.log(`Summary generated and saved for conversation ${event.conversationId}`);
+      console.log(`[Summary Orchestrator] Summary generated and saved for conversation ${event.conversationId}`);
     } else {
-      console.error(`Failed to generate summary for conversation ${event.conversationId}: ${result.error}`);
+      console.error(`[Summary Orchestrator] Failed to generate summary for conversation ${event.conversationId}: ${result.error}`);
     }
   } catch (error: any) {
-    console.error(`Error in generateConversationSummary for conversation ${event.conversationId}:`, error);
+    console.error(`[Summary Orchestrator] Error in generateConversationSummary for conversation ${event.conversationId}:`, error);
   }
 }
 
