@@ -48,6 +48,7 @@ export async function classifyConversationProduct(event: EventStandard): Promise
 
   try {
     const last20Messages = await storage.getLast20MessagesForConversation(event.conversationId);
+    const existingSummary = await storage.getConversationSummary(event.conversationId);
 
     const reversedMessages = [...last20Messages].reverse();
 
@@ -58,9 +59,10 @@ export async function classifyConversationProduct(event: EventStandard): Promise
         contentText: m.contentText,
         occurredAt: m.occurredAt,
       })),
+      currentSummary: existingSummary?.summary || null,
     };
 
-    console.log(`[Classification Orchestrator] Classifying conversation ${event.conversationId} with ${reversedMessages.length} messages`);
+    console.log(`[Classification Orchestrator] Classifying conversation ${event.conversationId} with ${reversedMessages.length} messages${existingSummary ? ' and existing summary' : ''}`);
 
     const result = await classifyAndSave(
       payload,
