@@ -8,6 +8,7 @@ N1ago é um sistema para receber e monitorar webhooks do Zendesk Sunshine Conver
 - **Armazena todas as conversas** no banco de dados PostgreSQL
 - **Exibe eventos em tempo real** no dashboard React
 - **Registra TODAS as chamadas** do webhook, mesmo as que falham
+- **Controle de acesso** com login Replit Auth (Google) e lista de usuários autorizados
 
 ## Stack Tecnológico
 
@@ -18,11 +19,14 @@ N1ago é um sistema para receber e monitorar webhooks do Zendesk Sunshine Conver
 - TanStack Query (gerenciamento de estado e cache)
 - Lucide React (ícones)
 - date-fns (manipulação de datas)
+- wouter (roteamento)
 
 ### Backend
 - Express.js (servidor Node.js)
 - Drizzle ORM (interação com banco de dados)
 - PostgreSQL/Neon (banco de dados)
+- Replit Auth (autenticação via OpenID Connect)
+- Passport.js (sessões de autenticação)
 
 ### Estrutura
 ```
@@ -31,13 +35,39 @@ N1ago é um sistema para receber e monitorar webhooks do Zendesk Sunshine Conver
 /shared         - esquemas e tipos compartilhados
 ```
 
+## Sistema de Autenticação
+
+### Controle de Acesso
+O sistema implementa autenticação dupla:
+
+1. **Replit Auth (Google Login)**: Usuários fazem login com suas contas Google via Replit
+2. **Restrição de Domínio**: Apenas emails `@ifood.com.br` podem acessar
+3. **Lista de Autorizados**: Usuários devem estar cadastrados na tabela `authorized_users`
+
+### Fluxo de Autenticação
+1. Usuário clica em "Entrar com sua conta"
+2. Replit Auth redireciona para login do Google
+3. Após login, sistema verifica:
+   - Se o email é do domínio @ifood.com.br
+   - Se o email está na lista de usuários autorizados
+4. Se autorizado, acessa o dashboard; senão, vê página de acesso negado
+
+### Rotas Públicas (sem autenticação)
+- `/webhook/zendesk` - Recebe eventos do Zendesk
+- `/health` - Health check do servidor
+
+### Gerenciamento de Usuários Autorizados
+- Interface administrativa em `/authorized-users`
+- Adicionar, listar e remover usuários autorizados
+- Apenas usuários já autorizados podem gerenciar outros usuários
+
 ## Banco de Dados
 
 O sistema usa PostgreSQL para armazenar todas as interações:
 
 ### Tabelas
 
-1. **users** - Usuários do Sunshine Conversations
+1. **users** - Usuários do Sunshine Conversations (Zendesk)
    - `id`: ID interno do n1ago (usado em joins)
    - `sunshineId`: ID único do usuário no Zendesk (chave de upsert)
    - `externalId`: ID externo (quando autenticado)
@@ -61,11 +91,29 @@ O sistema usa PostgreSQL para armazenar todas as interações:
    - Conteúdo (texto ou payload)
    - Timestamps do Zendesk e local
 
+5. **sessions** - Sessões de autenticação (Replit Auth)
+   - Gerenciadas pelo connect-pg-simple
+   - TTL de 1 semana
+
+6. **auth_users** - Usuários autenticados via Replit Auth
+   - `id`: ID do usuário no Replit
+   - `email`: Email do usuário
+   - `firstName`, `lastName`: Nome do usuário
+   - `profileImageUrl`: URL da foto de perfil
+
+7. **authorized_users** - Lista de usuários autorizados
+   - `id`: ID interno
+   - `email`: Email autorizado (único, domínio @ifood.com.br)
+   - `name`: Nome do usuário (opcional)
+   - `createdAt`: Data de criação
+   - `createdBy`: Email de quem autorizou
+
 ## Configuração
 
 ### Variáveis de Ambiente
 
 - `DATABASE_URL`: URL de conexão do PostgreSQL (configurado automaticamente)
+- `SESSION_SECRET`: Segredo para sessões de autenticação (obrigatório)
 - `ZENDESK_WEBHOOK_SECRET`: Segredo compartilhado para validação de assinatura HMAC (opcional)
 
 ### Configurar Zendesk
@@ -79,7 +127,7 @@ O sistema usa PostgreSQL para armazenar todas as interações:
 
 ## Endpoints
 
-### Webhooks
+### Públicos (sem autenticação)
 
 #### `/webhook/zendesk` (POST)
 Endpoint principal para receber eventos do Zendesk Sunshine Conversations.
@@ -87,7 +135,31 @@ Endpoint principal para receber eventos do Zendesk Sunshine Conversations.
 - Valida assinatura HMAC se `ZENDESK_WEBHOOK_SECRET` estiver configurado
 - Processa eventos: `conversation:message`, `conversation:create`
 
-### APIs de Consulta
+#### `/health` (GET)
+Health check do servidor
+
+### Autenticação
+
+#### `/api/login` (GET)
+Inicia fluxo de login via Replit Auth
+
+#### `/api/callback` (GET)
+Callback do OpenID Connect
+
+#### `/api/logout` (GET)
+Encerra sessão do usuário
+
+#### `/api/auth/user` (GET)
+Retorna dados do usuário autenticado e autorizado
+
+### APIs Protegidas (requer autenticação + autorização)
+
+#### `/api/authorized-users` (GET, POST)
+- GET: Lista usuários autorizados
+- POST: Adiciona novo usuário autorizado
+
+#### `/api/authorized-users/:id` (DELETE)
+Remove usuário autorizado
 
 #### `/api/webhook-logs` (GET)
 Lista logs de webhooks recebidos
@@ -99,14 +171,17 @@ Detalhes completos de um log específico
 #### `/api/webhook-logs/stats` (GET)
 Estatísticas dos logs por status
 
+#### `/api/users` (GET)
+Lista usuários do Zendesk
+
+#### `/api/users/stats` (GET)
+Estatísticas de usuários do Zendesk
+
 #### `/api/conversations` (GET)
 Lista todas as conversas armazenadas
 
 #### `/api/conversations/:zendeskId/messages` (GET)
 Mensagens de uma conversa específica
-
-#### `/health` (GET)
-Health check do servidor
 
 ## Scripts
 
@@ -129,12 +204,25 @@ npm run db:push      # Sincroniza schema do banco
 - Verifique se `ZENDESK_WEBHOOK_SECRET` está configurado corretamente
 - Se não quiser validação, deixe a variável vazia
 
+### Problemas de autenticação
+- Verifique se `SESSION_SECRET` está configurado
+- Confirme que o email é do domínio @ifood.com.br
+- Verifique se o usuário está na lista de autorizados
+
 ---
 
 **Última atualização**: 2025-12-05
-**Versão**: 2.1.0
+**Versão**: 2.2.0
 
 ## Changelog
+
+### v2.2.0 (2025-12-05)
+- Sistema de autenticação com Replit Auth (Google Login)
+- Restrição de acesso ao domínio @ifood.com.br
+- Tabela `authorized_users` para controle granular de acesso
+- Interface de administração de usuários autorizados
+- Primeiro usuário autorizado: wilson.cimino@ifood.com.br
+- Rotas de webhook permanecem públicas para receber eventos do Zendesk
 
 ### v2.1.0 (2025-12-05)
 - Tabela `users` para armazenar usuários do Sunshine Conversations
