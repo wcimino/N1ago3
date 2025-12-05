@@ -1,26 +1,22 @@
 import { CheckCircle, XCircle, Clock } from "lucide-react";
+import { Badge, type BadgeVariant } from "./ui/Badge";
 
 interface StatusBadgeProps {
   status: string;
 }
 
-export function StatusBadge({ status }: StatusBadgeProps) {
-  const styles: Record<string, string> = {
-    success: "bg-green-100 text-green-800",
-    error: "bg-red-100 text-red-800",
-    pending: "bg-yellow-100 text-yellow-800",
-  };
+const statusConfig: Record<string, { variant: BadgeVariant; icon: React.ReactNode }> = {
+  success: { variant: "success", icon: <CheckCircle className="w-3 h-3" /> },
+  error: { variant: "error", icon: <XCircle className="w-3 h-3" /> },
+  pending: { variant: "warning", icon: <Clock className="w-3 h-3" /> },
+};
 
-  const icons: Record<string, React.ReactNode> = {
-    success: <CheckCircle className="w-3 h-3" />,
-    error: <XCircle className="w-3 h-3" />,
-    pending: <Clock className="w-3 h-3" />,
-  };
+export function StatusBadge({ status }: StatusBadgeProps) {
+  const config = statusConfig[status] || { variant: "default" as BadgeVariant, icon: null };
 
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${styles[status] || "bg-gray-100 text-gray-800"}`}>
-      {icons[status]}
+    <Badge variant={config.variant} icon={config.icon} size="md" rounded="full">
       {status}
-    </span>
+    </Badge>
   );
 }

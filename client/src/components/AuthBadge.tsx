@@ -1,4 +1,5 @@
 import { UserCheck, UserX } from "lucide-react";
+import { Badge } from "./ui/Badge";
 
 interface AuthBadgeProps {
   authenticated: boolean;
@@ -6,14 +7,12 @@ interface AuthBadgeProps {
 
 export function AuthBadge({ authenticated }: AuthBadgeProps) {
   return authenticated ? (
-    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-      <UserCheck className="w-3 h-3" />
+    <Badge variant="success" icon={<UserCheck className="w-3 h-3" />} size="md" rounded="full">
       Autenticado
-    </span>
+    </Badge>
   ) : (
-    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-      <UserX className="w-3 h-3" />
+    <Badge variant="default" icon={<UserX className="w-3 h-3" />} size="md" rounded="full">
       Anônimo
-    </span>
+    </Badge>
   );
 }

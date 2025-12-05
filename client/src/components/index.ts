@@ -1,3 +1,5 @@
+export { Badge } from "./ui/Badge";
+export type { BadgeVariant, BadgeSize } from "./ui/Badge";
 export { StatusBadge } from "./StatusBadge";
 export { AuthBadge } from "./AuthBadge";
 export { AuthorTypeBadge } from "./AuthorTypeBadge";

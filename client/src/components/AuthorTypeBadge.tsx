@@ -1,25 +1,22 @@
+import { Badge, type BadgeVariant } from "./ui/Badge";
+
 interface AuthorTypeBadgeProps {
   type: string;
 }
 
-export function AuthorTypeBadge({ type }: AuthorTypeBadgeProps) {
-  const styles: Record<string, string> = {
-    customer: "bg-blue-100 text-blue-800",
-    agent: "bg-purple-100 text-purple-800",
-    bot: "bg-teal-100 text-teal-800",
-    system: "bg-gray-100 text-gray-800",
-  };
+const authorConfig: Record<string, { variant: BadgeVariant; label: string }> = {
+  customer: { variant: "info", label: "Cliente" },
+  agent: { variant: "purple", label: "Agente" },
+  bot: { variant: "teal", label: "Bot" },
+  system: { variant: "default", label: "Sistema" },
+};
 
-  const labels: Record<string, string> = {
-    customer: "Cliente",
-    agent: "Agente",
-    bot: "Bot",
-    system: "Sistema",
-  };
+export function AuthorTypeBadge({ type }: AuthorTypeBadgeProps) {
+  const config = authorConfig[type] || { variant: "default" as BadgeVariant, label: type };
 
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles[type] || "bg-gray-100 text-gray-800"}`}>
-      {labels[type] || type}
-    </span>
+    <Badge variant={config.variant}>
+      {config.label}
+    </Badge>
   );
 }

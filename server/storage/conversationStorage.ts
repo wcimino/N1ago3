@@ -3,36 +3,54 @@ import { conversations, eventsStandard } from "../../shared/schema.js";
 import { eq, desc, sql, and } from "drizzle-orm";
 import type { ExtractedConversation } from "../adapters/types.js";
 
-export const conversationStorage = {
-  async getOrCreateConversation(zendeskConversationId: string, zendeskAppId?: string, userData?: any) {
-    let [conversation] = await db.select()
-      .from(conversations)
-      .where(eq(conversations.zendeskConversationId, zendeskConversationId));
+interface ConversationData {
+  externalConversationId: string;
+  externalAppId?: string;
+  externalUserId?: string;
+  userExternalId?: string;
+  metadata?: any;
+}
+
+async function upsertConversation(data: ConversationData) {
+  let [conversation] = await db.select()
+    .from(conversations)
+    .where(eq(conversations.zendeskConversationId, data.externalConversationId));
+  
+  if (!conversation) {
+    [conversation] = await db.insert(conversations).values({
+      zendeskConversationId: data.externalConversationId,
+      zendeskAppId: data.externalAppId,
+      userId: data.externalUserId,
+      userExternalId: data.userExternalId,
+      metadataJson: data.metadata,
+    }).returning();
+  } else {
+    const updates: any = { updatedAt: new Date() };
     
-    if (!conversation) {
-      [conversation] = await db.insert(conversations).values({
-        zendeskConversationId,
-        zendeskAppId,
-        userId: userData?.id,
-        userExternalId: userData?.externalId,
-        metadataJson: userData,
-      }).returning();
-    } else {
-      const updates: any = { updatedAt: new Date() };
-      
-      if (!conversation.userId && userData?.id) {
-        updates.userId = userData.id;
-        updates.userExternalId = userData.externalId;
-        updates.metadataJson = userData;
-      }
-      
-      [conversation] = await db.update(conversations)
-        .set(updates)
-        .where(eq(conversations.id, conversation.id))
-        .returning();
+    if (!conversation.userId && data.externalUserId) {
+      updates.userId = data.externalUserId;
+      updates.userExternalId = data.userExternalId;
+      updates.metadataJson = data.metadata;
     }
     
-    return conversation;
+    [conversation] = await db.update(conversations)
+      .set(updates)
+      .where(eq(conversations.id, conversation.id))
+      .returning();
+  }
+  
+  return conversation;
+}
+
+export const conversationStorage = {
+  async getOrCreateConversation(zendeskConversationId: string, zendeskAppId?: string, userData?: any) {
+    return upsertConversation({
+      externalConversationId: zendeskConversationId,
+      externalAppId: zendeskAppId,
+      externalUserId: userData?.id,
+      userExternalId: userData?.externalId,
+      metadata: userData,
+    });
   },
 
   async getConversations(limit = 50, offset = 0) {
@@ -176,33 +194,12 @@ export const conversationStorage = {
   },
 
   async getOrCreateConversationByExternalId(data: ExtractedConversation) {
-    let [conversation] = await db.select()
-      .from(conversations)
-      .where(eq(conversations.zendeskConversationId, data.externalConversationId));
-    
-    if (!conversation) {
-      [conversation] = await db.insert(conversations).values({
-        zendeskConversationId: data.externalConversationId,
-        zendeskAppId: data.externalAppId,
-        userId: data.externalUserId,
-        userExternalId: data.userExternalId,
-        metadataJson: data.metadata,
-      }).returning();
-    } else {
-      const updates: any = { updatedAt: new Date() };
-      
-      if (!conversation.userId && data.externalUserId) {
-        updates.userId = data.externalUserId;
-        updates.userExternalId = data.userExternalId;
-        updates.metadataJson = data.metadata;
-      }
-      
-      [conversation] = await db.update(conversations)
-        .set(updates)
-        .where(eq(conversations.id, conversation.id))
-        .returning();
-    }
-    
-    return conversation;
+    return upsertConversation({
+      externalConversationId: data.externalConversationId,
+      externalAppId: data.externalAppId,
+      externalUserId: data.externalUserId,
+      userExternalId: data.userExternalId,
+      metadata: data.metadata,
+    });
   },
 };

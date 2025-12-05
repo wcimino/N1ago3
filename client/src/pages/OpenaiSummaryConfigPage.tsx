@@ -1,8 +1,6 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
 import { CheckboxListItem } from "../components";
-import type { OpenaiSummaryConfigResponse, EventTypeMappingsResponse } from "../types";
+import { useOpenaiSummaryConfig } from "../hooks/useOpenaiSummaryConfig";
 
 const AUTHOR_TYPE_OPTIONS = [
   { value: "customer", label: "Cliente" },
@@ -12,82 +10,7 @@ const AUTHOR_TYPE_OPTIONS = [
 ];
 
 export function OpenaiSummaryConfigPage() {
-  const queryClient = useQueryClient();
-  const [enabled, setEnabled] = useState(false);
-  const [triggerEventTypes, setTriggerEventTypes] = useState<string[]>([]);
-  const [triggerAuthorTypes, setTriggerAuthorTypes] = useState<string[]>([]);
-  const [promptTemplate, setPromptTemplate] = useState("");
-  const [modelName, setModelName] = useState("gpt-5");
-  const [hasChanges, setHasChanges] = useState(false);
-
-  const { data: config, isLoading } = useQuery<OpenaiSummaryConfigResponse>({
-    queryKey: ["openai-summary-config"],
-    queryFn: async () => {
-      const res = await fetch("/api/openai-summary-config", { credentials: "include" });
-      return res.json();
-    },
-  });
-
-  const { data: eventTypes } = useQuery<EventTypeMappingsResponse>({
-    queryKey: ["event-type-mappings"],
-    queryFn: async () => {
-      const res = await fetch("/api/event-type-mappings", { credentials: "include" });
-      return res.json();
-    },
-  });
-
-  useEffect(() => {
-    if (config) {
-      setEnabled(config.enabled);
-      setTriggerEventTypes(config.trigger_event_types || []);
-      setTriggerAuthorTypes(config.trigger_author_types || []);
-      setPromptTemplate(config.prompt_template);
-      setModelName(config.model_name);
-      setHasChanges(false);
-    }
-  }, [config]);
-
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("/api/openai-summary-config", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          enabled,
-          trigger_event_types: triggerEventTypes,
-          trigger_author_types: triggerAuthorTypes,
-          prompt_template: promptTemplate,
-          model_name: modelName,
-        }),
-      });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["openai-summary-config"] });
-      setHasChanges(false);
-    },
-  });
-
-  const handleChange = () => setHasChanges(true);
-
-  const toggleAuthorType = (authorType: string) => {
-    setTriggerAuthorTypes(prev =>
-      prev.includes(authorType)
-        ? prev.filter(a => a !== authorType)
-        : [...prev, authorType]
-    );
-    handleChange();
-  };
-
-  const toggleEventType = (eventKey: string) => {
-    setTriggerEventTypes(prev =>
-      prev.includes(eventKey)
-        ? prev.filter(e => e !== eventKey)
-        : [...prev, eventKey]
-    );
-    handleChange();
-  };
+  const { state, actions, eventTypes, isLoading, isSaving } = useOpenaiSummaryConfig();
 
   if (isLoading) {
     return (
@@ -112,12 +35,12 @@ export function OpenaiSummaryConfigPage() {
               <p className="text-sm text-gray-500">Quando ativado, resumos serão gerados automaticamente</p>
             </div>
             <button
-              onClick={() => { setEnabled(!enabled); handleChange(); }}
-              className={`w-12 h-6 rounded-full transition-colors ${enabled ? "bg-green-500" : "bg-gray-300"}`}
+              onClick={() => actions.setEnabled(!state.enabled)}
+              className={`w-12 h-6 rounded-full transition-colors ${state.enabled ? "bg-green-500" : "bg-gray-300"}`}
             >
               <span
                 className={`block w-5 h-5 bg-white rounded-full shadow transform transition-transform ${
-                  enabled ? "translate-x-6" : "translate-x-0.5"
+                  state.enabled ? "translate-x-6" : "translate-x-0.5"
                 }`}
               />
             </button>
@@ -126,8 +49,8 @@ export function OpenaiSummaryConfigPage() {
           <div>
             <h3 className="text-sm font-medium text-gray-900 mb-2">Modelo OpenAI</h3>
             <select
-              value={modelName}
-              onChange={(e) => { setModelName(e.target.value); handleChange(); }}
+              value={state.modelName}
+              onChange={(e) => actions.setModelName(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg text-sm"
             >
               <option value="gpt-5">GPT-5 (Recomendado)</option>
@@ -149,8 +72,8 @@ export function OpenaiSummaryConfigPage() {
                       key={mapping.id}
                       label={mapping.display_name}
                       sublabel={`${mapping.source}:${mapping.event_type}`}
-                      checked={triggerEventTypes.includes(eventKey)}
-                      onChange={() => toggleEventType(eventKey)}
+                      checked={state.triggerEventTypes.includes(eventKey)}
+                      onChange={() => actions.toggleEventType(eventKey)}
                     />
                   );
                 })}
@@ -170,8 +93,8 @@ export function OpenaiSummaryConfigPage() {
                   key={value}
                   label={label}
                   sublabel={value}
-                  checked={triggerAuthorTypes.includes(value)}
-                  onChange={() => toggleAuthorType(value)}
+                  checked={state.triggerAuthorTypes.includes(value)}
+                  onChange={() => actions.toggleAuthorType(value)}
                 />
               ))}
             </div>
@@ -185,8 +108,8 @@ export function OpenaiSummaryConfigPage() {
               <code className="bg-gray-100 px-1 rounded ml-1">{"{{ULTIMA_MENSAGEM}}"}</code>
             </p>
             <textarea
-              value={promptTemplate}
-              onChange={(e) => { setPromptTemplate(e.target.value); handleChange(); }}
+              value={state.promptTemplate}
+              onChange={(e) => actions.setPromptTemplate(e.target.value)}
               rows={12}
               className="w-full px-3 py-2 border rounded-lg text-sm font-mono"
               placeholder="Digite o template do prompt..."
@@ -194,15 +117,15 @@ export function OpenaiSummaryConfigPage() {
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
-            {hasChanges && (
+            {state.hasChanges && (
               <span className="text-sm text-yellow-600 self-center">Você tem alterações não salvas</span>
             )}
             <button
-              onClick={() => saveMutation.mutate()}
-              disabled={!hasChanges || saveMutation.isPending}
+              onClick={() => actions.save()}
+              disabled={!state.hasChanges || isSaving}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {saveMutation.isPending ? "Salvando..." : "Salvar configuração"}
+              {isSaving ? "Salvando..." : "Salvar configuração"}
             </button>
           </div>
         </div>

@@ -1,17 +1,48 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+async function getErrorMessage(res: Response): Promise<string> {
+  let errorMessage = res.statusText;
+  try {
+    const body = await res.json();
+    if (body.message) {
+      errorMessage = body.message;
+    }
+  } catch {
+  }
+  return errorMessage;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    let errorMessage = `${res.status}: ${res.statusText}`;
-    try {
-      const body = await res.json();
-      if (body.message) {
-        errorMessage = `${res.status}: ${body.message}`;
-      }
-    } catch {
-    }
-    throw new Error(errorMessage);
+    const message = await getErrorMessage(res);
+    throw new Error(`${res.status}: ${message}`);
   }
+}
+
+export interface FetchOptions {
+  on401?: "returnNull" | "throw";
+  on403?: "throw" | "throwWithMessage";
+}
+
+export async function fetchWithAuth<T>(
+  url: string,
+  options: FetchOptions = {}
+): Promise<T | null> {
+  const { on401 = "throw", on403 = "throw" } = options;
+  
+  const res = await fetch(url, { credentials: "include" });
+
+  if (res.status === 401 && on401 === "returnNull") {
+    return null;
+  }
+
+  if (res.status === 403 && on403 === "throwWithMessage") {
+    const message = await getErrorMessage(res);
+    throw new Error(`403: ${message}`);
+  }
+
+  await throwIfResNotOk(res);
+  return res.json();
 }
 
 export async function apiRequest(

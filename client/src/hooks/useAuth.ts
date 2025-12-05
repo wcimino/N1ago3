@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { fetchWithAuth } from "../lib/queryClient";
 
 interface AuthUser {
   id: string;
@@ -19,38 +20,13 @@ interface AuthState {
   error: Error | null;
 }
 
-async function fetchAuthUser(): Promise<AuthUser | null> {
-  const res = await fetch("/api/auth/user", {
-    credentials: "include",
-  });
-
-  if (res.status === 401) {
-    return null;
-  }
-
-  if (res.status === 403) {
-    let message = "Acesso negado";
-    try {
-      const body = await res.json();
-      if (body.message) {
-        message = body.message;
-      }
-    } catch {
-    }
-    throw new Error(`403: ${message}`);
-  }
-
-  if (!res.ok) {
-    throw new Error(`${res.status}: ${res.statusText}`);
-  }
-
-  return res.json();
-}
-
 export function useAuth(): AuthState {
   const { data: user, isLoading, error } = useQuery<AuthUser | null>({
     queryKey: ["/api/auth/user"],
-    queryFn: fetchAuthUser,
+    queryFn: () => fetchWithAuth<AuthUser>("/api/auth/user", {
+      on401: "returnNull",
+      on403: "throwWithMessage",
+    }),
     retry: false,
     refetchOnWindowFocus: false,
   });
