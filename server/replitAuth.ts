@@ -107,10 +107,21 @@ export async function setupAuth(app: Express) {
   const registeredStrategies = new Set<string>();
 
   const getCallbackDomain = (req: any): string => {
-    const replitDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS;
-    if (replitDomain) {
-      return replitDomain;
+    // In production, REPLIT_DOMAINS contains the production domain
+    // In development, REPLIT_DEV_DOMAIN contains the dev domain
+    // REPLIT_DOMAINS may contain multiple domains separated by comma, take the first one
+    const replitDomains = process.env.REPLIT_DOMAINS;
+    const devDomain = process.env.REPLIT_DEV_DOMAIN;
+    
+    if (devDomain) {
+      return devDomain;
     }
+    
+    if (replitDomains) {
+      // Take the first domain if there are multiple
+      return replitDomains.split(',')[0].trim();
+    }
+    
     return req.get("host") || req.hostname;
   };
 
@@ -137,6 +148,9 @@ export async function setupAuth(app: Express) {
   app.get("/api/login", (req, res, next) => {
     const domain = getCallbackDomain(req);
     console.log("Login attempt - domain:", domain);
+    console.log("REPLIT_DOMAINS:", process.env.REPLIT_DOMAINS);
+    console.log("REPLIT_DEV_DOMAIN:", process.env.REPLIT_DEV_DOMAIN);
+    console.log("Callback URL will be:", `https://${domain}/api/callback`);
     ensureStrategy(domain);
     passport.authenticate(`replitauth:${domain}`, {
       prompt: "login consent",
