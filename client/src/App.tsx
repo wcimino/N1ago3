@@ -827,6 +827,7 @@ function UsersPage() {
 function ConversationsPage() {
   const [page, setPage] = useState(0);
   const [, navigate] = useLocation();
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const limit = 20;
 
   const { data: groupedData, isLoading } = useQuery<GroupedConversationsResponse>({
@@ -855,6 +856,19 @@ function ConversationsPage() {
 
   const getActiveCount = (conversations: UserConversation[]) => {
     return conversations.filter(c => c.status === "active").length;
+  };
+
+  const getUserFromGroup = (group: UserGroup): User | null => {
+    if (!group.user_info) return null;
+    return {
+      id: group.user_info.id,
+      sunshine_id: group.user_id,
+      external_id: group.user_info.external_id || null,
+      authenticated: group.user_info.authenticated,
+      profile: group.user_info.profile as UserProfile | null,
+      first_seen_at: group.first_activity,
+      last_seen_at: group.last_activity,
+    };
   };
 
   return (
@@ -912,6 +926,18 @@ function ConversationsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {group.user_info && (
+                      <button
+                        onClick={() => {
+                          const user = getUserFromGroup(group);
+                          if (user) setSelectedUser(user);
+                        }}
+                        className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                      >
+                        <Eye className="w-4 h-4" />
+                        Ver Usuário
+                      </button>
+                    )}
                     <Link
                       href={`/events?user=${encodeURIComponent(group.user_id)}`}
                       className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
@@ -972,6 +998,10 @@ function ConversationsPage() {
             </div>
           </div>
         </>
+      )}
+
+      {selectedUser !== null && (
+        <UserDetailModal user={selectedUser} onClose={() => setSelectedUser(null)} />
       )}
     </div>
   );
