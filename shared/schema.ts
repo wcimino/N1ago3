@@ -157,6 +157,7 @@ export const openaiSummaryConfig = pgTable("openai_summary_config", {
   id: serial("id").primaryKey(),
   enabled: boolean("enabled").default(false).notNull(),
   triggerEventTypes: json("trigger_event_types").$type<string[]>().default([]).notNull(),
+  triggerAuthorTypes: json("trigger_author_types").$type<string[]>().default([]).notNull(),
   promptTemplate: text("prompt_template").notNull(),
   modelName: text("model_name").default("gpt-5").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
