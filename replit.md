@@ -44,30 +44,43 @@ O sistema implementa uma arquitetura modular para receber eventos de múltiplas 
 ### Fluxo de Dados
 
 ```
-┌─────────────────────┐
-│  Webhook (isolado)  │  ← Só recebe e salva raw
-│  /webhook/zendesk   │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│  webhook_events_raw │  ← Tabela de eventos brutos
-│  (source: zendesk)  │
-└──────────┬──────────┘
-           │
-   EventBus.emit("raw:created")
-           │
-           ▼
-┌─────────────────────┐
-│   Event Processor   │  ← Orquestrador
-│  + ZendeskAdapter   │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│   events_standard   │  ← Eventos normalizados
-└─────────────────────┘
+┌─────────────────────────────────────┐
+│      Webhook (isolado)              │  ← Só recebe e salva raw
+│      /webhook/zendesk               │
+└──────────────────┬──────────────────┘
+                   │
+                   ▼
+┌─────────────────────────────────────┐
+│  zendesk_conversations_webhook_raw  │  ← Tabela específica do Zendesk
+│  (source: 'zendesk')                │
+└──────────────────┬──────────────────┘
+                   │
+       EventBus.emit("raw:created", { source: "zendesk", id })
+                   │
+                   ▼
+┌─────────────────────────────────────┐
+│        Event Processor              │  ← Orquestrador
+│   + Adapter Registry                │
+│   + ZendeskAdapter                  │
+└──────────────────┬──────────────────┘
+                   │
+                   ▼
+┌─────────────────────────────────────┐
+│         events_standard             │  ← Eventos normalizados
+│  (source + source_raw_id = FK)      │    com referência polimórfica
+└─────────────────────────────────────┘
 ```
+
+### Referências Polimórficas
+
+O sistema usa referências polimórficas para conectar eventos padronizados às suas tabelas raw de origem:
+
+- **source**: Identificador da fonte (ex: 'zendesk', 'whatsapp')
+- **source_raw_id**: ID do evento na tabela raw específica
+
+Cada fonte tem sua própria tabela raw:
+- `zendesk_conversations_webhook_raw` para Zendesk
+- Futuras fontes terão `<fonte>_webhook_raw`
 
 ### Componentes
 
@@ -137,25 +150,24 @@ O sistema usa PostgreSQL para armazenar todas as interações:
    - `metadata`, `identities`: Dados adicionais do Zendesk
    - `firstSeenAt`, `lastSeenAt`: Timestamps de atividade
 
-2. **zendesk_conversations_webhook_raw** - Log bruto do webhook legado (depreciado)
-   - Mantido para compatibilidade com dados antigos
+2. **zendesk_conversations_webhook_raw** - Log bruto dos webhooks do Zendesk
+   - `source`: Identificador da fonte ('zendesk')
+   - `headers`, `payload`, `rawBody`: Dados brutos do webhook
+   - `processingStatus`: pending, success, error
+   - `retryCount`: Contagem de retentativas
+   - `externalUserId`: ID externo do usuário (para filtros rápidos)
+   - `createdAt`: Timestamp de criação
 
-3. **webhook_events_raw** - Log bruto de TODOS os webhooks (nova arquitetura)
-   - `source`: Fonte do evento (zendesk, whatsapp, etc.)
-   - `headers`, `payload`, `raw_body`: Dados brutos
-   - `processing_status`: pending, success, error
-   - `retry_count`: Contagem de retentativas
-
-4. **events_standard** - Eventos normalizados de todas as fontes
+3. **events_standard** - Eventos normalizados de todas as fontes
    - `event_type`: message, conversation_started, typing, read_receipt, etc.
    - `event_subtype`: text, image, file, etc.
-   - `source`: zendesk, whatsapp, email, etc.
+   - `source`: zendesk, whatsapp, email, etc. (referência polimórfica)
+   - `source_raw_id`: ID do evento na tabela raw específica (referência polimórfica)
    - `author_type`: customer, agent, bot, system
    - `content_text`, `content_payload`: Conteúdo do evento
    - `occurred_at`: Timestamp original do evento
-   - `source_raw_id`: FK para webhook_events_raw
 
-5. **conversations** - Conversas do Zendesk
+4. **conversations** - Conversas do Zendesk
    - ID da conversa e app do Zendesk
    - Dados do usuário
    - Status (active, closed)
