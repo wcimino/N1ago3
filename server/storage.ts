@@ -187,9 +187,18 @@ export const storage = {
         metadataJson: userData,
       }).returning();
     } else {
-      await db.update(conversations)
-        .set({ updatedAt: new Date() })
-        .where(eq(conversations.id, conversation.id));
+      const updates: any = { updatedAt: new Date() };
+      
+      if (!conversation.userId && userData?.id) {
+        updates.userId = userData.id;
+        updates.userExternalId = userData.externalId;
+        updates.metadataJson = userData;
+      }
+      
+      [conversation] = await db.update(conversations)
+        .set(updates)
+        .where(eq(conversations.id, conversation.id))
+        .returning();
     }
     
     return conversation;
