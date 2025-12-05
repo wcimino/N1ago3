@@ -1305,12 +1305,12 @@ function OpenaiSummaryConfigPage() {
 function SettingsPage() {
   const [location, setLocation] = useLocation();
   
-  const isEventMappings = location === "/events/settings" || location === "/events/settings/event-mappings";
-  const isOpenaiSummary = location === "/events/settings/openai-summary";
+  const isEventMappings = location === "/" || location === "/event-mappings";
+  const isOpenaiSummary = location === "/openai-summary";
 
   useEffect(() => {
-    if (location === "/events/settings") {
-      setLocation("/events/settings/event-mappings", { replace: true });
+    if (location === "/") {
+      setLocation("/event-mappings", { replace: true });
     }
   }, [location, setLocation]);
 
@@ -1319,7 +1319,7 @@ function SettingsPage() {
       <div className="mb-6">
         <div className="flex gap-2">
           <button
-            onClick={() => setLocation("/events/settings/event-mappings")}
+            onClick={() => setLocation("/event-mappings")}
             className={`px-4 py-2 rounded-lg text-sm font-medium ${
               isEventMappings
                 ? "bg-blue-100 text-blue-700"
@@ -1329,7 +1329,7 @@ function SettingsPage() {
             Mapeamento de Eventos
           </button>
           <button
-            onClick={() => setLocation("/events/settings/openai-summary")}
+            onClick={() => setLocation("/openai-summary")}
             className={`px-4 py-2 rounded-lg text-sm font-medium ${
               isOpenaiSummary
                 ? "bg-blue-100 text-blue-700"
@@ -1349,13 +1349,13 @@ function SettingsPage() {
 function EventsLayout() {
   const [location, setLocation] = useLocation();
   
-  const isEventsStandard = location === "/events" || location === "/events/events_standard";
-  const isZendeskRaw = location === "/events/zendesk_conversations_raw";
-  const isSettings = location.startsWith("/events/settings");
+  const isEventsStandard = location === "/" || location === "/events_standard";
+  const isZendeskRaw = location === "/zendesk_conversations_raw";
+  const isSettings = location.startsWith("/settings");
 
   useEffect(() => {
-    if (location === "/events") {
-      setLocation("/events/events_standard", { replace: true });
+    if (location === "/") {
+      setLocation("/events_standard", { replace: true });
     }
   }, [location, setLocation]);
 
@@ -1400,12 +1400,10 @@ function EventsLayout() {
       </div>
 
       <Switch>
-        <Route path="/events/events_standard" component={EventsStandardPage} />
-        <Route path="/events/zendesk_conversations_raw" component={ZendeskConversationsRawPage} />
-        <Route path="/events/settings/openai-summary" component={SettingsPage} />
-        <Route path="/events/settings/event-mappings" component={SettingsPage} />
-        <Route path="/events/settings" component={SettingsPage} />
-        <Route path="/events" component={EventsStandardPage} />
+        <Route path="/settings" nest>{() => <SettingsPage />}</Route>
+        <Route path="/events_standard" component={EventsStandardPage} />
+        <Route path="/zendesk_conversations_raw" component={ZendeskConversationsRawPage} />
+        <Route path="/" component={EventsStandardPage} />
       </Switch>
     </div>
   );
@@ -2106,7 +2104,7 @@ function AuthenticatedApp() {
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         <Switch>
           <Route path="/" component={HomePage} />
-          <Route path="/events/:rest*">{() => <EventsLayout />}</Route>
+          <Route path="/events" nest>{() => <EventsLayout />}</Route>
           <Route path="/users" component={UsersPage} />
           <Route path="/users/:userId">{(params) => <UserConversationsPage params={params} />}</Route>
           <Route path="/authorized-users" component={AuthorizedUsersPage} />
