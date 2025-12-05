@@ -1,4 +1,4 @@
-modules = ["python-3.11", "nodejs-20"]
+modules = ["python-3.11", "nodejs-20", "postgresql-16"]
 [agent]
 expertMode = true
 integrations = ["python_openai:1.0.0", "zendesk:1.0.0", "python_database:1.0.0"]
@@ -38,6 +38,10 @@ externalPort = 3000
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 33495
+externalPort = 3002
 
 [[ports]]
 localPort = 41003

@@ -46,7 +46,8 @@ router.get("/health", (req: Request, res: Response) => {
 });
 
 router.post("/webhook/zendesk", async (req: Request, res: Response) => {
-  const rawBody = JSON.stringify(req.body);
+  const rawBodyBuffer = req.rawBody || Buffer.from(JSON.stringify(req.body));
+  const rawBody = rawBodyBuffer.toString();
   const sourceIp = req.ip || req.socket.remoteAddress || "unknown";
   const headersDict = Object.fromEntries(
     Object.entries(req.headers).map(([k, v]) => [k, String(v)])
@@ -69,7 +70,7 @@ router.post("/webhook/zendesk", async (req: Request, res: Response) => {
       (req.headers["x-zendesk-webhook-signature"] as string);
 
     const { isValid, errorMessage } = verifyWebhookSignature(
-      Buffer.from(rawBody),
+      rawBodyBuffer,
       signature,
       webhookSecret
     );
