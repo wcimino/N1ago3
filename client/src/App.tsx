@@ -634,10 +634,14 @@ function EventsStandardPage() {
                         <EventTypeBadge type={event.event_type} subtype={event.event_subtype} displayName={event.display_name} />
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500">{event.source}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500 font-mono text-xs">
+                      <td className="px-4 py-3 text-sm text-gray-500">
                         {event.external_user_id ? (
-                          <span title={event.external_user_id}>
+                          <span title={event.external_user_id} className="font-mono text-xs">
                             {event.external_user_id.slice(0, 12)}...
+                          </span>
+                        ) : event.author_type === "customer" && event.author_name ? (
+                          <span title={event.author_name} className="truncate max-w-[150px] inline-block">
+                            {event.author_name}
                           </span>
                         ) : "-"}
                       </td>
