@@ -962,21 +962,18 @@ function AuthenticatedApp() {
 }
 
 export default function App() {
-  const { user, isLoading, error } = useAuth();
+  const { user, isLoading, isUnauthorized, unauthorizedMessage } = useAuth();
 
   if (isLoading) {
     return <LoadingPage />;
   }
 
-  if (!user) {
-    return <LandingPage />;
+  if (isUnauthorized) {
+    return <UnauthorizedPage message={unauthorizedMessage || "Você não tem permissão para acessar esta aplicação"} />;
   }
 
-  if (error) {
-    const errorMessage = error instanceof Error ? error.message : "Erro de autenticação";
-    if (errorMessage.includes("403") || errorMessage.includes("Acesso negado")) {
-      return <UnauthorizedPage message={errorMessage} />;
-    }
+  if (!user) {
+    return <LandingPage />;
   }
 
   return <AuthenticatedApp />;

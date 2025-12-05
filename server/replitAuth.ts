@@ -187,7 +187,7 @@ export const requireAuthorizedUser: RequestHandler = async (req, res, next) => {
   const user = req.user as Express.User | undefined;
   
   if (!user?.claims?.email) {
-    return res.status(401).json({ message: "Email não encontrado no perfil" });
+    return res.status(403).json({ message: "Acesso negado. Email não encontrado no perfil." });
   }
 
   const email = user.claims.email.toLowerCase();

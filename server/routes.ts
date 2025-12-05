@@ -183,7 +183,7 @@ router.post("/webhook/zendesk", async (req: Request, res: Response) => {
 });
 
 // Auth routes
-router.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+router.get('/api/auth/user', isAuthenticated, requireAuthorizedUser, async (req: any, res) => {
   try {
     const userId = req.user.claims.sub;
     const user = await storage.getAuthUser(userId);
