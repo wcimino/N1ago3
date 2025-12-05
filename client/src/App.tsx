@@ -3,7 +3,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Route, Switch, Link, useLocation } from "wouter";
-import { RefreshCw, CheckCircle, XCircle, Clock, Eye, ChevronLeft, ChevronRight, Users, Activity, UserCheck, UserX, ArrowDown, Home, ChevronRight as ArrowRight, LogOut, Shield, Plus, Trash2, LogIn, MessageCircle, Settings } from "lucide-react";
+import { RefreshCw, CheckCircle, XCircle, Clock, Eye, ChevronLeft, ChevronRight, Users, User, Activity, UserCheck, UserX, ArrowDown, Home, ChevronRight as ArrowRight, LogOut, Shield, Plus, Trash2, LogIn, MessageCircle, Settings } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { apiRequest } from "./lib/queryClient";
 
@@ -790,32 +790,32 @@ function UsersPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     {group.user_info && (
                       <button
                         onClick={() => {
                           const user = getUserFromGroup(group);
                           if (user) setSelectedUser(user);
                         }}
-                        className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                        title="Ver detalhes do usuário"
+                        className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                       >
-                        <Eye className="w-4 h-4" />
-                        Ver Usuário
+                        <User className="w-5 h-5" />
                       </button>
                     )}
                     <Link
                       href={`/events?user=${encodeURIComponent(group.user_id)}`}
-                      className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                      title="Ver eventos"
+                      className="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                     >
-                      <Activity className="w-4 h-4" />
-                      Ver Eventos
+                      <Activity className="w-5 h-5" />
                     </Link>
                     <button
                       onClick={() => navigate(`/users/${encodeURIComponent(group.user_id)}`)}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                      title="Ver conversas"
+                      className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                     >
-                      <MessageCircle className="w-4 h-4" />
-                      Ver Conversa
+                      <MessageCircle className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
