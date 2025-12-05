@@ -1,60 +1,10 @@
 import { Router, type Request, type Response, type Express } from "express";
-import crypto from "crypto";
 import { storage } from "./storage.js";
 import { isAuthenticated, requireAuthorizedUser } from "./replitAuth.js";
+import { getAdapter } from "./adapters/index.js";
+import { eventBus, EVENTS } from "./services/eventBus.js";
 
 const router = Router();
-
-function verifyWebhookAuth(
-  payloadBody: Buffer,
-  headers: {
-    signature?: string;
-    apiKey?: string;
-  },
-  secret: string | undefined
-): { isValid: boolean; errorMessage?: string } {
-  if (!secret) {
-    return { isValid: true };
-  }
-  
-  if (headers.apiKey) {
-    const isValid = headers.apiKey === secret;
-    if (isValid) {
-      return { isValid: true };
-    }
-    return { isValid: false, errorMessage: "x-api-key inválida" };
-  }
-  
-  if (headers.signature) {
-    const expectedSignature = crypto
-      .createHmac("sha256", secret)
-      .update(payloadBody)
-      .digest("hex");
-    
-    const normalizedSignature = headers.signature.startsWith("sha256=") 
-      ? headers.signature.slice(7) 
-      : headers.signature;
-    
-    try {
-      const isValid = crypto.timingSafeEqual(
-        Buffer.from(expectedSignature, "hex"),
-        Buffer.from(normalizedSignature, "hex")
-      );
-      
-      if (isValid) {
-        return { isValid: true };
-      }
-    } catch {
-    }
-    
-    return { isValid: false, errorMessage: "Assinatura HMAC inválida" };
-  }
-  
-  return { 
-    isValid: false, 
-    errorMessage: "Autenticação ausente - header x-api-key, X-Smooch-Signature ou X-Zendesk-Webhook-Signature não encontrado" 
-  };
-}
 
 // Public routes (no authentication required)
 router.get("/health", (req: Request, res: Response) => {
@@ -66,6 +16,56 @@ router.get("/health", (req: Request, res: Response) => {
 });
 
 router.post("/webhook/zendesk", async (req: Request, res: Response) => {
+  const source = "zendesk";
+  const rawBodyBuffer = req.rawBody || Buffer.from(JSON.stringify(req.body));
+  const rawBody = rawBodyBuffer.toString();
+  const sourceIp = req.ip || req.socket.remoteAddress || "unknown";
+  const headersDict = Object.fromEntries(
+    Object.entries(req.headers).map(([k, v]) => [k, String(v)])
+  );
+
+  try {
+    const adapter = getAdapter(source);
+    if (!adapter) {
+      return res.status(500).json({ status: "error", message: `No adapter for source: ${source}` });
+    }
+
+    const webhookSecret = process.env.ZENDESK_WEBHOOK_SECRET;
+    const { isValid, errorMessage } = adapter.verifyAuth(rawBodyBuffer, headersDict, webhookSecret);
+
+    if (!isValid) {
+      console.log(`Webhook auth failed: ${errorMessage}`);
+      return res.status(401).json({ status: "error", message: errorMessage });
+    }
+
+    const rawEntry = await storage.createWebhookRaw({
+      source,
+      sourceIp,
+      headers: headersDict,
+      payload: req.body,
+      rawBody,
+      processingStatus: "pending",
+    });
+
+    console.log(`Webhook received - Raw ID: ${rawEntry.id}, Source: ${source}`);
+
+    eventBus.emit(EVENTS.RAW_CREATED, { rawId: rawEntry.id });
+
+    return res.json({
+      status: "received",
+      raw_id: rawEntry.id,
+    });
+  } catch (error: any) {
+    const errorMsg = error.message || String(error);
+    console.error(`Erro ao receber webhook: ${errorMsg}`);
+    return res.status(500).json({
+      status: "error",
+      message: errorMsg,
+    });
+  }
+});
+
+router.post("/webhook/zendesk/legacy", async (req: Request, res: Response) => {
   const rawBodyBuffer = req.rawBody || Buffer.from(JSON.stringify(req.body));
   const rawBody = rawBodyBuffer.toString();
   const sourceIp = req.ip || req.socket.remoteAddress || "unknown";
@@ -81,21 +81,17 @@ router.post("/webhook/zendesk", async (req: Request, res: Response) => {
     processingStatus: "pending",
   });
 
-  console.log(`Webhook registrado - Log ID: ${logEntry.id}`);
+  console.log(`Webhook (legacy) registrado - Log ID: ${logEntry.id}`);
 
   try {
-    const webhookSecret = process.env.ZENDESK_WEBHOOK_SECRET;
-    const authHeaders = {
-      apiKey: req.headers["x-api-key"] as string | undefined,
-      signature: (req.headers["x-smooch-signature"] as string) ||
-                 (req.headers["x-zendesk-webhook-signature"] as string),
-    };
+    const adapter = getAdapter("zendesk");
+    if (!adapter) {
+      await storage.updateWebhookLogStatus(logEntry.id, "error", "No adapter");
+      return res.status(500).json({ status: "error", message: "No adapter" });
+    }
 
-    const { isValid, errorMessage } = verifyWebhookAuth(
-      rawBodyBuffer,
-      authHeaders,
-      webhookSecret
-    );
+    const webhookSecret = process.env.ZENDESK_WEBHOOK_SECRET;
+    const { isValid, errorMessage } = adapter.verifyAuth(rawBodyBuffer, headersDict, webhookSecret);
 
     if (!isValid) {
       await storage.updateWebhookLogStatus(logEntry.id, "error", errorMessage);
@@ -358,6 +354,51 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
 
 router.get("/api/users/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const stats = await storage.getUsersStats();
+  res.json(stats);
+});
+
+// Standard events API routes
+router.get("/api/events", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  const limit = parseInt(req.query.limit as string) || 50;
+  const offset = parseInt(req.query.offset as string) || 0;
+  const source = req.query.source as string | undefined;
+  const eventType = req.query.event_type as string | undefined;
+  const conversationId = req.query.conversation_id ? parseInt(req.query.conversation_id as string) : undefined;
+
+  const { events, total } = await storage.getStandardEvents(limit, offset, { source, eventType, conversationId });
+
+  res.json({
+    total,
+    offset,
+    limit,
+    events: events.map((e) => ({
+      id: e.id,
+      event_type: e.eventType,
+      event_subtype: e.eventSubtype,
+      source: e.source,
+      source_event_id: e.sourceEventId,
+      external_conversation_id: e.externalConversationId,
+      external_user_id: e.externalUserId,
+      author_type: e.authorType,
+      author_id: e.authorId,
+      author_name: e.authorName,
+      content_text: e.contentText,
+      content_payload: e.contentPayload,
+      occurred_at: e.occurredAt?.toISOString(),
+      received_at: e.receivedAt?.toISOString(),
+      channel_type: e.channelType,
+      metadata: e.metadata,
+    })),
+  });
+});
+
+router.get("/api/events/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  const stats = await storage.getStandardEventsStats();
+  res.json(stats);
+});
+
+router.get("/api/webhook-raws/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  const stats = await storage.getWebhookRawsStats();
   res.json(stats);
 });
 

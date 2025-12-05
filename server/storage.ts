@@ -1,7 +1,8 @@
 import { db } from "./db.js";
-import { zendeskConversationsWebhookRaw, conversations, messages, users, authUsers, authorizedUsers } from "../shared/schema.js";
-import { eq, desc, sql } from "drizzle-orm";
-import type { InsertZendeskConversationsWebhookRaw, InsertConversation, InsertMessage, User, UpsertAuthUser, AuthUser, AuthorizedUser, InsertAuthorizedUser } from "../shared/schema.js";
+import { zendeskConversationsWebhookRaw, webhookEventsRaw, eventsStandard, conversations, messages, users, authUsers, authorizedUsers } from "../shared/schema.js";
+import { eq, desc, sql, and } from "drizzle-orm";
+import type { InsertZendeskConversationsWebhookRaw, InsertConversation, InsertMessage, User, UpsertAuthUser, AuthUser, AuthorizedUser, InsertAuthorizedUser, InsertWebhookEventsRaw, InsertEventStandard, WebhookEventsRaw, EventStandard } from "../shared/schema.js";
+import type { ExtractedUser, ExtractedConversation, StandardEvent } from "./adapters/types.js";
 
 export const storage = {
   // Auth User operations for Replit Auth
@@ -369,5 +370,211 @@ export const storage = {
       .from(users)
       .where(eq(users.sunshineId, sunshineId));
     return user || null;
+  },
+
+  // New webhook_events_raw operations
+  async createWebhookRaw(data: InsertWebhookEventsRaw): Promise<WebhookEventsRaw> {
+    const [log] = await db.insert(webhookEventsRaw).values(data).returning();
+    return log;
+  },
+
+  async getWebhookRawById(id: number): Promise<WebhookEventsRaw | null> {
+    const [raw] = await db.select().from(webhookEventsRaw).where(eq(webhookEventsRaw.id, id));
+    return raw || null;
+  },
+
+  async updateWebhookRawStatus(id: number, status: string, errorMessage?: string) {
+    if (status === "error") {
+      await db.update(webhookEventsRaw)
+        .set({
+          processingStatus: status,
+          processedAt: new Date(),
+          errorMessage: errorMessage || null,
+          retryCount: sql`${webhookEventsRaw.retryCount} + 1`,
+        })
+        .where(eq(webhookEventsRaw.id, id));
+    } else {
+      await db.update(webhookEventsRaw)
+        .set({
+          processingStatus: status,
+          processedAt: new Date(),
+          errorMessage: errorMessage || null,
+        })
+        .where(eq(webhookEventsRaw.id, id));
+    }
+  },
+
+  async getPendingWebhookRaws(limit = 100): Promise<WebhookEventsRaw[]> {
+    return await db.select()
+      .from(webhookEventsRaw)
+      .where(
+        and(
+          eq(webhookEventsRaw.processingStatus, "pending"),
+          sql`${webhookEventsRaw.retryCount} < 5`
+        )
+      )
+      .orderBy(webhookEventsRaw.receivedAt)
+      .limit(limit);
+  },
+
+  async getWebhookRawsStats() {
+    const stats = await db.select({
+      status: webhookEventsRaw.processingStatus,
+      source: webhookEventsRaw.source,
+      count: sql<number>`count(*)`,
+    })
+      .from(webhookEventsRaw)
+      .groupBy(webhookEventsRaw.processingStatus, webhookEventsRaw.source);
+    
+    const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(webhookEventsRaw);
+    
+    return {
+      total: Number(total),
+      byStatusAndSource: stats,
+    };
+  },
+
+  // User operations by external ID (for adapters)
+  async upsertUserByExternalId(userData: ExtractedUser): Promise<User | null> {
+    if (!userData?.externalId) {
+      return null;
+    }
+
+    const sunshineId = userData.externalId;
+
+    const [existingUser] = await db.select()
+      .from(users)
+      .where(eq(users.sunshineId, sunshineId));
+
+    if (existingUser) {
+      const [updated] = await db.update(users)
+        .set({
+          signedUpAt: userData.signedUpAt || existingUser.signedUpAt,
+          authenticated: userData.authenticated ?? existingUser.authenticated,
+          profile: userData.profile || existingUser.profile,
+          metadata: userData.metadata || existingUser.metadata,
+          identities: userData.identities || existingUser.identities,
+          lastSeenAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, existingUser.id))
+        .returning();
+      return updated;
+    }
+
+    const [newUser] = await db.insert(users)
+      .values({
+        sunshineId,
+        externalId: null,
+        signedUpAt: userData.signedUpAt || null,
+        authenticated: userData.authenticated ?? false,
+        profile: userData.profile || null,
+        metadata: userData.metadata || null,
+        identities: userData.identities || null,
+      })
+      .returning();
+    
+    return newUser;
+  },
+
+  // Conversation operations by external ID (for adapters)
+  async getOrCreateConversationByExternalId(data: ExtractedConversation) {
+    let [conversation] = await db.select()
+      .from(conversations)
+      .where(eq(conversations.zendeskConversationId, data.externalConversationId));
+    
+    if (!conversation) {
+      [conversation] = await db.insert(conversations).values({
+        zendeskConversationId: data.externalConversationId,
+        zendeskAppId: data.externalAppId,
+        userId: data.externalUserId,
+        userExternalId: data.userExternalId,
+        metadataJson: data.metadata,
+      }).returning();
+    } else {
+      const updates: any = { updatedAt: new Date() };
+      
+      if (!conversation.userId && data.externalUserId) {
+        updates.userId = data.externalUserId;
+        updates.userExternalId = data.userExternalId;
+        updates.metadataJson = data.metadata;
+      }
+      
+      [conversation] = await db.update(conversations)
+        .set(updates)
+        .where(eq(conversations.id, conversation.id))
+        .returning();
+    }
+    
+    return conversation;
+  },
+
+  // Standard events operations
+  async saveStandardEvent(event: StandardEvent & { sourceRawId?: number; conversationId?: number; userId?: number }): Promise<EventStandard> {
+    const [saved] = await db.insert(eventsStandard).values({
+      eventType: event.eventType,
+      eventSubtype: event.eventSubtype,
+      source: event.source,
+      sourceEventId: event.sourceEventId,
+      sourceRawId: event.sourceRawId,
+      conversationId: event.conversationId,
+      externalConversationId: event.externalConversationId,
+      userId: event.userId,
+      externalUserId: event.externalUserId,
+      authorType: event.authorType,
+      authorId: event.authorId,
+      authorName: event.authorName,
+      contentText: event.contentText,
+      contentPayload: event.contentPayload,
+      occurredAt: event.occurredAt,
+      metadata: event.metadata,
+      channelType: event.channelType,
+      processingStatus: "processed",
+    }).returning();
+    
+    return saved;
+  },
+
+  async getStandardEvents(limit = 50, offset = 0, filters?: { source?: string; eventType?: string; conversationId?: number }) {
+    let query = db.select().from(eventsStandard).orderBy(desc(eventsStandard.occurredAt));
+    
+    if (filters?.source) {
+      query = query.where(eq(eventsStandard.source, filters.source)) as typeof query;
+    }
+    if (filters?.eventType) {
+      query = query.where(eq(eventsStandard.eventType, filters.eventType)) as typeof query;
+    }
+    if (filters?.conversationId) {
+      query = query.where(eq(eventsStandard.conversationId, filters.conversationId)) as typeof query;
+    }
+    
+    const events = await query.limit(limit).offset(offset);
+    const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(eventsStandard);
+    
+    return { events, total: Number(count) };
+  },
+
+  async getStandardEventsStats() {
+    const byType = await db.select({
+      eventType: eventsStandard.eventType,
+      count: sql<number>`count(*)`,
+    })
+      .from(eventsStandard)
+      .groupBy(eventsStandard.eventType);
+
+    const bySource = await db.select({
+      source: eventsStandard.source,
+      count: sql<number>`count(*)`,
+    })
+      .from(eventsStandard)
+      .groupBy(eventsStandard.source);
+    
+    const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(eventsStandard);
+    
+    return {
+      total: Number(total),
+      byType: Object.fromEntries(byType.map(t => [t.eventType, Number(t.count)])),
+      bySource: Object.fromEntries(bySource.map(s => [s.source, Number(s.count)])),
+    };
   },
 };

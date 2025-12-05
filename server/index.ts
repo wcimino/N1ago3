@@ -3,6 +3,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { setupAuth } from "./replitAuth.js";
 import { registerRoutes } from "./routes.js";
+import { startPollingWorker } from "./services/pollingWorker.js";
+import "./services/eventProcessor.js";
 
 declare global {
   namespace Express {
@@ -38,6 +40,8 @@ async function startServer() {
       res.sendFile(path.join(__dirname, "../public/index.html"));
     });
   }
+
+  startPollingWorker();
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Servidor N1ago iniciado em http://0.0.0.0:${PORT}`);

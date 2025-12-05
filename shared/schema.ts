@@ -62,6 +62,53 @@ export const zendeskConversationsWebhookRaw = pgTable("zendesk_conversations_web
   processedAt: timestamp("processed_at"),
 });
 
+export const webhookEventsRaw = pgTable("webhook_events_raw", {
+  id: serial("id").primaryKey(),
+  source: text("source").notNull(),
+  receivedAt: timestamp("received_at").defaultNow().notNull(),
+  sourceIp: text("source_ip"),
+  headers: json("headers"),
+  payload: json("payload"),
+  rawBody: text("raw_body"),
+  processingStatus: text("processing_status").default("pending").notNull(),
+  errorMessage: text("error_message"),
+  processedAt: timestamp("processed_at"),
+  retryCount: integer("retry_count").default(0).notNull(),
+});
+
+export const eventsStandard = pgTable("events_standard", {
+  id: serial("id").primaryKey(),
+  
+  eventType: text("event_type").notNull(),
+  eventSubtype: text("event_subtype"),
+  
+  source: text("source").notNull(),
+  sourceEventId: text("source_event_id"),
+  sourceRawId: integer("source_raw_id"),
+  
+  conversationId: integer("conversation_id"),
+  externalConversationId: text("external_conversation_id"),
+  
+  userId: integer("user_id"),
+  externalUserId: text("external_user_id"),
+  
+  authorType: text("author_type").notNull(),
+  authorId: text("author_id"),
+  authorName: text("author_name"),
+  
+  contentText: text("content_text"),
+  contentPayload: json("content_payload"),
+  
+  occurredAt: timestamp("occurred_at").notNull(),
+  receivedAt: timestamp("received_at").defaultNow().notNull(),
+  processedAt: timestamp("processed_at"),
+  
+  metadata: json("metadata"),
+  channelType: text("channel_type"),
+  
+  processingStatus: text("processing_status").default("processed").notNull(),
+});
+
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
   zendeskConversationId: text("zendesk_conversation_id").notNull().unique(),
@@ -104,3 +151,8 @@ export type Conversation = typeof conversations.$inferSelect;
 export type InsertConversation = Omit<typeof conversations.$inferInsert, "id" | "createdAt" | "updatedAt">;
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = Omit<typeof messages.$inferInsert, "id" | "receivedAt">;
+
+export type WebhookEventsRaw = typeof webhookEventsRaw.$inferSelect;
+export type InsertWebhookEventsRaw = Omit<typeof webhookEventsRaw.$inferInsert, "id" | "receivedAt" | "retryCount">;
+export type EventStandard = typeof eventsStandard.$inferSelect;
+export type InsertEventStandard = Omit<typeof eventsStandard.$inferInsert, "id" | "receivedAt" | "processedAt">;
