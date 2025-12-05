@@ -199,4 +199,21 @@ router.get("/api/openai-logs/:id", isAuthenticated, requireAuthorizedUser, async
   });
 });
 
+router.get("/api/products/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  try {
+    const [lastHour, today] = await Promise.all([
+      storage.getTopProductsByPeriod("lastHour", 5),
+      storage.getTopProductsByPeriod("today", 5),
+    ]);
+
+    res.json({
+      last_hour: lastHour,
+      today: today,
+    });
+  } catch (error: any) {
+    console.error("[Products Stats] Error:", error.message);
+    res.status(500).json({ error: "Failed to fetch product stats" });
+  }
+});
+
 export default router;
