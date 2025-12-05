@@ -1,9 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Route, Switch, Link, useLocation } from "wouter";
-import { RefreshCw, CheckCircle, XCircle, Clock, Eye, ChevronLeft, ChevronRight, Users, Activity, UserCheck, UserX, ArrowDown, Home, ChevronRight as ArrowRight } from "lucide-react";
+import { RefreshCw, CheckCircle, XCircle, Clock, Eye, ChevronLeft, ChevronRight, Users, Activity, UserCheck, UserX, ArrowDown, Home, ChevronRight as ArrowRight, LogOut, Shield, Plus, Trash2, LogIn } from "lucide-react";
+import { useAuth } from "./hooks/useAuth";
+import { apiRequest } from "./lib/queryClient";
 
 interface WebhookLog {
   id: number;
@@ -68,6 +70,14 @@ interface UsersStatsResponse {
   anonymous: number;
 }
 
+interface AuthorizedUser {
+  id: number;
+  email: string;
+  name: string | null;
+  created_at: string;
+  created_by: string | null;
+}
+
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     success: "bg-green-100 text-green-800",
@@ -103,11 +113,72 @@ function AuthBadge({ authenticated }: { authenticated: boolean }) {
   );
 }
 
+function LandingPage() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+        <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <Activity className="w-8 h-8 text-white" />
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">N1ago</h1>
+        <p className="text-gray-600 mb-8">
+          Painel de monitoramento de webhooks e usuários do Zendesk
+        </p>
+        
+        <a
+          href="/api/login"
+          className="inline-flex items-center justify-center gap-2 w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+        >
+          <LogIn className="w-5 h-5" />
+          Entrar com sua conta
+        </a>
+        
+        <p className="text-xs text-gray-500 mt-6">
+          Acesso restrito a usuários do domínio @ifood.com.br
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function UnauthorizedPage({ message }: { message: string }) {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-100 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+        <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <XCircle className="w-8 h-8 text-red-600" />
+        </div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Acesso Negado</h1>
+        <p className="text-gray-600 mb-6">{message}</p>
+        
+        <a
+          href="/api/logout"
+          className="inline-flex items-center justify-center gap-2 w-full bg-gray-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-700 transition-colors"
+        >
+          <LogOut className="w-5 h-5" />
+          Sair e tentar com outra conta
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function LoadingPage() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <RefreshCw className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+        <p className="text-gray-600">Carregando...</p>
+      </div>
+    </div>
+  );
+}
+
 function LogDetailModal({ logId, onClose }: { logId: number; onClose: () => void }) {
   const { data: log, isLoading } = useQuery<WebhookLogDetail>({
     queryKey: ["webhook-log", logId],
     queryFn: async () => {
-      const res = await fetch(`/api/webhook-logs/${logId}`);
+      const res = await fetch(`/api/webhook-logs/${logId}`, { credentials: "include" });
       return res.json();
     },
   });
@@ -189,7 +260,7 @@ function HomePage() {
   const { data: usersStats } = useQuery<UsersStatsResponse>({
     queryKey: ["users-stats"],
     queryFn: async () => {
-      const res = await fetch("/api/users/stats");
+      const res = await fetch("/api/users/stats", { credentials: "include" });
       return res.json();
     },
     refetchInterval: 5000,
@@ -198,7 +269,7 @@ function HomePage() {
   const { data: eventsStats } = useQuery<StatsResponse>({
     queryKey: ["webhook-stats"],
     queryFn: async () => {
-      const res = await fetch("/api/webhook-logs/stats");
+      const res = await fetch("/api/webhook-logs/stats", { credentials: "include" });
       return res.json();
     },
     refetchInterval: 5000,
@@ -210,7 +281,7 @@ function HomePage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
             <Users className="w-5 h-5 text-blue-600" />
-            Usuários
+            Usuários Zendesk
           </h2>
           <Link href="/users" className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
             Ver todos <ArrowRight className="w-4 h-4" />
@@ -281,7 +352,7 @@ function EventsPage() {
       if (userFilter) {
         url += `&user=${encodeURIComponent(userFilter)}`;
       }
-      const res = await fetch(url);
+      const res = await fetch(url, { credentials: "include" });
       return res.json();
     },
     refetchInterval: 5000,
@@ -316,7 +387,7 @@ function EventsPage() {
           <div className="flex items-center justify-center py-12">
             <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
           </div>
-        ) : logsData?.logs.length === 0 ? (
+        ) : !logsData?.logs || logsData.logs.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             <p>Nenhum evento recebido ainda.</p>
             <p className="text-sm mt-1">Configure o webhook no Zendesk para começar a receber eventos.</p>
@@ -341,7 +412,7 @@ function EventsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {logsData?.logs.map((log) => (
+                  {logsData.logs.map((log) => (
                     <tr key={log.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">#{log.id}</td>
                       <td className="px-4 py-3 text-sm text-gray-500">
@@ -510,7 +581,7 @@ function UsersPage() {
   const { data: usersData, isLoading } = useQuery<UsersResponse>({
     queryKey: ["users", page],
     queryFn: async () => {
-      const res = await fetch(`/api/users?limit=${limit}&offset=${page * limit}`);
+      const res = await fetch(`/api/users?limit=${limit}&offset=${page * limit}`, { credentials: "include" });
       return res.json();
     },
     refetchInterval: 5000,
@@ -528,14 +599,14 @@ function UsersPage() {
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="px-4 py-3 border-b">
-        <h2 className="text-lg font-semibold text-gray-900">Usuários</h2>
+        <h2 className="text-lg font-semibold text-gray-900">Usuários Zendesk</h2>
       </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
         </div>
-      ) : usersData?.users.length === 0 ? (
+      ) : !usersData?.users || usersData.users.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           <p>Nenhum usuário registrado ainda.</p>
           <p className="text-sm mt-1">Os usuários serão criados automaticamente quando eventos chegarem.</p>
@@ -561,7 +632,7 @@ function UsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {usersData?.users.map((user) => (
+                {usersData.users.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">#{user.id}</td>
                     <td className="px-4 py-3 text-sm text-gray-900">
@@ -637,6 +708,169 @@ function UsersPage() {
   );
 }
 
+function AuthorizedUsersPage() {
+  const [newEmail, setNewEmail] = useState("");
+  const [newName, setNewName] = useState("");
+  const [error, setError] = useState("");
+  const queryClient = useQueryClient();
+
+  const { data: authorizedUsers, isLoading } = useQuery<AuthorizedUser[]>({
+    queryKey: ["authorized-users"],
+    queryFn: async () => {
+      const res = await fetch("/api/authorized-users", { credentials: "include" });
+      return res.json();
+    },
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async ({ email, name }: { email: string; name: string }) => {
+      const res = await apiRequest("POST", "/api/authorized-users", { email, name });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["authorized-users"] });
+      setNewEmail("");
+      setNewName("");
+      setError("");
+    },
+    onError: (err: any) => {
+      setError(err.message || "Erro ao adicionar usuário");
+    },
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/authorized-users/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["authorized-users"] });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    
+    if (!newEmail.toLowerCase().endsWith("@ifood.com.br")) {
+      setError("Email deve ser do domínio @ifood.com.br");
+      return;
+    }
+    
+    addMutation.mutate({ email: newEmail, name: newName });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Plus className="w-5 h-5" />
+          Adicionar Usuário Autorizado
+        </h2>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email *
+              </label>
+              <input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="usuario@ifood.com.br"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nome
+              </label>
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Nome do usuário"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+          
+          {error && (
+            <p className="text-sm text-red-600">{error}</p>
+          )}
+          
+          <button
+            type="submit"
+            disabled={addMutation.isPending}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          >
+            {addMutation.isPending ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4" />
+            )}
+            Adicionar
+          </button>
+        </form>
+      </div>
+
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="px-4 py-3 border-b">
+          <h2 className="text-lg font-semibold text-gray-900">Usuários Autorizados</h2>
+        </div>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
+          </div>
+        ) : !authorizedUsers || authorizedUsers.length === 0 ? (
+          <div className="text-center py-12 text-gray-500">
+            <p>Nenhum usuário autorizado cadastrado.</p>
+            <p className="text-sm mt-1">Adicione usuários usando o formulário acima.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Adicionado em</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Adicionado por</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {authorizedUsers.map((user) => (
+                  <tr key={user.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{user.email}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500">{user.name || "-"}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500">
+                      {format(new Date(user.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500">{user.created_by || "-"}</td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => removeMutation.mutate(user.id)}
+                        disabled={removeMutation.isPending}
+                        className="inline-flex items-center gap-1 text-red-600 hover:text-red-800 text-sm disabled:opacity-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Remover
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
   const [location] = useLocation();
   const isActive = location === href;
@@ -669,7 +903,9 @@ function EnvironmentBadge() {
   );
 }
 
-export default function App() {
+function AuthenticatedApp() {
+  const { user } = useAuth();
+
   return (
     <div className="min-h-screen bg-gray-50">
       <EnvironmentBadge />
@@ -679,6 +915,18 @@ export default function App() {
             <Link href="/" className="text-2xl font-bold text-gray-900 hover:text-gray-700">
               N1ago
             </Link>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600">
+                {user?.email}
+              </span>
+              <a
+                href="/api/logout"
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 border rounded-lg hover:bg-gray-50"
+              >
+                <LogOut className="w-4 h-4" />
+                Sair
+              </a>
+            </div>
           </div>
           <nav className="flex gap-1 -mb-px">
             <NavLink href="/">
@@ -687,11 +935,15 @@ export default function App() {
             </NavLink>
             <NavLink href="/users">
               <Users className="w-4 h-4" />
-              Usuários
+              Usuários Zendesk
             </NavLink>
             <NavLink href="/events">
               <Activity className="w-4 h-4" />
               Eventos
+            </NavLink>
+            <NavLink href="/authorized-users">
+              <Shield className="w-4 h-4" />
+              Controle de Acesso
             </NavLink>
           </nav>
         </div>
@@ -702,8 +954,30 @@ export default function App() {
           <Route path="/" component={HomePage} />
           <Route path="/users" component={UsersPage} />
           <Route path="/events" component={EventsPage} />
+          <Route path="/authorized-users" component={AuthorizedUsersPage} />
         </Switch>
       </main>
     </div>
   );
+}
+
+export default function App() {
+  const { user, isLoading, error } = useAuth();
+
+  if (isLoading) {
+    return <LoadingPage />;
+  }
+
+  if (!user) {
+    return <LandingPage />;
+  }
+
+  if (error) {
+    const errorMessage = error instanceof Error ? error.message : "Erro de autenticação";
+    if (errorMessage.includes("403") || errorMessage.includes("Acesso negado")) {
+      return <UnauthorizedPage message={errorMessage} />;
+    }
+  }
+
+  return <AuthenticatedApp />;
 }
