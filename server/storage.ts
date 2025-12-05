@@ -252,11 +252,30 @@ export const storage = {
     if (!conversation) return null;
     
     const msgs = await db.select()
-      .from(messages)
-      .where(eq(messages.conversationId, conversation.id))
-      .orderBy(messages.receivedAt);
+      .from(eventsStandard)
+      .where(and(
+        eq(eventsStandard.conversationId, conversation.id),
+        eq(eventsStandard.eventType, 'message')
+      ))
+      .orderBy(eventsStandard.occurredAt);
     
-    return { conversation, messages: msgs };
+    return { 
+      conversation, 
+      messages: msgs.map(e => ({
+        id: e.id,
+        conversationId: e.conversationId,
+        zendeskMessageId: e.externalEventId,
+        authorType: e.authorType,
+        authorId: e.authorId,
+        authorName: e.authorName,
+        contentType: e.eventSubtype || 'text',
+        contentText: e.contentText,
+        contentPayload: e.payload,
+        zendeskTimestamp: e.occurredAt,
+        receivedAt: e.receivedAt,
+        metadataJson: e.metadata,
+      }))
+    };
   },
 
   async getUsers(limit = 50, offset = 0) {
