@@ -1,4 +1,19 @@
-import { pgTable, serial, text, timestamp, json, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, json, integer, boolean } from "drizzle-orm/pg-core";
+
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  sunshineId: text("sunshine_id").notNull().unique(),
+  externalId: text("external_id"),
+  signedUpAt: timestamp("signed_up_at"),
+  authenticated: boolean("authenticated").default(false).notNull(),
+  profile: json("profile"),
+  metadata: json("metadata"),
+  identities: json("identities"),
+  firstSeenAt: timestamp("first_seen_at").defaultNow().notNull(),
+  lastSeenAt: timestamp("last_seen_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
 
 export const webhookRawLogs = pgTable("webhook_raw_logs", {
   id: serial("id").primaryKey(),
@@ -40,6 +55,8 @@ export const messages = pgTable("messages", {
   webhookLogId: integer("webhook_log_id"),
 });
 
+export type User = typeof users.$inferSelect;
+export type InsertUser = Omit<typeof users.$inferInsert, "id" | "createdAt" | "updatedAt" | "firstSeenAt" | "lastSeenAt">;
 export type WebhookRawLog = typeof webhookRawLogs.$inferSelect;
 export type InsertWebhookRawLog = Omit<typeof webhookRawLogs.$inferInsert, "id" | "receivedAt">;
 export type Conversation = typeof conversations.$inferSelect;

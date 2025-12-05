@@ -1,7 +1,7 @@
 import { db } from "./db";
-import { webhookRawLogs, conversations, messages } from "../shared/schema";
+import { webhookRawLogs, conversations, messages, users } from "../shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
-import type { InsertWebhookRawLog, InsertConversation, InsertMessage } from "../shared/schema";
+import type { InsertWebhookRawLog, InsertConversation, InsertMessage, User } from "../shared/schema";
 
 export const storage = {
   async createWebhookLog(data: InsertWebhookRawLog) {
@@ -51,6 +51,55 @@ export const storage = {
       total: Number(total),
       byStatus: Object.fromEntries(stats.map(s => [s.status, Number(s.count)])),
     };
+  },
+
+  async upsertUser(userData: any): Promise<User | null> {
+    if (!userData?.id) {
+      return null;
+    }
+
+    const sunshineId = userData.id;
+    let signedUpAt: Date | null = null;
+    if (userData.signedUpAt) {
+      try {
+        signedUpAt = new Date(userData.signedUpAt);
+      } catch {}
+    }
+
+    const [existingUser] = await db.select()
+      .from(users)
+      .where(eq(users.sunshineId, sunshineId));
+
+    if (existingUser) {
+      const [updated] = await db.update(users)
+        .set({
+          externalId: userData.externalId || existingUser.externalId,
+          signedUpAt: signedUpAt || existingUser.signedUpAt,
+          authenticated: userData.authenticated ?? existingUser.authenticated,
+          profile: userData.profile || existingUser.profile,
+          metadata: userData.metadata || existingUser.metadata,
+          identities: userData.identities || existingUser.identities,
+          lastSeenAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, existingUser.id))
+        .returning();
+      return updated;
+    }
+
+    const [newUser] = await db.insert(users)
+      .values({
+        sunshineId,
+        externalId: userData.externalId || null,
+        signedUpAt,
+        authenticated: userData.authenticated ?? false,
+        profile: userData.profile || null,
+        metadata: userData.metadata || null,
+        identities: userData.identities || null,
+      })
+      .returning();
+    
+    return newUser;
   },
 
   async getOrCreateConversation(zendeskConversationId: string, zendeskAppId?: string, userData?: any) {

@@ -113,13 +113,23 @@ router.post("/webhook/zendesk", async (req: Request, res: Response) => {
       const eventType = event.type;
       const eventPayload = event.payload || {};
 
+      const userData = eventPayload.user || 
+                       eventPayload.activity?.author?.user || 
+                       req.body.user;
+      
+      if (userData?.id) {
+        const user = await storage.upsertUser(userData);
+        if (user) {
+          console.log(`User upsert - sunshineId: ${user.sunshineId}, authenticated: ${user.authenticated}`);
+        }
+      }
+
       if (eventType === "conversation:message" || eventType === "message") {
         const conversationData = eventPayload.conversation || req.body.conversation || {};
         const zendeskConversationId = conversationData.id;
         const zendeskAppId = req.body.app?.id;
 
         if (zendeskConversationId) {
-          const userData = eventPayload.user || req.body.user;
           const conversation = await storage.getOrCreateConversation(
             zendeskConversationId,
             zendeskAppId,
@@ -145,7 +155,6 @@ router.post("/webhook/zendesk", async (req: Request, res: Response) => {
         const zendeskAppId = req.body.app?.id;
 
         if (zendeskConversationId) {
-          const userData = eventPayload.user;
           await storage.getOrCreateConversation(zendeskConversationId, zendeskAppId, userData);
           processedCount++;
           console.log(`Conversa criada: ${zendeskConversationId}`);
