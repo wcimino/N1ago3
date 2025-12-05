@@ -37,17 +37,26 @@ O sistema usa PostgreSQL para armazenar todas as interações:
 
 ### Tabelas
 
-1. **webhook_raw_logs** - Log bruto de TODAS as chamadas do webhook
+1. **users** - Usuários do Sunshine Conversations
+   - `id`: ID interno do n1ago (usado em joins)
+   - `sunshineId`: ID único do usuário no Zendesk (chave de upsert)
+   - `externalId`: ID externo (quando autenticado)
+   - `authenticated`: Se o usuário está autenticado
+   - `profile`: JSON com dados do perfil (email, givenName, surname, locale)
+   - `metadata`, `identities`: Dados adicionais do Zendesk
+   - `firstSeenAt`, `lastSeenAt`: Timestamps de atividade
+
+2. **webhook_raw_logs** - Log bruto de TODAS as chamadas do webhook
    - Armazena headers, payload, raw_body
    - Status de processamento (pending, success, error)
    - Mensagem de erro quando aplicável
 
-2. **conversations** - Conversas do Zendesk
+3. **conversations** - Conversas do Zendesk
    - ID da conversa e app do Zendesk
    - Dados do usuário
    - Status (active, closed)
 
-3. **messages** - Mensagens individuais
+4. **messages** - Mensagens individuais
    - Autor (user, agent, bot)
    - Conteúdo (texto ou payload)
    - Timestamps do Zendesk e local
@@ -123,9 +132,15 @@ npm run db:push      # Sincroniza schema do banco
 ---
 
 **Última atualização**: 2025-12-05
-**Versão**: 2.0.0
+**Versão**: 2.1.0
 
 ## Changelog
+
+### v2.1.0 (2025-12-05)
+- Tabela `users` para armazenar usuários do Sunshine Conversations
+- Upsert automático de usuários a cada evento recebido
+- Campos seguem nomenclatura original do Zendesk (sunshineId, externalId, profile, etc)
+- Rastreamento de firstSeenAt e lastSeenAt para cada usuário
 
 ### v2.0.0 (2025-12-05)
 - Migração completa para stack TypeScript/Node.js
