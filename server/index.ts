@@ -1,7 +1,8 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { router } from "./routes";
+import { setupAuth } from "./replitAuth";
+import { registerRoutes } from "./routes";
 
 declare global {
   namespace Express {
@@ -24,19 +25,23 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: true }));
 
-app.use(router);
+async function startServer() {
+  // Setup authentication
+  await setupAuth(app);
 
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../public")));
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../public/index.html"));
-  });
-} else {
-  app.get("/", (req, res) => {
-    res.redirect("http://localhost:5173");
+  // Register routes
+  registerRoutes(app);
+
+  if (process.env.NODE_ENV === "production") {
+    app.use(express.static(path.join(__dirname, "../public")));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(__dirname, "../public/index.html"));
+    });
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Servidor N1ago iniciado em http://0.0.0.0:${PORT}`);
   });
 }
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Servidor N1ago iniciado em http://0.0.0.0:${PORT}`);
-});
+startServer().catch(console.error);

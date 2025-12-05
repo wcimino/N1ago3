@@ -1,9 +1,61 @@
 import { db } from "./db";
-import { webhookRawLogs, conversations, messages, users } from "../shared/schema";
+import { webhookRawLogs, conversations, messages, users, authUsers, authorizedUsers } from "../shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
-import type { InsertWebhookRawLog, InsertConversation, InsertMessage, User } from "../shared/schema";
+import type { InsertWebhookRawLog, InsertConversation, InsertMessage, User, UpsertAuthUser, AuthUser, AuthorizedUser, InsertAuthorizedUser } from "../shared/schema";
 
 export const storage = {
+  // Auth User operations for Replit Auth
+  async getAuthUser(id: string): Promise<AuthUser | undefined> {
+    const [user] = await db.select().from(authUsers).where(eq(authUsers.id, id));
+    return user;
+  },
+
+  async upsertAuthUser(userData: UpsertAuthUser): Promise<AuthUser> {
+    const [user] = await db
+      .insert(authUsers)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: authUsers.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
+  },
+
+  // Authorized users operations
+  async isUserAuthorized(email: string): Promise<boolean> {
+    const [user] = await db.select()
+      .from(authorizedUsers)
+      .where(eq(authorizedUsers.email, email.toLowerCase()));
+    return !!user;
+  },
+
+  async getAuthorizedUsers(): Promise<AuthorizedUser[]> {
+    return await db.select()
+      .from(authorizedUsers)
+      .orderBy(desc(authorizedUsers.createdAt));
+  },
+
+  async addAuthorizedUser(data: InsertAuthorizedUser): Promise<AuthorizedUser> {
+    const [user] = await db.insert(authorizedUsers)
+      .values({
+        ...data,
+        email: data.email.toLowerCase(),
+      })
+      .returning();
+    return user;
+  },
+
+  async removeAuthorizedUser(id: number): Promise<boolean> {
+    const result = await db.delete(authorizedUsers)
+      .where(eq(authorizedUsers.id, id));
+    return true;
+  },
+
+  // Webhook operations
   async createWebhookLog(data: InsertWebhookRawLog) {
     const [log] = await db.insert(webhookRawLogs).values(data).returning();
     return log;

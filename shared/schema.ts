@@ -1,5 +1,40 @@
-import { pgTable, serial, text, timestamp, json, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, json, integer, boolean, varchar, index } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
+// Session storage table for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: json("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => ({
+    expireIdx: index("IDX_session_expire").on(table.expire),
+  }),
+);
+
+// Auth users table for Replit Auth
+export const authUsers = pgTable("auth_users", {
+  id: varchar("id").primaryKey(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Authorized users table for access control
+export const authorizedUsers = pgTable("authorized_users", {
+  id: serial("id").primaryKey(),
+  email: varchar("email").notNull().unique(),
+  name: varchar("name"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdBy: varchar("created_by"),
+});
+
+// Zendesk users table (existing)
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   sunshineId: text("sunshine_id").notNull().unique(),
@@ -54,6 +89,12 @@ export const messages = pgTable("messages", {
   metadataJson: json("metadata_json"),
   webhookLogId: integer("webhook_log_id"),
 });
+
+// Types
+export type AuthUser = typeof authUsers.$inferSelect;
+export type UpsertAuthUser = typeof authUsers.$inferInsert;
+export type AuthorizedUser = typeof authorizedUsers.$inferSelect;
+export type InsertAuthorizedUser = Omit<typeof authorizedUsers.$inferInsert, "id" | "createdAt">;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = Omit<typeof users.$inferInsert, "id" | "createdAt" | "updatedAt" | "firstSeenAt" | "lastSeenAt">;

@@ -1,8 +1,9 @@
-import { Router, type Request, type Response } from "express";
+import { Router, type Request, type Response, type Express } from "express";
 import crypto from "crypto";
 import { storage } from "./storage";
+import { isAuthenticated, requireAuthorizedUser } from "./replitAuth";
 
-export const router = Router();
+const router = Router();
 
 function verifyWebhookAuth(
   payloadBody: Buffer,
@@ -55,6 +56,7 @@ function verifyWebhookAuth(
   };
 }
 
+// Public routes (no authentication required)
 router.get("/health", (req: Request, res: Response) => {
   res.json({
     status: "healthy",
@@ -180,7 +182,61 @@ router.post("/webhook/zendesk", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/api/webhook-logs", async (req: Request, res: Response) => {
+// Auth routes
+router.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.claims.sub;
+    const user = await storage.getAuthUser(userId);
+    res.json(user);
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    res.status(500).json({ message: "Failed to fetch user" });
+  }
+});
+
+// Authorized users management routes
+router.get("/api/authorized-users", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  const users = await storage.getAuthorizedUsers();
+  res.json(users);
+});
+
+router.post("/api/authorized-users", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  const { email, name } = req.body;
+  
+  if (!email) {
+    return res.status(400).json({ error: "Email é obrigatório" });
+  }
+
+  const emailLower = email.toLowerCase();
+  if (!emailLower.endsWith("@ifood.com.br")) {
+    return res.status(400).json({ error: "Email deve ser do domínio @ifood.com.br" });
+  }
+
+  try {
+    const existingUser = await storage.isUserAuthorized(emailLower);
+    if (existingUser) {
+      return res.status(409).json({ error: "Usuário já cadastrado" });
+    }
+
+    const user = await storage.addAuthorizedUser({
+      email: emailLower,
+      name,
+      createdBy: (req as any).user?.claims?.email,
+    });
+    res.status(201).json(user);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete("/api/authorized-users/:id", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id);
+  await storage.removeAuthorizedUser(id);
+  res.json({ success: true });
+});
+
+// Protected API routes
+router.get("/api/webhook-logs", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const status = req.query.status as string | undefined;
   const sunshineId = req.query.user as string | undefined;
   const limit = parseInt(req.query.limit as string) || 50;
@@ -203,7 +259,7 @@ router.get("/api/webhook-logs", async (req: Request, res: Response) => {
   });
 });
 
-router.get("/api/webhook-logs/stats", async (req: Request, res: Response) => {
+router.get("/api/webhook-logs/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const stats = await storage.getWebhookLogsStats();
   res.json({
     total: stats.total,
@@ -211,7 +267,7 @@ router.get("/api/webhook-logs/stats", async (req: Request, res: Response) => {
   });
 });
 
-router.get("/api/webhook-logs/:id", async (req: Request, res: Response) => {
+router.get("/api/webhook-logs/:id", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
   const log = await storage.getWebhookLogById(id);
 
@@ -232,7 +288,7 @@ router.get("/api/webhook-logs/:id", async (req: Request, res: Response) => {
   });
 });
 
-router.get("/api/conversations", async (req: Request, res: Response) => {
+router.get("/api/conversations", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 50;
   const offset = parseInt(req.query.offset as string) || 0;
 
@@ -254,7 +310,7 @@ router.get("/api/conversations", async (req: Request, res: Response) => {
   });
 });
 
-router.get("/api/conversations/:zendeskId/messages", async (req: Request, res: Response) => {
+router.get("/api/conversations/:zendeskId/messages", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const result = await storage.getConversationMessages(req.params.zendeskId);
 
   if (!result) {
@@ -275,7 +331,7 @@ router.get("/api/conversations/:zendeskId/messages", async (req: Request, res: R
   });
 });
 
-router.get("/api/users", async (req: Request, res: Response) => {
+router.get("/api/users", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 50;
   const offset = parseInt(req.query.offset as string) || 0;
 
@@ -297,7 +353,11 @@ router.get("/api/users", async (req: Request, res: Response) => {
   });
 });
 
-router.get("/api/users/stats", async (req: Request, res: Response) => {
+router.get("/api/users/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const stats = await storage.getUsersStats();
   res.json(stats);
 });
+
+export function registerRoutes(app: Express) {
+  app.use(router);
+}
