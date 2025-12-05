@@ -1111,6 +1111,7 @@ interface OpenaiSummaryConfigResponse {
   id?: number;
   enabled: boolean;
   trigger_event_types: string[];
+  trigger_author_types: string[];
   prompt_template: string;
   model_name: string;
   created_at?: string;
@@ -1121,6 +1122,7 @@ function OpenaiSummaryConfigPage() {
   const queryClient = useQueryClient();
   const [enabled, setEnabled] = useState(false);
   const [triggerEventTypes, setTriggerEventTypes] = useState<string[]>([]);
+  const [triggerAuthorTypes, setTriggerAuthorTypes] = useState<string[]>([]);
   const [promptTemplate, setPromptTemplate] = useState("");
   const [modelName, setModelName] = useState("gpt-5");
   const [hasChanges, setHasChanges] = useState(false);
@@ -1145,6 +1147,7 @@ function OpenaiSummaryConfigPage() {
     if (config) {
       setEnabled(config.enabled);
       setTriggerEventTypes(config.trigger_event_types || []);
+      setTriggerAuthorTypes(config.trigger_author_types || []);
       setPromptTemplate(config.prompt_template);
       setModelName(config.model_name);
       setHasChanges(false);
@@ -1160,6 +1163,7 @@ function OpenaiSummaryConfigPage() {
         body: JSON.stringify({
           enabled,
           trigger_event_types: triggerEventTypes,
+          trigger_author_types: triggerAuthorTypes,
           prompt_template: promptTemplate,
           model_name: modelName,
         }),
@@ -1171,6 +1175,16 @@ function OpenaiSummaryConfigPage() {
       setHasChanges(false);
     },
   });
+
+  const toggleAuthorType = (authorType: string) => {
+    setTriggerAuthorTypes(prev => {
+      if (prev.includes(authorType)) {
+        return prev.filter(a => a !== authorType);
+      }
+      return [...prev, authorType];
+    });
+    handleChange();
+  };
 
   const handleChange = () => {
     setHasChanges(true);
@@ -1266,6 +1280,62 @@ function OpenaiSummaryConfigPage() {
             ) : (
               <p className="text-sm text-gray-500 italic">Nenhum tipo de evento configurado ainda.</p>
             )}
+          </div>
+
+          <div>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Filtrar por autor da mensagem</h3>
+            <p className="text-sm text-gray-500 mb-3">Selecione quais tipos de autor devem disparar a geração de resumo. Se nenhum for selecionado, todos os autores serão considerados.</p>
+            
+            <div className="border rounded-lg divide-y">
+              <label className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={triggerAuthorTypes.includes("customer")}
+                  onChange={() => toggleAuthorType("customer")}
+                  className="w-4 h-4 text-blue-600 rounded border-gray-300"
+                />
+                <div className="flex-1">
+                  <span className="text-sm font-medium text-gray-900">Cliente</span>
+                  <span className="ml-2 text-xs text-gray-500">(customer)</span>
+                </div>
+              </label>
+              <label className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={triggerAuthorTypes.includes("agent")}
+                  onChange={() => toggleAuthorType("agent")}
+                  className="w-4 h-4 text-blue-600 rounded border-gray-300"
+                />
+                <div className="flex-1">
+                  <span className="text-sm font-medium text-gray-900">Agente</span>
+                  <span className="ml-2 text-xs text-gray-500">(agent)</span>
+                </div>
+              </label>
+              <label className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={triggerAuthorTypes.includes("bot")}
+                  onChange={() => toggleAuthorType("bot")}
+                  className="w-4 h-4 text-blue-600 rounded border-gray-300"
+                />
+                <div className="flex-1">
+                  <span className="text-sm font-medium text-gray-900">Bot</span>
+                  <span className="ml-2 text-xs text-gray-500">(bot)</span>
+                </div>
+              </label>
+              <label className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={triggerAuthorTypes.includes("system")}
+                  onChange={() => toggleAuthorType("system")}
+                  className="w-4 h-4 text-blue-600 rounded border-gray-300"
+                />
+                <div className="flex-1">
+                  <span className="text-sm font-medium text-gray-900">Sistema</span>
+                  <span className="ml-2 text-xs text-gray-500">(system)</span>
+                </div>
+              </label>
+            </div>
           </div>
 
           <div>
