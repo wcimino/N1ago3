@@ -5,3 +5,5 @@ python-dotenv==1.2.1
 numpy==2.3.5
 scikit-learn==1.7.2
 tiktoken==0.12.0
+flask-sqlalchemy
+psycopg2-binary
