@@ -14,11 +14,24 @@ export async function shouldGenerateSummary(event: EventStandard): Promise<boole
   }
 
   const triggerEventTypes = config.triggerEventTypes || [];
+  const triggerAuthorTypes = config.triggerAuthorTypes || [];
   
-  const eventKey = `${event.source}:${event.eventType}`;
-  const eventTypeOnly = event.eventType;
+  let eventTypeMatches = true;
+  if (triggerEventTypes.length > 0) {
+    const eventKey = `${event.source}:${event.eventType}`;
+    const eventTypeOnly = event.eventType;
+    eventTypeMatches = triggerEventTypes.includes(eventKey) || triggerEventTypes.includes(eventTypeOnly);
+  }
   
-  return triggerEventTypes.includes(eventKey) || triggerEventTypes.includes(eventTypeOnly);
+  if (!eventTypeMatches) {
+    return false;
+  }
+
+  if (triggerAuthorTypes.length === 0) {
+    return true;
+  }
+
+  return triggerAuthorTypes.includes(event.authorType);
 }
 
 export async function generateConversationSummary(event: EventStandard): Promise<void> {
