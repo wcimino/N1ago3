@@ -3,7 +3,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Route, Switch, Link, useLocation } from "wouter";
-import { RefreshCw, CheckCircle, XCircle, Clock, Eye, ChevronLeft, ChevronRight, Users, Activity, UserCheck, UserX, ArrowDown, Home, ChevronRight as ArrowRight, LogOut, Shield, Plus, Trash2, LogIn, MessageCircle, Settings, User as UserIcon, Send, AlertCircle } from "lucide-react";
+import { RefreshCw, CheckCircle, XCircle, Clock, Eye, ChevronLeft, ChevronRight, Users, Activity, UserCheck, UserX, ArrowDown, Home, ChevronRight as ArrowRight, LogOut, Shield, Plus, Trash2, LogIn, MessageCircle, Settings } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { apiRequest } from "./lib/queryClient";
 
@@ -288,84 +288,6 @@ function LogDetailModal({ logId, onClose }: { logId: number; onClose: () => void
   );
 }
 
-function StatCard({ 
-  icon: Icon, 
-  label, 
-  value, 
-  color = "blue",
-  subtext
-}: { 
-  icon: React.ElementType; 
-  label: string; 
-  value: number | string; 
-  color?: "blue" | "green" | "teal" | "purple" | "red" | "yellow" | "gray";
-  subtext?: string;
-}) {
-  const colorClasses = {
-    blue: "bg-blue-50 text-blue-600 border-blue-200",
-    green: "bg-green-50 text-green-600 border-green-200",
-    teal: "bg-teal-50 text-teal-600 border-teal-200",
-    purple: "bg-purple-50 text-purple-600 border-purple-200",
-    red: "bg-red-50 text-red-600 border-red-200",
-    yellow: "bg-yellow-50 text-yellow-600 border-yellow-200",
-    gray: "bg-gray-50 text-gray-600 border-gray-200",
-  };
-
-  const valueColors = {
-    blue: "text-blue-600",
-    green: "text-green-600",
-    teal: "text-teal-600",
-    purple: "text-purple-600",
-    red: "text-red-600",
-    yellow: "text-yellow-600",
-    gray: "text-gray-700",
-  };
-
-  return (
-    <div className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-500 mb-1">{label}</p>
-          <p className={`text-3xl font-bold ${valueColors[color]}`}>{value}</p>
-          {subtext && <p className="text-xs text-gray-400 mt-1">{subtext}</p>}
-        </div>
-        <div className={`p-2.5 rounded-lg ${colorClasses[color]}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SectionHeader({ 
-  icon: Icon, 
-  title, 
-  href, 
-  linkText,
-  iconColor = "text-blue-600"
-}: { 
-  icon: React.ElementType; 
-  title: string; 
-  href: string; 
-  linkText: string;
-  iconColor?: string;
-}) {
-  return (
-    <div className="flex items-center justify-between mb-4">
-      <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2.5">
-        <div className={`p-1.5 rounded-lg bg-gray-100 ${iconColor}`}>
-          <Icon className="w-4 h-4" />
-        </div>
-        {title}
-      </h2>
-      <Link href={href} className="text-sm font-medium text-blue-600 hover:text-blue-700 inline-flex items-center gap-1 group">
-        {linkText} 
-        <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-      </Link>
-    </div>
-  );
-}
-
 function HomePage() {
   const { data: usersStats } = useQuery<UsersStatsResponse>({
     queryKey: ["users-stats"],
@@ -394,127 +316,91 @@ function HomePage() {
     refetchInterval: 5000,
   });
 
-  const successRate = eventsStats?.total 
-    ? Math.round(((eventsStats.by_status?.success || 0) / eventsStats.total) * 100)
-    : 0;
-
   return (
     <div className="space-y-8">
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-lg">
-        <h1 className="text-2xl font-bold mb-1">Dashboard</h1>
-        <p className="text-blue-100 text-sm">
-          Monitoramento de conversas e eventos do Zendesk Sunshine
-        </p>
-        <div className="mt-4 flex items-center gap-6 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-blue-100">Sistema ativo</span>
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Users className="w-5 h-5 text-blue-600" />
+            Usuários
+          </h2>
+          <Link href="/users" className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
+            Ver todos <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Total de Usuários</p>
+            <p className="text-4xl font-bold text-gray-900 mt-2">{usersStats?.total || 0}</p>
           </div>
-          <div className="text-blue-200">
-            Taxa de sucesso: <span className="font-semibold text-white">{successRate}%</span>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Autenticados</p>
+            <p className="text-4xl font-bold text-green-600 mt-2">{usersStats?.authenticated || 0}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Anônimos</p>
+            <p className="text-4xl font-bold text-gray-600 mt-2">{usersStats?.anonymous || 0}</p>
           </div>
         </div>
       </div>
 
       <div>
-        <SectionHeader 
-          icon={Users} 
-          title="Usuários" 
-          href="/users" 
-          linkText="Ver todos"
-          iconColor="text-blue-600"
-        />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard 
-            icon={Users} 
-            label="Total" 
-            value={usersStats?.total || 0} 
-            color="blue"
-          />
-          <StatCard 
-            icon={CheckCircle} 
-            label="Autenticados" 
-            value={usersStats?.authenticated || 0} 
-            color="green"
-          />
-          <StatCard 
-            icon={UserIcon} 
-            label="Anônimos" 
-            value={usersStats?.anonymous || 0} 
-            color="gray"
-          />
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <MessageCircle className="w-5 h-5 text-teal-600" />
+            Conversas
+          </h2>
+          <Link href="/conversation" className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
+            Ver todas <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Total de Conversas</p>
+            <p className="text-4xl font-bold text-gray-900 mt-2">{conversationsStats?.total || 0}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Ativas</p>
+            <p className="text-4xl font-bold text-green-600 mt-2">{conversationsStats?.active || 0}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Fechadas</p>
+            <p className="text-4xl font-bold text-gray-600 mt-2">{conversationsStats?.closed || 0}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Total de Mensagens</p>
+            <p className="text-4xl font-bold text-teal-600 mt-2">{conversationsStats?.totalMessages || 0}</p>
+          </div>
         </div>
       </div>
 
       <div>
-        <SectionHeader 
-          icon={MessageCircle} 
-          title="Conversas" 
-          href="/conversation" 
-          linkText="Ver todas"
-          iconColor="text-teal-600"
-        />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard 
-            icon={MessageCircle} 
-            label="Total" 
-            value={conversationsStats?.total || 0} 
-            color="teal"
-          />
-          <StatCard 
-            icon={CheckCircle} 
-            label="Ativas" 
-            value={conversationsStats?.active || 0} 
-            color="green"
-          />
-          <StatCard 
-            icon={XCircle} 
-            label="Fechadas" 
-            value={conversationsStats?.closed || 0} 
-            color="gray"
-          />
-          <StatCard 
-            icon={Send} 
-            label="Mensagens" 
-            value={conversationsStats?.totalMessages || 0} 
-            color="blue"
-          />
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Activity className="w-5 h-5 text-purple-600" />
+            Eventos
+          </h2>
+          <Link href="/events" className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
+            Ver todos <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
-      </div>
-
-      <div>
-        <SectionHeader 
-          icon={Activity} 
-          title="Eventos" 
-          href="/events" 
-          linkText="Ver todos"
-          iconColor="text-purple-600"
-        />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard 
-            icon={Activity} 
-            label="Total" 
-            value={eventsStats?.total || 0} 
-            color="purple"
-          />
-          <StatCard 
-            icon={CheckCircle} 
-            label="Sucesso" 
-            value={eventsStats?.by_status?.success || 0} 
-            color="green"
-          />
-          <StatCard 
-            icon={AlertCircle} 
-            label="Erro" 
-            value={eventsStats?.by_status?.error || 0} 
-            color="red"
-          />
-          <StatCard 
-            icon={Clock} 
-            label="Pendente" 
-            value={eventsStats?.by_status?.pending || 0} 
-            color="yellow"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Total de Eventos</p>
+            <p className="text-4xl font-bold text-gray-900 mt-2">{eventsStats?.total || 0}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Sucesso</p>
+            <p className="text-4xl font-bold text-green-600 mt-2">{eventsStats?.by_status?.success || 0}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Erro</p>
+            <p className="text-4xl font-bold text-red-600 mt-2">{eventsStats?.by_status?.error || 0}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Pendente</p>
+            <p className="text-4xl font-bold text-yellow-600 mt-2">{eventsStats?.by_status?.pending || 0}</p>
+          </div>
         </div>
       </div>
     </div>
