@@ -1,4 +1,13 @@
 import { Router, type Request, type Response, type Express } from "express";
+
+declare global {
+  namespace Express {
+    interface Request {
+      rawBody?: Buffer;
+    }
+  }
+}
+
 import { storage } from "./storage.js";
 import { isAuthenticated, requireAuthorizedUser } from "./replitAuth.js";
 import { getAdapter } from "./adapters/index.js";
