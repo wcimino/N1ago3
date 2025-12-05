@@ -72,6 +72,10 @@ export interface ConversationSummary {
   text: string;
   generated_at: string | null;
   updated_at: string | null;
+  product: string | null;
+  intent: string | null;
+  confidence: number | null;
+  classified_at: string | null;
 }
 
 export interface ConversationWithMessages {

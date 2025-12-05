@@ -65,6 +65,10 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
           text: summary.summary,
           generated_at: summary.generatedAt?.toISOString(),
           updated_at: summary.updatedAt?.toISOString(),
+          product: summary.product,
+          intent: summary.intent,
+          confidence: summary.confidence,
+          classified_at: summary.classifiedAt?.toISOString(),
         } : null,
       };
     })

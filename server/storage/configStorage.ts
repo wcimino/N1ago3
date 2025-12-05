@@ -97,4 +97,19 @@ export const configStorage = {
       .where(eq(openaiApiLogs.id, id));
     return log || null;
   },
+
+  async updateConversationClassification(
+    conversationId: number, 
+    data: { product: string | null; intent: string | null; confidence: number | null }
+  ): Promise<void> {
+    await db.update(conversationsSummary)
+      .set({
+        product: data.product,
+        intent: data.intent,
+        confidence: data.confidence,
+        classifiedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(conversationsSummary.conversationId, conversationId));
+  },
 };
