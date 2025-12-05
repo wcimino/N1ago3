@@ -2,17 +2,10 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { setupAuth } from "./replitAuth.js";
-import { registerRoutes } from "./routes.js";
+import { registerRoutes } from "./routes/index.js";
 import { startPollingWorker } from "./services/pollingWorker.js";
 import "./services/eventProcessor.js";
 
-declare global {
-  namespace Express {
-    interface Request {
-      rawBody?: Buffer;
-    }
-  }
-}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

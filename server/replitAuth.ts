@@ -4,30 +4,10 @@ import { Strategy, type VerifyFunction } from "openid-client/passport";
 
 import passport from "passport";
 import session from "express-session";
-import type { Express, RequestHandler } from "express";
+import type { Express } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage.js";
-
-declare global {
-  namespace Express {
-    interface User {
-      claims: {
-        sub: string;
-        email?: string;
-        first_name?: string;
-        last_name?: string;
-        profile_image_url?: string;
-        exp?: number;
-      };
-      access_token: string;
-      refresh_token?: string;
-      expires_at?: number;
-    }
-  }
-}
-
-const ALLOWED_DOMAIN = "@ifood.com.br";
 
 const getOidcConfig = memoize(
   async () => {
@@ -180,59 +160,3 @@ export async function setupAuth(app: Express) {
     });
   });
 }
-
-export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  const user = req.user as Express.User | undefined;
-
-  if (!req.isAuthenticated() || !user?.expires_at) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const now = Math.floor(Date.now() / 1000);
-  if (now <= user.expires_at) {
-    return next();
-  }
-
-  const refreshToken = user.refresh_token;
-  if (!refreshToken) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
-
-  try {
-    const config = await getOidcConfig();
-    const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
-    updateUserSession(user, tokenResponse);
-    return next();
-  } catch (error) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
-};
-
-export const requireAuthorizedUser: RequestHandler = async (req, res, next) => {
-  const user = req.user as Express.User | undefined;
-  
-  if (!user?.claims?.email) {
-    return res.status(403).json({ message: "Acesso negado. Email não encontrado no perfil." });
-  }
-
-  const email = user.claims.email.toLowerCase();
-
-  // Check domain restriction
-  if (!email.endsWith(ALLOWED_DOMAIN)) {
-    return res.status(403).json({ 
-      message: `Acesso negado. Apenas usuários do domínio ${ALLOWED_DOMAIN} podem acessar.` 
-    });
-  }
-
-  // Check if user is in authorized list
-  const isAuthorized = await storage.isUserAuthorized(email);
-  if (!isAuthorized) {
-    return res.status(403).json({ 
-      message: "Acesso negado. Usuário não cadastrado na lista de autorizados." 
-    });
-  }
-
-  next();
-};
