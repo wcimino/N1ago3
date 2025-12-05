@@ -8,6 +8,7 @@ export interface ClassificationPayload {
     contentText: string | null;
     occurredAt: Date;
   }>;
+  currentSummary?: string | null;
 }
 
 export interface ClassificationResult {
@@ -31,7 +32,8 @@ export async function classifyConversation(
     .join('\n');
 
   const promptUser = promptTemplate
-    .replace('{{MENSAGENS}}', messagesContext || 'Nenhuma mensagem disponível.');
+    .replace('{{MENSAGENS}}', messagesContext || 'Nenhuma mensagem disponível.')
+    .replace('{{RESUMO}}', payload.currentSummary || 'Nenhum resumo disponível.');
 
   const promptSystem = "Você é um assistente especializado em classificar conversas de atendimento ao cliente de serviços financeiros. Responda sempre em JSON válido.";
 
