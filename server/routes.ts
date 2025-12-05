@@ -182,10 +182,11 @@ router.post("/webhook/zendesk", async (req: Request, res: Response) => {
 
 router.get("/api/webhook-logs", async (req: Request, res: Response) => {
   const status = req.query.status as string | undefined;
+  const sunshineId = req.query.user as string | undefined;
   const limit = parseInt(req.query.limit as string) || 50;
   const offset = parseInt(req.query.offset as string) || 0;
 
-  const { logs, total } = await storage.getWebhookLogs(limit, offset, status);
+  const { logs, total } = await storage.getWebhookLogs(limit, offset, status, sunshineId);
 
   res.json({
     total,

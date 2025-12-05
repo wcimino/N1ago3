@@ -19,15 +19,34 @@ export const storage = {
       .where(eq(webhookRawLogs.id, id));
   },
 
-  async getWebhookLogs(limit = 50, offset = 0, status?: string) {
-    let query = db.select().from(webhookRawLogs).orderBy(desc(webhookRawLogs.receivedAt));
+  async getWebhookLogs(limit = 50, offset = 0, status?: string, sunshineId?: string) {
+    const conditions: any[] = [];
     
     if (status) {
-      query = query.where(eq(webhookRawLogs.processingStatus, status)) as typeof query;
+      conditions.push(eq(webhookRawLogs.processingStatus, status));
+    }
+    
+    if (sunshineId) {
+      conditions.push(sql`${webhookRawLogs.payload}::text LIKE ${'%' + sunshineId + '%'}`);
+    }
+    
+    let query = db.select().from(webhookRawLogs).orderBy(desc(webhookRawLogs.receivedAt));
+    
+    if (conditions.length > 0) {
+      for (const condition of conditions) {
+        query = query.where(condition) as typeof query;
+      }
     }
     
     const logs = await query.limit(limit).offset(offset);
-    const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(webhookRawLogs);
+    
+    let countQuery = db.select({ count: sql<number>`count(*)` }).from(webhookRawLogs);
+    if (conditions.length > 0) {
+      for (const condition of conditions) {
+        countQuery = countQuery.where(condition) as typeof countQuery;
+      }
+    }
+    const [{ count }] = await countQuery;
     
     return { logs, total: Number(count) };
   },

@@ -268,12 +268,20 @@ function HomePage() {
 function EventsPage() {
   const [page, setPage] = useState(0);
   const [selectedLogId, setSelectedLogId] = useState<number | null>(null);
+  const [, navigate] = useLocation();
   const limit = 20;
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const userFilter = urlParams.get("user");
+
   const { data: logsData, isLoading } = useQuery<WebhookLogsResponse>({
-    queryKey: ["webhook-logs", page],
+    queryKey: ["webhook-logs", page, userFilter],
     queryFn: async () => {
-      const res = await fetch(`/api/webhook-logs?limit=${limit}&offset=${page * limit}`);
+      let url = `/api/webhook-logs?limit=${limit}&offset=${page * limit}`;
+      if (userFilter) {
+        url += `&user=${encodeURIComponent(userFilter)}`;
+      }
+      const res = await fetch(url);
       return res.json();
     },
     refetchInterval: 5000,
@@ -281,11 +289,27 @@ function EventsPage() {
 
   const totalPages = logsData ? Math.ceil(logsData.total / limit) : 0;
 
+  const clearFilter = () => {
+    navigate("/events");
+    setPage(0);
+  };
+
   return (
     <>
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-4 py-3 border-b">
+        <div className="px-4 py-3 border-b flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Eventos Recebidos</h2>
+          {userFilter && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Filtrado por usuário:</span>
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                {userFilter.slice(0, 12)}...
+                <button onClick={clearFilter} className="ml-1 hover:text-blue-600">
+                  &times;
+                </button>
+              </span>
+            </div>
+          )}
         </div>
 
         {isLoading ? (
@@ -556,13 +580,22 @@ function UsersPage() {
                       {format(new Date(user.last_seen_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => setSelectedUser(user)}
-                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
-                      >
-                        <Eye className="w-4 h-4" />
-                        Ver
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setSelectedUser(user)}
+                          className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Ver
+                        </button>
+                        <Link
+                          href={`/events?user=${encodeURIComponent(user.sunshine_id)}`}
+                          className="inline-flex items-center gap-1 text-purple-600 hover:text-purple-800 text-sm"
+                        >
+                          <Activity className="w-4 h-4" />
+                          Eventos
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
