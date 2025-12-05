@@ -5,6 +5,7 @@
 N1ago é um agente conversacional inteligente integrado ao Zendesk Sunshine Conversations para atendimento automatizado sobre crédito. Ele:
 
 - **Recebe mensagens** via webhooks do Sunshine Conversations
+- **Armazena todas as conversas** no banco de dados PostgreSQL
 - **Busca conhecimento** na base de artigos do Zendesk (categoria 360004211092)
 - **Gera respostas** usando OpenAI GPT-3.5-turbo
 - **Detecta necessidade de escalar** para agente humano
@@ -13,20 +14,44 @@ N1ago é um agente conversacional inteligente integrado ao Zendesk Sunshine Conv
 ## Arquitetura
 
 ```
-Sunshine Conversations (Webhook)
+Zendesk Sunshine Conversations (Webhook)
     ↓
 Flask API (app.py)
+    ├→ WebhookRawLog (log imediato de todas as chamadas)
+    ├→ PostgreSQL (armazena conversas e mensagens)
     ├→ KnowledgeBase (busca Zendesk)
     ├→ ConversationManager (GPT-3.5)
-    └→ SunshineConversationsClient (resposta ao usuário)
+    ├→ SunshineConversationsClient (resposta ao usuário)
     └→ ZendeskClient (criar ticket)
 ```
+
+## Banco de Dados
+
+O sistema usa PostgreSQL para armazenar todas as interações:
+
+### Tabelas
+
+1. **webhook_raw_logs** - Log bruto de TODAS as chamadas do webhook
+   - Armazena headers, payload, raw_body
+   - Status de processamento (pending, success, error)
+   - Mensagem de erro quando aplicável
+
+2. **conversations** - Conversas do Zendesk
+   - ID da conversa e app do Zendesk
+   - Dados do usuário
+   - Status (active, closed)
+
+3. **messages** - Mensagens individuais
+   - Autor (user, agent, bot)
+   - Conteúdo (texto ou payload)
+   - Timestamps do Zendesk e local
 
 ## Estrutura do Projeto
 
 ```
 .
 ├── app.py                          # API Flask principal
+├── models.py                       # Modelos SQLAlchemy (banco de dados)
 ├── requirements.txt                # Dependências Python
 ├── .env.example                    # Exemplo de variáveis de ambiente
 ├── index.html                      # Frontend de teste
@@ -88,41 +113,50 @@ Servidor roda em: http://0.0.0.0:5000
 
 ## Endpoints
 
-### `/health` (GET)
+### Webhooks
+
+#### `/webhook/zendesk` (POST)
+Endpoint principal para receber eventos do Zendesk Sunshine Conversations.
+- Registra TODAS as chamadas no banco antes de processar
+- Valida assinatura HMAC se `ZENDESK_WEBHOOK_SECRET` estiver configurado
+- Processa eventos: `conversation:message`, `conversation:create`
+
+#### `/webhook/sunshine` (POST)
+Endpoint legado para compatibilidade com integrações existentes.
+
+### APIs de Consulta
+
+#### `/api/webhook-logs` (GET)
+Lista logs de webhooks recebidos
+- Parâmetros: `status` (filtrar por status), `limit`, `offset`
+```json
+{
+  "total": 100,
+  "logs": [{"id": 1, "processing_status": "success", ...}]
+}
+```
+
+#### `/api/webhook-logs/<id>` (GET)
+Detalhes completos de um log específico (headers, payload, raw_body)
+
+#### `/api/webhook-logs/stats` (GET)
+Estatísticas dos logs por status
+
+#### `/api/conversations` (GET)
+Lista todas as conversas armazenadas
+
+#### `/api/conversations/<zendesk_id>/messages` (GET)
+Mensagens de uma conversa específica
+
+### Outros
+
+#### `/health` (GET)
 Health check do servidor
-```json
-{
-  "status": "healthy",
-  "timestamp": "2025-12-04T22:30:51",
-  "service": "N1ago"
-}
-```
 
-### `/webhook/sunshine` (POST)
-Recebe eventos do Sunshine Conversations e responde
-```json
-{
-  "app": {"id": "app_123"},
-  "conversation": {"id": "conv_456"},
-  "message": {
-    "author": {"type": "user"},
-    "content": {"type": "text", "text": "Como funciona crédito?"}
-  }
-}
-```
-
-### `/test` (GET)
+#### `/test` (GET)
 Verifica configuração do servidor
-```json
-{
-  "status": "ok",
-  "knowledge_base_size": 42,
-  "configured": true,
-  "timestamp": "2025-12-04T22:30:51"
-}
-```
 
-### `/debug/conversation/<session_id>` (GET)
+#### `/debug/conversation/<session_id>` (GET)
 Ver histórico de uma conversa (debug)
 
 ## Fluxo de Atendimento
@@ -199,5 +233,14 @@ N1ago escala automaticamente se:
 
 ---
 
-**Última atualização**: 2025-12-04
-**Versão**: MVP 0.1
+**Última atualização**: 2025-12-05
+**Versão**: MVP 0.2
+
+## Changelog
+
+### v0.2 (2025-12-05)
+- Adicionado banco de dados PostgreSQL para armazenar conversas
+- Novo endpoint `/webhook/zendesk` com log imediato de todas as chamadas
+- Tabela `webhook_raw_logs` para auditoria completa
+- APIs REST para consultar logs, conversas e mensagens
+- Validação de assinatura HMAC para segurança do webhook
