@@ -205,8 +205,8 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
           </div>
         ) : (
           <div className="h-full flex flex-col lg:flex-row">
-            {/* Seção de Resumos - Esquerda em desktop, topo em mobile */}
-            <div className="lg:w-[380px] lg:min-w-[380px] bg-white border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col">
+            {/* Seção de Resumos - Esquerda em desktop (60%), topo em mobile */}
+            <div className="lg:flex-[3] bg-white border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col">
               <div className="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-purple-600" />
@@ -233,8 +233,8 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
               </div>
             </div>
 
-            {/* Seção de Chat - Direita em desktop, baixo em mobile */}
-            <div className="flex-1 flex flex-col min-h-0">
+            {/* Seção de Chat - Direita em desktop (40%), baixo em mobile */}
+            <div className="lg:flex-[2] flex flex-col min-h-0">
               {selectedConversation && (
                 <>
                   <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center gap-3">
