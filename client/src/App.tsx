@@ -798,25 +798,25 @@ function UsersPage() {
                           if (user) setSelectedUser(user);
                         }}
                         title="Ver detalhes do usuário"
-                        className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-2 border border-gray-200 text-gray-600 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 rounded-lg transition-colors"
                       >
-                        <User className="w-5 h-5" />
+                        <User className="w-4 h-4" />
                       </button>
                     )}
-                    <Link
-                      href={`/events?user=${encodeURIComponent(group.user_id)}`}
-                      title="Ver eventos"
-                      className="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                    >
-                      <Activity className="w-5 h-5" />
-                    </Link>
                     <button
                       onClick={() => navigate(`/users/${encodeURIComponent(group.user_id)}`)}
                       title="Ver conversas"
-                      className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                      className="p-2 border border-gray-200 text-gray-600 hover:text-green-600 hover:border-green-300 hover:bg-green-50 rounded-lg transition-colors"
                     >
-                      <MessageCircle className="w-5 h-5" />
+                      <MessageCircle className="w-4 h-4" />
                     </button>
+                    <Link
+                      href={`/events?user=${encodeURIComponent(group.user_id)}`}
+                      title="Ver eventos"
+                      className="p-2 border border-gray-200 text-gray-600 hover:text-purple-600 hover:border-purple-300 hover:bg-purple-50 rounded-lg transition-colors"
+                    >
+                      <Activity className="w-4 h-4" />
+                    </Link>
                   </div>
                 </div>
                 
