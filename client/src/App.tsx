@@ -1206,6 +1206,10 @@ function AuthenticatedApp() {
               <Activity className="w-4 h-4" />
               Eventos
             </NavLink>
+            <NavLink href="/conversation">
+              <MessageCircle className="w-4 h-4" />
+              Conversas
+            </NavLink>
             <NavLink href="/authorized-users">
               <Shield className="w-4 h-4" />
               Controle de Acesso
@@ -1219,6 +1223,8 @@ function AuthenticatedApp() {
           <Route path="/" component={HomePage} />
           <Route path="/users" component={UsersPage} />
           <Route path="/events" component={EventsPage} />
+          <Route path="/conversation" component={ConversationsPage} />
+          <Route path="/conversation/:id">{(params) => <ConversationDetailPage params={params} />}</Route>
           <Route path="/authorized-users" component={AuthorizedUsersPage} />
         </Switch>
       </main>
