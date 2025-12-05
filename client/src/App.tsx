@@ -1341,11 +1341,7 @@ function SettingsPage() {
         </div>
       </div>
 
-      <Switch>
-        <Route path="/events/settings/event-mappings" component={EventTypeMappingsPage} />
-        <Route path="/events/settings/openai-summary" component={OpenaiSummaryConfigPage} />
-        <Route path="/events/settings" component={EventTypeMappingsPage} />
-      </Switch>
+      {isOpenaiSummary ? <OpenaiSummaryConfigPage /> : <EventTypeMappingsPage />}
     </div>
   );
 }
