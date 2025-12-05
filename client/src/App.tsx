@@ -860,8 +860,8 @@ function ConversationsPage() {
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="px-4 py-3 border-b">
-        <h2 className="text-lg font-semibold text-gray-900">Conversas por Usuário</h2>
-        <p className="text-sm text-gray-500 mt-1">Conversas agrupadas por usuário para facilitar o acompanhamento</p>
+        <h2 className="text-lg font-semibold text-gray-900">Usuários</h2>
+        <p className="text-sm text-gray-500 mt-1">Lista de usuários com suas conversas e eventos</p>
       </div>
 
       {isLoading ? (
@@ -911,13 +911,22 @@ function ConversationsPage() {
                       </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => navigate(`/conversation/user/${encodeURIComponent(group.user_id)}`)}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    Ver Chat
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/events?user=${encodeURIComponent(group.user_id)}`}
+                      className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                    >
+                      <Activity className="w-4 h-4" />
+                      Ver Eventos
+                    </Link>
+                    <button
+                      onClick={() => navigate(`/conversation/user/${encodeURIComponent(group.user_id)}`)}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      Ver Conversa
+                    </button>
+                  </div>
                 </div>
                 
                 {group.conversations.length > 1 && (
@@ -1348,13 +1357,9 @@ function AuthenticatedApp() {
               <Home className="w-4 h-4" />
               Home
             </NavLink>
-            <NavLink href="/users">
+            <NavLink href="/conversation">
               <Users className="w-4 h-4" />
               Usuários
-            </NavLink>
-            <NavLink href="/conversation">
-              <MessageCircle className="w-4 h-4" />
-              Conversas
             </NavLink>
             <NavLink href="/events">
               <Activity className="w-4 h-4" />
@@ -1367,7 +1372,6 @@ function AuthenticatedApp() {
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         <Switch>
           <Route path="/" component={HomePage} />
-          <Route path="/users" component={UsersPage} />
           <Route path="/events" component={EventsPage} />
           <Route path="/conversation" component={ConversationsPage} />
           <Route path="/conversation/user/:userId">{(params) => <UserConversationsPage params={params} />}</Route>
