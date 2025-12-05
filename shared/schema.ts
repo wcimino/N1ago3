@@ -50,7 +50,7 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const webhookRawLogs = pgTable("webhook_raw_logs", {
+export const zendeskConversationsWebhookRaw = pgTable("zendesk_conversations_webhook_raw", {
   id: serial("id").primaryKey(),
   receivedAt: timestamp("received_at").defaultNow().notNull(),
   sourceIp: text("source_ip"),
@@ -98,8 +98,8 @@ export type InsertAuthorizedUser = Omit<typeof authorizedUsers.$inferInsert, "id
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = Omit<typeof users.$inferInsert, "id" | "createdAt" | "updatedAt" | "firstSeenAt" | "lastSeenAt">;
-export type WebhookRawLog = typeof webhookRawLogs.$inferSelect;
-export type InsertWebhookRawLog = Omit<typeof webhookRawLogs.$inferInsert, "id" | "receivedAt">;
+export type ZendeskConversationsWebhookRaw = typeof zendeskConversationsWebhookRaw.$inferSelect;
+export type InsertZendeskConversationsWebhookRaw = Omit<typeof zendeskConversationsWebhookRaw.$inferInsert, "id" | "receivedAt">;
 export type Conversation = typeof conversations.$inferSelect;
 export type InsertConversation = Omit<typeof conversations.$inferInsert, "id" | "createdAt" | "updatedAt">;
 export type Message = typeof messages.$inferSelect;
