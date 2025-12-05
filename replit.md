@@ -45,6 +45,64 @@ The frontend dashboard provides a real-time view of events and conversations, wi
     *   **Lazy Initialization:** OpenAI client is only initialized when needed, preventing startup errors when API key is not configured.
     *   **Configuration UI:** Available at /events/settings/openai-summary with toggle, event type selection, model choice, and custom prompt editor.
 
+## Development Conventions
+
+**IMPORTANTE:** Sempre siga estas convenções ao criar ou modificar código neste projeto.
+
+### Database Schema (PostgreSQL/Drizzle)
+
+| Tipo | Padrão | Exemplo |
+|------|--------|---------|
+| Tabelas (coleções) | plural, snake_case | `users`, `events_standard`, `conversations` |
+| Tabelas (config única) | singular, snake_case | `openai_summary_config` |
+| Foreign keys | singular, snake_case | `user_id`, `conversation_id` |
+| Índices | `idx_<tabela>_<campo>` | `idx_events_standard_conversation_id` |
+
+### TypeScript Naming
+
+| Tipo | Padrão | Exemplo |
+|------|--------|---------|
+| Variáveis (export tabela) | camelCase, plural | `eventsStandard`, `conversationsSummary` |
+| Types/Interfaces | PascalCase | `EventStandard`, `ConversationSummary` |
+| Funções | camelCase, verbo | `getConversationSummary`, `upsertUser` |
+| Arquivos de serviço | camelCase | `summaryOrchestrator.ts`, `eventProcessor.ts` |
+| Adapters | camelCase + Adapter | `zendeskAdapter.ts` |
+
+### API Endpoints
+
+| Tipo | Padrão | Exemplo |
+|------|--------|---------|
+| REST resources | plural, kebab-case | `/api/conversations`, `/api/event-type-mappings` |
+| Config endpoints | singular | `/api/openai-summary-config` |
+| Ações específicas | verbo no path | `/api/conversations/:id/summary` |
+
+### Estrutura de Arquivos
+
+```
+server/
+  ├── services/       # Lógica de negócio (orchestrators, processors)
+  ├── adapters/       # Transformadores de dados por source
+  ├── routes.ts       # Definição de endpoints
+  └── storage.ts      # Operações de banco de dados
+client/src/
+  ├── components/     # Componentes React reutilizáveis
+  ├── pages/          # Páginas/views (dentro de App.tsx atualmente)
+  └── lib/            # Utilitários e helpers
+shared/
+  └── schema.ts       # Definições de tabelas Drizzle (fonte única)
+```
+
+### Checklist para Novas Features
+
+Antes de considerar uma feature completa, verifique:
+
+- [ ] Nomes de tabelas seguem o padrão (plural para coleções)?
+- [ ] Variáveis TypeScript consistentes com o padrão?
+- [ ] APIs protegidas com middleware de autenticação?
+- [ ] Erros tratados graciosamente (try/catch, retorno de erro estruturado)?
+- [ ] Lazy initialization para serviços externos (ex: OpenAI)?
+- [ ] Documentação atualizada no replit.md?
+
 ## External Dependencies
 
 *   **Zendesk Sunshine Conversations:** Primary source for webhook events.

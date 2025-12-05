@@ -1,5 +1,5 @@
 import { db } from "./db.js";
-import { zendeskConversationsWebhookRaw, eventsStandard, conversations, messages, users, authUsers, authorizedUsers, eventTypeMapping, conversationSummary, openaiSummaryConfig } from "../shared/schema.js";
+import { zendeskConversationsWebhookRaw, eventsStandard, conversations, messages, users, authUsers, authorizedUsers, eventTypeMappings, conversationsSummary, openaiSummaryConfig } from "../shared/schema.js";
 import { eq, desc, sql, and, asc } from "drizzle-orm";
 import type { InsertZendeskConversationsWebhookRaw, InsertConversation, InsertMessage, User, UpsertAuthUser, AuthUser, AuthorizedUser, InsertAuthorizedUser, InsertEventStandard, EventStandard, ZendeskConversationsWebhookRaw, EventTypeMapping, InsertEventTypeMapping, ConversationSummary, InsertConversationSummary, OpenaiSummaryConfig, InsertOpenaiSummaryConfig } from "../shared/schema.js";
 import type { ExtractedUser, ExtractedConversation, StandardEvent } from "./adapters/types.js";
@@ -620,25 +620,25 @@ export const storage = {
   // Event Type Mapping operations
   async getEventTypeMappings(): Promise<EventTypeMapping[]> {
     return await db.select()
-      .from(eventTypeMapping)
-      .orderBy(eventTypeMapping.source, eventTypeMapping.eventType);
+      .from(eventTypeMappings)
+      .orderBy(eventTypeMappings.source, eventTypeMappings.eventType);
   },
 
   async getEventTypeMapping(source: string, eventType: string): Promise<EventTypeMapping | null> {
     const [mapping] = await db.select()
-      .from(eventTypeMapping)
+      .from(eventTypeMappings)
       .where(and(
-        eq(eventTypeMapping.source, source),
-        eq(eventTypeMapping.eventType, eventType)
+        eq(eventTypeMappings.source, source),
+        eq(eventTypeMappings.eventType, eventType)
       ));
     return mapping || null;
   },
 
   async upsertEventTypeMapping(data: InsertEventTypeMapping): Promise<EventTypeMapping> {
-    const [mapping] = await db.insert(eventTypeMapping)
+    const [mapping] = await db.insert(eventTypeMappings)
       .values(data)
       .onConflictDoUpdate({
-        target: [eventTypeMapping.source, eventTypeMapping.eventType],
+        target: [eventTypeMappings.source, eventTypeMappings.eventType],
         set: {
           displayName: data.displayName,
           description: data.description,
@@ -652,23 +652,23 @@ export const storage = {
   },
 
   async updateEventTypeMapping(id: number, data: Partial<InsertEventTypeMapping>): Promise<EventTypeMapping | null> {
-    const [updated] = await db.update(eventTypeMapping)
+    const [updated] = await db.update(eventTypeMappings)
       .set({
         ...data,
         updatedAt: new Date(),
       })
-      .where(eq(eventTypeMapping.id, id))
+      .where(eq(eventTypeMappings.id, id))
       .returning();
     return updated || null;
   },
 
   async deleteEventTypeMapping(id: number): Promise<boolean> {
-    await db.delete(eventTypeMapping).where(eq(eventTypeMapping.id, id));
+    await db.delete(eventTypeMappings).where(eq(eventTypeMappings.id, id));
     return true;
   },
 
   async ensureEventTypeMapping(source: string, eventType: string): Promise<void> {
-    await db.insert(eventTypeMapping)
+    await db.insert(eventTypeMappings)
       .values({
         source,
         eventType,
@@ -678,7 +678,7 @@ export const storage = {
         icon: null,
       })
       .onConflictDoNothing({
-        target: [eventTypeMapping.source, eventTypeMapping.eventType],
+        target: [eventTypeMappings.source, eventTypeMappings.eventType],
       });
   },
 
@@ -729,26 +729,26 @@ export const storage = {
   // Conversation Summary operations
   async getConversationSummary(conversationId: number): Promise<ConversationSummary | null> {
     const [summary] = await db.select()
-      .from(conversationSummary)
-      .where(eq(conversationSummary.conversationId, conversationId));
+      .from(conversationsSummary)
+      .where(eq(conversationsSummary.conversationId, conversationId));
     return summary || null;
   },
 
   async getConversationSummaryByExternalId(externalConversationId: string): Promise<ConversationSummary | null> {
     const [summary] = await db.select()
-      .from(conversationSummary)
-      .where(eq(conversationSummary.externalConversationId, externalConversationId));
+      .from(conversationsSummary)
+      .where(eq(conversationsSummary.externalConversationId, externalConversationId));
     return summary || null;
   },
 
   async upsertConversationSummary(data: InsertConversationSummary): Promise<ConversationSummary> {
-    const [summary] = await db.insert(conversationSummary)
+    const [summary] = await db.insert(conversationsSummary)
       .values({
         ...data,
         generatedAt: new Date(),
       })
       .onConflictDoUpdate({
-        target: conversationSummary.conversationId,
+        target: conversationsSummary.conversationId,
         set: {
           summary: data.summary,
           lastEventId: data.lastEventId,

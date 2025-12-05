@@ -126,7 +126,7 @@ export const messages = pgTable("messages", {
   webhookLogId: integer("webhook_log_id"),
 });
 
-export const eventTypeMapping = pgTable("event_type_mapping", {
+export const eventTypeMappings = pgTable("event_type_mappings", {
   id: serial("id").primaryKey(),
   source: text("source").notNull(),
   eventType: text("event_type").notNull(),
@@ -137,10 +137,10 @@ export const eventTypeMapping = pgTable("event_type_mapping", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
-  sourceEventTypeUnique: uniqueIndex("idx_event_type_mapping_unique").on(table.source, table.eventType),
+  sourceEventTypeUnique: uniqueIndex("idx_event_type_mappings_unique").on(table.source, table.eventType),
 }));
 
-export const conversationSummary = pgTable("conversation_summary", {
+export const conversationsSummary = pgTable("conversations_summary", {
   id: serial("id").primaryKey(),
   conversationId: integer("conversation_id").notNull(),
   externalConversationId: text("external_conversation_id"),
@@ -150,7 +150,7 @@ export const conversationSummary = pgTable("conversation_summary", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
-  conversationIdIdx: uniqueIndex("idx_conversation_summary_conversation_id").on(table.conversationId),
+  conversationIdIdx: uniqueIndex("idx_conversations_summary_conversation_id").on(table.conversationId),
 }));
 
 export const openaiSummaryConfig = pgTable("openai_summary_config", {
@@ -181,11 +181,11 @@ export type InsertMessage = Omit<typeof messages.$inferInsert, "id" | "receivedA
 export type EventStandard = typeof eventsStandard.$inferSelect;
 export type InsertEventStandard = Omit<typeof eventsStandard.$inferInsert, "id" | "receivedAt" | "processedAt">;
 
-export type EventTypeMapping = typeof eventTypeMapping.$inferSelect;
-export type InsertEventTypeMapping = Omit<typeof eventTypeMapping.$inferInsert, "id" | "createdAt" | "updatedAt">;
+export type EventTypeMapping = typeof eventTypeMappings.$inferSelect;
+export type InsertEventTypeMapping = Omit<typeof eventTypeMappings.$inferInsert, "id" | "createdAt" | "updatedAt">;
 
-export type ConversationSummary = typeof conversationSummary.$inferSelect;
-export type InsertConversationSummary = Omit<typeof conversationSummary.$inferInsert, "id" | "createdAt" | "updatedAt" | "generatedAt">;
+export type ConversationSummary = typeof conversationsSummary.$inferSelect;
+export type InsertConversationSummary = Omit<typeof conversationsSummary.$inferInsert, "id" | "createdAt" | "updatedAt" | "generatedAt">;
 
 export type OpenaiSummaryConfig = typeof openaiSummaryConfig.$inferSelect;
 export type InsertOpenaiSummaryConfig = Omit<typeof openaiSummaryConfig.$inferInsert, "id" | "createdAt" | "updatedAt">;
