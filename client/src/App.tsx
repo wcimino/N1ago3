@@ -1302,46 +1302,13 @@ function OpenaiSummaryConfigPage() {
   );
 }
 
-function SettingsPage() {
-  const [location, setLocation] = useLocation();
-  
-  const isEventMappings = location === "/" || location === "/event-mappings";
-  const isOpenaiSummary = location === "/openai-summary";
-
-  useEffect(() => {
-    if (location === "/") {
-      setLocation("/event-mappings", { replace: true });
-    }
-  }, [location, setLocation]);
-
+function AIPage() {
   return (
     <div>
       <div className="mb-6">
-        <div className="flex gap-2">
-          <button
-            onClick={() => setLocation("/event-mappings")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium ${
-              isEventMappings
-                ? "bg-blue-100 text-blue-700"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            Mapeamento de Eventos
-          </button>
-          <button
-            onClick={() => setLocation("/openai-summary")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium ${
-              isOpenaiSummary
-                ? "bg-blue-100 text-blue-700"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            Resumo com OpenAI
-          </button>
-        </div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">Configuração de IA</h1>
       </div>
-
-      {isOpenaiSummary ? <OpenaiSummaryConfigPage /> : <EventTypeMappingsPage />}
+      <OpenaiSummaryConfigPage />
     </div>
   );
 }
@@ -1351,7 +1318,7 @@ function EventsLayout() {
   
   const isEventsStandard = location === "/" || location === "/events_standard";
   const isZendeskRaw = location === "/zendesk_conversations_raw";
-  const isSettings = location.startsWith("/settings");
+  const isSettings = location === "/settings";
 
   useEffect(() => {
     if (location === "/") {
@@ -1400,9 +1367,9 @@ function EventsLayout() {
       </div>
 
       <Switch>
-        <Route path="/settings" nest>{() => <SettingsPage />}</Route>
         <Route path="/events_standard" component={EventsStandardPage} />
         <Route path="/zendesk_conversations_raw" component={ZendeskConversationsRawPage} />
+        <Route path="/settings" component={EventTypeMappingsPage} />
         <Route path="/" component={EventsStandardPage} />
       </Switch>
     </div>
@@ -2093,7 +2060,7 @@ function AuthenticatedApp() {
               <Activity className="w-4 h-4" />
               Eventos
             </NavLink>
-            <NavLink href="/events/settings/openai-summary">
+            <NavLink href="/ai">
               <Sparkles className="w-4 h-4" />
               AI
             </NavLink>
@@ -2104,6 +2071,7 @@ function AuthenticatedApp() {
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         <Switch>
           <Route path="/" component={HomePage} />
+          <Route path="/ai" component={AIPage} />
           <Route path="/events" nest>{() => <EventsLayout />}</Route>
           <Route path="/users" component={UsersPage} />
           <Route path="/users/:userId">{(params) => <UserConversationsPage params={params} />}</Route>
