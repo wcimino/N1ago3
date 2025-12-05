@@ -34,7 +34,7 @@ const intentColors: Record<string, string> = {
 
 interface SummaryCardProps {
   summary: ConversationSummary | null;
-  conversationNumber: number;
+  conversationId: string;
   conversationDate: string;
   conversationStatus: string;
   messagesCount: number;
@@ -44,13 +44,14 @@ interface SummaryCardProps {
 
 function SummaryCard({ 
   summary, 
-  conversationNumber, 
+  conversationId, 
   conversationDate, 
   conversationStatus,
   messagesCount,
   isSelected, 
   onClick 
 }: SummaryCardProps) {
+  const shortId = conversationId.slice(0, 8);
   const updatedAtDate = summary?.updated_at ? new Date(summary.updated_at) : null;
   const timeAgo = updatedAtDate 
     ? formatDistanceToNow(updatedAtDate, { addSuffix: true, locale: ptBR })
@@ -81,7 +82,7 @@ function SummaryCard({
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <MessageCircle className="w-4 h-4 text-purple-600" />
-          <span className="font-medium text-gray-900">Conversa #{conversationNumber}</span>
+          <span className="font-medium text-gray-900">Conversa {shortId}...</span>
         </div>
         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
           conversationStatus === "active" 
@@ -235,7 +236,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                   <SummaryCard
                     key={convItem.conversation.id}
                     summary={convItem.summary}
-                    conversationNumber={sortedConversations.length - index}
+                    conversationId={convItem.conversation.zendesk_conversation_id}
                     conversationDate={convItem.conversation.created_at}
                     conversationStatus={convItem.conversation.status}
                     messagesCount={convItem.messages.length}
@@ -254,18 +255,18 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                     <MessageCircle className="w-5 h-5 text-blue-600" />
                     <div>
                       <h3 className="font-semibold text-gray-900">
-                        Conversa #{selectedConversationIndex + 1}
+                        Conversa {selectedConversation.conversation.zendesk_conversation_id.slice(0, 8)}...
                       </h3>
                       <p className="text-xs text-gray-500">
                         {formatDateTimeShort(selectedConversation.conversation.created_at)}
                         <span 
                           className="ml-2 cursor-pointer hover:text-gray-700"
-                          title="Clique para copiar o ID"
+                          title="Clique para copiar o ID completo"
                           onClick={() => {
                             navigator.clipboard.writeText(selectedConversation.conversation.zendesk_conversation_id);
                           }}
                         >
-                          ID: {selectedConversation.conversation.zendesk_conversation_id.slice(0, 12)}...
+                          (clique para copiar ID completo)
                         </span>
                       </p>
                     </div>
