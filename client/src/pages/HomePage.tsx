@@ -125,54 +125,62 @@ export function HomePage() {
           </h2>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
-                <Clock className="w-4 h-4 text-orange-500" />
-                <p className="text-sm font-medium text-gray-700">Última Hora</p>
-              </div>
-              {productStats?.last_hour && productStats.last_hour.length > 0 ? (
-                <ul className="space-y-2">
-                  {productStats.last_hour.map((item, index) => (
-                    <li key={item.product} className="flex items-center justify-between">
-                      <span className="text-sm text-gray-800 flex items-center gap-2">
-                        <span className="text-xs font-medium text-gray-400 w-4">{index + 1}.</span>
-                        {item.product}
+          {(() => {
+            const lastHourMap = new Map(productStats?.last_hour?.map(p => [p.product, p.count]) || []);
+            const todayMap = new Map(productStats?.today?.map(p => [p.product, p.count]) || []);
+            const allProducts = [...new Set([...lastHourMap.keys(), ...todayMap.keys()])];
+            
+            if (allProducts.length === 0) {
+              return <p className="text-sm text-gray-400 italic">Nenhum produto classificado ainda</p>;
+            }
+            
+            return (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="text-left text-sm font-medium text-gray-700 pb-3">Produto</th>
+                    <th className="text-center text-sm font-medium text-gray-700 pb-3 w-24">
+                      <span className="flex items-center justify-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-orange-500" />
+                        1h
                       </span>
-                      <span className="text-sm font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded">
-                        {item.count}
+                    </th>
+                    <th className="text-center text-sm font-medium text-gray-700 pb-3 w-24">
+                      <span className="flex items-center justify-center gap-1">
+                        <Calendar className="w-3.5 h-3.5 text-orange-500" />
+                        Hoje
                       </span>
-                    </li>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allProducts.map((product) => (
+                    <tr key={product} className="border-b border-gray-50 last:border-0">
+                      <td className="py-2 text-sm text-gray-800">{product}</td>
+                      <td className="py-2 text-center">
+                        {lastHourMap.get(product) ? (
+                          <span className="text-sm font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded">
+                            {lastHourMap.get(product)}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-300">-</span>
+                        )}
+                      </td>
+                      <td className="py-2 text-center">
+                        {todayMap.get(product) ? (
+                          <span className="text-sm font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded">
+                            {todayMap.get(product)}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-300">-</span>
+                        )}
+                      </td>
+                    </tr>
                   ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-gray-400 italic">Nenhum produto na última hora</p>
-              )}
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
-                <Calendar className="w-4 h-4 text-orange-500" />
-                <p className="text-sm font-medium text-gray-700">Hoje</p>
-              </div>
-              {productStats?.today && productStats.today.length > 0 ? (
-                <ul className="space-y-2">
-                  {productStats.today.map((item, index) => (
-                    <li key={item.product} className="flex items-center justify-between">
-                      <span className="text-sm text-gray-800 flex items-center gap-2">
-                        <span className="text-xs font-medium text-gray-400 w-4">{index + 1}.</span>
-                        {item.product}
-                      </span>
-                      <span className="text-sm font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded">
-                        {item.count}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-gray-400 italic">Nenhum produto hoje</p>
-              )}
-            </div>
-          </div>
+                </tbody>
+              </table>
+            );
+          })()}
         </div>
       </div>
     </div>
