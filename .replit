@@ -39,13 +39,15 @@ externalPort = 3000
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 33495
-externalPort = 3002
-
 [userenv]
 
 [userenv.development]
+ZENDESK_WEBHOOK_SECRET = "26EA_KiZs_G-bUrmRKxXCUQ2-EVa78tz9nnOaQ-dOJ_WX9Ej03diG9NzAqrCtQpqsMXlujGTF8lh8UfvI37Trw"
+ZENDESK_WEBHOOK_ID = "6932434c4334cffa4dbbdb89"
+
+[userenv.production]
+ZENDESK_WEBHOOK_SECRET = "abc"
+ZENDESK_WEBHOOK_ID = "abc"
 
 [deployment]
 deploymentTarget = "cloudrun"
