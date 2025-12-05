@@ -109,17 +109,17 @@ export async function setupAuth(app: Express) {
   const getCallbackDomain = (req: any): string => {
     // In production, REPLIT_DOMAINS contains the production domain
     // In development, REPLIT_DEV_DOMAIN contains the dev domain
-    // REPLIT_DOMAINS may contain multiple domains separated by comma, take the first one
+    // Priority: REPLIT_DOMAINS (production) > REPLIT_DEV_DOMAIN (development) > request host
     const replitDomains = process.env.REPLIT_DOMAINS;
     const devDomain = process.env.REPLIT_DEV_DOMAIN;
     
-    if (devDomain) {
-      return devDomain;
+    if (replitDomains) {
+      // Take the first domain if there are multiple (production takes priority)
+      return replitDomains.split(',')[0].trim();
     }
     
-    if (replitDomains) {
-      // Take the first domain if there are multiple
-      return replitDomains.split(',')[0].trim();
+    if (devDomain) {
+      return devDomain;
     }
     
     return req.get("host") || req.hostname;
