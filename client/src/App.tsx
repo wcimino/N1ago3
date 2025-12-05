@@ -117,6 +117,51 @@ interface ConversationMessagesResponse {
   messages: Message[];
 }
 
+interface UserConversation {
+  id: number;
+  zendesk_conversation_id: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface UserGroup {
+  user_id: string;
+  conversation_count: number;
+  last_activity: string;
+  first_activity: string;
+  conversations: UserConversation[];
+  user_info: {
+    id: number;
+    external_id: string | null;
+    authenticated: boolean;
+    profile: UserProfile | null;
+  } | null;
+}
+
+interface GroupedConversationsResponse {
+  total: number;
+  offset: number;
+  limit: number;
+  user_groups: UserGroup[];
+}
+
+interface ConversationWithMessages {
+  conversation: {
+    id: number;
+    zendesk_conversation_id: string;
+    status: string;
+    created_at: string;
+    updated_at: string;
+  };
+  messages: Message[];
+}
+
+interface UserConversationsMessagesResponse {
+  user_id: string;
+  conversations: ConversationWithMessages[];
+}
+
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     success: "bg-green-100 text-green-800",
@@ -784,40 +829,46 @@ function ConversationsPage() {
   const [, navigate] = useLocation();
   const limit = 20;
 
-  const { data: conversationsData, isLoading } = useQuery<ConversationsResponse>({
-    queryKey: ["conversations", page],
+  const { data: groupedData, isLoading } = useQuery<GroupedConversationsResponse>({
+    queryKey: ["conversations-grouped", page],
     queryFn: async () => {
-      const res = await fetch(`/api/conversations?limit=${limit}&offset=${page * limit}`, { credentials: "include" });
+      const res = await fetch(`/api/conversations/grouped?limit=${limit}&offset=${page * limit}`, { credentials: "include" });
       return res.json();
     },
     refetchInterval: 5000,
   });
 
-  const totalPages = conversationsData ? Math.ceil(conversationsData.total / limit) : 0;
+  const totalPages = groupedData ? Math.ceil(groupedData.total / limit) : 0;
 
-  const getStatusBadge = (status: string) => {
-    const styles: Record<string, string> = {
-      active: "bg-green-100 text-green-800",
-      closed: "bg-gray-100 text-gray-800",
-    };
-    return (
-      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${styles[status] || "bg-gray-100 text-gray-800"}`}>
-        {status}
-      </span>
-    );
+  const getUserDisplayName = (group: UserGroup) => {
+    if (group.user_info?.profile) {
+      const profile = group.user_info.profile as UserProfile;
+      if (profile.givenName || profile.surname) {
+        return `${profile.givenName || ""} ${profile.surname || ""}`.trim();
+      }
+      if (profile.email) {
+        return profile.email;
+      }
+    }
+    return group.user_id.slice(0, 16) + "...";
+  };
+
+  const getActiveCount = (conversations: UserConversation[]) => {
+    return conversations.filter(c => c.status === "active").length;
   };
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="px-4 py-3 border-b">
-        <h2 className="text-lg font-semibold text-gray-900">Conversas</h2>
+        <h2 className="text-lg font-semibold text-gray-900">Conversas por Usuário</h2>
+        <p className="text-sm text-gray-500 mt-1">Conversas agrupadas por usuário para facilitar o acompanhamento</p>
       </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
         </div>
-      ) : !conversationsData?.conversations || conversationsData.conversations.length === 0 ? (
+      ) : !groupedData?.user_groups || groupedData.user_groups.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           <MessageCircle className="w-12 h-12 mx-auto text-gray-300 mb-3" />
           <p>Nenhuma conversa registrada ainda.</p>
@@ -825,62 +876,72 @@ function ConversationsPage() {
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Zendesk ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuário</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Criada em</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    <span className="inline-flex items-center gap-1">
-                      Atualizada
-                      <ArrowDown className="w-3 h-3" />
-                    </span>
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {conversationsData.conversations.map((conv) => (
-                  <tr key={conv.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">#{conv.id}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500 font-mono">
-                      {conv.zendesk_conversation_id.slice(0, 16)}...
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
-                      {conv.user_id ? conv.user_id.slice(0, 12) + "..." : "-"}
-                    </td>
-                    <td className="px-4 py-3">
-                      {getStatusBadge(conv.status)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
-                      {format(new Date(conv.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
-                      {format(new Date(conv.updated_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => navigate(`/conversation/${conv.zendesk_conversation_id}`)}
-                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
+          <div className="divide-y divide-gray-200">
+            {groupedData.user_groups.map((group) => (
+              <div key={group.user_id} className="p-4 hover:bg-gray-50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <Users className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium text-gray-900">{getUserDisplayName(group)}</h3>
+                        {group.user_info?.authenticated && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <UserCheck className="w-3 h-3" />
+                            Autenticado
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                        <span className="inline-flex items-center gap-1">
+                          <MessageCircle className="w-4 h-4" />
+                          {group.conversation_count} {group.conversation_count === 1 ? "conversa" : "conversas"}
+                        </span>
+                        {getActiveCount(group.conversations) > 0 && (
+                          <span className="inline-flex items-center gap-1 text-green-600">
+                            <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                            {getActiveCount(group.conversations)} ativa{getActiveCount(group.conversations) > 1 ? "s" : ""}
+                          </span>
+                        )}
+                        <span>
+                          Última atividade: {format(new Date(group.last_activity), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigate(`/conversation/user/${encodeURIComponent(group.user_id)}`)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Ver Chat
+                  </button>
+                </div>
+                
+                {group.conversations.length > 1 && (
+                  <div className="mt-3 ml-14 flex flex-wrap gap-2">
+                    {group.conversations.map((conv, idx) => (
+                      <span
+                        key={conv.id}
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${
+                          conv.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"
+                        }`}
                       >
-                        <MessageCircle className="w-4 h-4" />
-                        Ver Chat
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                        #{idx + 1} - {format(new Date(conv.created_at), "dd/MM HH:mm", { locale: ptBR })}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
 
           <div className="px-4 py-3 border-t flex items-center justify-between">
             <p className="text-sm text-gray-500">
-              Mostrando {page * limit + 1} - {Math.min((page + 1) * limit, conversationsData?.total || 0)} de{" "}
-              {conversationsData?.total || 0}
+              Mostrando {page * limit + 1} - {Math.min((page + 1) * limit, groupedData?.total || 0)} de{" "}
+              {groupedData?.total || 0} usuários
             </p>
             <div className="flex gap-2">
               <button
@@ -907,16 +968,16 @@ function ConversationsPage() {
   );
 }
 
-function ConversationDetailPage({ params }: { params: { id: string } }) {
+function UserConversationsPage({ params }: { params: { userId: string } }) {
   const [, navigate] = useLocation();
-  const zendeskId = params.id;
+  const userId = decodeURIComponent(params.userId);
 
-  const { data, isLoading, error } = useQuery<ConversationMessagesResponse>({
-    queryKey: ["conversation-messages", zendeskId],
+  const { data, isLoading, error } = useQuery<UserConversationsMessagesResponse>({
+    queryKey: ["user-conversations-messages", userId],
     queryFn: async () => {
-      const res = await fetch(`/api/conversations/${zendeskId}/messages`, { credentials: "include" });
+      const res = await fetch(`/api/conversations/user/${encodeURIComponent(userId)}/messages`, { credentials: "include" });
       if (!res.ok) {
-        throw new Error("Conversa não encontrada");
+        throw new Error("Conversas não encontradas");
       }
       return res.json();
     },
@@ -938,6 +999,8 @@ function ConversationDetailPage({ params }: { params: { id: string } }) {
     return authorType === "user";
   };
 
+  const totalMessages = data?.conversations.reduce((acc, conv) => acc + conv.messages.length, 0) || 0;
+
   return (
     <div className="h-[calc(100vh-180px)] flex flex-col">
       <div className="bg-white rounded-t-lg shadow-sm border-b px-4 py-3 flex items-center gap-3">
@@ -947,9 +1010,11 @@ function ConversationDetailPage({ params }: { params: { id: string } }) {
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">Conversa</h2>
-          <p className="text-xs text-gray-500 font-mono">{zendeskId}</p>
+        <div className="flex-1">
+          <h2 className="text-lg font-semibold text-gray-900">Histórico do Usuário</h2>
+          <p className="text-xs text-gray-500">
+            {data?.conversations.length || 0} {(data?.conversations.length || 0) === 1 ? "conversa" : "conversas"} - {totalMessages} {totalMessages === 1 ? "mensagem" : "mensagens"}
+          </p>
         </div>
       </div>
 
@@ -961,7 +1026,7 @@ function ConversationDetailPage({ params }: { params: { id: string } }) {
         ) : error ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500">
             <XCircle className="w-12 h-12 text-red-300 mb-3" />
-            <p>Conversa não encontrada</p>
+            <p>Conversas não encontradas</p>
             <button
               onClick={() => navigate("/conversation")}
               className="mt-4 text-blue-600 hover:text-blue-800"
@@ -969,49 +1034,82 @@ function ConversationDetailPage({ params }: { params: { id: string } }) {
               Voltar para lista
             </button>
           </div>
-        ) : !data?.messages || data.messages.length === 0 ? (
+        ) : !data?.conversations || data.conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500">
             <MessageCircle className="w-12 h-12 text-gray-300 mb-3" />
-            <p>Nenhuma mensagem nesta conversa</p>
+            <p>Nenhuma mensagem encontrada</p>
           </div>
         ) : (
-          <div className="space-y-3 max-w-3xl mx-auto">
-            {data.messages.map((msg) => {
-              const isUser = isUserMessage(msg.author_type);
-              return (
-                <div
-                  key={msg.id}
-                  className={`flex ${isUser ? "justify-start" : "justify-end"}`}
-                >
-                  <div
-                    className={`max-w-[75%] ${
-                      isUser
-                        ? "bg-white rounded-tl-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl"
-                        : "bg-green-100 rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl"
-                    } shadow-sm px-4 py-2`}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span
-                        className={`w-2 h-2 rounded-full ${getAuthorColor(msg.author_type)}`}
-                      />
-                      <span className="text-xs font-medium text-gray-700">
-                        {msg.author_name || msg.author_type}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">
-                      {msg.content_text || `[${msg.content_type}]`}
-                    </p>
-                    <p className="text-[10px] text-gray-400 mt-1 text-right">
-                      {format(
-                        new Date(msg.zendesk_timestamp || msg.received_at),
-                        "dd/MM/yyyy HH:mm",
-                        { locale: ptBR }
-                      )}
-                    </p>
+          <div className="space-y-4 max-w-3xl mx-auto">
+            {data.conversations.map((convItem, convIndex) => (
+              <div key={convItem.conversation.id}>
+                <div className="flex items-center gap-3 my-6">
+                  <div className="flex-1 h-px bg-gray-300"></div>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border">
+                    <MessageCircle className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm font-medium text-gray-700">
+                      Conversa #{convIndex + 1}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {format(new Date(convItem.conversation.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                    </span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                      convItem.conversation.status === "active" 
+                        ? "bg-green-100 text-green-700" 
+                        : "bg-gray-100 text-gray-600"
+                    }`}>
+                      {convItem.conversation.status}
+                    </span>
                   </div>
+                  <div className="flex-1 h-px bg-gray-300"></div>
                 </div>
-              );
-            })}
+
+                <div className="space-y-3">
+                  {convItem.messages.length === 0 ? (
+                    <div className="text-center py-4 text-gray-400 text-sm">
+                      Nenhuma mensagem nesta conversa
+                    </div>
+                  ) : (
+                    convItem.messages.map((msg: Message) => {
+                      const isUser = isUserMessage(msg.author_type);
+                      return (
+                        <div
+                          key={msg.id}
+                          className={`flex ${isUser ? "justify-start" : "justify-end"}`}
+                        >
+                          <div
+                            className={`max-w-[75%] ${
+                              isUser
+                                ? "bg-white rounded-tl-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl"
+                                : "bg-green-100 rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl"
+                            } shadow-sm px-4 py-2`}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <span
+                                className={`w-2 h-2 rounded-full ${getAuthorColor(msg.author_type)}`}
+                              />
+                              <span className="text-xs font-medium text-gray-700">
+                                {msg.author_name || msg.author_type}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">
+                              {msg.content_text || `[${msg.content_type}]`}
+                            </p>
+                            <p className="text-[10px] text-gray-400 mt-1 text-right">
+                              {format(
+                                new Date(msg.zendesk_timestamp || msg.received_at),
+                                "dd/MM/yyyy HH:mm",
+                                { locale: ptBR }
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -1272,7 +1370,7 @@ function AuthenticatedApp() {
           <Route path="/users" component={UsersPage} />
           <Route path="/events" component={EventsPage} />
           <Route path="/conversation" component={ConversationsPage} />
-          <Route path="/conversation/:id">{(params) => <ConversationDetailPage params={params} />}</Route>
+          <Route path="/conversation/user/:userId">{(params) => <UserConversationsPage params={params} />}</Route>
           <Route path="/authorized-users" component={AuthorizedUsersPage} />
         </Switch>
       </main>

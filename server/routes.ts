@@ -293,6 +293,69 @@ router.get("/api/conversations/stats", isAuthenticated, requireAuthorizedUser, a
   res.json(stats);
 });
 
+router.get("/api/conversations/grouped", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  const limit = parseInt(req.query.limit as string) || 50;
+  const offset = parseInt(req.query.offset as string) || 0;
+
+  const { userGroups, total } = await storage.getConversationsGroupedByUser(limit, offset);
+
+  const enrichedGroups = await Promise.all(
+    userGroups.map(async (group: any) => {
+      const user = await storage.getUserBySunshineId(group.user_id);
+      return {
+        user_id: group.user_id,
+        conversation_count: Number(group.conversation_count),
+        last_activity: group.last_activity,
+        first_activity: group.first_activity,
+        conversations: group.conversations,
+        user_info: user ? {
+          id: user.id,
+          external_id: user.externalId,
+          authenticated: user.authenticated,
+          profile: user.profile,
+        } : null,
+      };
+    })
+  );
+
+  res.json({
+    total,
+    offset,
+    limit,
+    user_groups: enrichedGroups,
+  });
+});
+
+router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  const result = await storage.getUserConversationsWithMessages(req.params.userId);
+
+  if (!result) {
+    return res.status(404).json({ error: "No conversations found for this user" });
+  }
+
+  res.json({
+    user_id: req.params.userId,
+    conversations: result.map((item) => ({
+      conversation: {
+        id: item.conversation.id,
+        zendesk_conversation_id: item.conversation.zendeskConversationId,
+        status: item.conversation.status,
+        created_at: item.conversation.createdAt?.toISOString(),
+        updated_at: item.conversation.updatedAt?.toISOString(),
+      },
+      messages: item.messages.map((msg) => ({
+        id: msg.id,
+        author_type: msg.authorType,
+        author_name: msg.authorName,
+        content_type: msg.contentType,
+        content_text: msg.contentText,
+        received_at: msg.receivedAt?.toISOString(),
+        zendesk_timestamp: msg.zendeskTimestamp?.toISOString(),
+      })),
+    })),
+  });
+});
+
 router.get("/api/conversations", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 50;
   const offset = parseInt(req.query.offset as string) || 0;

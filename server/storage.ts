@@ -287,4 +287,78 @@ export const storage = {
       totalMessages: Number(totalMessages),
     };
   },
+
+  async getConversationsGroupedByUser(limit = 50, offset = 0) {
+    const userConversations = await db.execute(sql`
+      WITH user_stats AS (
+        SELECT 
+          user_id,
+          COUNT(*) as conversation_count,
+          MAX(updated_at) as last_activity,
+          MIN(created_at) as first_activity,
+          ARRAY_AGG(
+            JSON_BUILD_OBJECT(
+              'id', id,
+              'zendesk_conversation_id', zendesk_conversation_id,
+              'status', status,
+              'created_at', TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+              'updated_at', TO_CHAR(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+            ) ORDER BY created_at ASC
+          ) as conversations
+        FROM conversations
+        WHERE user_id IS NOT NULL
+        GROUP BY user_id
+        ORDER BY last_activity DESC
+        LIMIT ${limit} OFFSET ${offset}
+      )
+      SELECT 
+        user_id,
+        conversation_count,
+        TO_CHAR(last_activity, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as last_activity,
+        TO_CHAR(first_activity, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as first_activity,
+        conversations
+      FROM user_stats
+    `);
+
+    const [{ count }] = await db.select({ 
+      count: sql<number>`COUNT(DISTINCT user_id)` 
+    }).from(conversations).where(sql`user_id IS NOT NULL`);
+
+    return { 
+      userGroups: userConversations.rows as any[], 
+      total: Number(count) 
+    };
+  },
+
+  async getUserConversationsWithMessages(userId: string) {
+    const userConvs = await db.select()
+      .from(conversations)
+      .where(eq(conversations.userId, userId))
+      .orderBy(conversations.createdAt);
+
+    if (userConvs.length === 0) return null;
+
+    const conversationsWithMessages = await Promise.all(
+      userConvs.map(async (conv) => {
+        const msgs = await db.select()
+          .from(messages)
+          .where(eq(messages.conversationId, conv.id))
+          .orderBy(messages.receivedAt);
+        
+        return {
+          conversation: conv,
+          messages: msgs,
+        };
+      })
+    );
+
+    return conversationsWithMessages;
+  },
+
+  async getUserBySunshineId(sunshineId: string) {
+    const [user] = await db.select()
+      .from(users)
+      .where(eq(users.sunshineId, sunshineId));
+    return user || null;
+  },
 };
