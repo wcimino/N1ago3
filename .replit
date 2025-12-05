@@ -58,4 +58,6 @@ ZENDESK_WEBHOOK_SECRET = "TeDiDdNRdYjbOR2X1jebBgh1zyM3un2omCrACXbFF81tNcuMqvQP1H
 ZENDESK_WEBHOOK_ID = "693249c8e4ca9754f520a88d"
 
 [deployment]
-deploymentTarget = "cloudrun"
+deploymentTarget = "autoscale"
+run = ["npm", "run", "start"]
+build = ["npm", "run", "build"]
