@@ -74,8 +74,8 @@ interface AuthorizedUser {
   id: number;
   email: string;
   name: string | null;
-  created_at: string;
-  created_by: string | null;
+  createdAt: string;
+  createdBy: string | null;
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -840,9 +840,9 @@ function AuthorizedUsersPage() {
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{user.email}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">{user.name || "-"}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">
-                      {format(new Date(user.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      {user.createdAt ? format(new Date(user.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR }) : "-"}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{user.created_by || "-"}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500">{user.createdBy || "-"}</td>
                     <td className="px-4 py-3">
                       <button
                         onClick={() => removeMutation.mutate(user.id)}
