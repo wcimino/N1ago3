@@ -1,7 +1,7 @@
 modules = ["nodejs-20", "postgresql-16"]
 [agent]
 expertMode = true
-integrations = ["python_openai:1.0.0", "zendesk:1.0.0", "python_database:1.0.0"]
+integrations = ["python_openai:1.0.0", "zendesk:1.0.0", "python_database:1.0.0", "javascript_openai:1.0.0"]
 
 [nix]
 channel = "stable-25_05"
@@ -48,7 +48,7 @@ localPort = 41015
 externalPort = 3001
 
 [[ports]]
-localPort = 44081
+localPort = 43835
 externalPort = 3003
 
 [userenv]

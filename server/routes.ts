@@ -463,6 +463,109 @@ router.delete("/api/event-type-mappings/:id", isAuthenticated, requireAuthorized
   res.json({ success: true });
 });
 
+// OpenAI Summary Config API routes
+router.get("/api/openai-summary-config", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  const config = await storage.getOpenaiSummaryConfig();
+  
+  if (!config) {
+    return res.json({
+      enabled: false,
+      trigger_event_types: [],
+      prompt_template: `Você receberá informações sobre uma conversa de atendimento ao cliente.
+
+RESUMO ATUAL:
+{{RESUMO_ATUAL}}
+
+ÚLTIMAS 20 MENSAGENS:
+{{ULTIMAS_20_MENSAGENS}}
+
+ÚLTIMA MENSAGEM RECEBIDA:
+{{ULTIMA_MENSAGEM}}
+
+Por favor, gere um resumo atualizado e conciso desta conversa, destacando:
+- O problema ou solicitação principal do cliente
+- As ações tomadas pelo atendente
+- O status atual da conversa
+- Informações importantes mencionadas`,
+      model_name: "gpt-5",
+    });
+  }
+
+  res.json({
+    id: config.id,
+    enabled: config.enabled,
+    trigger_event_types: config.triggerEventTypes,
+    prompt_template: config.promptTemplate,
+    model_name: config.modelName,
+    created_at: config.createdAt?.toISOString(),
+    updated_at: config.updatedAt?.toISOString(),
+  });
+});
+
+router.put("/api/openai-summary-config", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  const { enabled, trigger_event_types, prompt_template, model_name } = req.body;
+
+  if (prompt_template !== undefined && !prompt_template.trim()) {
+    return res.status(400).json({ error: "prompt_template cannot be empty" });
+  }
+
+  const config = await storage.upsertOpenaiSummaryConfig({
+    enabled: enabled ?? false,
+    triggerEventTypes: trigger_event_types || [],
+    promptTemplate: prompt_template || `Você receberá informações sobre uma conversa de atendimento ao cliente.
+
+RESUMO ATUAL:
+{{RESUMO_ATUAL}}
+
+ÚLTIMAS 20 MENSAGENS:
+{{ULTIMAS_20_MENSAGENS}}
+
+ÚLTIMA MENSAGEM RECEBIDA:
+{{ULTIMA_MENSAGEM}}
+
+Por favor, gere um resumo atualizado e conciso desta conversa.`,
+    modelName: model_name || "gpt-5",
+  });
+
+  res.json({
+    id: config.id,
+    enabled: config.enabled,
+    trigger_event_types: config.triggerEventTypes,
+    prompt_template: config.promptTemplate,
+    model_name: config.modelName,
+    created_at: config.createdAt?.toISOString(),
+    updated_at: config.updatedAt?.toISOString(),
+  });
+});
+
+// Conversation Summary API routes
+router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id);
+  
+  if (isNaN(id)) {
+    return res.status(400).json({ error: "Invalid conversation ID" });
+  }
+
+  const summary = await storage.getConversationSummary(id);
+
+  if (!summary) {
+    return res.json({ 
+      conversation_id: id,
+      has_summary: false,
+      summary: null,
+    });
+  }
+
+  res.json({
+    conversation_id: id,
+    has_summary: true,
+    summary: summary.summary,
+    last_event_id: summary.lastEventId,
+    generated_at: summary.generatedAt?.toISOString(),
+    updated_at: summary.updatedAt?.toISOString(),
+  });
+});
+
 export function registerRoutes(app: Express) {
   app.use(router);
 }

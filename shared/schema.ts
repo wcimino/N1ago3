@@ -140,6 +140,29 @@ export const eventTypeMapping = pgTable("event_type_mapping", {
   sourceEventTypeUnique: uniqueIndex("idx_event_type_mapping_unique").on(table.source, table.eventType),
 }));
 
+export const conversationSummary = pgTable("conversation_summary", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull(),
+  externalConversationId: text("external_conversation_id"),
+  summary: text("summary").notNull(),
+  lastEventId: integer("last_event_id"),
+  generatedAt: timestamp("generated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  conversationIdIdx: uniqueIndex("idx_conversation_summary_conversation_id").on(table.conversationId),
+}));
+
+export const openaiSummaryConfig = pgTable("openai_summary_config", {
+  id: serial("id").primaryKey(),
+  enabled: boolean("enabled").default(false).notNull(),
+  triggerEventTypes: json("trigger_event_types").$type<string[]>().default([]).notNull(),
+  promptTemplate: text("prompt_template").notNull(),
+  modelName: text("model_name").default("gpt-5").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Types
 export type AuthUser = typeof authUsers.$inferSelect;
 export type UpsertAuthUser = typeof authUsers.$inferInsert;
@@ -160,3 +183,9 @@ export type InsertEventStandard = Omit<typeof eventsStandard.$inferInsert, "id" 
 
 export type EventTypeMapping = typeof eventTypeMapping.$inferSelect;
 export type InsertEventTypeMapping = Omit<typeof eventTypeMapping.$inferInsert, "id" | "createdAt" | "updatedAt">;
+
+export type ConversationSummary = typeof conversationSummary.$inferSelect;
+export type InsertConversationSummary = Omit<typeof conversationSummary.$inferInsert, "id" | "createdAt" | "updatedAt" | "generatedAt">;
+
+export type OpenaiSummaryConfig = typeof openaiSummaryConfig.$inferSelect;
+export type InsertOpenaiSummaryConfig = Omit<typeof openaiSummaryConfig.$inferInsert, "id" | "createdAt" | "updatedAt">;

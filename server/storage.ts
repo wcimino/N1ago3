@@ -1,7 +1,7 @@
 import { db } from "./db.js";
-import { zendeskConversationsWebhookRaw, eventsStandard, conversations, messages, users, authUsers, authorizedUsers, eventTypeMapping } from "../shared/schema.js";
-import { eq, desc, sql, and } from "drizzle-orm";
-import type { InsertZendeskConversationsWebhookRaw, InsertConversation, InsertMessage, User, UpsertAuthUser, AuthUser, AuthorizedUser, InsertAuthorizedUser, InsertEventStandard, EventStandard, ZendeskConversationsWebhookRaw, EventTypeMapping, InsertEventTypeMapping } from "../shared/schema.js";
+import { zendeskConversationsWebhookRaw, eventsStandard, conversations, messages, users, authUsers, authorizedUsers, eventTypeMapping, conversationSummary, openaiSummaryConfig } from "../shared/schema.js";
+import { eq, desc, sql, and, asc } from "drizzle-orm";
+import type { InsertZendeskConversationsWebhookRaw, InsertConversation, InsertMessage, User, UpsertAuthUser, AuthUser, AuthorizedUser, InsertAuthorizedUser, InsertEventStandard, EventStandard, ZendeskConversationsWebhookRaw, EventTypeMapping, InsertEventTypeMapping, ConversationSummary, InsertConversationSummary, OpenaiSummaryConfig, InsertOpenaiSummaryConfig } from "../shared/schema.js";
 import type { ExtractedUser, ExtractedConversation, StandardEvent } from "./adapters/types.js";
 
 export const storage = {
@@ -724,5 +724,82 @@ export const storage = {
     `);
     
     return { events: events.rows, total: Number((countResult.rows[0] as any)?.count || 0) };
+  },
+
+  // Conversation Summary operations
+  async getConversationSummary(conversationId: number): Promise<ConversationSummary | null> {
+    const [summary] = await db.select()
+      .from(conversationSummary)
+      .where(eq(conversationSummary.conversationId, conversationId));
+    return summary || null;
+  },
+
+  async getConversationSummaryByExternalId(externalConversationId: string): Promise<ConversationSummary | null> {
+    const [summary] = await db.select()
+      .from(conversationSummary)
+      .where(eq(conversationSummary.externalConversationId, externalConversationId));
+    return summary || null;
+  },
+
+  async upsertConversationSummary(data: InsertConversationSummary): Promise<ConversationSummary> {
+    const [summary] = await db.insert(conversationSummary)
+      .values({
+        ...data,
+        generatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: conversationSummary.conversationId,
+        set: {
+          summary: data.summary,
+          lastEventId: data.lastEventId,
+          externalConversationId: data.externalConversationId,
+          generatedAt: new Date(),
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return summary;
+  },
+
+  async getLast20MessagesForConversation(conversationId: number): Promise<EventStandard[]> {
+    return await db.select()
+      .from(eventsStandard)
+      .where(and(
+        eq(eventsStandard.conversationId, conversationId),
+        eq(eventsStandard.eventType, 'message')
+      ))
+      .orderBy(desc(eventsStandard.occurredAt))
+      .limit(20);
+  },
+
+  // OpenAI Summary Config operations
+  async getOpenaiSummaryConfig(): Promise<OpenaiSummaryConfig | null> {
+    const [config] = await db.select()
+      .from(openaiSummaryConfig)
+      .limit(1);
+    return config || null;
+  },
+
+  async upsertOpenaiSummaryConfig(data: InsertOpenaiSummaryConfig): Promise<OpenaiSummaryConfig> {
+    const existing = await this.getOpenaiSummaryConfig();
+    
+    if (existing) {
+      const [updated] = await db.update(openaiSummaryConfig)
+        .set({
+          enabled: data.enabled,
+          triggerEventTypes: data.triggerEventTypes,
+          promptTemplate: data.promptTemplate,
+          modelName: data.modelName,
+          updatedAt: new Date(),
+        })
+        .where(eq(openaiSummaryConfig.id, existing.id))
+        .returning();
+      return updated;
+    }
+    
+    const [created] = await db.insert(openaiSummaryConfig)
+      .values(data)
+      .returning();
+    return created;
   },
 };

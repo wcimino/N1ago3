@@ -1107,12 +1107,255 @@ function EventTypeMappingsPage() {
   );
 }
 
+interface OpenaiSummaryConfigResponse {
+  id?: number;
+  enabled: boolean;
+  trigger_event_types: string[];
+  prompt_template: string;
+  model_name: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+function OpenaiSummaryConfigPage() {
+  const queryClient = useQueryClient();
+  const [enabled, setEnabled] = useState(false);
+  const [triggerEventTypes, setTriggerEventTypes] = useState<string[]>([]);
+  const [promptTemplate, setPromptTemplate] = useState("");
+  const [modelName, setModelName] = useState("gpt-5");
+  const [hasChanges, setHasChanges] = useState(false);
+
+  const { data: config, isLoading } = useQuery<OpenaiSummaryConfigResponse>({
+    queryKey: ["openai-summary-config"],
+    queryFn: async () => {
+      const res = await fetch("/api/openai-summary-config", { credentials: "include" });
+      return res.json();
+    },
+  });
+
+  const { data: eventTypes } = useQuery<EventTypeMappingsResponse>({
+    queryKey: ["event-type-mappings"],
+    queryFn: async () => {
+      const res = await fetch("/api/event-type-mappings", { credentials: "include" });
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    if (config) {
+      setEnabled(config.enabled);
+      setTriggerEventTypes(config.trigger_event_types || []);
+      setPromptTemplate(config.prompt_template);
+      setModelName(config.model_name);
+      setHasChanges(false);
+    }
+  }, [config]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/openai-summary-config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          enabled,
+          trigger_event_types: triggerEventTypes,
+          prompt_template: promptTemplate,
+          model_name: modelName,
+        }),
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["openai-summary-config"] });
+      setHasChanges(false);
+    },
+  });
+
+  const handleChange = () => {
+    setHasChanges(true);
+  };
+
+  const toggleEventType = (eventKey: string) => {
+    setTriggerEventTypes(prev => {
+      if (prev.includes(eventKey)) {
+        return prev.filter(e => e !== eventKey);
+      }
+      return [...prev, eventKey];
+    });
+    handleChange();
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="px-4 py-3 border-b">
+          <h2 className="text-lg font-semibold text-gray-900">Configuração do Resumo com OpenAI</h2>
+          <p className="text-sm text-gray-500 mt-1">Configure a geração automática de resumos das conversas</p>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-gray-900">Ativar geração de resumos</h3>
+              <p className="text-sm text-gray-500">Quando ativado, resumos serão gerados automaticamente</p>
+            </div>
+            <button
+              onClick={() => { setEnabled(!enabled); handleChange(); }}
+              className={`w-12 h-6 rounded-full transition-colors ${
+                enabled ? "bg-green-500" : "bg-gray-300"
+              }`}
+            >
+              <span
+                className={`block w-5 h-5 bg-white rounded-full shadow transform transition-transform ${
+                  enabled ? "translate-x-6" : "translate-x-0.5"
+                }`}
+              />
+            </button>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Modelo OpenAI</h3>
+            <select
+              value={modelName}
+              onChange={(e) => { setModelName(e.target.value); handleChange(); }}
+              className="w-full px-3 py-2 border rounded-lg text-sm"
+            >
+              <option value="gpt-5">GPT-5 (Recomendado)</option>
+              <option value="gpt-4o">GPT-4o</option>
+              <option value="gpt-4o-mini">GPT-4o Mini</option>
+            </select>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Eventos que disparam a geração de resumo</h3>
+            <p className="text-sm text-gray-500 mb-3">Selecione os tipos de eventos que devem disparar a geração de um novo resumo</p>
+            
+            {eventTypes?.mappings && eventTypes.mappings.length > 0 ? (
+              <div className="border rounded-lg divide-y max-h-60 overflow-auto">
+                {eventTypes.mappings.map((mapping) => {
+                  const eventKey = `${mapping.source}:${mapping.event_type}`;
+                  const isSelected = triggerEventTypes.includes(eventKey);
+                  return (
+                    <label
+                      key={mapping.id}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleEventType(eventKey)}
+                        className="w-4 h-4 text-blue-600 rounded border-gray-300"
+                      />
+                      <div className="flex-1">
+                        <span className="text-sm font-medium text-gray-900">{mapping.display_name}</span>
+                        <span className="ml-2 text-xs text-gray-500">({mapping.source}:{mapping.event_type})</span>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 italic">Nenhum tipo de evento configurado ainda.</p>
+            )}
+          </div>
+
+          <div>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Template do Prompt</h3>
+            <p className="text-sm text-gray-500 mb-3">
+              Use as variáveis: <code className="bg-gray-100 px-1 rounded">{"{{RESUMO_ATUAL}}"}</code>, 
+              <code className="bg-gray-100 px-1 rounded ml-1">{"{{ULTIMAS_20_MENSAGENS}}"}</code>, 
+              <code className="bg-gray-100 px-1 rounded ml-1">{"{{ULTIMA_MENSAGEM}}"}</code>
+            </p>
+            <textarea
+              value={promptTemplate}
+              onChange={(e) => { setPromptTemplate(e.target.value); handleChange(); }}
+              rows={12}
+              className="w-full px-3 py-2 border rounded-lg text-sm font-mono"
+              placeholder="Digite o template do prompt..."
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            {hasChanges && (
+              <span className="text-sm text-yellow-600 self-center">Você tem alterações não salvas</span>
+            )}
+            <button
+              onClick={() => saveMutation.mutate()}
+              disabled={!hasChanges || saveMutation.isPending}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saveMutation.isPending ? "Salvando..." : "Salvar configuração"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsPage() {
+  const [location, setLocation] = useLocation();
+  
+  const isEventMappings = location === "/events/settings" || location === "/events/settings/event-mappings";
+  const isOpenaiSummary = location === "/events/settings/openai-summary";
+
+  useEffect(() => {
+    if (location === "/events/settings") {
+      setLocation("/events/settings/event-mappings", { replace: true });
+    }
+  }, [location, setLocation]);
+
+  return (
+    <div>
+      <div className="mb-6">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setLocation("/events/settings/event-mappings")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${
+              isEventMappings
+                ? "bg-blue-100 text-blue-700"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            Mapeamento de Eventos
+          </button>
+          <button
+            onClick={() => setLocation("/events/settings/openai-summary")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${
+              isOpenaiSummary
+                ? "bg-blue-100 text-blue-700"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            Resumo com OpenAI
+          </button>
+        </div>
+      </div>
+
+      <Switch>
+        <Route path="/events/settings/event-mappings" component={EventTypeMappingsPage} />
+        <Route path="/events/settings/openai-summary" component={OpenaiSummaryConfigPage} />
+        <Route path="/events/settings" component={EventTypeMappingsPage} />
+      </Switch>
+    </div>
+  );
+}
+
 function EventsLayout() {
   const [location, setLocation] = useLocation();
   
   const isEventsStandard = location === "/events" || location === "/events/events_standard";
   const isZendeskRaw = location === "/events/zendesk_conversations_raw";
-  const isSettings = location === "/events/settings";
+  const isSettings = location.startsWith("/events/settings");
 
   useEffect(() => {
     if (location === "/events") {
@@ -1163,7 +1406,7 @@ function EventsLayout() {
       <Switch>
         <Route path="/events/events_standard" component={EventsStandardPage} />
         <Route path="/events/zendesk_conversations_raw" component={ZendeskConversationsRawPage} />
-        <Route path="/events/settings" component={EventTypeMappingsPage} />
+        <Route path="/events/settings/:subpage?" component={SettingsPage} />
         <Route path="/events" component={EventsStandardPage} />
       </Switch>
     </div>

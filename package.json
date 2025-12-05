@@ -35,6 +35,7 @@
     "framer-motion": "^11.0.14",
     "lucide-react": "^0.363.0",
     "memoizee": "^0.4.17",
+    "openai": "^6.10.0",
     "openid-client": "^6.8.1",
     "passport": "^0.7.0",
     "react": "^18.2.0",

@@ -1,6 +1,7 @@
 import { getAdapter } from "../adapters/index.js";
 import { storage } from "../storage.js";
 import { eventBus, EVENTS } from "./eventBus.js";
+import { processSummaryForEvent } from "./summaryOrchestrator.js";
 import type { StandardEvent } from "../adapters/types.js";
 
 const SUPPORTED_SOURCES = ["zendesk"] as const;
@@ -44,7 +45,7 @@ export async function processRawEvent(rawId: number, source: string): Promise<vo
     const standardEvents = adapter.normalize(payload);
 
     for (const event of standardEvents) {
-      await storage.saveStandardEvent({
+      const savedEvent = await storage.saveStandardEvent({
         ...event,
         sourceRawId: rawId,
         conversationId,
@@ -52,6 +53,12 @@ export async function processRawEvent(rawId: number, source: string): Promise<vo
       });
       
       await storage.ensureEventTypeMapping(event.source, event.eventType);
+      
+      try {
+        await processSummaryForEvent(savedEvent);
+      } catch (summaryError) {
+        console.error(`Failed to process summary for event ${savedEvent.id}:`, summaryError);
+      }
     }
 
     await storage.updateWebhookRawStatus(rawId, source, "success");
