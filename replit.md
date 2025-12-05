@@ -104,17 +104,32 @@ server/
   └── storage.ts      # Re-exporta módulos de storage (facade para retrocompatibilidade)
 client/src/
   ├── components/     # Componentes React reutilizáveis
-  │   ├── ui/           # Componentes base (Pagination, DataTable, LoadingSpinner)
-  │   └── *.tsx         # Badges, modais (EventDetailModal, UserDetailModal, etc)
+  │   ├── ui/           # Componentes base (Badge, Pagination, DataTable, LoadingSpinner)
+  │   └── *.tsx         # Badges especializados, modais (EventDetailModal, UserDetailModal, etc)
   ├── pages/          # Páginas/views
-  ├── hooks/          # Hooks customizados (usePaginatedQuery, useAuth)
+  ├── hooks/          # Hooks customizados (usePaginatedQuery, useAuth, useOpenaiSummaryConfig)
   └── lib/            # Utilitários e helpers
       ├── dateUtils.ts  # Formatação de datas
       ├── userUtils.ts  # Formatação e extração de dados de usuário
-      └── queryClient.ts # Configuração TanStack Query e helpers (fetchApi)
+      └── queryClient.ts # Configuração TanStack Query e helpers (fetchApi, fetchWithAuth, apiRequest)
 shared/
   └── schema.ts       # Definições de tabelas Drizzle (fonte única)
 ```
+
+### Padrões de Componentes
+
+**Badge Component (client/src/components/ui/Badge.tsx):**
+Componente genérico reutilizável para badges com variantes de estilo:
+- Variants: `success`, `error`, `warning`, `info`, `purple`, `teal`, `default`
+- Sizes: `sm`, `md`
+- Suporte a ícones opcionais
+- Badges especializados (StatusBadge, AuthorTypeBadge, EventTypeBadge, AuthBadge) usam este componente base
+
+**Fetch/API Pattern (client/src/lib/queryClient.ts):**
+- `fetchApi<T>`: Fetch tipado com tratamento de erros e redirect para login em 401/403
+- `fetchWithAuth<T>`: Similar ao fetchApi mas retorna null em erros de autenticação (para hooks de auth)
+- `apiRequest`: Para requisições com body (POST, PUT, DELETE)
+- **SEMPRE** use estas funções em vez de `fetch` direto para manter consistência no tratamento de erros
 
 ### Checklist para Novas Features
 
