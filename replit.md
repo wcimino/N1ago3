@@ -38,6 +38,12 @@ The frontend dashboard provides a real-time view of events and conversations, wi
 *   **Real-time Dashboard:** Displays events and conversation metrics.
 *   **User Management:** Secure authentication and authorization for system access.
 *   **Extensibility:** Designed to easily integrate new communication channels via adapters.
+*   **AI-Powered Conversation Summaries:** Automatically generates and updates summaries of customer conversations using OpenAI API.
+    *   **Architecture:** Separates AI service layer (openaiSummaryService.ts) from business logic (summaryOrchestrator.ts) to allow future support for other AI providers.
+    *   **Payload Structure:** Includes current summary, last 20 messages, and the last message for context.
+    *   **Configurable Triggers:** Summaries can be triggered by specific event types (configured via UI).
+    *   **Lazy Initialization:** OpenAI client is only initialized when needed, preventing startup errors when API key is not configured.
+    *   **Configuration UI:** Available at /events/settings/openai-summary with toggle, event type selection, model choice, and custom prompt editor.
 
 ## External Dependencies
 
