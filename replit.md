@@ -76,7 +76,7 @@ O sistema usa PostgreSQL para armazenar todas as interações:
    - `metadata`, `identities`: Dados adicionais do Zendesk
    - `firstSeenAt`, `lastSeenAt`: Timestamps de atividade
 
-2. **webhook_raw_logs** - Log bruto de TODAS as chamadas do webhook
+2. **zendesk_conversations_webhook_raw** - Log bruto de TODAS as chamadas do webhook de conversas do Zendesk
    - Armazena headers, payload, raw_body
    - Status de processamento (pending, success, error)
    - Mensagem de erro quando aplicável
