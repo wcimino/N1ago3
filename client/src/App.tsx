@@ -120,22 +120,15 @@ function LandingPage() {
         <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
           <Activity className="w-8 h-8 text-white" />
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">N1ago</h1>
-        <p className="text-gray-600 mb-8">
-          Painel de monitoramento de webhooks e usuários do Zendesk
-        </p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">N1ago</h1>
         
         <a
           href="/api/login"
           className="inline-flex items-center justify-center gap-2 w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors"
         >
           <LogIn className="w-5 h-5" />
-          Entrar com sua conta
+          Entrar
         </a>
-        
-        <p className="text-xs text-gray-500 mt-6">
-          Acesso restrito a usuários do domínio @ifood.com.br
-        </p>
       </div>
     </div>
   );
