@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { RefreshCw, XCircle, MessageCircle, ChevronLeft } from "lucide-react";
-import type { Message, UserConversationsMessagesResponse } from "../types";
+import { RefreshCw, XCircle, MessageCircle, ChevronLeft, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import type { Message, UserConversationsMessagesResponse, ImagePayload } from "../types";
 import { ConversationSummaryCard } from "../components";
 
 interface UserConversationsPageProps {
@@ -13,6 +15,7 @@ interface UserConversationsPageProps {
 export function UserConversationsPage({ params }: UserConversationsPageProps) {
   const [, navigate] = useLocation();
   const userId = decodeURIComponent(params.userId);
+  const [expandedImage, setExpandedImage] = useState<ImagePayload | null>(null);
 
   const { data, isLoading, error } = useQuery<UserConversationsMessagesResponse>({
     queryKey: ["user-conversations-messages", userId],
@@ -150,19 +153,20 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                               </span>
                             </div>
                             {msg.content_type === "image" && msg.content_payload && "mediaUrl" in msg.content_payload ? (
-                              <a 
-                                href={msg.content_payload.mediaUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="block"
+                              <motion.div
+                                layoutId={`image-${msg.id}`}
+                                onClick={() => setExpandedImage(msg.content_payload as ImagePayload)}
+                                className="cursor-pointer"
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                               >
                                 <img 
                                   src={msg.content_payload.mediaUrl} 
                                   alt={msg.content_payload.altText || "Imagem enviada"}
-                                  className="max-w-full rounded-lg max-h-64 object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                                  className="max-w-full rounded-lg max-h-64 object-contain"
                                   loading="lazy"
                                 />
-                              </a>
+                              </motion.div>
                             ) : (
                               <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">
                                 {msg.content_text || `[${msg.content_type}]`}
@@ -188,6 +192,45 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {expandedImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+            onClick={() => setExpandedImage(null)}
+          >
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ delay: 0.1 }}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+              onClick={() => setExpandedImage(null)}
+            >
+              <X className="w-6 h-6" />
+            </motion.button>
+            
+            <motion.img
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              transition={{ 
+                type: "spring", 
+                stiffness: 300, 
+                damping: 25 
+              }}
+              src={expandedImage.mediaUrl}
+              alt={expandedImage.altText || "Imagem expandida"}
+              className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
