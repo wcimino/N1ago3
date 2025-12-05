@@ -1,33 +1,25 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Users, MessageCircle, Activity, ChevronRight as ArrowRight } from "lucide-react";
+import { fetchApi } from "../lib/queryClient";
 import type { UsersStatsResponse, ConversationsStatsResponse, StatsResponse } from "../types";
 
 export function HomePage() {
   const { data: usersStats } = useQuery<UsersStatsResponse>({
     queryKey: ["users-stats"],
-    queryFn: async () => {
-      const res = await fetch("/api/users/stats", { credentials: "include" });
-      return res.json();
-    },
+    queryFn: () => fetchApi<UsersStatsResponse>("/api/users/stats"),
     refetchInterval: 5000,
   });
 
   const { data: conversationsStats } = useQuery<ConversationsStatsResponse>({
     queryKey: ["conversations-stats"],
-    queryFn: async () => {
-      const res = await fetch("/api/conversations/stats", { credentials: "include" });
-      return res.json();
-    },
+    queryFn: () => fetchApi<ConversationsStatsResponse>("/api/conversations/stats"),
     refetchInterval: 5000,
   });
 
   const { data: eventsStats } = useQuery<StatsResponse>({
     queryKey: ["webhook-stats"],
-    queryFn: async () => {
-      const res = await fetch("/api/webhook-logs/stats", { credentials: "include" });
-      return res.json();
-    },
+    queryFn: () => fetchApi<StatsResponse>("/api/webhook-logs/stats"),
     refetchInterval: 5000,
   });
 

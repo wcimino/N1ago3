@@ -92,14 +92,26 @@ server/
   │   └── webhookLogs.ts # Logs de webhook
   ├── middleware/     # Middlewares compartilhados
   │   └── auth.ts       # Guards: isAuthenticated, requireAuthorizedUser
-  └── storage.ts      # Operações de banco de dados (facade)
+  ├── storage/        # Módulos de acesso a dados (modularizado)
+  │   ├── index.ts        # Agregador que exporta storage unificado
+  │   ├── authStorage.ts  # Operações de autenticação e usuários autorizados
+  │   ├── webhookStorage.ts # Operações de webhook/logs
+  │   ├── userStorage.ts  # Operações de usuários Zendesk
+  │   ├── conversationStorage.ts # Operações de conversas
+  │   ├── eventStorage.ts # Operações de eventos e mapeamentos
+  │   ├── configStorage.ts # Configurações (OpenAI summary)
+  │   └── messageStorage.ts # Operações de mensagens
+  └── storage.ts      # Re-exporta módulos de storage (facade para retrocompatibilidade)
 client/src/
   ├── components/     # Componentes React reutilizáveis
   │   ├── ui/           # Componentes base (Pagination, DataTable, LoadingSpinner)
-  │   └── *.tsx         # Badges, modais e outros componentes
+  │   └── *.tsx         # Badges, modais (EventDetailModal, UserDetailModal, etc)
   ├── pages/          # Páginas/views
-  ├── hooks/          # Hooks customizados (usePaginatedQuery)
-  └── lib/            # Utilitários e helpers (dateUtils, queryClient)
+  ├── hooks/          # Hooks customizados (usePaginatedQuery, useAuth)
+  └── lib/            # Utilitários e helpers
+      ├── dateUtils.ts  # Formatação de datas
+      ├── userUtils.ts  # Formatação e extração de dados de usuário
+      └── queryClient.ts # Configuração TanStack Query e helpers (fetchApi)
 shared/
   └── schema.ts       # Definições de tabelas Drizzle (fonte única)
 ```

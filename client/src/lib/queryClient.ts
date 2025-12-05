@@ -49,6 +49,12 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
+export async function fetchApi<T>(url: string): Promise<T> {
+  const res = await fetch(url, { credentials: "include" });
+  await throwIfResNotOk(res);
+  return res.json();
+}
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
