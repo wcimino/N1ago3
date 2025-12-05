@@ -7,13 +7,13 @@ import { EventTypeMappingsPage } from "./EventTypeMappingsPage";
 export function EventsLayout() {
   const [location, setLocation] = useLocation();
   
-  const isEventsStandard = location === "/" || location === "/events_standard";
-  const isZendeskRaw = location === "/zendesk_conversations_raw";
-  const isSettings = location === "/settings";
+  const isEventsStandard = location === "/events" || location === "/events/" || location === "/events/events_standard";
+  const isZendeskRaw = location === "/events/zendesk_conversations_raw";
+  const isSettings = location === "/events/settings";
 
   useEffect(() => {
-    if (location === "/") {
-      setLocation("/events_standard", { replace: true });
+    if (location === "/events" || location === "/events/") {
+      setLocation("/events/events_standard", { replace: true });
     }
   }, [location, setLocation]);
 
@@ -58,10 +58,10 @@ export function EventsLayout() {
       </div>
 
       <Switch>
-        <Route path="/events_standard" component={EventsStandardPage} />
-        <Route path="/zendesk_conversations_raw" component={ZendeskConversationsRawPage} />
-        <Route path="/settings" component={EventTypeMappingsPage} />
-        <Route path="/" component={EventsStandardPage} />
+        <Route path="/events/events_standard" component={EventsStandardPage} />
+        <Route path="/events/zendesk_conversations_raw" component={ZendeskConversationsRawPage} />
+        <Route path="/events/settings" component={EventTypeMappingsPage} />
+        <Route path="/events" component={EventsStandardPage} />
       </Switch>
     </div>
   );
