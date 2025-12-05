@@ -272,4 +272,19 @@ export const storage = {
       anonymous: Number(total) - Number(authenticated),
     };
   },
+
+  async getConversationsStats() {
+    const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(conversations);
+    const [{ active }] = await db.select({ 
+      active: sql<number>`count(*) filter (where status = 'active')` 
+    }).from(conversations);
+    const [{ totalMessages }] = await db.select({ totalMessages: sql<number>`count(*)` }).from(messages);
+    
+    return {
+      total: Number(total),
+      active: Number(active),
+      closed: Number(total) - Number(active),
+      totalMessages: Number(totalMessages),
+    };
+  },
 };

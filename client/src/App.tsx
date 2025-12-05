@@ -70,6 +70,13 @@ interface UsersStatsResponse {
   anonymous: number;
 }
 
+interface ConversationsStatsResponse {
+  total: number;
+  active: number;
+  closed: number;
+  totalMessages: number;
+}
+
 interface AuthorizedUser {
   id: number;
   email: string;
@@ -291,6 +298,15 @@ function HomePage() {
     refetchInterval: 5000,
   });
 
+  const { data: conversationsStats } = useQuery<ConversationsStatsResponse>({
+    queryKey: ["conversations-stats"],
+    queryFn: async () => {
+      const res = await fetch("/api/conversations/stats", { credentials: "include" });
+      return res.json();
+    },
+    refetchInterval: 5000,
+  });
+
   const { data: eventsStats } = useQuery<StatsResponse>({
     queryKey: ["webhook-stats"],
     queryFn: async () => {
@@ -324,6 +340,36 @@ function HomePage() {
           <div className="bg-white rounded-lg shadow p-6">
             <p className="text-sm text-gray-500">Anônimos</p>
             <p className="text-4xl font-bold text-gray-600 mt-2">{usersStats?.anonymous || 0}</p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <MessageCircle className="w-5 h-5 text-teal-600" />
+            Conversas
+          </h2>
+          <Link href="/conversation" className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
+            Ver todas <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Total de Conversas</p>
+            <p className="text-4xl font-bold text-gray-900 mt-2">{conversationsStats?.total || 0}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Ativas</p>
+            <p className="text-4xl font-bold text-green-600 mt-2">{conversationsStats?.active || 0}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Fechadas</p>
+            <p className="text-4xl font-bold text-gray-600 mt-2">{conversationsStats?.closed || 0}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Total de Mensagens</p>
+            <p className="text-4xl font-bold text-teal-600 mt-2">{conversationsStats?.totalMessages || 0}</p>
           </div>
         </div>
       </div>
