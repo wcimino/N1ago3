@@ -356,30 +356,13 @@ router.get("/api/events", isAuthenticated, requireAuthorizedUser, async (req: Re
   const eventType = req.query.event_type as string | undefined;
   const conversationId = req.query.conversation_id ? parseInt(req.query.conversation_id as string) : undefined;
 
-  const { events, total } = await storage.getStandardEvents(limit, offset, { source, eventType, conversationId });
+  const { events, total } = await storage.getStandardEventsWithMappings(limit, offset, { source, eventType, conversationId });
 
   res.json({
     total,
     offset,
     limit,
-    events: events.map((e) => ({
-      id: e.id,
-      event_type: e.eventType,
-      event_subtype: e.eventSubtype,
-      source: e.source,
-      source_event_id: e.sourceEventId,
-      external_conversation_id: e.externalConversationId,
-      external_user_id: e.externalUserId,
-      author_type: e.authorType,
-      author_id: e.authorId,
-      author_name: e.authorName,
-      content_text: e.contentText,
-      content_payload: e.contentPayload,
-      occurred_at: e.occurredAt?.toISOString(),
-      received_at: e.receivedAt?.toISOString(),
-      channel_type: e.channelType,
-      metadata: e.metadata,
-    })),
+    events,
   });
 });
 

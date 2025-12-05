@@ -682,7 +682,7 @@ export const storage = {
       });
   },
 
-  async getStandardEventsWithMappings(limit = 50, offset = 0, filters?: { source?: string; eventType?: string; showInListOnly?: boolean }) {
+  async getStandardEventsWithMappings(limit = 50, offset = 0, filters?: { source?: string; eventType?: string; showInListOnly?: boolean; conversationId?: number }) {
     const conditions: any[] = [];
     
     if (filters?.showInListOnly) {
@@ -693,6 +693,9 @@ export const storage = {
     }
     if (filters?.eventType) {
       conditions.push(sql`e.event_type = ${filters.eventType}`);
+    }
+    if (filters?.conversationId) {
+      conditions.push(sql`e.conversation_id = ${filters.conversationId}`);
     }
     
     const whereClause = conditions.length > 0 
