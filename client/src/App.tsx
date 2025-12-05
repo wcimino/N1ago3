@@ -395,7 +395,7 @@ function HomePage() {
             <MessageCircle className="w-5 h-5 text-teal-600" />
             Conversas
           </h2>
-          <Link href="/conversation" className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
+          <Link href="/users" className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
             Ver todas <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -691,141 +691,6 @@ function UserDetailModal({ user, onClose }: { user: User; onClose: () => void })
 
 function UsersPage() {
   const [page, setPage] = useState(0);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const limit = 20;
-
-  const { data: usersData, isLoading } = useQuery<UsersResponse>({
-    queryKey: ["users", page],
-    queryFn: async () => {
-      const res = await fetch(`/api/users?limit=${limit}&offset=${page * limit}`, { credentials: "include" });
-      return res.json();
-    },
-    refetchInterval: 5000,
-  });
-
-  const totalPages = usersData ? Math.ceil(usersData.total / limit) : 0;
-
-  const getUserDisplayName = (user: User) => {
-    if (user.profile?.givenName || user.profile?.surname) {
-      return `${user.profile?.givenName || ""} ${user.profile?.surname || ""}`.trim();
-    }
-    return user.sunshine_id.slice(0, 12) + "...";
-  };
-
-  return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="px-4 py-3 border-b">
-        <h2 className="text-lg font-semibold text-gray-900">Usuários</h2>
-      </div>
-
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
-        </div>
-      ) : !usersData?.users || usersData.users.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          <p>Nenhum usuário registrado ainda.</p>
-          <p className="text-sm mt-1">Os usuários serão criados automaticamente quando eventos chegarem.</p>
-        </div>
-      ) : (
-        <>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Primeira vez</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    <span className="inline-flex items-center gap-1">
-                      Última vez
-                      <ArrowDown className="w-3 h-3" />
-                    </span>
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {usersData.users.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">#{user.id}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      {getUserDisplayName(user)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
-                      {user.profile?.email || "-"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <AuthBadge authenticated={user.authenticated} />
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
-                      {format(new Date(user.first_seen_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
-                      {format(new Date(user.last_seen_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => setSelectedUser(user)}
-                          className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
-                        >
-                          <Eye className="w-4 h-4" />
-                          Ver
-                        </button>
-                        <Link
-                          href={`/events?user=${encodeURIComponent(user.sunshine_id)}`}
-                          className="inline-flex items-center gap-1 text-purple-600 hover:text-purple-800 text-sm"
-                        >
-                          <Activity className="w-4 h-4" />
-                          Eventos
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="px-4 py-3 border-t flex items-center justify-between">
-            <p className="text-sm text-gray-500">
-              Mostrando {page * limit + 1} - {Math.min((page + 1) * limit, usersData?.total || 0)} de{" "}
-              {usersData?.total || 0}
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-                disabled={page === 0}
-                className="inline-flex items-center gap-1 px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Anterior
-              </button>
-              <button
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= totalPages - 1}
-                className="inline-flex items-center gap-1 px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                Próximo
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-
-      {selectedUser !== null && (
-        <UserDetailModal user={selectedUser} onClose={() => setSelectedUser(null)} />
-      )}
-    </div>
-  );
-}
-
-function ConversationsPage() {
-  const [page, setPage] = useState(0);
   const [, navigate] = useLocation();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const limit = 20;
@@ -946,7 +811,7 @@ function ConversationsPage() {
                       Ver Eventos
                     </Link>
                     <button
-                      onClick={() => navigate(`/conversation/user/${encodeURIComponent(group.user_id)}`)}
+                      onClick={() => navigate(`/users/${encodeURIComponent(group.user_id)}`)}
                       className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                     >
                       <MessageCircle className="w-4 h-4" />
@@ -1044,7 +909,7 @@ function UserConversationsPage({ params }: { params: { userId: string } }) {
     <div className="h-[calc(100vh-180px)] flex flex-col">
       <div className="bg-white rounded-t-lg shadow-sm border-b px-4 py-3 flex items-center gap-3">
         <button
-          onClick={() => navigate("/conversation")}
+          onClick={() => navigate("/users")}
           className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -1067,7 +932,7 @@ function UserConversationsPage({ params }: { params: { userId: string } }) {
             <XCircle className="w-12 h-12 text-red-300 mb-3" />
             <p>Conversas não encontradas</p>
             <button
-              onClick={() => navigate("/conversation")}
+              onClick={() => navigate("/users")}
               className="mt-4 text-blue-600 hover:text-blue-800"
             >
               Voltar para lista
@@ -1387,7 +1252,7 @@ function AuthenticatedApp() {
               <Home className="w-4 h-4" />
               Home
             </NavLink>
-            <NavLink href="/conversation">
+            <NavLink href="/users">
               <Users className="w-4 h-4" />
               Usuários
             </NavLink>
@@ -1403,8 +1268,8 @@ function AuthenticatedApp() {
         <Switch>
           <Route path="/" component={HomePage} />
           <Route path="/events" component={EventsPage} />
-          <Route path="/conversation" component={ConversationsPage} />
-          <Route path="/conversation/user/:userId">{(params) => <UserConversationsPage params={params} />}</Route>
+          <Route path="/users" component={UsersPage} />
+          <Route path="/users/:userId">{(params) => <UserConversationsPage params={params} />}</Route>
           <Route path="/authorized-users" component={AuthorizedUsersPage} />
         </Switch>
       </main>

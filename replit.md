@@ -171,17 +171,18 @@ Detalhes completos de um log específico
 #### `/api/webhook-logs/stats` (GET)
 Estatísticas dos logs por status
 
-#### `/api/users` (GET)
-Lista usuários do Zendesk
-
 #### `/api/users/stats` (GET)
 Estatísticas de usuários do Zendesk
 
-#### `/api/conversations` (GET)
-Lista todas as conversas armazenadas
+#### `/api/conversations/grouped` (GET)
+Lista usuários com suas conversas agrupadas
+- Parâmetros: `limit`, `offset`
 
-#### `/api/conversations/:zendeskId/messages` (GET)
-Mensagens de uma conversa específica
+#### `/api/conversations/user/:userId/messages` (GET)
+Todas as conversas e mensagens de um usuário específico
+
+#### `/api/conversations/stats` (GET)
+Estatísticas de conversas
 
 ## Scripts
 
@@ -212,23 +213,25 @@ npm run db:push      # Sincroniza schema do banco
 ---
 
 **Última atualização**: 2025-12-05
-**Versão**: 2.4.0
+**Versão**: 2.5.0
 
 ## Changelog
+
+### v2.5.0 (2025-12-05)
+- Rota `/users` agora é a página principal de usuários (antes era `/conversation`)
+- Rota `/users/:userId` para ver histórico de conversas de um usuário
+- Removida a antiga página de usuários (tabela simples)
+- Adicionado botão "Ver Usuário" na lista que abre overlay com detalhes completos
+- **APIs removidas (obsoletas)**:
+  - `GET /api/users` - substituída por `/api/conversations/grouped`
+  - `GET /api/conversations` - não utilizada
+  - `GET /api/conversations/:zendeskId/messages` - substituída por `/api/conversations/user/:userId/messages`
 
 ### v2.4.0 (2025-12-05)
 - Conversas agora agrupadas por usuário na lista principal
 - Lista mostra: contagem de conversas, última atividade, nome/email do usuário
-- Nova rota `/conversation/user/:userId` para ver todas as conversas de um usuário
-- Separadores visuais entre diferentes conversas do mesmo usuário (linha horizontal com ID e timestamp)
+- Separadores visuais entre diferentes conversas do mesmo usuário
 - Novos endpoints: `GET /api/conversations/grouped` e `GET /api/conversations/user/:userId/messages`
-- Corrigido formato de timestamps nas queries SQL
-
-### v2.3.0 (2025-12-05)
-- Nova página "Conversas" em `/conversation` com listagem de todas as conversas
-- Página de detalhes da conversa em `/conversation/:id` com layout estilo WhatsApp
-- Balões de chat: mensagens do usuário à esquerda, respostas do business/app à direita
-- Navegação adicionada ao menu principal
 
 ### v2.2.0 (2025-12-05)
 - Sistema de autenticação com Replit Auth (Google Login)
