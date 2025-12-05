@@ -322,7 +322,7 @@ function HomePage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
             <Users className="w-5 h-5 text-blue-600" />
-            Usuários Zendesk
+            Usuários
           </h2>
           <Link href="/users" className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
             Ver todos <ArrowRight className="w-4 h-4" />
@@ -670,7 +670,7 @@ function UsersPage() {
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="px-4 py-3 border-b">
-        <h2 className="text-lg font-semibold text-gray-900">Usuários Zendesk</h2>
+        <h2 className="text-lg font-semibold text-gray-900">Usuários</h2>
       </div>
 
       {isLoading ? (
@@ -1252,7 +1252,7 @@ function AuthenticatedApp() {
             </NavLink>
             <NavLink href="/users">
               <Users className="w-4 h-4" />
-              Usuários Zendesk
+              Usuários
             </NavLink>
             <NavLink href="/conversation">
               <MessageCircle className="w-4 h-4" />
