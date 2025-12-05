@@ -49,18 +49,30 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
     return res.status(404).json({ error: "No conversations found for this user" });
   }
 
+  const conversationsWithSummary = await Promise.all(
+    result.map(async (item) => {
+      const summary = await storage.getConversationSummary(item.conversation.id);
+      return {
+        conversation: {
+          id: item.conversation.id,
+          zendesk_conversation_id: item.conversation.zendeskConversationId,
+          status: item.conversation.status,
+          created_at: item.conversation.createdAt?.toISOString(),
+          updated_at: item.conversation.updatedAt?.toISOString(),
+        },
+        messages: item.messages,
+        summary: summary ? {
+          text: summary.summary,
+          generated_at: summary.generatedAt?.toISOString(),
+          updated_at: summary.updatedAt?.toISOString(),
+        } : null,
+      };
+    })
+  );
+
   res.json({
     user_id: req.params.userId,
-    conversations: result.map((item) => ({
-      conversation: {
-        id: item.conversation.id,
-        zendesk_conversation_id: item.conversation.zendeskConversationId,
-        status: item.conversation.status,
-        created_at: item.conversation.createdAt?.toISOString(),
-        updated_at: item.conversation.updatedAt?.toISOString(),
-      },
-      messages: item.messages,
-    })),
+    conversations: conversationsWithSummary,
   });
 });
 

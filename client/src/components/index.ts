@@ -9,6 +9,7 @@ export { EnvironmentBadge } from "./EnvironmentBadge";
 export { LogDetailModal } from "./LogDetailModal";
 export { UserDetailModal } from "./UserDetailModal";
 export { EventDetailModal } from "./EventDetailModal";
+export { ConversationSummaryCard } from "./ConversationSummaryCard";
 export { Pagination } from "./ui/Pagination";
 export { LoadingSpinner, LoadingState } from "./ui/LoadingSpinner";
 export { EmptyState } from "./ui/EmptyState";

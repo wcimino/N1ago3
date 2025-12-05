@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { RefreshCw, XCircle, MessageCircle, ChevronLeft } from "lucide-react";
 import type { Message, UserConversationsMessagesResponse } from "../types";
+import { ConversationSummaryCard } from "../components";
 
 interface UserConversationsPageProps {
   params: { userId: string };
@@ -117,6 +118,8 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                   </div>
                   <div className="flex-1 h-px bg-gray-300"></div>
                 </div>
+
+                <ConversationSummaryCard summary={convItem.summary} />
 
                 <div className="space-y-3">
                   {convItem.messages.length === 0 ? (

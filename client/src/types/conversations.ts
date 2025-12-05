@@ -68,6 +68,12 @@ export interface GroupedConversationsResponse {
   user_groups: UserGroup[];
 }
 
+export interface ConversationSummary {
+  text: string;
+  generated_at: string | null;
+  updated_at: string | null;
+}
+
 export interface ConversationWithMessages {
   conversation: {
     id: number;
@@ -77,6 +83,7 @@ export interface ConversationWithMessages {
     updated_at: string;
   };
   messages: Message[];
+  summary: ConversationSummary | null;
 }
 
 export interface UserConversationsMessagesResponse {
