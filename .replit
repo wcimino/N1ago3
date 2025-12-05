@@ -1,4 +1,4 @@
-modules = ["python-3.11"]
+modules = ["python-3.11", "nodejs-20"]
 [agent]
 expertMode = true
 integrations = ["python_openai:1.0.0", "zendesk:1.0.0", "python_database:1.0.0"]
@@ -17,28 +17,35 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "n1ago-server"
+args = "app"
 
 [[workflows.workflow]]
-name = "n1ago-server"
+name = "app"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python app.py"
+args = "npm run dev"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
 
 [[ports]]
+localPort = 3000
+externalPort = 3000
+
+[[ports]]
 localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 39583
-externalPort = 3000
+localPort = 41003
+externalPort = 3001
 
 [userenv]
 
 [userenv.development]
+
+[deployment]
+deploymentTarget = "cloudrun"
