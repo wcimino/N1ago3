@@ -589,6 +589,7 @@ function EventsStandardPage() {
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fonte</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Autor</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Conteúdo</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -607,6 +608,13 @@ function EventsStandardPage() {
                         <EventTypeBadge type={event.event_type} subtype={event.event_subtype} />
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500">{event.source}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500 font-mono text-xs">
+                        {event.external_user_id ? (
+                          <span title={event.external_user_id}>
+                            {event.external_user_id.slice(0, 12)}...
+                          </span>
+                        ) : "-"}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-1">
                           <AuthorTypeBadge type={event.author_type} />
@@ -925,7 +933,7 @@ function EventsLayout() {
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
-              Events Standard
+              Eventos padronizados
             </Link>
             <Link
               href="/events/zendesk_conversations_raw"
