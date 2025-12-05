@@ -375,8 +375,88 @@ function EventsPage() {
   );
 }
 
+function UserDetailModal({ user, onClose }: { user: User; onClose: () => void }) {
+  const getUserDisplayName = (u: User) => {
+    if (u.profile?.givenName || u.profile?.surname) {
+      return `${u.profile?.givenName || ""} ${u.profile?.surname || ""}`.trim();
+    }
+    return u.sunshine_id;
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={onClose}>
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="p-4 border-b flex justify-between items-center">
+          <h2 className="text-lg font-semibold">Usuário #{user.id}</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">
+            &times;
+          </button>
+        </div>
+        <div className="p-4 overflow-auto max-h-[calc(90vh-60px)]">
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-500">Nome</label>
+                <p className="mt-1 text-sm">{getUserDisplayName(user)}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Status</label>
+                <div className="mt-1">
+                  <AuthBadge authenticated={user.authenticated} />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Email</label>
+                <p className="mt-1 text-sm">{user.profile?.email || "-"}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Locale</label>
+                <p className="mt-1 text-sm">{user.profile?.locale || "-"}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Primeira vez</label>
+                <p className="mt-1 text-sm">
+                  {format(new Date(user.first_seen_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Última vez</label>
+                <p className="mt-1 text-sm">
+                  {format(new Date(user.last_seen_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-500">Sunshine ID</label>
+              <p className="mt-1 text-sm font-mono bg-gray-50 p-2 rounded break-all">{user.sunshine_id}</p>
+            </div>
+
+            {user.external_id && (
+              <div>
+                <label className="text-sm font-medium text-gray-500">External ID</label>
+                <p className="mt-1 text-sm font-mono bg-gray-50 p-2 rounded break-all">{user.external_id}</p>
+              </div>
+            )}
+
+            {user.profile && (
+              <div>
+                <label className="text-sm font-medium text-gray-500">Perfil Completo</label>
+                <pre className="mt-1 text-xs bg-gray-50 p-3 rounded overflow-auto max-h-40">
+                  {JSON.stringify(user.profile, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function UsersPage() {
   const [page, setPage] = useState(0);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const limit = 20;
 
   const { data: usersData, isLoading } = useQuery<UsersResponse>({
@@ -429,6 +509,7 @@ function UsersPage() {
                       <ArrowDown className="w-3 h-3" />
                     </span>
                   </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -449,6 +530,15 @@ function UsersPage() {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500">
                       {format(new Date(user.last_seen_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => setSelectedUser(user)}
+                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        <Eye className="w-4 h-4" />
+                        Ver
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -481,6 +571,10 @@ function UsersPage() {
             </div>
           </div>
         </>
+      )}
+
+      {selectedUser !== null && (
+        <UserDetailModal user={selectedUser} onClose={() => setSelectedUser(null)} />
       )}
     </div>
   );
