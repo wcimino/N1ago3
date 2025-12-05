@@ -2108,7 +2108,7 @@ function AuthenticatedApp() {
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         <Switch>
           <Route path="/" component={HomePage} />
-          <Route path="/events/:subpage?">{() => <EventsLayout />}</Route>
+          <Route path="/events/:rest*">{() => <EventsLayout />}</Route>
           <Route path="/users" component={UsersPage} />
           <Route path="/users/:userId">{(params) => <UserConversationsPage params={params} />}</Route>
           <Route path="/authorized-users" component={AuthorizedUsersPage} />
