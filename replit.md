@@ -212,9 +212,17 @@ npm run db:push      # Sincroniza schema do banco
 ---
 
 **Última atualização**: 2025-12-05
-**Versão**: 2.3.0
+**Versão**: 2.4.0
 
 ## Changelog
+
+### v2.4.0 (2025-12-05)
+- Conversas agora agrupadas por usuário na lista principal
+- Lista mostra: contagem de conversas, última atividade, nome/email do usuário
+- Nova rota `/conversation/user/:userId` para ver todas as conversas de um usuário
+- Separadores visuais entre diferentes conversas do mesmo usuário (linha horizontal com ID e timestamp)
+- Novos endpoints: `GET /api/conversations/grouped` e `GET /api/conversations/user/:userId/messages`
+- Corrigido formato de timestamps nas queries SQL
 
 ### v2.3.0 (2025-12-05)
 - Nova página "Conversas" em `/conversation` com listagem de todas as conversas
