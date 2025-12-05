@@ -1,7 +1,7 @@
 import { db } from "./db.js";
-import { webhookRawLogs, conversations, messages, users, authUsers, authorizedUsers } from "../shared/schema.js";
+import { zendeskConversationsWebhookRaw, conversations, messages, users, authUsers, authorizedUsers } from "../shared/schema.js";
 import { eq, desc, sql } from "drizzle-orm";
-import type { InsertWebhookRawLog, InsertConversation, InsertMessage, User, UpsertAuthUser, AuthUser, AuthorizedUser, InsertAuthorizedUser } from "../shared/schema.js";
+import type { InsertZendeskConversationsWebhookRaw, InsertConversation, InsertMessage, User, UpsertAuthUser, AuthUser, AuthorizedUser, InsertAuthorizedUser } from "../shared/schema.js";
 
 export const storage = {
   // Auth User operations for Replit Auth
@@ -56,33 +56,33 @@ export const storage = {
   },
 
   // Webhook operations
-  async createWebhookLog(data: InsertWebhookRawLog) {
-    const [log] = await db.insert(webhookRawLogs).values(data).returning();
+  async createWebhookLog(data: InsertZendeskConversationsWebhookRaw) {
+    const [log] = await db.insert(zendeskConversationsWebhookRaw).values(data).returning();
     return log;
   },
 
   async updateWebhookLogStatus(id: number, status: string, errorMessage?: string) {
-    await db.update(webhookRawLogs)
+    await db.update(zendeskConversationsWebhookRaw)
       .set({
         processingStatus: status,
         processedAt: new Date(),
         errorMessage: errorMessage || null,
       })
-      .where(eq(webhookRawLogs.id, id));
+      .where(eq(zendeskConversationsWebhookRaw.id, id));
   },
 
   async getWebhookLogs(limit = 50, offset = 0, status?: string, sunshineId?: string) {
     const conditions: any[] = [];
     
     if (status) {
-      conditions.push(eq(webhookRawLogs.processingStatus, status));
+      conditions.push(eq(zendeskConversationsWebhookRaw.processingStatus, status));
     }
     
     if (sunshineId) {
-      conditions.push(sql`${webhookRawLogs.payload}::text LIKE ${'%' + sunshineId + '%'}`);
+      conditions.push(sql`${zendeskConversationsWebhookRaw.payload}::text LIKE ${'%' + sunshineId + '%'}`);
     }
     
-    let query = db.select().from(webhookRawLogs).orderBy(desc(webhookRawLogs.receivedAt));
+    let query = db.select().from(zendeskConversationsWebhookRaw).orderBy(desc(zendeskConversationsWebhookRaw.receivedAt));
     
     if (conditions.length > 0) {
       for (const condition of conditions) {
@@ -92,7 +92,7 @@ export const storage = {
     
     const logs = await query.limit(limit).offset(offset);
     
-    let countQuery = db.select({ count: sql<number>`count(*)` }).from(webhookRawLogs);
+    let countQuery = db.select({ count: sql<number>`count(*)` }).from(zendeskConversationsWebhookRaw);
     if (conditions.length > 0) {
       for (const condition of conditions) {
         countQuery = countQuery.where(condition) as typeof countQuery;
@@ -104,19 +104,19 @@ export const storage = {
   },
 
   async getWebhookLogById(id: number) {
-    const [log] = await db.select().from(webhookRawLogs).where(eq(webhookRawLogs.id, id));
+    const [log] = await db.select().from(zendeskConversationsWebhookRaw).where(eq(zendeskConversationsWebhookRaw.id, id));
     return log;
   },
 
   async getWebhookLogsStats() {
     const stats = await db.select({
-      status: webhookRawLogs.processingStatus,
+      status: zendeskConversationsWebhookRaw.processingStatus,
       count: sql<number>`count(*)`,
     })
-      .from(webhookRawLogs)
-      .groupBy(webhookRawLogs.processingStatus);
+      .from(zendeskConversationsWebhookRaw)
+      .groupBy(zendeskConversationsWebhookRaw.processingStatus);
     
-    const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(webhookRawLogs);
+    const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(zendeskConversationsWebhookRaw);
     
     return {
       total: Number(total),
