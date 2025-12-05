@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { RefreshCw, CheckCircle, XCircle, Clock, Eye, ChevronLeft, ChevronRight, Users, Activity, UserCheck, UserX, ArrowDown } from "lucide-react";
+import { Route, Switch, Link, useLocation } from "wouter";
+import { RefreshCw, CheckCircle, XCircle, Clock, Eye, ChevronLeft, ChevronRight, Users, Activity, UserCheck, UserX, ArrowDown, Home, ChevronRight as ArrowRight } from "lucide-react";
 
 interface WebhookLog {
   id: number;
@@ -184,12 +185,17 @@ function LogDetailModal({ logId, onClose }: { logId: number; onClose: () => void
   );
 }
 
-function EventsPage() {
-  const [page, setPage] = useState(0);
-  const [selectedLogId, setSelectedLogId] = useState<number | null>(null);
-  const limit = 20;
+function HomePage() {
+  const { data: usersStats } = useQuery<UsersStatsResponse>({
+    queryKey: ["users-stats"],
+    queryFn: async () => {
+      const res = await fetch("/api/users/stats");
+      return res.json();
+    },
+    refetchInterval: 5000,
+  });
 
-  const { data: stats } = useQuery<StatsResponse>({
+  const { data: eventsStats } = useQuery<StatsResponse>({
     queryKey: ["webhook-stats"],
     queryFn: async () => {
       const res = await fetch("/api/webhook-logs/stats");
@@ -197,6 +203,72 @@ function EventsPage() {
     },
     refetchInterval: 5000,
   });
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Users className="w-5 h-5 text-blue-600" />
+            Usuários
+          </h2>
+          <Link href="/usuarios" className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
+            Ver todos <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Total de Usuários</p>
+            <p className="text-4xl font-bold text-gray-900 mt-2">{usersStats?.total || 0}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Autenticados</p>
+            <p className="text-4xl font-bold text-green-600 mt-2">{usersStats?.authenticated || 0}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Anônimos</p>
+            <p className="text-4xl font-bold text-gray-600 mt-2">{usersStats?.anonymous || 0}</p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Activity className="w-5 h-5 text-purple-600" />
+            Eventos
+          </h2>
+          <Link href="/eventos" className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
+            Ver todos <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Total de Eventos</p>
+            <p className="text-4xl font-bold text-gray-900 mt-2">{eventsStats?.total || 0}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Sucesso</p>
+            <p className="text-4xl font-bold text-green-600 mt-2">{eventsStats?.by_status?.success || 0}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Erro</p>
+            <p className="text-4xl font-bold text-red-600 mt-2">{eventsStats?.by_status?.error || 0}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500">Pendente</p>
+            <p className="text-4xl font-bold text-yellow-600 mt-2">{eventsStats?.by_status?.pending || 0}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EventsPage() {
+  const [page, setPage] = useState(0);
+  const [selectedLogId, setSelectedLogId] = useState<number | null>(null);
+  const limit = 20;
 
   const { data: logsData, isLoading } = useQuery<WebhookLogsResponse>({
     queryKey: ["webhook-logs", page],
@@ -211,25 +283,6 @@ function EventsPage() {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-500">Total de Eventos</p>
-          <p className="text-3xl font-bold text-gray-900">{stats?.total || 0}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-500">Sucesso</p>
-          <p className="text-3xl font-bold text-green-600">{stats?.by_status?.success || 0}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-500">Erro</p>
-          <p className="text-3xl font-bold text-red-600">{stats?.by_status?.error || 0}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-500">Pendente</p>
-          <p className="text-3xl font-bold text-yellow-600">{stats?.by_status?.pending || 0}</p>
-        </div>
-      </div>
-
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-4 py-3 border-b">
           <h2 className="text-lg font-semibold text-gray-900">Eventos Recebidos</h2>
@@ -326,15 +379,6 @@ function UsersPage() {
   const [page, setPage] = useState(0);
   const limit = 20;
 
-  const { data: stats } = useQuery<UsersStatsResponse>({
-    queryKey: ["users-stats"],
-    queryFn: async () => {
-      const res = await fetch("/api/users/stats");
-      return res.json();
-    },
-    refetchInterval: 5000,
-  });
-
   const { data: usersData, isLoading } = useQuery<UsersResponse>({
     queryKey: ["users", page],
     queryFn: async () => {
@@ -354,150 +398,145 @@ function UsersPage() {
   };
 
   return (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-500">Total de Usuários</p>
-          <p className="text-3xl font-bold text-gray-900">{stats?.total || 0}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-500">Autenticados</p>
-          <p className="text-3xl font-bold text-green-600">{stats?.authenticated || 0}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-500">Anônimos</p>
-          <p className="text-3xl font-bold text-gray-600">{stats?.anonymous || 0}</p>
-        </div>
+    <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="px-4 py-3 border-b">
+        <h2 className="text-lg font-semibold text-gray-900">Usuários</h2>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-4 py-3 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">Usuários</h2>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
         </div>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
-          </div>
-        ) : usersData?.users.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <p>Nenhum usuário registrado ainda.</p>
-            <p className="text-sm mt-1">Os usuários serão criados automaticamente quando eventos chegarem.</p>
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Primeira vez</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      <span className="inline-flex items-center gap-1">
-                        Última vez
-                        <ArrowDown className="w-3 h-3" />
-                      </span>
-                    </th>
+      ) : usersData?.users.length === 0 ? (
+        <div className="text-center py-12 text-gray-500">
+          <p>Nenhum usuário registrado ainda.</p>
+          <p className="text-sm mt-1">Os usuários serão criados automaticamente quando eventos chegarem.</p>
+        </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Primeira vez</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <span className="inline-flex items-center gap-1">
+                      Última vez
+                      <ArrowDown className="w-3 h-3" />
+                    </span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {usersData?.users.map((user) => (
+                  <tr key={user.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">#{user.id}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">
+                      {getUserDisplayName(user)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500">
+                      {user.profile?.email || "-"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <AuthBadge authenticated={user.authenticated} />
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500">
+                      {format(new Date(user.first_seen_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500">
+                      {format(new Date(user.last_seen_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {usersData?.users.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">#{user.id}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
-                        {getUserDisplayName(user)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
-                        {user.profile?.email || "-"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <AuthBadge authenticated={user.authenticated} />
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
-                        {format(new Date(user.first_seen_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
-                        {format(new Date(user.last_seen_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-            <div className="px-4 py-3 border-t flex items-center justify-between">
-              <p className="text-sm text-gray-500">
-                Mostrando {page * limit + 1} - {Math.min((page + 1) * limit, usersData?.total || 0)} de{" "}
-                {usersData?.total || 0}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                  className="inline-flex items-center gap-1 px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Anterior
-                </button>
-                <button
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page >= totalPages - 1}
-                  className="inline-flex items-center gap-1 px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  Próximo
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
+          <div className="px-4 py-3 border-t flex items-center justify-between">
+            <p className="text-sm text-gray-500">
+              Mostrando {page * limit + 1} - {Math.min((page + 1) * limit, usersData?.total || 0)} de{" "}
+              {usersData?.total || 0}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="inline-flex items-center gap-1 px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Anterior
+              </button>
+              <button
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page >= totalPages - 1}
+                className="inline-flex items-center gap-1 px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                Próximo
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
-          </>
-        )}
-      </div>
-    </>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+  const [location] = useLocation();
+  const isActive = location === href;
+
+  return (
+    <Link
+      href={href}
+      className={`inline-flex items-center gap-2 px-4 py-3 border-b-2 text-sm font-medium transition-colors ${
+        isActive
+          ? "border-blue-600 text-blue-600"
+          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+      }`}
+    >
+      {children}
+    </Link>
   );
 }
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<"users" | "events">("users");
-
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <h1 className="text-2xl font-bold text-gray-900">N1ago</h1>
+            <Link href="/" className="text-2xl font-bold text-gray-900 hover:text-gray-700">
+              N1ago
+            </Link>
           </div>
           <nav className="flex gap-1 -mb-px">
-            <button
-              onClick={() => setCurrentPage("users")}
-              className={`inline-flex items-center gap-2 px-4 py-3 border-b-2 text-sm font-medium transition-colors ${
-                currentPage === "users"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
+            <NavLink href="/">
+              <Home className="w-4 h-4" />
+              Home
+            </NavLink>
+            <NavLink href="/usuarios">
               <Users className="w-4 h-4" />
               Usuários
-            </button>
-            <button
-              onClick={() => setCurrentPage("events")}
-              className={`inline-flex items-center gap-2 px-4 py-3 border-b-2 text-sm font-medium transition-colors ${
-                currentPage === "events"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
+            </NavLink>
+            <NavLink href="/eventos">
               <Activity className="w-4 h-4" />
               Eventos
-            </button>
+            </NavLink>
           </nav>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        {currentPage === "users" ? <UsersPage /> : <EventsPage />}
+        <Switch>
+          <Route path="/" component={HomePage} />
+          <Route path="/usuarios" component={UsersPage} />
+          <Route path="/eventos" component={EventsPage} />
+        </Switch>
       </main>
     </div>
   );
