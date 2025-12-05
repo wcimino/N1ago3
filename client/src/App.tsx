@@ -1464,8 +1464,10 @@ function UserConversationsPage({ params }: { params: { userId: string } }) {
 
   const getAuthorColor = (authorType: string) => {
     switch (authorType) {
+      case "customer":
       case "user":
         return "bg-blue-500";
+      case "agent":
       case "business":
       case "app":
         return "bg-green-500";
@@ -1474,8 +1476,8 @@ function UserConversationsPage({ params }: { params: { userId: string } }) {
     }
   };
 
-  const isUserMessage = (authorType: string) => {
-    return authorType === "user";
+  const isCustomerMessage = (authorType: string) => {
+    return authorType === "customer" || authorType === "user";
   };
 
   const totalMessages = data?.conversations.reduce((acc, conv) => acc + conv.messages.length, 0) || 0;
@@ -1561,15 +1563,15 @@ function UserConversationsPage({ params }: { params: { userId: string } }) {
                     </div>
                   ) : (
                     convItem.messages.map((msg: Message) => {
-                      const isUser = isUserMessage(msg.author_type);
+                      const isCustomer = isCustomerMessage(msg.author_type);
                       return (
                         <div
                           key={msg.id}
-                          className={`flex ${isUser ? "justify-start" : "justify-end"}`}
+                          className={`flex ${isCustomer ? "justify-start" : "justify-end"}`}
                         >
                           <div
                             className={`max-w-[75%] ${
-                              isUser
+                              isCustomer
                                 ? "bg-white rounded-tl-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl"
                                 : "bg-green-100 rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl"
                             } shadow-sm px-4 py-2`}
