@@ -38,8 +38,7 @@ router.post("/webhook/zendesk", async (req: Request, res: Response) => {
       return res.status(401).json({ status: "error", message: errorMessage });
     }
 
-    const rawEntry = await storage.createWebhookRaw({
-      source,
+    const rawEntry = await storage.createWebhookLog({
       sourceIp,
       headers: headersDict,
       payload: req.body,
@@ -49,7 +48,7 @@ router.post("/webhook/zendesk", async (req: Request, res: Response) => {
 
     console.log(`Webhook received - Raw ID: ${rawEntry.id}, Source: ${source}`);
 
-    eventBus.emit(EVENTS.RAW_CREATED, { rawId: rawEntry.id });
+    eventBus.emit(EVENTS.RAW_CREATED, { rawId: rawEntry.id, source });
 
     return res.json({
       status: "received",

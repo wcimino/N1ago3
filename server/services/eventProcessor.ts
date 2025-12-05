@@ -3,10 +3,13 @@ import { storage } from "../storage.js";
 import { eventBus, EVENTS } from "./eventBus.js";
 import type { StandardEvent } from "../adapters/types.js";
 
-export async function processRawEvent(rawId: number): Promise<void> {
-  const raw = await storage.getWebhookRawById(rawId);
+const SUPPORTED_SOURCES = ["zendesk"] as const;
+type SupportedSource = typeof SUPPORTED_SOURCES[number];
+
+export async function processRawEvent(rawId: number, source: string): Promise<void> {
+  const raw = await storage.getWebhookRawById(rawId, source);
   if (!raw) {
-    throw new Error(`Raw event not found: ${rawId}`);
+    throw new Error(`Raw event not found: ${rawId} (source: ${source})`);
   }
 
   if (raw.processingStatus === "success") {
@@ -14,10 +17,10 @@ export async function processRawEvent(rawId: number): Promise<void> {
     return;
   }
 
-  const adapter = getAdapter(raw.source);
+  const adapter = getAdapter(source);
   if (!adapter) {
-    await storage.updateWebhookRawStatus(rawId, "error", `No adapter for source: ${raw.source}`);
-    throw new Error(`No adapter for source: ${raw.source}`);
+    await storage.updateWebhookRawStatus(rawId, source, "error", `No adapter for source: ${source}`);
+    throw new Error(`No adapter for source: ${source}`);
   }
 
   try {
@@ -49,38 +52,41 @@ export async function processRawEvent(rawId: number): Promise<void> {
       });
     }
 
-    await storage.updateWebhookRawStatus(rawId, "success");
-    await eventBus.emit(EVENTS.RAW_PROCESSED, { rawId, eventsCount: standardEvents.length });
+    await storage.updateWebhookRawStatus(rawId, source, "success");
+    await eventBus.emit(EVENTS.RAW_PROCESSED, { rawId, source, eventsCount: standardEvents.length });
 
     console.log(`Processed raw event ${rawId}: ${standardEvents.length} events created`);
   } catch (error: any) {
     const errorMsg = error.message || String(error);
-    await storage.updateWebhookRawStatus(rawId, "error", errorMsg);
-    await eventBus.emit(EVENTS.RAW_FAILED, { rawId, error: errorMsg });
+    await storage.updateWebhookRawStatus(rawId, source, "error", errorMsg);
+    await eventBus.emit(EVENTS.RAW_FAILED, { rawId, source, error: errorMsg });
     throw error;
   }
 }
 
 export async function processPendingRaws(): Promise<number> {
-  const pendingRaws = await storage.getPendingWebhookRaws();
   let processedCount = 0;
 
-  for (const raw of pendingRaws) {
-    try {
-      await processRawEvent(raw.id);
-      processedCount++;
-    } catch (error) {
-      console.error(`Failed to process raw ${raw.id}:`, error);
+  for (const source of SUPPORTED_SOURCES) {
+    const pendingRaws = await storage.getPendingWebhookRaws(source);
+
+    for (const raw of pendingRaws) {
+      try {
+        await processRawEvent(raw.id, source);
+        processedCount++;
+      } catch (error) {
+        console.error(`Failed to process raw ${raw.id} (source: ${source}):`, error);
+      }
     }
   }
 
   return processedCount;
 }
 
-eventBus.on(EVENTS.RAW_CREATED, async ({ rawId }: { rawId: number }) => {
+eventBus.on(EVENTS.RAW_CREATED, async ({ rawId, source }: { rawId: number; source: string }) => {
   try {
-    await processRawEvent(rawId);
+    await processRawEvent(rawId, source);
   } catch (error) {
-    console.error(`Failed to process raw ${rawId} via event:`, error);
+    console.error(`Failed to process raw ${rawId} (source: ${source}) via event:`, error);
   }
 });

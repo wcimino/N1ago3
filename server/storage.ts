@@ -1,7 +1,7 @@
 import { db } from "./db.js";
-import { zendeskConversationsWebhookRaw, webhookEventsRaw, eventsStandard, conversations, messages, users, authUsers, authorizedUsers } from "../shared/schema.js";
+import { zendeskConversationsWebhookRaw, eventsStandard, conversations, messages, users, authUsers, authorizedUsers } from "../shared/schema.js";
 import { eq, desc, sql, and } from "drizzle-orm";
-import type { InsertZendeskConversationsWebhookRaw, InsertConversation, InsertMessage, User, UpsertAuthUser, AuthUser, AuthorizedUser, InsertAuthorizedUser, InsertWebhookEventsRaw, InsertEventStandard, WebhookEventsRaw, EventStandard } from "../shared/schema.js";
+import type { InsertZendeskConversationsWebhookRaw, InsertConversation, InsertMessage, User, UpsertAuthUser, AuthUser, AuthorizedUser, InsertAuthorizedUser, InsertEventStandard, EventStandard, ZendeskConversationsWebhookRaw } from "../shared/schema.js";
 import type { ExtractedUser, ExtractedConversation, StandardEvent } from "./adapters/types.js";
 
 export const storage = {
@@ -372,61 +372,68 @@ export const storage = {
     return user || null;
   },
 
-  // New webhook_events_raw operations
-  async createWebhookRaw(data: InsertWebhookEventsRaw): Promise<WebhookEventsRaw> {
-    const [log] = await db.insert(webhookEventsRaw).values(data).returning();
-    return log;
-  },
-
-  async getWebhookRawById(id: number): Promise<WebhookEventsRaw | null> {
-    const [raw] = await db.select().from(webhookEventsRaw).where(eq(webhookEventsRaw.id, id));
+  // Webhook raw operations (using zendesk_conversations_webhook_raw as canonical source)
+  async getWebhookRawById(id: number, source: string): Promise<ZendeskConversationsWebhookRaw | null> {
+    if (source !== "zendesk") {
+      console.warn(`Unknown source: ${source}, only zendesk is supported`);
+      return null;
+    }
+    const [raw] = await db.select().from(zendeskConversationsWebhookRaw).where(eq(zendeskConversationsWebhookRaw.id, id));
     return raw || null;
   },
 
-  async updateWebhookRawStatus(id: number, status: string, errorMessage?: string) {
+  async updateWebhookRawStatus(id: number, source: string, status: string, errorMessage?: string) {
+    if (source !== "zendesk") {
+      console.warn(`Unknown source: ${source}, only zendesk is supported`);
+      return;
+    }
     if (status === "error") {
-      await db.update(webhookEventsRaw)
+      await db.update(zendeskConversationsWebhookRaw)
         .set({
           processingStatus: status,
           processedAt: new Date(),
           errorMessage: errorMessage || null,
-          retryCount: sql`${webhookEventsRaw.retryCount} + 1`,
+          retryCount: sql`${zendeskConversationsWebhookRaw.retryCount} + 1`,
         })
-        .where(eq(webhookEventsRaw.id, id));
+        .where(eq(zendeskConversationsWebhookRaw.id, id));
     } else {
-      await db.update(webhookEventsRaw)
+      await db.update(zendeskConversationsWebhookRaw)
         .set({
           processingStatus: status,
           processedAt: new Date(),
           errorMessage: errorMessage || null,
         })
-        .where(eq(webhookEventsRaw.id, id));
+        .where(eq(zendeskConversationsWebhookRaw.id, id));
     }
   },
 
-  async getPendingWebhookRaws(limit = 100): Promise<WebhookEventsRaw[]> {
+  async getPendingWebhookRaws(source: string, limit = 100): Promise<ZendeskConversationsWebhookRaw[]> {
+    if (source !== "zendesk") {
+      console.warn(`Unknown source: ${source}, only zendesk is supported`);
+      return [];
+    }
     return await db.select()
-      .from(webhookEventsRaw)
+      .from(zendeskConversationsWebhookRaw)
       .where(
         and(
-          eq(webhookEventsRaw.processingStatus, "pending"),
-          sql`${webhookEventsRaw.retryCount} < 5`
+          eq(zendeskConversationsWebhookRaw.processingStatus, "pending"),
+          sql`${zendeskConversationsWebhookRaw.retryCount} < 5`
         )
       )
-      .orderBy(webhookEventsRaw.receivedAt)
+      .orderBy(zendeskConversationsWebhookRaw.receivedAt)
       .limit(limit);
   },
 
   async getWebhookRawsStats() {
     const stats = await db.select({
-      status: webhookEventsRaw.processingStatus,
-      source: webhookEventsRaw.source,
+      status: zendeskConversationsWebhookRaw.processingStatus,
+      source: zendeskConversationsWebhookRaw.source,
       count: sql<number>`count(*)`,
     })
-      .from(webhookEventsRaw)
-      .groupBy(webhookEventsRaw.processingStatus, webhookEventsRaw.source);
+      .from(zendeskConversationsWebhookRaw)
+      .groupBy(zendeskConversationsWebhookRaw.processingStatus, zendeskConversationsWebhookRaw.source);
     
-    const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(webhookEventsRaw);
+    const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(zendeskConversationsWebhookRaw);
     
     return {
       total: Number(total),

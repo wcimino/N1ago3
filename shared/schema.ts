@@ -52,19 +52,7 @@ export const users = pgTable("users", {
 
 export const zendeskConversationsWebhookRaw = pgTable("zendesk_conversations_webhook_raw", {
   id: serial("id").primaryKey(),
-  receivedAt: timestamp("received_at").defaultNow().notNull(),
-  sourceIp: text("source_ip"),
-  headers: json("headers"),
-  payload: json("payload"),
-  rawBody: text("raw_body"),
-  processingStatus: text("processing_status").default("pending").notNull(),
-  errorMessage: text("error_message"),
-  processedAt: timestamp("processed_at"),
-});
-
-export const webhookEventsRaw = pgTable("webhook_events_raw", {
-  id: serial("id").primaryKey(),
-  source: text("source").notNull(),
+  source: text("source").default("zendesk").notNull(),
   receivedAt: timestamp("received_at").defaultNow().notNull(),
   sourceIp: text("source_ip"),
   headers: json("headers"),
@@ -75,6 +63,7 @@ export const webhookEventsRaw = pgTable("webhook_events_raw", {
   processedAt: timestamp("processed_at"),
   retryCount: integer("retry_count").default(0).notNull(),
 });
+
 
 export const eventsStandard = pgTable("events_standard", {
   id: serial("id").primaryKey(),
@@ -152,7 +141,5 @@ export type InsertConversation = Omit<typeof conversations.$inferInsert, "id" | 
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = Omit<typeof messages.$inferInsert, "id" | "receivedAt">;
 
-export type WebhookEventsRaw = typeof webhookEventsRaw.$inferSelect;
-export type InsertWebhookEventsRaw = Omit<typeof webhookEventsRaw.$inferInsert, "id" | "receivedAt" | "retryCount">;
 export type EventStandard = typeof eventsStandard.$inferSelect;
 export type InsertEventStandard = Omit<typeof eventsStandard.$inferInsert, "id" | "receivedAt" | "processedAt">;
