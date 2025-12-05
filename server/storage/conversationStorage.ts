@@ -183,6 +183,7 @@ export const conversationStorage = {
             author_name: e.authorName,
             content_type: e.eventSubtype || 'text',
             content_text: e.contentText,
+            content_payload: e.contentPayload,
             received_at: e.receivedAt?.toISOString(),
             zendesk_timestamp: e.occurredAt?.toISOString(),
           })),

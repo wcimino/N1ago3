@@ -24,12 +24,21 @@ export interface ConversationsStatsResponse {
   totalMessages: number;
 }
 
+export interface ImagePayload {
+  type: "image";
+  mediaUrl: string;
+  mediaType?: string;
+  altText?: string;
+  mediaSize?: number;
+}
+
 export interface Message {
   id: number;
   author_type: string;
   author_name: string | null;
   content_type: string;
   content_text: string | null;
+  content_payload: ImagePayload | Record<string, any> | null;
   received_at: string;
   zendesk_timestamp: string | null;
 }

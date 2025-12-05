@@ -149,9 +149,25 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                                 {msg.author_name || msg.author_type}
                               </span>
                             </div>
-                            <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">
-                              {msg.content_text || `[${msg.content_type}]`}
-                            </p>
+                            {msg.content_type === "image" && msg.content_payload && "mediaUrl" in msg.content_payload ? (
+                              <a 
+                                href={msg.content_payload.mediaUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="block"
+                              >
+                                <img 
+                                  src={msg.content_payload.mediaUrl} 
+                                  alt={msg.content_payload.altText || "Imagem enviada"}
+                                  className="max-w-full rounded-lg max-h-64 object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                                  loading="lazy"
+                                />
+                              </a>
+                            ) : (
+                              <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">
+                                {msg.content_text || `[${msg.content_type}]`}
+                              </p>
+                            )}
                             <p className="text-[10px] text-gray-400 mt-1 text-right">
                               {msg.zendesk_timestamp || msg.received_at
                                 ? format(
