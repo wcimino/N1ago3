@@ -1,7 +1,7 @@
-import { db } from "./db";
-import { webhookRawLogs, conversations, messages, users, authUsers, authorizedUsers } from "../shared/schema";
+import { db } from "./db.js";
+import { webhookRawLogs, conversations, messages, users, authUsers, authorizedUsers } from "../shared/schema.js";
 import { eq, desc, sql } from "drizzle-orm";
-import type { InsertWebhookRawLog, InsertConversation, InsertMessage, User, UpsertAuthUser, AuthUser, AuthorizedUser, InsertAuthorizedUser } from "../shared/schema";
+import type { InsertWebhookRawLog, InsertConversation, InsertMessage, User, UpsertAuthUser, AuthUser, AuthorizedUser, InsertAuthorizedUser } from "../shared/schema.js";
 
 export const storage = {
   // Auth User operations for Replit Auth
@@ -120,7 +120,7 @@ export const storage = {
     
     return {
       total: Number(total),
-      byStatus: Object.fromEntries(stats.map(s => [s.status, Number(s.count)])),
+      byStatus: Object.fromEntries(stats.map((s: { status: string; count: number }) => [s.status, Number(s.count)])),
     };
   },
 

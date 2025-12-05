@@ -1,8 +1,8 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { setupAuth } from "./replitAuth";
-import { registerRoutes } from "./routes";
+import { setupAuth } from "./replitAuth.js";
+import { registerRoutes } from "./routes.js";
 
 declare global {
   namespace Express {

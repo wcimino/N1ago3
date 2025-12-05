@@ -1,7 +1,7 @@
 import { Router, type Request, type Response, type Express } from "express";
 import crypto from "crypto";
-import { storage } from "./storage";
-import { isAuthenticated, requireAuthorizedUser } from "./replitAuth";
+import { storage } from "./storage.js";
+import { isAuthenticated, requireAuthorizedUser } from "./replitAuth.js";
 
 const router = Router();
 
