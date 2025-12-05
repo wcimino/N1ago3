@@ -30,10 +30,71 @@ N1ago é um sistema para receber e monitorar webhooks do Zendesk Sunshine Conver
 
 ### Estrutura
 ```
-/client         - código do frontend React
-/server         - código do backend Express
-/shared         - esquemas e tipos compartilhados
+/client              - código do frontend React
+/server              - código do backend Express
+  /adapters          - adaptadores para fontes de dados (Zendesk, etc)
+  /services          - serviços de processamento (EventBus, EventProcessor, PollingWorker)
+/shared              - esquemas e tipos compartilhados
 ```
+
+## Arquitetura de Eventos Padronizados
+
+O sistema implementa uma arquitetura modular para receber eventos de múltiplas fontes e normalizá-los em um formato padrão.
+
+### Fluxo de Dados
+
+```
+┌─────────────────────┐
+│  Webhook (isolado)  │  ← Só recebe e salva raw
+│  /webhook/zendesk   │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  webhook_events_raw │  ← Tabela de eventos brutos
+│  (source: zendesk)  │
+└──────────┬──────────┘
+           │
+   EventBus.emit("raw:created")
+           │
+           ▼
+┌─────────────────────┐
+│   Event Processor   │  ← Orquestrador
+│  + ZendeskAdapter   │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│   events_standard   │  ← Eventos normalizados
+└─────────────────────┘
+```
+
+### Componentes
+
+1. **Webhook Isolado**: Apenas recebe e salva o evento raw, sem lógica de negócio
+2. **EventBus**: Sistema de eventos para comunicação assíncrona
+3. **Event Processor**: Orquestrador que usa adaptadores para normalizar eventos
+4. **Polling Worker**: Processa eventos pendentes a cada 10 segundos (fallback/retry)
+5. **Adapters**: Transformam dados específicos de cada fonte para o formato padrão
+
+### Adaptadores Disponíveis
+
+- **ZendeskAdapter**: Normaliza eventos do Zendesk Sunshine Conversations
+  - Tipos suportados: `message`, `conversation_started`, `read_receipt`, `typing`
+  - Mapeia autores: `user` → `customer`, `business` → `agent`, `app` → `bot`
+
+### Adicionando Nova Fonte
+
+Para adicionar uma nova fonte (ex: WhatsApp):
+
+1. Criar o adaptador em `/server/adapters/whatsapp/index.ts`
+2. Implementar a interface `SourceAdapter`:
+   - `normalize(rawPayload)`: Converte para StandardEvent[]
+   - `extractUser(rawPayload)`: Extrai dados do usuário
+   - `extractConversation(rawPayload)`: Extrai dados da conversa
+   - `verifyAuth()`: Valida autenticação do webhook
+3. Registrar no `/server/adapters/index.ts`
+4. Criar endpoint em `/webhook/whatsapp`
 
 ## Sistema de Autenticação
 
@@ -76,12 +137,25 @@ O sistema usa PostgreSQL para armazenar todas as interações:
    - `metadata`, `identities`: Dados adicionais do Zendesk
    - `firstSeenAt`, `lastSeenAt`: Timestamps de atividade
 
-2. **zendesk_conversations_webhook_raw** - Log bruto de TODAS as chamadas do webhook de conversas do Zendesk
-   - Armazena headers, payload, raw_body
-   - Status de processamento (pending, success, error)
-   - Mensagem de erro quando aplicável
+2. **zendesk_conversations_webhook_raw** - Log bruto do webhook legado (depreciado)
+   - Mantido para compatibilidade com dados antigos
 
-3. **conversations** - Conversas do Zendesk
+3. **webhook_events_raw** - Log bruto de TODOS os webhooks (nova arquitetura)
+   - `source`: Fonte do evento (zendesk, whatsapp, etc.)
+   - `headers`, `payload`, `raw_body`: Dados brutos
+   - `processing_status`: pending, success, error
+   - `retry_count`: Contagem de retentativas
+
+4. **events_standard** - Eventos normalizados de todas as fontes
+   - `event_type`: message, conversation_started, typing, read_receipt, etc.
+   - `event_subtype`: text, image, file, etc.
+   - `source`: zendesk, whatsapp, email, etc.
+   - `author_type`: customer, agent, bot, system
+   - `content_text`, `content_payload`: Conteúdo do evento
+   - `occurred_at`: Timestamp original do evento
+   - `source_raw_id`: FK para webhook_events_raw
+
+5. **conversations** - Conversas do Zendesk
    - ID da conversa e app do Zendesk
    - Dados do usuário
    - Status (active, closed)
@@ -213,9 +287,20 @@ npm run db:push      # Sincroniza schema do banco
 ---
 
 **Última atualização**: 2025-12-05
-**Versão**: 2.5.0
+**Versão**: 3.0.0
 
 ## Changelog
+
+### v3.0.0 (2025-12-05)
+- Nova arquitetura de eventos padronizados com adaptadores
+- Tabela `webhook_events_raw` para armazenar eventos brutos de qualquer fonte
+- Tabela `events_standard` para eventos normalizados
+- `ZendeskAdapter` implementado com normalize(), extractUser(), extractConversation()
+- `EventBus` para processamento assíncrono via eventos
+- `Polling Worker` para retry automático de eventos pendentes
+- Webhook isolado (apenas recebe e salva, sem lógica de negócio)
+- Novos endpoints: `GET /api/events`, `GET /api/events/stats`, `GET /api/webhook-raws/stats`
+- Endpoint legacy mantido em `/webhook/zendesk/legacy` para compatibilidade
 
 ### v2.5.0 (2025-12-05)
 - Rota `/users` agora é a página principal de usuários (antes era `/conversation`)
