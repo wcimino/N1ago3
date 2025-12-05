@@ -1,6 +1,6 @@
 import { db } from "../db.js";
 import { conversationsSummary, openaiApiConfig, openaiApiLogs } from "../../shared/schema.js";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql, gte, and, isNotNull } from "drizzle-orm";
 import type { ConversationSummary, InsertConversationSummary, OpenaiApiConfig, InsertOpenaiApiConfig, OpenaiApiLog, InsertOpenaiApiLog } from "../../shared/schema.js";
 
 export const configStorage = {
@@ -111,5 +111,37 @@ export const configStorage = {
         updatedAt: new Date(),
       })
       .where(eq(conversationsSummary.conversationId, conversationId));
+  },
+
+  async getTopProductsByPeriod(
+    period: "lastHour" | "today",
+    limit: number = 5
+  ): Promise<{ product: string; count: number }[]> {
+    const now = new Date();
+    let since: Date;
+
+    if (period === "lastHour") {
+      since = new Date(now.getTime() - 60 * 60 * 1000);
+    } else {
+      since = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    }
+
+    const results = await db
+      .select({
+        product: conversationsSummary.product,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(conversationsSummary)
+      .where(
+        and(
+          isNotNull(conversationsSummary.product),
+          gte(conversationsSummary.classifiedAt, since)
+        )
+      )
+      .groupBy(conversationsSummary.product)
+      .orderBy(sql`count(*) desc`)
+      .limit(limit);
+
+    return results.filter(r => r.product !== null) as { product: string; count: number }[];
   },
 };
