@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, json, integer, boolean, varchar, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, json, integer, boolean, varchar, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 // Session storage table for Replit Auth
@@ -126,6 +126,20 @@ export const messages = pgTable("messages", {
   webhookLogId: integer("webhook_log_id"),
 });
 
+export const eventTypeMapping = pgTable("event_type_mapping", {
+  id: serial("id").primaryKey(),
+  source: text("source").notNull(),
+  eventType: text("event_type").notNull(),
+  displayName: text("display_name").notNull(),
+  description: text("description"),
+  showInList: boolean("show_in_list").default(true).notNull(),
+  icon: text("icon"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  sourceEventTypeUnique: uniqueIndex("idx_event_type_mapping_unique").on(table.source, table.eventType),
+}));
+
 // Types
 export type AuthUser = typeof authUsers.$inferSelect;
 export type UpsertAuthUser = typeof authUsers.$inferInsert;
@@ -143,3 +157,6 @@ export type InsertMessage = Omit<typeof messages.$inferInsert, "id" | "receivedA
 
 export type EventStandard = typeof eventsStandard.$inferSelect;
 export type InsertEventStandard = Omit<typeof eventsStandard.$inferInsert, "id" | "receivedAt" | "processedAt">;
+
+export type EventTypeMapping = typeof eventTypeMapping.$inferSelect;
+export type InsertEventTypeMapping = Omit<typeof eventTypeMapping.$inferInsert, "id" | "createdAt" | "updatedAt">;

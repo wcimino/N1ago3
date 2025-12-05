@@ -1,7 +1,7 @@
 import { db } from "./db.js";
-import { zendeskConversationsWebhookRaw, eventsStandard, conversations, messages, users, authUsers, authorizedUsers } from "../shared/schema.js";
+import { zendeskConversationsWebhookRaw, eventsStandard, conversations, messages, users, authUsers, authorizedUsers, eventTypeMapping } from "../shared/schema.js";
 import { eq, desc, sql, and } from "drizzle-orm";
-import type { InsertZendeskConversationsWebhookRaw, InsertConversation, InsertMessage, User, UpsertAuthUser, AuthUser, AuthorizedUser, InsertAuthorizedUser, InsertEventStandard, EventStandard, ZendeskConversationsWebhookRaw } from "../shared/schema.js";
+import type { InsertZendeskConversationsWebhookRaw, InsertConversation, InsertMessage, User, UpsertAuthUser, AuthUser, AuthorizedUser, InsertAuthorizedUser, InsertEventStandard, EventStandard, ZendeskConversationsWebhookRaw, EventTypeMapping, InsertEventTypeMapping } from "../shared/schema.js";
 import type { ExtractedUser, ExtractedConversation, StandardEvent } from "./adapters/types.js";
 
 export const storage = {
@@ -583,5 +583,96 @@ export const storage = {
       byType: Object.fromEntries(byType.map(t => [t.eventType, Number(t.count)])),
       bySource: Object.fromEntries(bySource.map(s => [s.source, Number(s.count)])),
     };
+  },
+
+  // Event Type Mapping operations
+  async getEventTypeMappings(): Promise<EventTypeMapping[]> {
+    return await db.select()
+      .from(eventTypeMapping)
+      .orderBy(eventTypeMapping.source, eventTypeMapping.eventType);
+  },
+
+  async getEventTypeMapping(source: string, eventType: string): Promise<EventTypeMapping | null> {
+    const [mapping] = await db.select()
+      .from(eventTypeMapping)
+      .where(and(
+        eq(eventTypeMapping.source, source),
+        eq(eventTypeMapping.eventType, eventType)
+      ));
+    return mapping || null;
+  },
+
+  async upsertEventTypeMapping(data: InsertEventTypeMapping): Promise<EventTypeMapping> {
+    const [mapping] = await db.insert(eventTypeMapping)
+      .values(data)
+      .onConflictDoUpdate({
+        target: [eventTypeMapping.source, eventTypeMapping.eventType],
+        set: {
+          displayName: data.displayName,
+          description: data.description,
+          showInList: data.showInList,
+          icon: data.icon,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return mapping;
+  },
+
+  async updateEventTypeMapping(id: number, data: Partial<InsertEventTypeMapping>): Promise<EventTypeMapping | null> {
+    const [updated] = await db.update(eventTypeMapping)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(eventTypeMapping.id, id))
+      .returning();
+    return updated || null;
+  },
+
+  async deleteEventTypeMapping(id: number): Promise<boolean> {
+    await db.delete(eventTypeMapping).where(eq(eventTypeMapping.id, id));
+    return true;
+  },
+
+  async getStandardEventsWithMappings(limit = 50, offset = 0, filters?: { source?: string; eventType?: string; showInListOnly?: boolean }) {
+    const conditions: any[] = [];
+    
+    if (filters?.showInListOnly) {
+      conditions.push(sql`(m.show_in_list = true OR m.show_in_list IS NULL)`);
+    }
+    if (filters?.source) {
+      conditions.push(sql`e.source = ${filters.source}`);
+    }
+    if (filters?.eventType) {
+      conditions.push(sql`e.event_type = ${filters.eventType}`);
+    }
+    
+    const whereClause = conditions.length > 0 
+      ? sql`WHERE ${sql.join(conditions, sql` AND `)}` 
+      : sql``;
+
+    const events = await db.execute(sql`
+      SELECT 
+        e.*,
+        m.display_name,
+        m.description as type_description,
+        m.show_in_list,
+        m.icon
+      FROM events_standard e
+      LEFT JOIN event_type_mapping m ON e.source = m.source AND e.event_type = m.event_type
+      ${whereClause}
+      ORDER BY e.occurred_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `);
+
+    const countResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM events_standard e
+      LEFT JOIN event_type_mapping m ON e.source = m.source AND e.event_type = m.event_type
+      ${whereClause}
+    `);
+    
+    return { events: events.rows, total: Number((countResult.rows[0] as any)?.count || 0) };
   },
 };
