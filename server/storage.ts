@@ -288,7 +288,9 @@ export const storage = {
     const [{ active }] = await db.select({ 
       active: sql<number>`count(*) filter (where status = 'active')` 
     }).from(conversations);
-    const [{ totalMessages }] = await db.select({ totalMessages: sql<number>`count(*)` }).from(messages);
+    const [{ totalMessages }] = await db.select({ 
+      totalMessages: sql<number>`count(*) filter (where event_type = 'message')` 
+    }).from(eventsStandard);
     
     return {
       total: Number(total),
@@ -351,13 +353,24 @@ export const storage = {
     const conversationsWithMessages = await Promise.all(
       userConvs.map(async (conv) => {
         const msgs = await db.select()
-          .from(messages)
-          .where(eq(messages.conversationId, conv.id))
-          .orderBy(messages.receivedAt);
+          .from(eventsStandard)
+          .where(and(
+            eq(eventsStandard.conversationId, conv.id),
+            eq(eventsStandard.eventType, 'message')
+          ))
+          .orderBy(eventsStandard.occurredAt);
         
         return {
           conversation: conv,
-          messages: msgs,
+          messages: msgs.map(e => ({
+            id: e.id,
+            author_type: e.authorType,
+            author_name: e.authorName,
+            content_type: e.eventSubtype || 'text',
+            content_text: e.contentText,
+            received_at: e.receivedAt?.toISOString(),
+            zendesk_timestamp: e.occurredAt?.toISOString(),
+          })),
         };
       })
     );

@@ -134,6 +134,10 @@ interface StandardEvent {
   received_at: string;
   channel_type: string | null;
   metadata: any;
+  display_name?: string | null;
+  type_description?: string | null;
+  show_in_list?: boolean | null;
+  icon?: string | null;
 }
 
 interface StandardEventsResponse {
@@ -522,18 +526,24 @@ function AuthorTypeBadge({ type }: { type: string }) {
   );
 }
 
-function EventTypeBadge({ type, subtype }: { type: string; subtype?: string | null }) {
+function EventTypeBadge({ type, subtype, displayName }: { type: string; subtype?: string | null; displayName?: string | null }) {
   const styles: Record<string, string> = {
     message: "bg-green-100 text-green-800",
     conversation_started: "bg-blue-100 text-blue-800",
     typing: "bg-yellow-100 text-yellow-800",
     read_receipt: "bg-gray-100 text-gray-600",
+    "conversation:typing": "bg-yellow-100 text-yellow-800",
+    "conversation:message": "bg-green-100 text-green-800",
+    "switchboard:passControl": "bg-purple-100 text-purple-800",
+    "switchboard:releaseControl": "bg-purple-100 text-purple-800",
   };
+
+  const label = displayName || type;
 
   return (
     <div className="flex flex-col gap-0.5">
       <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${styles[type] || "bg-gray-100 text-gray-800"}`}>
-        {type}
+        {label}
       </span>
       {subtype && (
         <span className="text-xs text-gray-500">{subtype}</span>
@@ -621,7 +631,7 @@ function EventsStandardPage() {
                   {eventsData.events.map((event) => (
                     <tr key={event.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3">
-                        <EventTypeBadge type={event.event_type} subtype={event.event_subtype} />
+                        <EventTypeBadge type={event.event_type} subtype={event.event_subtype} displayName={event.display_name} />
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500">{event.source}</td>
                       <td className="px-4 py-3 text-sm text-gray-500 font-mono text-xs">
@@ -703,7 +713,7 @@ function EventsStandardPage() {
                   <div>
                     <label className="text-sm font-medium text-gray-500">Tipo</label>
                     <div className="mt-1">
-                      <EventTypeBadge type={selectedEvent.event_type} subtype={selectedEvent.event_subtype} />
+                      <EventTypeBadge type={selectedEvent.event_type} subtype={selectedEvent.event_subtype} displayName={selectedEvent.display_name} />
                     </div>
                   </div>
                   <div>
@@ -1576,11 +1586,13 @@ function UserConversationsPage({ params }: { params: { userId: string } }) {
                               {msg.content_text || `[${msg.content_type}]`}
                             </p>
                             <p className="text-[10px] text-gray-400 mt-1 text-right">
-                              {format(
-                                new Date(msg.zendesk_timestamp || msg.received_at),
-                                "dd/MM/yyyy HH:mm",
-                                { locale: ptBR }
-                              )}
+                              {msg.zendesk_timestamp || msg.received_at
+                                ? format(
+                                    new Date(msg.zendesk_timestamp || msg.received_at),
+                                    "dd/MM/yyyy HH:mm",
+                                    { locale: ptBR }
+                                  )
+                                : "-"}
                             </p>
                           </div>
                         </div>

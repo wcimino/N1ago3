@@ -338,15 +338,7 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
         created_at: item.conversation.createdAt?.toISOString(),
         updated_at: item.conversation.updatedAt?.toISOString(),
       },
-      messages: item.messages.map((msg) => ({
-        id: msg.id,
-        author_type: msg.authorType,
-        author_name: msg.authorName,
-        content_type: msg.contentType,
-        content_text: msg.contentText,
-        received_at: msg.receivedAt?.toISOString(),
-        zendesk_timestamp: msg.zendeskTimestamp?.toISOString(),
-      })),
+      messages: item.messages,
     })),
   });
 });
