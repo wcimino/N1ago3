@@ -158,40 +158,57 @@ export const conversationStorage = {
   },
 
   async getUserConversationsWithMessages(userId: string) {
-    const userConvs = await db.select()
-      .from(conversations)
-      .where(eq(conversations.userId, userId))
-      .orderBy(conversations.createdAt);
+    const result = await db.execute(sql`
+      SELECT 
+        c.id as conv_id,
+        c.external_conversation_id,
+        c.external_app_id,
+        c.user_id,
+        c.user_external_id,
+        c.status,
+        c.created_at as conv_created_at,
+        c.updated_at as conv_updated_at,
+        c.metadata_json,
+        COALESCE(
+          JSON_AGG(
+            CASE WHEN e.id IS NOT NULL THEN
+              JSON_BUILD_OBJECT(
+                'id', e.id,
+                'author_type', e.author_type,
+                'author_name', e.author_name,
+                'content_type', COALESCE(e.event_subtype, 'text'),
+                'content_text', e.content_text,
+                'content_payload', e.content_payload,
+                'received_at', TO_CHAR(e.received_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+                'zendesk_timestamp', TO_CHAR(e.occurred_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+              )
+            END ORDER BY e.occurred_at
+          ) FILTER (WHERE e.id IS NOT NULL),
+          '[]'::json
+        ) as messages
+      FROM conversations c
+      LEFT JOIN events_standard e ON e.conversation_id = c.id AND e.event_type = 'message'
+      WHERE c.user_id = ${userId}
+      GROUP BY c.id
+      ORDER BY c.created_at
+    `);
 
-    if (userConvs.length === 0) return null;
+    if (result.rows.length === 0) return null;
 
-    const conversationsWithMessages = await Promise.all(
-      userConvs.map(async (conv) => {
-        const msgs = await db.select()
-          .from(eventsStandard)
-          .where(and(
-            eq(eventsStandard.conversationId, conv.id),
-            eq(eventsStandard.eventType, 'message')
-          ))
-          .orderBy(eventsStandard.occurredAt);
-        
-        return {
-          conversation: conv,
-          messages: msgs.map(e => ({
-            id: e.id,
-            author_type: e.authorType,
-            author_name: e.authorName,
-            content_type: e.eventSubtype || 'text',
-            content_text: e.contentText,
-            content_payload: e.contentPayload,
-            received_at: e.receivedAt?.toISOString(),
-            zendesk_timestamp: e.occurredAt?.toISOString(),
-          })),
-        };
-      })
-    );
-
-    return conversationsWithMessages;
+    return result.rows.map((row: any) => ({
+      conversation: {
+        id: row.conv_id,
+        externalConversationId: row.external_conversation_id,
+        externalAppId: row.external_app_id,
+        userId: row.user_id,
+        userExternalId: row.user_external_id,
+        status: row.status,
+        createdAt: row.conv_created_at,
+        updatedAt: row.conv_updated_at,
+        metadataJson: row.metadata_json,
+      },
+      messages: row.messages || [],
+    }));
   },
 
   async getOrCreateConversationByExternalId(data: ExtractedConversation) {

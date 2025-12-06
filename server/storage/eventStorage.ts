@@ -33,20 +33,30 @@ export const eventStorage = {
   },
 
   async getStandardEvents(limit = 50, offset = 0, filters?: { source?: string; eventType?: string; conversationId?: number }) {
-    let query = db.select().from(eventsStandard).orderBy(desc(eventsStandard.occurredAt));
+    const conditions: any[] = [];
     
     if (filters?.source) {
-      query = query.where(eq(eventsStandard.source, filters.source)) as typeof query;
+      conditions.push(eq(eventsStandard.source, filters.source));
     }
     if (filters?.eventType) {
-      query = query.where(eq(eventsStandard.eventType, filters.eventType)) as typeof query;
+      conditions.push(eq(eventsStandard.eventType, filters.eventType));
     }
     if (filters?.conversationId) {
-      query = query.where(eq(eventsStandard.conversationId, filters.conversationId)) as typeof query;
+      conditions.push(eq(eventsStandard.conversationId, filters.conversationId));
+    }
+    
+    let query = db.select().from(eventsStandard).orderBy(desc(eventsStandard.occurredAt));
+    for (const condition of conditions) {
+      query = query.where(condition) as typeof query;
     }
     
     const events = await query.limit(limit).offset(offset);
-    const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(eventsStandard);
+    
+    let countQuery = db.select({ count: sql<number>`count(*)` }).from(eventsStandard);
+    for (const condition of conditions) {
+      countQuery = countQuery.where(condition) as typeof countQuery;
+    }
+    const [{ count }] = await countQuery;
     
     return { events, total: Number(count) };
   },

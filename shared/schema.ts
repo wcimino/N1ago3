@@ -62,7 +62,10 @@ export const zendeskConversationsWebhookRaw = pgTable("zendesk_conversations_web
   errorMessage: text("error_message"),
   processedAt: timestamp("processed_at"),
   retryCount: integer("retry_count").default(0).notNull(),
-});
+}, (table) => ({
+  receivedAtIdx: index("idx_zendesk_webhook_received_at").on(table.receivedAt),
+  processingStatusIdx: index("idx_zendesk_webhook_processing_status").on(table.processingStatus),
+}));
 
 
 export const eventsStandard = pgTable("events_standard", {
@@ -96,7 +99,12 @@ export const eventsStandard = pgTable("events_standard", {
   channelType: text("channel_type"),
   
   processingStatus: text("processing_status").default("processed").notNull(),
-});
+}, (table) => ({
+  occurredAtIdx: index("idx_events_standard_occurred_at").on(table.occurredAt),
+  conversationEventIdx: index("idx_events_standard_conversation_event").on(table.conversationId, table.eventType),
+  sourceIdx: index("idx_events_standard_source").on(table.source),
+  eventTypeIdx: index("idx_events_standard_event_type").on(table.eventType),
+}));
 
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
@@ -108,7 +116,10 @@ export const conversations = pgTable("conversations", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   metadataJson: json("metadata_json"),
-});
+}, (table) => ({
+  userIdIdx: index("idx_conversations_user_id").on(table.userId),
+  updatedAtIdx: index("idx_conversations_updated_at").on(table.updatedAt),
+}));
 
 export const eventTypeMappings = pgTable("event_type_mappings", {
   id: serial("id").primaryKey(),

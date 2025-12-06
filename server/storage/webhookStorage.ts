@@ -41,10 +41,8 @@ export const webhookStorage = {
     const logs = await query.limit(limit).offset(offset);
     
     let countQuery = db.select({ count: sql<number>`count(*)` }).from(zendeskConversationsWebhookRaw);
-    if (conditions.length > 0) {
-      for (const condition of conditions) {
-        countQuery = countQuery.where(condition) as typeof countQuery;
-      }
+    for (const condition of conditions) {
+      countQuery = countQuery.where(condition) as typeof countQuery;
     }
     const [{ count }] = await countQuery;
     
