@@ -1,10 +1,11 @@
+import type { ComponentType } from "react";
 import { useEffect, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 
 export interface TabConfig {
   path: string;
   label: string;
-  component: React.ComponentType;
+  component: ComponentType;
   matchPaths?: string[];
 }
 

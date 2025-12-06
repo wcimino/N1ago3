@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { RefreshCw } from "lucide-react";
 import { CheckboxListItem } from "./ui/CheckboxListItem";
 import { useOpenaiApiConfig } from "../hooks/useOpenaiApiConfig";
@@ -12,7 +13,7 @@ export interface OpenaiConfigFormProps {
   eventTriggerLabel: string;
   eventTriggerDescription: string;
   authorFilterDescription: string;
-  promptVariables: React.ReactNode;
+  promptVariables: ReactNode;
   promptRows?: number;
   recommendedModel?: string;
 }
