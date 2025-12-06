@@ -110,22 +110,6 @@ export const conversations = pgTable("conversations", {
   metadataJson: json("metadata_json"),
 });
 
-export const messages = pgTable("messages", {
-  id: serial("id").primaryKey(),
-  conversationId: integer("conversation_id").notNull(),
-  zendeskMessageId: text("zendesk_message_id"),
-  authorType: text("author_type").notNull(),
-  authorId: text("author_id"),
-  authorName: text("author_name"),
-  contentType: text("content_type").default("text").notNull(),
-  contentText: text("content_text"),
-  contentPayload: json("content_payload"),
-  receivedAt: timestamp("received_at").defaultNow().notNull(),
-  zendeskTimestamp: timestamp("zendesk_timestamp"),
-  metadataJson: json("metadata_json"),
-  webhookLogId: integer("webhook_log_id"),
-});
-
 export const eventTypeMappings = pgTable("event_type_mappings", {
   id: serial("id").primaryKey(),
   source: text("source").notNull(),
@@ -216,8 +200,6 @@ export type ZendeskConversationsWebhookRaw = typeof zendeskConversationsWebhookR
 export type InsertZendeskConversationsWebhookRaw = Omit<typeof zendeskConversationsWebhookRaw.$inferInsert, "id" | "receivedAt">;
 export type Conversation = typeof conversations.$inferSelect;
 export type InsertConversation = Omit<typeof conversations.$inferInsert, "id" | "createdAt" | "updatedAt">;
-export type Message = typeof messages.$inferSelect;
-export type InsertMessage = Omit<typeof messages.$inferInsert, "id" | "receivedAt">;
 
 export type EventStandard = typeof eventsStandard.$inferSelect;
 export type InsertEventStandard = Omit<typeof eventsStandard.$inferInsert, "id" | "receivedAt" | "processedAt">;

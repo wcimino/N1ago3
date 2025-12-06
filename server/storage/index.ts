@@ -4,7 +4,6 @@ import { userStorage } from "./userStorage.js";
 import { conversationStorage } from "./conversationStorage.js";
 import { eventStorage } from "./eventStorage.js";
 import { configStorage } from "./configStorage.js";
-import { messageStorage } from "./messageStorage.js";
 
 export const storage = {
   ...authStorage,
@@ -13,7 +12,6 @@ export const storage = {
   ...conversationStorage,
   ...eventStorage,
   ...configStorage,
-  ...messageStorage,
 };
 
 export { authStorage } from "./authStorage.js";
@@ -22,4 +20,3 @@ export { userStorage } from "./userStorage.js";
 export { conversationStorage } from "./conversationStorage.js";
 export { eventStorage } from "./eventStorage.js";
 export { configStorage } from "./configStorage.js";
-export { messageStorage } from "./messageStorage.js";
