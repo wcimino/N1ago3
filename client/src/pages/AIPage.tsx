@@ -2,12 +2,14 @@ import { useEffect, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { OpenaiSummaryConfigPage } from "./OpenaiSummaryConfigPage";
 import { ClassificationConfigPage } from "./ClassificationConfigPage";
+import { ResponseConfigPage } from "./ResponseConfigPage";
 
 export function AIPage() {
   const [location, setLocation] = useLocation();
   
   const isSummary = location === "/ai" || location === "/ai/" || location === "/ai/settings/summary";
   const isClassification = location === "/ai/settings/classification";
+  const isResponse = location === "/ai/settings/response";
 
   useEffect(() => {
     if (location === "/ai" || location === "/ai/") {
@@ -17,8 +19,9 @@ export function AIPage() {
 
   const CurrentPage = useMemo(() => {
     if (isClassification) return ClassificationConfigPage;
+    if (isResponse) return ResponseConfigPage;
     return OpenaiSummaryConfigPage;
-  }, [isClassification]);
+  }, [isClassification, isResponse]);
 
   return (
     <div>
@@ -45,6 +48,16 @@ export function AIPage() {
               }`}
             >
               Classificação
+            </Link>
+            <Link
+              href="/ai/settings/response"
+              className={`py-3 px-1 border-b-2 font-medium text-sm ${
+                isResponse
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              Resposta
             </Link>
           </nav>
         </div>

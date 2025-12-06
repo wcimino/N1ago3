@@ -46,6 +46,30 @@ Por favor, gere um resumo atualizado e conciso desta conversa, destacando:
   "intent": "tipo da intenção",
   "confidence": número de 0 a 100
 }`,
+
+  response: `Você é um assistente de atendimento ao cliente de uma instituição financeira. Sua tarefa é sugerir uma resposta profissional e empática para a última mensagem do cliente.
+
+**RESUMO DA CONVERSA:**
+{{RESUMO}}
+
+**CLASSIFICAÇÃO:**
+{{CLASSIFICACAO}}
+
+**HISTÓRICO DAS ÚLTIMAS 20 MENSAGENS:**
+{{ULTIMAS_20_MENSAGENS}}
+
+**ÚLTIMA MENSAGEM DO CLIENTE (a ser respondida):**
+{{ULTIMA_MENSAGEM}}
+
+**INSTRUÇÕES:**
+1. Analise o contexto da conversa e a última mensagem do cliente
+2. Considere o produto e a intenção identificados na classificação
+3. Gere uma resposta profissional, empática e útil
+4. A resposta deve ser clara, objetiva e resolver ou encaminhar a demanda do cliente
+5. Use linguagem cordial e acessível
+6. NÃO inclua saudações genéricas como "Olá" no início - vá direto ao ponto
+
+**Responda APENAS com a mensagem sugerida, sem explicações adicionais.**`,
 };
 
 function formatConfigResponse(config: any) {
@@ -76,8 +100,8 @@ function getDefaultConfig(configType: string) {
 router.get("/api/openai-config/:configType", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const { configType } = req.params;
   
-  if (!["summary", "classification"].includes(configType)) {
-    return res.status(400).json({ error: "Invalid config type. Must be 'summary' or 'classification'" });
+  if (!["summary", "classification", "response"].includes(configType)) {
+    return res.status(400).json({ error: "Invalid config type. Must be 'summary', 'classification' or 'response'" });
   }
 
   const config = await storage.getOpenaiApiConfig(configType);
@@ -92,8 +116,8 @@ router.get("/api/openai-config/:configType", isAuthenticated, requireAuthorizedU
 router.put("/api/openai-config/:configType", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const { configType } = req.params;
   
-  if (!["summary", "classification"].includes(configType)) {
-    return res.status(400).json({ error: "Invalid config type. Must be 'summary' or 'classification'" });
+  if (!["summary", "classification", "response"].includes(configType)) {
+    return res.status(400).json({ error: "Invalid config type. Must be 'summary', 'classification' or 'response'" });
   }
 
   const { enabled, trigger_event_types, trigger_author_types, prompt_template, model_name } = req.body;

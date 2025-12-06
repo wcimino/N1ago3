@@ -1,7 +1,7 @@
 import { db } from "../db.js";
-import { conversationsSummary, openaiApiConfig, openaiApiLogs } from "../../shared/schema.js";
+import { conversationsSummary, openaiApiConfig, openaiApiLogs, suggestedResponses } from "../../shared/schema.js";
 import { eq, desc, sql, gte, and, isNotNull } from "drizzle-orm";
-import type { ConversationSummary, InsertConversationSummary, OpenaiApiConfig, InsertOpenaiApiConfig, OpenaiApiLog, InsertOpenaiApiLog } from "../../shared/schema.js";
+import type { ConversationSummary, InsertConversationSummary, OpenaiApiConfig, InsertOpenaiApiConfig, OpenaiApiLog, InsertOpenaiApiLog, SuggestedResponse, InsertSuggestedResponse } from "../../shared/schema.js";
 
 export const configStorage = {
   async getConversationSummary(conversationId: number): Promise<ConversationSummary | null> {
@@ -143,5 +143,37 @@ export const configStorage = {
       .limit(limit);
 
     return results.filter(r => r.product !== null) as { product: string; count: number }[];
+  },
+
+  async saveSuggestedResponse(
+    conversationId: number,
+    data: { suggestedResponse: string; lastEventId: number; openaiLogId: number; externalConversationId?: string | null }
+  ): Promise<SuggestedResponse> {
+    const [response] = await db.insert(suggestedResponses)
+      .values({
+        conversationId,
+        suggestedResponse: data.suggestedResponse,
+        lastEventId: data.lastEventId,
+        openaiLogId: data.openaiLogId,
+        externalConversationId: data.externalConversationId || null,
+      })
+      .returning();
+    return response;
+  },
+
+  async getSuggestedResponse(conversationId: number): Promise<SuggestedResponse | null> {
+    const [response] = await db.select()
+      .from(suggestedResponses)
+      .where(eq(suggestedResponses.conversationId, conversationId))
+      .orderBy(desc(suggestedResponses.createdAt))
+      .limit(1);
+    return response || null;
+  },
+
+  async getLatestSuggestedResponses(limit: number = 50): Promise<SuggestedResponse[]> {
+    return db.select()
+      .from(suggestedResponses)
+      .orderBy(desc(suggestedResponses.createdAt))
+      .limit(limit);
   },
 };

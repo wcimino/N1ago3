@@ -3,6 +3,7 @@ import { storage } from "../storage.js";
 import { eventBus, EVENTS } from "./eventBus.js";
 import { processSummaryForEvent } from "./summaryOrchestrator.js";
 import { processClassificationForEvent } from "./classificationOrchestrator.js";
+import { processResponseForEvent } from "./responseOrchestrator.js";
 import type { StandardEvent } from "../adapters/types.js";
 
 const SUPPORTED_SOURCES = ["zendesk"] as const;
@@ -65,6 +66,12 @@ export async function processRawEvent(rawId: number, source: string): Promise<vo
         await processClassificationForEvent(savedEvent);
       } catch (classificationError) {
         console.error(`Failed to process classification for event ${savedEvent.id}:`, classificationError);
+      }
+
+      try {
+        await processResponseForEvent(savedEvent);
+      } catch (responseError) {
+        console.error(`Failed to process response for event ${savedEvent.id}:`, responseError);
       }
     }
 
