@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { getAuthorColor, isCustomerMessage } from "../../lib/messageUtils";
-import { formatDateTimeShort } from "../../lib/dateUtils";
+import { useDateFormatters } from "../../hooks/useDateFormatters";
 import type { Message, ImagePayload } from "../../types";
 
 interface MessageBubbleProps {
@@ -9,6 +9,7 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ message, onImageClick }: MessageBubbleProps) {
+  const { formatDateTimeShort } = useDateFormatters();
   const isCustomer = isCustomerMessage(message.author_type);
   const hasImage = message.content_type === "image" && message.content_payload && "mediaUrl" in message.content_payload;
   

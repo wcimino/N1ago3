@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Users, MessageCircle, Activity, User, UserCheck } from "lucide-react";
 import { UserDetailModal, LoadingState, EmptyState, Pagination } from "../components";
-import { formatShortDateTime } from "../lib/dateUtils";
+import { useDateFormatters } from "../hooks/useDateFormatters";
 import { getUserDisplayName, getActiveConversationsCount, getUserFromGroup } from "../lib/userUtils";
 import { usePaginatedQuery } from "../hooks/usePaginatedQuery";
 import type { User as UserType, UserGroup } from "../types";
@@ -10,6 +10,7 @@ import type { User as UserType, UserGroup } from "../types";
 export function UsersPage() {
   const [, navigate] = useLocation();
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
+  const { formatShortDateTime } = useDateFormatters();
 
   const {
     data: userGroups,

@@ -12,3 +12,4 @@ export { EventsLayout } from "./EventsLayout";
 export { UsersPage } from "./UsersPage";
 export { UserConversationsPage } from "./UserConversationsPage";
 export { AuthorizedUsersPage } from "./AuthorizedUsersPage";
+export { SettingsPage } from "./SettingsPage";

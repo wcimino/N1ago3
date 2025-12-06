@@ -2,13 +2,14 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Eye } from "lucide-react";
 import { EventTypeBadge, AuthorTypeBadge, DataTable, EventDetailModal, type Column } from "../components";
-import { formatDateTime } from "../lib/dateUtils";
+import { useDateFormatters } from "../hooks/useDateFormatters";
 import { fetchApi } from "../lib/queryClient";
 import { usePaginatedQuery } from "../hooks/usePaginatedQuery";
 import type { StandardEvent, StandardEventsStatsResponse } from "../types";
 
 export function EventsStandardPage() {
   const [selectedEvent, setSelectedEvent] = useState<StandardEvent | null>(null);
+  const { formatDateTime } = useDateFormatters();
 
   const {
     data: events,
@@ -126,34 +127,27 @@ export function EventsStandardPage() {
             ))}
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-4 py-3 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">Eventos Padronizados</h2>
-          <p className="text-sm text-gray-500 mt-1">Eventos normalizados de todas as fontes</p>
-        </div>
-
-        <DataTable
-          columns={columns}
-          data={events}
-          keyExtractor={(event) => event.id}
-          isLoading={isLoading}
-          emptyTitle="Nenhum evento padronizado ainda."
-          emptyDescription="Eventos aparecem aqui depois de processados pelo adaptador."
-          onRowClick={(event) => setSelectedEvent(event)}
-          pagination={{
-            page,
-            totalPages,
-            showingFrom,
-            showingTo,
-            total,
-            onPreviousPage: previousPage,
-            onNextPage: nextPage,
-            hasPreviousPage,
-            hasNextPage,
-            itemLabel: "eventos",
-          }}
-        />
-      </div>
+      <DataTable
+        columns={columns}
+        data={events}
+        keyExtractor={(event) => event.id}
+        isLoading={isLoading}
+        emptyTitle="Nenhum evento registrado ainda."
+        emptyDescription="Os eventos serão criados quando mensagens chegarem via webhook."
+        onRowClick={(event) => setSelectedEvent(event)}
+        pagination={{
+          page,
+          totalPages,
+          showingFrom,
+          showingTo,
+          total,
+          onPreviousPage: previousPage,
+          onNextPage: nextPage,
+          hasPreviousPage,
+          hasNextPage,
+          itemLabel: "eventos",
+        }}
+      />
 
       {selectedEvent && (
         <EventDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />

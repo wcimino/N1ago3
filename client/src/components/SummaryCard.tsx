@@ -1,8 +1,6 @@
 import type { KeyboardEvent } from "react";
 import { MessageCircle, Clock, Sparkles, Package, Target, MessageSquare, ChevronRight } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { formatDateTimeShort } from "../lib/dateUtils";
+import { useDateFormatters } from "../hooks/useDateFormatters";
 import { INTENT_LABELS, INTENT_COLORS } from "../lib/constants";
 import type { ConversationSummary } from "../types";
 
@@ -27,11 +25,11 @@ export function SummaryCard({
   onClick,
   compact = false
 }: SummaryCardProps) {
+  const { formatDateTimeShort, formatRelativeTime } = useDateFormatters();
+  
   const shortId = conversationId.slice(0, 8);
   const updatedAtDate = summary?.updated_at ? new Date(summary.updated_at) : null;
-  const timeAgo = updatedAtDate 
-    ? formatDistanceToNow(updatedAtDate, { addSuffix: true, locale: ptBR })
-    : null;
+  const timeAgo = updatedAtDate ? formatRelativeTime(updatedAtDate) : null;
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {

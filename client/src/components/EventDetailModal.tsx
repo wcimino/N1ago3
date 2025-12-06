@@ -1,6 +1,6 @@
 import { Modal, ModalField, ModalGrid, ModalCodeBlock } from "./ui/Modal";
 import { EventTypeBadge, AuthorTypeBadge } from "./index";
-import { formatDateTime } from "../lib/dateUtils";
+import { useDateFormatters } from "../hooks/useDateFormatters";
 import type { StandardEvent } from "../types";
 
 interface EventDetailModalProps {
@@ -9,6 +9,8 @@ interface EventDetailModalProps {
 }
 
 export function EventDetailModal({ event, onClose }: EventDetailModalProps) {
+  const { formatDateTime } = useDateFormatters();
+
   return (
     <Modal title={`Evento #${event.id}`} onClose={onClose}>
       <div className="space-y-4">

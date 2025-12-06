@@ -2,13 +2,14 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Eye } from "lucide-react";
 import { StatusBadge, LogDetailModal, DataTable, type Column } from "../components";
-import { formatDateTime } from "../lib/dateUtils";
+import { useDateFormatters } from "../hooks/useDateFormatters";
 import { usePaginatedQuery } from "../hooks/usePaginatedQuery";
 import type { WebhookLog } from "../types";
 
 export function ZendeskConversationsRawPage() {
   const [selectedLogId, setSelectedLogId] = useState<number | null>(null);
   const [, navigate] = useLocation();
+  const { formatDateTime } = useDateFormatters();
 
   const urlParams = new URLSearchParams(window.location.search);
   const userFilter = urlParams.get("user");
@@ -127,12 +128,14 @@ export function ZendeskConversationsRawPage() {
             onNextPage: nextPage,
             hasPreviousPage,
             hasNextPage,
-            itemLabel: "eventos",
+            itemLabel: "logs",
           }}
         />
       </div>
 
-      {selectedLogId !== null && <LogDetailModal logId={selectedLogId} onClose={() => setSelectedLogId(null)} />}
+      {selectedLogId !== null && (
+        <LogDetailModal logId={selectedLogId} onClose={() => setSelectedLogId(null)} />
+      )}
     </>
   );
 }

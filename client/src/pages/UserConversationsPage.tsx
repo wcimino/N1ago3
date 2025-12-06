@@ -8,8 +8,8 @@ import { ImageLightbox } from "../components/ui/ImageLightbox";
 import { LoadingState } from "../components/ui/LoadingSpinner";
 import { SegmentedTabs } from "../components/ui/SegmentedTabs";
 import { useResizablePanel } from "../hooks/useResizablePanel";
+import { useDateFormatters } from "../hooks/useDateFormatters";
 import { fetchApi } from "../lib/queryClient";
-import { formatDateTimeShort } from "../lib/dateUtils";
 import { getUserDisplayNameFromProfile } from "../lib/userUtils";
 
 interface UserConversationsPageProps {
@@ -21,6 +21,7 @@ type ContentTab = "resumo" | "chat";
 export function UserConversationsPage({ params }: UserConversationsPageProps) {
   const [, navigate] = useLocation();
   const userId = decodeURIComponent(params.userId);
+  const { formatDateTimeShort } = useDateFormatters();
   const [expandedImage, setExpandedImage] = useState<ImagePayload | null>(null);
   const [selectedConversationIndex, setSelectedConversationIndex] = useState(0);
   const [contentTab, setContentTab] = useState<ContentTab>("chat");

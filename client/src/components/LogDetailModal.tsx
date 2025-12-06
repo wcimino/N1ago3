@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Modal, ModalField, ModalGrid, ModalCodeBlock } from "./ui/Modal";
 import { LoadingState } from "./ui/LoadingSpinner";
 import { StatusBadge } from "./StatusBadge";
-import { formatDateTime } from "../lib/dateUtils";
+import { useDateFormatters } from "../hooks/useDateFormatters";
 import { fetchApi } from "../lib/queryClient";
 import type { WebhookLogDetail } from "../types";
 
@@ -12,6 +12,8 @@ interface LogDetailModalProps {
 }
 
 export function LogDetailModal({ logId, onClose }: LogDetailModalProps) {
+  const { formatDateTime } = useDateFormatters();
+  
   const { data: log, isLoading } = useQuery<WebhookLogDetail>({
     queryKey: ["webhook-log", logId],
     queryFn: () => fetchApi<WebhookLogDetail>(`/api/webhook-logs/${logId}`),

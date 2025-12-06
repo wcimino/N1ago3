@@ -1,6 +1,5 @@
-import { format, formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { Sparkles, Clock, Package, Target } from "lucide-react";
+import { useDateFormatters } from "../hooks/useDateFormatters";
 import type { ConversationSummary } from "../types/conversations";
 
 interface ConversationSummaryCardProps {
@@ -26,6 +25,8 @@ const intentColors: Record<string, string> = {
 };
 
 export function ConversationSummaryCard({ summary }: ConversationSummaryCardProps) {
+  const { formatDateTime, formatRelativeTime } = useDateFormatters();
+
   if (!summary) {
     return (
       <div className="bg-gray-50 border border-dashed border-gray-300 rounded-lg p-4 mb-4">
@@ -38,9 +39,7 @@ export function ConversationSummaryCard({ summary }: ConversationSummaryCardProp
   }
 
   const updatedAtDate = summary.updated_at ? new Date(summary.updated_at) : null;
-  const timeAgo = updatedAtDate 
-    ? formatDistanceToNow(updatedAtDate, { addSuffix: true, locale: ptBR })
-    : null;
+  const timeAgo = updatedAtDate ? formatRelativeTime(updatedAtDate) : null;
 
   const hasClassification = summary.product || summary.intent;
 
@@ -56,7 +55,7 @@ export function ConversationSummaryCard({ summary }: ConversationSummaryCardProp
             {timeAgo && updatedAtDate && (
               <div className="flex items-center gap-1 text-xs text-purple-600">
                 <Clock className="w-3 h-3" />
-                <span title={format(updatedAtDate, "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}>
+                <span title={formatDateTime(updatedAtDate)}>
                   {timeAgo}
                 </span>
               </div>

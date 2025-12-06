@@ -2,6 +2,7 @@ import { Route, Switch, Link } from "wouter";
 import { Home, Users, Activity, Sparkles, Settings, LogOut } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { NavLink, EnvironmentBadge } from "./components";
+import { TimezoneProvider } from "./contexts/TimezoneContext";
 import {
   LandingPage,
   UnauthorizedPage,
@@ -11,7 +12,7 @@ import {
   EventsLayout,
   UsersPage,
   UserConversationsPage,
-  AuthorizedUsersPage,
+  SettingsPage,
 } from "./pages";
 
 function AuthenticatedApp() {
@@ -31,7 +32,7 @@ function AuthenticatedApp() {
                 {user?.email}
               </span>
               <Link
-                href="/authorized-users"
+                href="/settings"
                 className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
                 title="Configurações"
               >
@@ -77,7 +78,7 @@ function AuthenticatedApp() {
           <Route path="/events/:rest*" component={EventsLayout} />
           <Route path="/users" component={UsersPage} />
           <Route path="/users/:userId">{(params) => <UserConversationsPage params={params} />}</Route>
-          <Route path="/authorized-users" component={AuthorizedUsersPage} />
+          <Route path="/settings" component={SettingsPage} />
         </Switch>
       </main>
     </div>
@@ -99,5 +100,9 @@ export default function App() {
     return <LandingPage />;
   }
 
-  return <AuthenticatedApp />;
+  return (
+    <TimezoneProvider>
+      <AuthenticatedApp />
+    </TimezoneProvider>
+  );
 }

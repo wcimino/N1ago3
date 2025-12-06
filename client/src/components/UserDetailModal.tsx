@@ -1,6 +1,6 @@
 import { Users } from "lucide-react";
 import { AuthBadge } from "./AuthBadge";
-import { formatDateTimeWithPrefix } from "../lib/dateUtils";
+import { useDateFormatters } from "../hooks/useDateFormatters";
 import type { User } from "../types";
 
 interface UserDetailModalProps {
@@ -9,6 +9,8 @@ interface UserDetailModalProps {
 }
 
 export function UserDetailModal({ user, onClose }: UserDetailModalProps) {
+  const { formatDateTimeWithPrefix } = useDateFormatters();
+
   const getUserDisplayName = (u: User) => {
     if (u.profile?.givenName || u.profile?.surname) {
       return `${u.profile?.givenName || ""} ${u.profile?.surname || ""}`.trim();
