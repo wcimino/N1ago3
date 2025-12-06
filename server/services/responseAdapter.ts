@@ -104,6 +104,21 @@ export async function generateAndSaveResponse(
       externalConversationId,
     });
 
+    await storage.saveStandardEvent({
+      eventType: "response_suggestion",
+      source: "n1ago",
+      conversationId,
+      externalConversationId: externalConversationId || undefined,
+      authorType: "system",
+      authorName: "N1 Ago",
+      contentText: result.suggestedResponse,
+      occurredAt: new Date(),
+      metadata: {
+        openaiLogId: result.logId,
+        triggerEventId: lastEventId,
+      },
+    });
+
     console.log(`[Response Adapter] Suggested response saved for conversation ${conversationId}, logId: ${result.logId}`);
   }
 
