@@ -20,13 +20,24 @@ export function TabbedLayout({ title, basePath, defaultTab, tabs }: TabbedLayout
   const [location, setLocation] = useLocation();
 
   const activeTab = useMemo(() => {
-    return tabs.find((tab) => {
-      if (location === tab.path || location === `${tab.path}/`) return true;
-      if (tab.matchPaths) {
-        return tab.matchPaths.some((p) => location.startsWith(p));
-      }
-      return location.startsWith(tab.path);
-    });
+    // First, try to find an exact match
+    const exactMatch = tabs.find((tab) => 
+      location === tab.path || location === `${tab.path}/`
+    );
+    if (exactMatch) return exactMatch;
+
+    // Then, find the most specific path match (longest path wins)
+    const pathMatches = tabs.filter((tab) => location.startsWith(tab.path));
+    if (pathMatches.length > 0) {
+      return pathMatches.reduce((best, tab) => 
+        tab.path.length > best.path.length ? tab : best
+      );
+    }
+
+    // Finally, check matchPaths as fallback for base routes
+    return tabs.find((tab) => 
+      tab.matchPaths?.some((p) => location === p || location === `${p}/`)
+    );
   }, [location, tabs]);
 
   useEffect(() => {
