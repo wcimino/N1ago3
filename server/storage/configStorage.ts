@@ -1,5 +1,5 @@
 import { db } from "../db.js";
-import { conversationsSummary, openaiApiConfig, openaiApiLogs, suggestedResponses } from "../../shared/schema.js";
+import { conversationsSummary, openaiApiConfig, openaiApiLogs, responsesSuggested } from "../../shared/schema.js";
 import { eq, desc, sql, gte, and, isNotNull } from "drizzle-orm";
 import type { ConversationSummary, InsertConversationSummary, OpenaiApiConfig, InsertOpenaiApiConfig, OpenaiApiLog, InsertOpenaiApiLog, SuggestedResponse, InsertSuggestedResponse } from "../../shared/schema.js";
 
@@ -149,7 +149,7 @@ export const configStorage = {
     conversationId: number,
     data: { suggestedResponse: string; lastEventId: number; openaiLogId: number; externalConversationId?: string | null }
   ): Promise<SuggestedResponse> {
-    const [response] = await db.insert(suggestedResponses)
+    const [response] = await db.insert(responsesSuggested)
       .values({
         conversationId,
         suggestedResponse: data.suggestedResponse,
@@ -163,17 +163,17 @@ export const configStorage = {
 
   async getSuggestedResponse(conversationId: number): Promise<SuggestedResponse | null> {
     const [response] = await db.select()
-      .from(suggestedResponses)
-      .where(eq(suggestedResponses.conversationId, conversationId))
-      .orderBy(desc(suggestedResponses.createdAt))
+      .from(responsesSuggested)
+      .where(eq(responsesSuggested.conversationId, conversationId))
+      .orderBy(desc(responsesSuggested.createdAt))
       .limit(1);
     return response || null;
   },
 
   async getLatestSuggestedResponses(limit: number = 50): Promise<SuggestedResponse[]> {
     return db.select()
-      .from(suggestedResponses)
-      .orderBy(desc(suggestedResponses.createdAt))
+      .from(responsesSuggested)
+      .orderBy(desc(responsesSuggested.createdAt))
       .limit(limit);
   },
 };

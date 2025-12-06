@@ -190,7 +190,7 @@ export const openaiApiLogs = pgTable("openai_api_logs", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const suggestedResponses = pgTable("suggested_responses", {
+export const responsesSuggested = pgTable("responses_suggested", {
   id: serial("id").primaryKey(),
   conversationId: integer("conversation_id").notNull(),
   externalConversationId: text("external_conversation_id"),
@@ -201,7 +201,7 @@ export const suggestedResponses = pgTable("suggested_responses", {
   dismissed: boolean("dismissed").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
-  conversationIdIdx: index("idx_suggested_responses_conversation_id").on(table.conversationId),
+  conversationIdIdx: index("idx_responses_suggested_conversation_id").on(table.conversationId),
 }));
 
 // Types
@@ -234,5 +234,5 @@ export type InsertOpenaiApiConfig = Omit<typeof openaiApiConfig.$inferInsert, "i
 export type OpenaiApiLog = typeof openaiApiLogs.$inferSelect;
 export type InsertOpenaiApiLog = Omit<typeof openaiApiLogs.$inferInsert, "id" | "createdAt">;
 
-export type SuggestedResponse = typeof suggestedResponses.$inferSelect;
-export type InsertSuggestedResponse = Omit<typeof suggestedResponses.$inferInsert, "id" | "createdAt">;
+export type SuggestedResponse = typeof responsesSuggested.$inferSelect;
+export type InsertSuggestedResponse = Omit<typeof responsesSuggested.$inferInsert, "id" | "createdAt">;
