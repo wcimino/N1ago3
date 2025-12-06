@@ -206,8 +206,8 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
   const selectedConversation = sortedConversations[selectedConversationIndex];
 
   return (
-    <div className="min-h-[calc(100vh-180px)] flex flex-col">
-      <div className="bg-white rounded-t-lg shadow-sm border-b px-4 py-3 flex items-center gap-3">
+    <div className="h-[calc(100vh-180px)] flex flex-col">
+      <div className="bg-white rounded-t-lg shadow-sm border-b px-4 py-3 flex items-center gap-3 flex-shrink-0">
         <button
           onClick={() => navigate("/users")}
           className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900"
@@ -222,7 +222,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
         </div>
       </div>
 
-      <div className="flex-1 bg-gray-100 overflow-visible">
+      <div className="flex-1 bg-gray-100 overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
@@ -244,10 +244,10 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
             <p>Nenhuma mensagem encontrada</p>
           </div>
         ) : (
-          <div ref={containerRef} className={`h-full flex flex-col lg:flex-row ${isResizing ? 'select-none' : ''}`}>
+          <div ref={containerRef} className={`h-full flex flex-col lg:flex-row overflow-hidden ${isResizing ? 'select-none' : ''}`}>
             {/* Seção de Resumos - Esquerda em desktop, topo em mobile */}
             <div 
-              className="bg-white border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col"
+              className="bg-white border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col lg:h-full"
               style={{ width: window.innerWidth >= 1024 ? `${leftPanelWidth}%` : undefined }}
             >
               <div className="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50">
@@ -285,7 +285,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
             </div>
 
             {/* Seção de Chat - Direita em desktop, baixo em mobile */}
-            <div className="flex-1 flex flex-col min-h-0">
+            <div className="flex-1 flex flex-col min-h-0 lg:h-full overflow-hidden">
               {selectedConversation && (
                 <>
                   <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center gap-3">
