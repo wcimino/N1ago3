@@ -52,4 +52,10 @@ export const authStorage = {
       .where(eq(authorizedUsers.id, id));
     return true;
   },
+
+  async updateLastAccess(email: string): Promise<void> {
+    await db.update(authorizedUsers)
+      .set({ lastAccess: new Date() })
+      .where(eq(authorizedUsers.email, email.toLowerCase()));
+  },
 };

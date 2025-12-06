@@ -32,6 +32,7 @@ export const authorizedUsers = pgTable("authorized_users", {
   name: varchar("name"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   createdBy: varchar("created_by"),
+  lastAccess: timestamp("last_access"),
 });
 
 // Zendesk users table (existing)

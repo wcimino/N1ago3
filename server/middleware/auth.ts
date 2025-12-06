@@ -87,6 +87,9 @@ export const requireAuthorizedUser: RequestHandler = async (req, res, next) => {
     });
   }
 
+  // Update last access timestamp (fire and forget)
+  storage.updateLastAccess(email).catch(() => {});
+
   next();
 };
 
