@@ -1,5 +1,5 @@
 import type { KeyboardEvent } from "react";
-import { MessageCircle, Clock, Sparkles, Package, Target, MessageSquare } from "lucide-react";
+import { MessageCircle, Clock, Sparkles, Package, Target, MessageSquare, ChevronRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { formatDateTimeShort } from "../lib/dateUtils";
@@ -14,6 +14,7 @@ export interface SummaryCardProps {
   messagesCount: number;
   isSelected: boolean;
   onClick: () => void;
+  compact?: boolean;
 }
 
 export function SummaryCard({ 
@@ -23,7 +24,8 @@ export function SummaryCard({
   conversationStatus,
   messagesCount,
   isSelected, 
-  onClick 
+  onClick,
+  compact = false
 }: SummaryCardProps) {
   const shortId = conversationId.slice(0, 8);
   const updatedAtDate = summary?.updated_at ? new Date(summary.updated_at) : null;
@@ -37,6 +39,70 @@ export function SummaryCard({
       onClick();
     }
   };
+
+  if (compact) {
+    return (
+      <div 
+        role="button"
+        tabIndex={0}
+        onClick={onClick}
+        onKeyDown={handleKeyDown}
+        aria-selected={isSelected}
+        className={`
+          p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1
+          ${isSelected 
+            ? 'border-purple-500 bg-purple-50 shadow-md' 
+            : 'border-gray-200 bg-white hover:border-purple-300 hover:shadow-sm active:bg-gray-50'
+          }
+        `}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <MessageCircle className="w-4 h-4 text-purple-600 flex-shrink-0" />
+              <span className="font-medium text-gray-900 text-sm truncate">Conversa {shortId}...</span>
+              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${
+                conversationStatus === "active" 
+                  ? "bg-green-100 text-green-700" 
+                  : "bg-gray-100 text-gray-600"
+              }`}>
+                {conversationStatus}
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mb-2">
+              <Clock className="w-3 h-3" />
+              <span>{formatDateTimeShort(conversationDate)}</span>
+              <span className="text-gray-300">•</span>
+              <span>{messagesCount} msgs</span>
+            </div>
+
+            <div className="flex flex-wrap gap-1">
+              {summary?.product && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded-full text-[10px] font-medium">
+                  <Package className="w-2.5 h-2.5" />
+                  {summary.product}
+                </span>
+              )}
+              {summary?.intent && (
+                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${INTENT_COLORS[summary.intent] || INTENT_COLORS.outros}`}>
+                  <Target className="w-2.5 h-2.5" />
+                  {INTENT_LABELS[summary.intent] || summary.intent}
+                </span>
+              )}
+              {summary?.confidence !== null && summary?.confidence !== undefined && (
+                <span className="inline-flex items-center px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded-full text-[10px]">
+                  {summary.confidence}%
+                </span>
+              )}
+            </div>
+          </div>
+          
+          <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 
