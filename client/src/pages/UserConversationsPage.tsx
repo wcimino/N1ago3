@@ -25,6 +25,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
   const [selectedConversationIndex, setSelectedConversationIndex] = useState(0);
   const [mobileTab, setMobileTab] = useState<MobileTab>("conversas");
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const hasInitializedSelection = useRef(false);
   
   const { containerRef, leftPanelWidth, isResizing, handleMouseDown } = useResizablePanel({
     initialWidth: 50,
@@ -46,10 +47,20 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
     : [];
 
   useEffect(() => {
-    if (sortedConversations.length > 0) {
+    hasInitializedSelection.current = false;
+    setSelectedConversationIndex(0);
+    setMobileTab("conversas");
+  }, [userId]);
+
+  useEffect(() => {
+    if (sortedConversations.length > 0 && !hasInitializedSelection.current) {
       setSelectedConversationIndex(0);
+      hasInitializedSelection.current = true;
     }
-  }, [data]);
+    if (sortedConversations.length > 0 && selectedConversationIndex >= sortedConversations.length) {
+      setSelectedConversationIndex(sortedConversations.length - 1);
+    }
+  }, [sortedConversations.length, selectedConversationIndex]);
 
   const totalMessages = data?.conversations.reduce((acc, conv) => acc + conv.messages.length, 0) || 0;
   const selectedConversation = sortedConversations[selectedConversationIndex];
