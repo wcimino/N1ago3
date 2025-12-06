@@ -1,147 +1,18 @@
-import { useState, useEffect, useRef, useCallback, type KeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { RefreshCw, XCircle, MessageCircle, ChevronLeft, Sparkles, Clock, Package, Target, MessageSquare } from "lucide-react";
-import type { UserConversationsMessagesResponse, ImagePayload, ConversationSummary } from "../types";
+import { XCircle, MessageCircle, ChevronLeft, Sparkles } from "lucide-react";
+import type { UserConversationsMessagesResponse, ImagePayload } from "../types";
 import { MessageBubble } from "../components/ui/MessageBubble";
 import { ImageLightbox } from "../components/ui/ImageLightbox";
+import { LoadingState } from "../components/ui/LoadingSpinner";
+import { SummaryCard } from "../components/SummaryCard";
+import { useResizablePanel } from "../hooks/useResizablePanel";
 import { fetchApi } from "../lib/queryClient";
 import { formatDateTimeShort } from "../lib/dateUtils";
-import { format, formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 interface UserConversationsPageProps {
   params: { userId: string };
-}
-
-const intentLabels: Record<string, string> = {
-  contratar: "Quer contratar",
-  suporte: "Precisa de suporte",
-  cancelar: "Quer cancelar",
-  duvida: "Tem dúvidas",
-  reclamacao: "Reclamação",
-  outros: "Outros",
-};
-
-const intentColors: Record<string, string> = {
-  contratar: "bg-green-100 text-green-700",
-  suporte: "bg-blue-100 text-blue-700",
-  cancelar: "bg-red-100 text-red-700",
-  duvida: "bg-yellow-100 text-yellow-700",
-  reclamacao: "bg-orange-100 text-orange-700",
-  outros: "bg-gray-100 text-gray-700",
-};
-
-interface SummaryCardProps {
-  summary: ConversationSummary | null;
-  conversationId: string;
-  conversationDate: string;
-  conversationStatus: string;
-  messagesCount: number;
-  isSelected: boolean;
-  onClick: () => void;
-}
-
-function SummaryCard({ 
-  summary, 
-  conversationId, 
-  conversationDate, 
-  conversationStatus,
-  messagesCount,
-  isSelected, 
-  onClick 
-}: SummaryCardProps) {
-  const shortId = conversationId.slice(0, 8);
-  const updatedAtDate = summary?.updated_at ? new Date(summary.updated_at) : null;
-  const timeAgo = updatedAtDate 
-    ? formatDistanceToNow(updatedAtDate, { addSuffix: true, locale: ptBR })
-    : null;
-
-  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onClick();
-    }
-  };
-
-  return (
-    <div 
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={handleKeyDown}
-      aria-selected={isSelected}
-      className={`
-        p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2
-        ${isSelected 
-          ? 'border-purple-500 bg-purple-50 shadow-md' 
-          : 'border-gray-200 bg-white hover:border-purple-300 hover:shadow-sm'
-        }
-      `}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <MessageCircle className="w-4 h-4 text-purple-600" />
-          <span className="font-medium text-gray-900">Conversa {shortId}...</span>
-        </div>
-        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-          conversationStatus === "active" 
-            ? "bg-green-100 text-green-700" 
-            : "bg-gray-100 text-gray-600"
-        }`}>
-          {conversationStatus}
-        </span>
-      </div>
-      
-      <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
-        <Clock className="w-3 h-3" />
-        <span>{formatDateTimeShort(conversationDate)}</span>
-        <span className="text-gray-300">•</span>
-        <MessageSquare className="w-3 h-3" />
-        <span>{messagesCount} msgs</span>
-      </div>
-
-      {summary ? (
-        <>
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {summary.product && (
-              <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
-                <Package className="w-3 h-3" />
-                {summary.product}
-              </div>
-            )}
-            {summary.intent && (
-              <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${intentColors[summary.intent] || intentColors.outros}`}>
-                <Target className="w-3 h-3" />
-                {intentLabels[summary.intent] || summary.intent}
-              </div>
-            )}
-            {summary.confidence !== null && (
-              <div className="inline-flex items-center px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs">
-                {summary.confidence}%
-              </div>
-            )}
-          </div>
-          
-          <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">
-            {summary.text}
-          </p>
-          
-          {timeAgo && (
-            <p className="text-xs text-purple-500 mt-2 flex items-center gap-1">
-              <Sparkles className="w-3 h-3" />
-              Atualizado {timeAgo}
-            </p>
-          )}
-        </>
-      ) : (
-        <div className="flex items-center gap-2 text-gray-400">
-          <Sparkles className="w-4 h-4" />
-          <span className="text-sm">Resumo ainda não gerado</span>
-        </div>
-      )}
-    </div>
-  );
 }
 
 export function UserConversationsPage({ params }: UserConversationsPageProps) {
@@ -150,37 +21,12 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
   const [expandedImage, setExpandedImage] = useState<ImagePayload | null>(null);
   const [selectedConversationIndex, setSelectedConversationIndex] = useState(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [leftPanelWidth, setLeftPanelWidth] = useState(60);
-  const [isResizing, setIsResizing] = useState(false);
-
-  const handleMouseDown = useCallback((e: ReactMouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-  }, []);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing || !containerRef.current) return;
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
-      setLeftPanelWidth(Math.min(Math.max(newWidth, 30), 70));
-    };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-    };
-
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isResizing]);
+  
+  const { containerRef, leftPanelWidth, isResizing, handleMouseDown } = useResizablePanel({
+    initialWidth: 60,
+    minWidth: 30,
+    maxWidth: 70,
+  });
 
   const { data, isLoading, error } = useQuery<UserConversationsMessagesResponse>({
     queryKey: ["user-conversations-messages", userId],
@@ -225,7 +71,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
       <div className="flex-1 bg-gray-100 overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
-            <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
+            <LoadingState message="Carregando conversas..." />
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500">
@@ -247,8 +93,8 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
           <div ref={containerRef} className={`h-full flex flex-col lg:flex-row overflow-hidden ${isResizing ? 'select-none' : ''}`}>
             {/* Seção de Resumos - Esquerda em desktop, topo em mobile */}
             <div 
-              className="bg-white border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col lg:h-full"
-              style={{ width: window.innerWidth >= 1024 ? `${leftPanelWidth}%` : undefined }}
+              className="bg-white border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col lg:h-full w-full lg:w-auto lg:flex-shrink-0"
+              style={{ flex: `0 0 ${leftPanelWidth}%` }}
             >
               <div className="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50">
                 <div className="flex items-center gap-2">

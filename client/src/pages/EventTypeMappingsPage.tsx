@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { RefreshCw } from "lucide-react";
 import { fetchApi, apiRequest } from "../lib/queryClient";
 import { ToggleSwitch } from "../components/ui/ToggleSwitch";
+import { LoadingState } from "../components/ui/LoadingSpinner";
 import type { EventTypeMapping, EventTypeMappingsResponse } from "../types";
 
 export function EventTypeMappingsPage() {
@@ -58,9 +58,7 @@ export function EventTypeMappingsPage() {
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
-          </div>
+          <LoadingState message="Carregando mapeamentos..." />
         ) : !data?.mappings || data.mappings.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             <p>Nenhum mapeamento configurado.</p>

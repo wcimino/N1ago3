@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
-import { apiRequest } from "../lib/queryClient";
+import { apiRequest, fetchApi } from "../lib/queryClient";
 import { formatShortDateTime } from "../lib/dateUtils";
 import { LoadingState, EmptyState, LoadingSpinner } from "../components";
 import type { AuthorizedUser } from "../types";
@@ -14,10 +14,7 @@ export function AuthorizedUsersPage() {
 
   const { data: authorizedUsers, isLoading } = useQuery<AuthorizedUser[]>({
     queryKey: ["authorized-users"],
-    queryFn: async () => {
-      const res = await fetch("/api/authorized-users", { credentials: "include" });
-      return res.json();
-    },
+    queryFn: () => fetchApi<AuthorizedUser[]>("/api/authorized-users"),
   });
 
   const addMutation = useMutation({

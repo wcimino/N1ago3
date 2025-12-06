@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { RefreshCw } from "lucide-react";
 import { CheckboxListItem } from "./ui/CheckboxListItem";
+import { LoadingState } from "./ui/LoadingSpinner";
 import { useOpenaiApiConfig } from "../hooks/useOpenaiApiConfig";
 import { AUTHOR_TYPE_OPTIONS, MODEL_OPTIONS } from "../lib/constants";
 
@@ -34,11 +34,7 @@ export function OpenaiConfigForm({
   const { state, actions, eventTypes, isLoading, isSaving } = useOpenaiApiConfig(configType);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
-      </div>
-    );
+    return <LoadingState message="Carregando configurações..." />;
   }
 
   return (

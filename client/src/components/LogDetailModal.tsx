@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { RefreshCw } from "lucide-react";
 import { Modal, ModalField, ModalGrid, ModalCodeBlock } from "./ui/Modal";
+import { LoadingState } from "./ui/LoadingSpinner";
 import { StatusBadge } from "./StatusBadge";
 import { formatDateTime } from "../lib/dateUtils";
+import { fetchApi } from "../lib/queryClient";
 import type { WebhookLogDetail } from "../types";
 
 interface LogDetailModalProps {
@@ -13,17 +14,10 @@ interface LogDetailModalProps {
 export function LogDetailModal({ logId, onClose }: LogDetailModalProps) {
   const { data: log, isLoading } = useQuery<WebhookLogDetail>({
     queryKey: ["webhook-log", logId],
-    queryFn: async () => {
-      const res = await fetch(`/api/webhook-logs/${logId}`, { credentials: "include" });
-      return res.json();
-    },
+    queryFn: () => fetchApi<WebhookLogDetail>(`/api/webhook-logs/${logId}`),
   });
 
-  const loadingContent = (
-    <div className="flex items-center justify-center py-8">
-      <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
-    </div>
-  );
+  const loadingContent = <LoadingState />;
 
   return (
     <Modal

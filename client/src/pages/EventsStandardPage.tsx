@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Eye } from "lucide-react";
 import { EventTypeBadge, AuthorTypeBadge, DataTable, EventDetailModal, type Column } from "../components";
 import { formatDateTime } from "../lib/dateUtils";
+import { fetchApi } from "../lib/queryClient";
 import { usePaginatedQuery } from "../hooks/usePaginatedQuery";
 import type { StandardEvent, StandardEventsStatsResponse } from "../types";
 
@@ -30,10 +31,7 @@ export function EventsStandardPage() {
 
   const { data: stats } = useQuery<StandardEventsStatsResponse>({
     queryKey: ["standard-events-stats"],
-    queryFn: async () => {
-      const res = await fetch("/api/events/stats", { credentials: "include" });
-      return res.json();
-    },
+    queryFn: () => fetchApi<StandardEventsStatsResponse>("/api/events/stats"),
     refetchInterval: 10000,
   });
 
