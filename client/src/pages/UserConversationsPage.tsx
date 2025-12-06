@@ -1,37 +1,30 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { XCircle, MessageCircle, ChevronLeft, Sparkles, List, FileText } from "lucide-react";
+import { XCircle, MessageCircle, ChevronLeft, ChevronRight, Sparkles, FileText } from "lucide-react";
 import type { UserConversationsMessagesResponse, ImagePayload } from "../types";
 import { MessageBubble } from "../components/ui/MessageBubble";
 import { ImageLightbox } from "../components/ui/ImageLightbox";
 import { LoadingState } from "../components/ui/LoadingSpinner";
-import { SummaryCard } from "../components/SummaryCard";
 import { SegmentedTabs } from "../components/ui/SegmentedTabs";
-import { useResizablePanel } from "../hooks/useResizablePanel";
 import { fetchApi } from "../lib/queryClient";
 import { formatDateTimeShort } from "../lib/dateUtils";
+import { getUserDisplayNameFromProfile } from "../lib/userUtils";
 
 interface UserConversationsPageProps {
   params: { userId: string };
 }
 
-type MobileTab = "conversas" | "resumo" | "chat";
+type ContentTab = "resumo" | "chat";
 
 export function UserConversationsPage({ params }: UserConversationsPageProps) {
   const [, navigate] = useLocation();
   const userId = decodeURIComponent(params.userId);
   const [expandedImage, setExpandedImage] = useState<ImagePayload | null>(null);
   const [selectedConversationIndex, setSelectedConversationIndex] = useState(0);
-  const [mobileTab, setMobileTab] = useState<MobileTab>("conversas");
+  const [contentTab, setContentTab] = useState<ContentTab>("chat");
   const chatEndRef = useRef<HTMLDivElement>(null);
   const hasInitializedSelection = useRef(false);
-  
-  const { containerRef, leftPanelWidth, isResizing, handleMouseDown } = useResizablePanel({
-    initialWidth: 50,
-    minWidth: 30,
-    maxWidth: 70,
-  });
 
   const { data, isLoading, error } = useQuery<UserConversationsMessagesResponse>({
     queryKey: ["user-conversations-messages", userId],
@@ -49,7 +42,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
   useEffect(() => {
     hasInitializedSelection.current = false;
     setSelectedConversationIndex(0);
-    setMobileTab("conversas");
+    setContentTab("chat");
   }, [userId]);
 
   useEffect(() => {
@@ -64,33 +57,56 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
 
   const totalMessages = data?.conversations.reduce((acc, conv) => acc + conv.messages.length, 0) || 0;
   const selectedConversation = sortedConversations[selectedConversationIndex];
+  const customerName = getUserDisplayNameFromProfile(data?.user_profile, userId);
 
-  const handleConversationSelect = (index: number) => {
-    setSelectedConversationIndex(index);
-    setMobileTab("chat");
-  };
-
-  const mobileTabs = [
-    { id: "conversas", label: "Conversas", icon: <List className="w-4 h-4" /> },
+  const contentTabs = [
     { id: "resumo", label: "Resumo", icon: <FileText className="w-4 h-4" /> },
     { id: "chat", label: "Chat", icon: <MessageCircle className="w-4 h-4" /> },
   ];
 
-  const renderConversationsList = () => (
-    <div className="flex-1 overflow-y-auto p-3 space-y-3">
-      {sortedConversations.map((convItem, index) => (
-        <SummaryCard
-          key={convItem.conversation.id}
-          summary={convItem.summary}
-          conversationId={convItem.conversation.zendesk_conversation_id}
-          conversationDate={convItem.conversation.created_at}
-          conversationStatus={convItem.conversation.status}
-          messagesCount={convItem.messages.length}
-          isSelected={selectedConversationIndex === index}
-          onClick={() => handleConversationSelect(index)}
-          compact
-        />
-      ))}
+  const goToPreviousConversation = () => {
+    if (selectedConversationIndex > 0) {
+      setSelectedConversationIndex(selectedConversationIndex - 1);
+    }
+  };
+
+  const goToNextConversation = () => {
+    if (selectedConversationIndex < sortedConversations.length - 1) {
+      setSelectedConversationIndex(selectedConversationIndex + 1);
+    }
+  };
+
+  const renderConversationSelector = () => (
+    <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
+      <button
+        onClick={goToPreviousConversation}
+        disabled={selectedConversationIndex === 0}
+        className="p-2 rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      >
+        <ChevronLeft className="w-5 h-5 text-gray-600" />
+      </button>
+      
+      <div className="flex-1 text-center">
+        <p className="text-sm font-medium text-gray-900">
+          Conversa {selectedConversationIndex + 1} de {sortedConversations.length}
+        </p>
+        <p className="text-xs text-gray-500">
+          {selectedConversation && formatDateTimeShort(selectedConversation.conversation.created_at)}
+          {selectedConversation?.conversation.status === "active" && (
+            <span className="ml-2 px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs">
+              ativa
+            </span>
+          )}
+        </p>
+      </div>
+      
+      <button
+        onClick={goToNextConversation}
+        disabled={selectedConversationIndex === sortedConversations.length - 1}
+        className="p-2 rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      >
+        <ChevronRight className="w-5 h-5 text-gray-600" />
+      </button>
     </div>
   );
 
@@ -148,70 +164,43 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
   );
 
   const renderChat = () => (
-    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-      {selectedConversation && (
-        <>
-          <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center gap-3 flex-shrink-0">
-            <MessageCircle className="w-5 h-5 text-blue-600" />
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-900 truncate">
-                Conversa {selectedConversation.conversation.zendesk_conversation_id.slice(0, 8)}...
-              </h3>
-              <p className="text-xs text-gray-500">
-                {formatDateTimeShort(selectedConversation.conversation.created_at)}
-                <span 
-                  className="ml-2 cursor-pointer hover:text-gray-700"
-                  title="Clique para copiar o ID completo"
-                  onClick={() => {
-                    navigator.clipboard.writeText(selectedConversation.conversation.zendesk_conversation_id);
-                  }}
-                >
-                  (copiar ID)
+    <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+      <div className="space-y-3 max-w-2xl mx-auto">
+        {selectedConversation?.messages.length === 0 ? (
+          <div className="text-center py-8 text-gray-400 text-sm">
+            Nenhuma mensagem nesta conversa
+          </div>
+        ) : (
+          selectedConversation?.messages.map((msg) => (
+            <MessageBubble 
+              key={msg.id} 
+              message={msg} 
+              onImageClick={setExpandedImage}
+            />
+          ))
+        )}
+        
+        {selectedConversation?.suggested_response && (
+          <div className="flex justify-end">
+            <div className="max-w-[85%] bg-gray-200 opacity-60 rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl shadow-sm px-4 py-2 border-2 border-dashed border-gray-300">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="w-3 h-3 text-gray-500" />
+                <span className="text-xs font-medium text-gray-500">
+                  Sugestão IA (não enviada)
                 </span>
+              </div>
+              <p className="text-sm text-gray-600 whitespace-pre-wrap break-words">
+                {selectedConversation.suggested_response.text}
+              </p>
+              <p className="text-[10px] text-gray-400 mt-1 text-right">
+                {formatDateTimeShort(selectedConversation.suggested_response.created_at)}
               </p>
             </div>
           </div>
-          
-          <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
-            <div className="space-y-3 max-w-2xl mx-auto">
-              {selectedConversation.messages.length === 0 ? (
-                <div className="text-center py-8 text-gray-400 text-sm">
-                  Nenhuma mensagem nesta conversa
-                </div>
-              ) : (
-                selectedConversation.messages.map((msg) => (
-                  <MessageBubble 
-                    key={msg.id} 
-                    message={msg} 
-                    onImageClick={setExpandedImage}
-                  />
-                ))
-              )}
-              
-              {selectedConversation.suggested_response && (
-                <div className="flex justify-end">
-                  <div className="max-w-[85%] bg-gray-200 opacity-60 rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl shadow-sm px-4 py-2 border-2 border-dashed border-gray-300">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Sparkles className="w-3 h-3 text-gray-500" />
-                      <span className="text-xs font-medium text-gray-500">
-                        Sugestão IA (não enviada)
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 whitespace-pre-wrap break-words">
-                      {selectedConversation.suggested_response.text}
-                    </p>
-                    <p className="text-[10px] text-gray-400 mt-1 text-right">
-                      {formatDateTimeShort(selectedConversation.suggested_response.created_at)}
-                    </p>
-                  </div>
-                </div>
-              )}
-              
-              <div ref={chatEndRef} />
-            </div>
-          </div>
-        </>
-      )}
+        )}
+        
+        <div ref={chatEndRef} />
+      </div>
     </div>
   );
 
@@ -225,7 +214,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div className="flex-1">
-          <h2 className="text-lg font-semibold text-gray-900">Histórico do Usuário</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{customerName}</h2>
           <p className="text-xs text-gray-500">
             {data?.conversations.length || 0} {(data?.conversations.length || 0) === 1 ? "conversa" : "conversas"} - {totalMessages} {totalMessages === 1 ? "mensagem" : "mensagens"}
           </p>
@@ -255,122 +244,40 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
           </div>
         ) : (
           <>
-            <div className="lg:hidden px-3 py-2 bg-white border-b border-gray-200 flex-shrink-0">
-              <SegmentedTabs
-                tabs={mobileTabs}
-                activeTab={mobileTab}
-                onChange={(tab) => setMobileTab(tab as MobileTab)}
-              />
-            </div>
-
-            <div className="lg:hidden flex-1 flex flex-col overflow-hidden bg-gray-50">
-              {mobileTab === "conversas" && renderConversationsList()}
-              {mobileTab === "resumo" && renderSummary()}
-              {mobileTab === "chat" && renderChat()}
-            </div>
-
-            <div ref={containerRef} className={`hidden lg:flex h-full flex-row overflow-hidden ${isResizing ? 'select-none' : ''}`}>
-              <div 
-                className="bg-white border-r border-gray-200 flex flex-col h-full flex-shrink-0"
-                style={{ width: `${leftPanelWidth}%` }}
-              >
-                <div className="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50 flex-shrink-0">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-purple-600" />
-                    <h3 className="font-semibold text-purple-900">Resumos das Conversas</h3>
-                  </div>
-                  <p className="text-xs text-purple-600 mt-1">
-                    Clique em uma conversa para ver as mensagens
-                  </p>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto p-3 space-y-3">
-                  {sortedConversations.map((convItem, index) => (
-                    <SummaryCard
-                      key={convItem.conversation.id}
-                      summary={convItem.summary}
-                      conversationId={convItem.conversation.zendesk_conversation_id}
-                      conversationDate={convItem.conversation.created_at}
-                      conversationStatus={convItem.conversation.status}
-                      messagesCount={convItem.messages.length}
-                      isSelected={selectedConversationIndex === index}
-                      onClick={() => setSelectedConversationIndex(index)}
-                    />
-                  ))}
-                </div>
+            {/* Mobile Layout */}
+            <div className="lg:hidden flex-1 flex flex-col overflow-hidden">
+              {renderConversationSelector()}
+              
+              <div className="px-3 py-2 bg-white border-b border-gray-200 flex-shrink-0">
+                <SegmentedTabs
+                  tabs={contentTabs}
+                  activeTab={contentTab}
+                  onChange={(tab) => setContentTab(tab as ContentTab)}
+                />
               </div>
 
-              <div
-                className="w-2 cursor-col-resize flex items-center justify-center bg-gray-100 hover:bg-purple-200 transition-colors group flex-shrink-0"
-                onMouseDown={handleMouseDown}
-              >
-                <div className="w-0.5 h-8 bg-gray-300 group-hover:bg-purple-400 rounded-full" />
+              <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
+                {contentTab === "resumo" && renderSummary()}
+                {contentTab === "chat" && renderChat()}
+              </div>
+            </div>
+
+            {/* Desktop Layout */}
+            <div className="hidden lg:flex h-full flex-col overflow-hidden">
+              {renderConversationSelector()}
+              
+              <div className="px-4 py-2 bg-white border-b border-gray-200 flex-shrink-0">
+                <SegmentedTabs
+                  tabs={contentTabs}
+                  activeTab={contentTab}
+                  onChange={(tab) => setContentTab(tab as ContentTab)}
+                  className="max-w-md mx-auto"
+                />
               </div>
 
-              <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                {selectedConversation && (
-                  <>
-                    <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center gap-3 flex-shrink-0">
-                      <MessageCircle className="w-5 h-5 text-blue-600" />
-                      <div>
-                        <h3 className="font-semibold text-gray-900">
-                          Conversa {selectedConversation.conversation.zendesk_conversation_id.slice(0, 8)}...
-                        </h3>
-                        <p className="text-xs text-gray-500">
-                          {formatDateTimeShort(selectedConversation.conversation.created_at)}
-                          <span 
-                            className="ml-2 cursor-pointer hover:text-gray-700"
-                            title="Clique para copiar o ID completo"
-                            onClick={() => {
-                              navigator.clipboard.writeText(selectedConversation.conversation.zendesk_conversation_id);
-                            }}
-                          >
-                            (clique para copiar ID completo)
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
-                      <div className="space-y-3 max-w-2xl mx-auto">
-                        {selectedConversation.messages.length === 0 ? (
-                          <div className="text-center py-8 text-gray-400 text-sm">
-                            Nenhuma mensagem nesta conversa
-                          </div>
-                        ) : (
-                          selectedConversation.messages.map((msg) => (
-                            <MessageBubble 
-                              key={msg.id} 
-                              message={msg} 
-                              onImageClick={setExpandedImage}
-                            />
-                          ))
-                        )}
-                        
-                        {selectedConversation.suggested_response && (
-                          <div className="flex justify-end">
-                            <div className="max-w-[75%] bg-gray-200 opacity-60 rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl shadow-sm px-4 py-2 border-2 border-dashed border-gray-300">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Sparkles className="w-3 h-3 text-gray-500" />
-                                <span className="text-xs font-medium text-gray-500">
-                                  Sugestão IA (não enviada)
-                                </span>
-                              </div>
-                              <p className="text-sm text-gray-600 whitespace-pre-wrap break-words">
-                                {selectedConversation.suggested_response.text}
-                              </p>
-                              <p className="text-[10px] text-gray-400 mt-1 text-right">
-                                {formatDateTimeShort(selectedConversation.suggested_response.created_at)}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                        
-                        <div ref={chatEndRef} />
-                      </div>
-                    </div>
-                  </>
-                )}
+              <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
+                {contentTab === "resumo" && renderSummary()}
+                {contentTab === "chat" && renderChat()}
               </div>
             </div>
           </>

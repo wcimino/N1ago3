@@ -108,5 +108,6 @@ export interface ConversationWithMessages {
 
 export interface UserConversationsMessagesResponse {
   user_id: string;
+  user_profile: UserProfile | null;
   conversations: ConversationWithMessages[];
 }

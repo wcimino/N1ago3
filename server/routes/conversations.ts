@@ -49,6 +49,8 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
     return res.status(404).json({ error: "No conversations found for this user" });
   }
 
+  const user = await storage.getUserBySunshineId(req.params.userId);
+
   const conversationsWithSummary = await Promise.all(
     result.map(async (item) => {
       const [summary, suggestedResponse] = await Promise.all([
@@ -84,6 +86,7 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
 
   res.json({
     user_id: req.params.userId,
+    user_profile: user?.profile || null,
     conversations: conversationsWithSummary,
   });
 });
