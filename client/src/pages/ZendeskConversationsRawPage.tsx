@@ -72,6 +72,7 @@ export function ZendeskConversationsRawPage() {
     {
       key: "actions",
       header: "Ações",
+      hideOnMobile: true,
       render: (log) => (
         <button
           onClick={(e) => {
@@ -115,6 +116,7 @@ export function ZendeskConversationsRawPage() {
           isLoading={isLoading}
           emptyTitle="Nenhum evento recebido ainda."
           emptyDescription="Configure o webhook no Zendesk para começar a receber eventos."
+          onRowClick={(log) => setSelectedLogId(log.id)}
           pagination={{
             page,
             totalPages,

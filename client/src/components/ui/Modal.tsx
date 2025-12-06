@@ -29,23 +29,23 @@ export function Modal({
 }: ModalProps) {
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center sm:p-4 z-50"
       onClick={onClose}
     >
       <div
-        className={`bg-white rounded-lg shadow-xl ${maxWidthClasses[maxWidth]} w-full max-h-[90vh] overflow-hidden`}
+        className={`bg-white rounded-t-xl sm:rounded-lg shadow-xl ${maxWidthClasses[maxWidth]} w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-4 border-b flex justify-between items-center">
-          <h2 className="text-lg font-semibold">{title}</h2>
+        <div className="p-3 sm:p-4 border-b flex justify-between items-center sticky top-0 bg-white z-10">
+          <h2 className="text-base sm:text-lg font-semibold truncate pr-2">{title}</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
+            className="p-1.5 -mr-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 sm:w-5 sm:h-5" />
           </button>
         </div>
-        <div className="p-4 overflow-auto max-h-[calc(90vh-60px)]">
+        <div className="p-3 sm:p-4 overflow-auto max-h-[calc(95vh-52px)] sm:max-h-[calc(90vh-60px)]">
           {isLoading && loadingContent ? loadingContent : children}
         </div>
       </div>
@@ -76,13 +76,13 @@ interface ModalGridProps {
 
 export function ModalGrid({ children, cols = 2, className = "" }: ModalGridProps) {
   const colsClass = {
-    2: "grid-cols-2",
-    3: "grid-cols-3",
-    4: "grid-cols-2 md:grid-cols-4",
+    2: "grid-cols-1 sm:grid-cols-2",
+    3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+    4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
   };
   
   return (
-    <div className={`grid ${colsClass[cols]} gap-4 ${className}`}>
+    <div className={`grid ${colsClass[cols]} gap-3 sm:gap-4 ${className}`}>
       {children}
     </div>
   );

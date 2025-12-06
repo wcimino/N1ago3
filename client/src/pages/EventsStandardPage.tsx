@@ -94,6 +94,7 @@ export function EventsStandardPage() {
     {
       key: "actions",
       header: "Ações",
+      hideOnMobile: true,
       render: (event) => (
         <button
           onClick={(e) => {
@@ -111,18 +112,18 @@ export function EventsStandardPage() {
 
   return (
     <>
-      <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-500">Total de Eventos</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{stats?.total || 0}</p>
+      <div className="mb-4 sm:mb-6 grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+        <div className="bg-white rounded-lg shadow p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-500">Total de Eventos</p>
+          <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1">{stats?.total || 0}</p>
         </div>
         {stats?.byType &&
           Object.entries(stats.byType)
             .slice(0, 3)
             .map(([type, count]) => (
-              <div key={type} className="bg-white rounded-lg shadow p-4">
-                <p className="text-sm text-gray-500">{type}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{count}</p>
+              <div key={type} className="bg-white rounded-lg shadow p-3 sm:p-4">
+                <p className="text-xs sm:text-sm text-gray-500 truncate">{type}</p>
+                <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1">{count}</p>
               </div>
             ))}
       </div>
@@ -140,6 +141,7 @@ export function EventsStandardPage() {
           isLoading={isLoading}
           emptyTitle="Nenhum evento padronizado ainda."
           emptyDescription="Eventos aparecem aqui depois de processados pelo adaptador."
+          onRowClick={(event) => setSelectedEvent(event)}
           pagination={{
             page,
             totalPages,

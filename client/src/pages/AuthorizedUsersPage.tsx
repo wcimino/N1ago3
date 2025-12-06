@@ -116,41 +116,67 @@ export function AuthorizedUsersPage() {
             description="Adicione usuários usando o formulário acima."
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Adicionado em</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Adicionado por</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {authorizedUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{user.email}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{user.name || "-"}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
-                      {user.createdAt ? formatShortDateTime(user.createdAt) : "-"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{user.createdBy || "-"}</td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => removeMutation.mutate(user.id)}
-                        disabled={removeMutation.isPending}
-                        className="inline-flex items-center gap-1 text-red-600 hover:text-red-800 text-sm disabled:opacity-50"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Remover
-                      </button>
-                    </td>
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Adicionado em</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Adicionado por</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {authorizedUsers.map((user) => (
+                    <tr key={user.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{user.email}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{user.name || "-"}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">
+                        {user.createdAt ? formatShortDateTime(user.createdAt) : "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{user.createdBy || "-"}</td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => removeMutation.mutate(user.id)}
+                          disabled={removeMutation.isPending}
+                          className="inline-flex items-center gap-1 text-red-600 hover:text-red-800 text-sm disabled:opacity-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Remover
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="md:hidden divide-y divide-gray-200">
+              {authorizedUsers.map((user) => (
+                <div key={user.id} className="p-4 hover:bg-gray-50">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-gray-900 truncate">{user.email}</p>
+                      {user.name && <p className="text-sm text-gray-500 mt-0.5">{user.name}</p>}
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-gray-500">
+                        {user.createdAt && <span>Adicionado: {formatShortDateTime(user.createdAt)}</span>}
+                        {user.createdBy && <span>Por: {user.createdBy}</span>}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removeMutation.mutate(user.id)}
+                      disabled={removeMutation.isPending}
+                      className="flex-shrink-0 p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg disabled:opacity-50"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

@@ -9,6 +9,7 @@ export interface Column<T> {
   header: string;
   sortable?: boolean;
   className?: string;
+  hideOnMobile?: boolean;
   render: (item: T) => ReactNode;
 }
 
@@ -60,7 +61,7 @@ export function DataTable<T>({
 
   return (
     <>
-      <div className="overflow-x-auto">
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
@@ -95,6 +96,33 @@ export function DataTable<T>({
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="md:hidden divide-y divide-gray-200">
+        {data.map((item) => (
+          <div
+            key={keyExtractor(item)}
+            className={`p-4 bg-white hover:bg-gray-50 transition-colors ${onRowClick ? "cursor-pointer" : ""}`}
+            onClick={onRowClick ? () => onRowClick(item) : undefined}
+          >
+            <div className="space-y-2">
+              {columns
+                .filter((column) => !column.hideOnMobile)
+                .map((column, idx) => (
+                  <div key={column.key} className={idx === 0 ? "font-medium text-gray-900" : "flex flex-wrap items-start gap-2 text-sm"}>
+                    {idx === 0 ? (
+                      column.render(item)
+                    ) : (
+                      <>
+                        <span className="text-gray-500 min-w-[80px]">{column.header}:</span>
+                        <span className="text-gray-900 flex-1">{column.render(item)}</span>
+                      </>
+                    )}
+                  </div>
+                ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       {pagination && (
