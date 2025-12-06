@@ -211,7 +211,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
   const selectedConversation = sortedConversations[selectedConversationIndex];
 
   return (
-    <div className="h-[calc(100vh-180px)] flex flex-col">
+    <div className="min-h-[calc(100vh-180px)] flex flex-col">
       <div className="bg-white rounded-t-lg shadow-sm border-b px-4 py-3 flex items-center gap-3">
         <button
           onClick={() => navigate("/users")}
@@ -227,7 +227,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
         </div>
       </div>
 
-      <div className="flex-1 bg-gray-100 overflow-hidden">
+      <div className="flex-1 bg-gray-100 overflow-visible">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
