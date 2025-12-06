@@ -55,14 +55,19 @@ export const webhookStorage = {
   },
 
   async getWebhookLogsStats() {
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
     const stats = await db.select({
       status: zendeskConversationsWebhookRaw.processingStatus,
       count: sql<number>`count(*)`,
     })
       .from(zendeskConversationsWebhookRaw)
+      .where(sql`${zendeskConversationsWebhookRaw.receivedAt} >= ${last24h}`)
       .groupBy(zendeskConversationsWebhookRaw.processingStatus);
     
-    const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(zendeskConversationsWebhookRaw);
+    const [{ total }] = await db.select({ total: sql<number>`count(*)` })
+      .from(zendeskConversationsWebhookRaw)
+      .where(sql`${zendeskConversationsWebhookRaw.receivedAt} >= ${last24h}`);
     
     return {
       total: Number(total),

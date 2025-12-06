@@ -1,20 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Users, MessageCircle, Activity, ChevronRight as ArrowRight, Package, Clock, Calendar } from "lucide-react";
+import { Users, Activity, ChevronRight as ArrowRight, Package, Clock, Calendar, AlertCircle } from "lucide-react";
 import { fetchApi } from "../lib/queryClient";
 import { DonutChart } from "../components/DonutChart";
-import type { UsersStatsResponse, ConversationsStatsResponse, StatsResponse, ProductStatsResponse } from "../types";
+import type { UsersStatsResponse, StatsResponse, ProductStatsResponse } from "../types";
+
+function formatNumber(num: number): string {
+  return num.toLocaleString("pt-BR");
+}
 
 export function HomePage() {
   const { data: usersStats } = useQuery<UsersStatsResponse>({
     queryKey: ["users-stats"],
     queryFn: () => fetchApi<UsersStatsResponse>("/api/users/stats"),
-    refetchInterval: 5000,
-  });
-
-  const { data: conversationsStats } = useQuery<ConversationsStatsResponse>({
-    queryKey: ["conversations-stats"],
-    queryFn: () => fetchApi<ConversationsStatsResponse>("/api/conversations/stats"),
     refetchInterval: 5000,
   });
 
@@ -122,59 +120,20 @@ export function HomePage() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <MessageCircle className="w-5 h-5 text-teal-600" />
-            Conversas
-          </h2>
-          <Link href="/users" className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
-            Ver todas <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500">Total de Conversas</p>
-            <p className="text-4xl font-bold text-gray-900 mt-2">{conversationsStats?.total || 0}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500">Ativas</p>
-            <p className="text-4xl font-bold text-green-600 mt-2">{conversationsStats?.active || 0}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500">Fechadas</p>
-            <p className="text-4xl font-bold text-gray-600 mt-2">{conversationsStats?.closed || 0}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500">Total de Mensagens</p>
-            <p className="text-4xl font-bold text-teal-600 mt-2">{conversationsStats?.totalMessages || 0}</p>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
             <Activity className="w-5 h-5 text-purple-600" />
             Eventos
+            <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">últimas 24h</span>
           </h2>
           <Link href="/events" className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
             Ver todos <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500">Total de Eventos</p>
-            <p className="text-4xl font-bold text-gray-900 mt-2">{eventsStats?.total || 0}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500">Sucesso</p>
-            <p className="text-4xl font-bold text-green-600 mt-2">{eventsStats?.by_status?.success || 0}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500">Erro</p>
-            <p className="text-4xl font-bold text-red-600 mt-2">{eventsStats?.by_status?.error || 0}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500">Pendente</p>
-            <p className="text-4xl font-bold text-yellow-600 mt-2">{eventsStats?.by_status?.pending || 0}</p>
+        <div className="bg-white rounded-lg shadow p-6">
+          <p className="text-sm text-gray-500">Total de Eventos</p>
+          <p className="text-4xl font-bold text-gray-900 mt-2">{formatNumber(eventsStats?.total || 0)}</p>
+          <div className={`mt-4 pt-4 border-t border-gray-100 flex items-center gap-2 ${(eventsStats?.by_status?.error || 0) > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+            <AlertCircle className="w-4 h-4" />
+            <span className="text-sm">{formatNumber(eventsStats?.by_status?.error || 0)} com erro</span>
           </div>
         </div>
       </div>
