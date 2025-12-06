@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { apiRequest, fetchApi } from "../lib/queryClient";
-import { formatShortDateTime } from "../lib/dateUtils";
+import { useDateFormatters } from "../hooks/useDateFormatters";
 import { LoadingState, EmptyState, LoadingSpinner } from "../components";
 import type { AuthorizedUser } from "../types";
 
@@ -11,6 +11,7 @@ export function AuthorizedUsersPage() {
   const [newName, setNewName] = useState("");
   const [error, setError] = useState("");
   const queryClient = useQueryClient();
+  const { formatShortDateTime } = useDateFormatters();
 
   const { data: authorizedUsers, isLoading } = useQuery<AuthorizedUser[]>({
     queryKey: ["authorized-users"],
