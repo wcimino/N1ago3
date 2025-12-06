@@ -2,8 +2,8 @@ import type { UserProfile } from "./users";
 
 export interface Conversation {
   id: number;
-  zendesk_conversation_id: string;
-  zendesk_app_id: string | null;
+  external_conversation_id: string;
+  external_app_id: string | null;
   user_id: string | null;
   status: string;
   created_at: string;
@@ -50,7 +50,7 @@ export interface ConversationMessagesResponse {
 
 export interface UserConversation {
   id: number;
-  zendesk_conversation_id: string;
+  external_conversation_id: string;
   status: string;
   created_at: string;
   updated_at: string;
@@ -96,7 +96,7 @@ export interface SuggestedResponse {
 export interface ConversationWithMessages {
   conversation: {
     id: number;
-    zendesk_conversation_id: string;
+    external_conversation_id: string;
     status: string;
     created_at: string;
     updated_at: string;

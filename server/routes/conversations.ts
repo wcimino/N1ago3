@@ -60,7 +60,7 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
       return {
         conversation: {
           id: item.conversation.id,
-          zendesk_conversation_id: item.conversation.zendeskConversationId,
+          external_conversation_id: item.conversation.externalConversationId,
           status: item.conversation.status,
           created_at: item.conversation.createdAt?.toISOString(),
           updated_at: item.conversation.updatedAt?.toISOString(),

@@ -14,12 +14,12 @@ interface ConversationData {
 async function upsertConversation(data: ConversationData) {
   let [conversation] = await db.select()
     .from(conversations)
-    .where(eq(conversations.zendeskConversationId, data.externalConversationId));
+    .where(eq(conversations.externalConversationId, data.externalConversationId));
   
   if (!conversation) {
     [conversation] = await db.insert(conversations).values({
-      zendeskConversationId: data.externalConversationId,
-      zendeskAppId: data.externalAppId,
+      externalConversationId: data.externalConversationId,
+      externalAppId: data.externalAppId,
       userId: data.externalUserId,
       userExternalId: data.userExternalId,
       metadataJson: data.metadata,
@@ -43,10 +43,10 @@ async function upsertConversation(data: ConversationData) {
 }
 
 export const conversationStorage = {
-  async getOrCreateConversation(zendeskConversationId: string, zendeskAppId?: string, userData?: any) {
+  async getOrCreateConversation(externalConversationId: string, externalAppId?: string, userData?: any) {
     return upsertConversation({
-      externalConversationId: zendeskConversationId,
-      externalAppId: zendeskAppId,
+      externalConversationId: externalConversationId,
+      externalAppId: externalAppId,
       externalUserId: userData?.id,
       userExternalId: userData?.externalId,
       metadata: userData,
@@ -64,10 +64,10 @@ export const conversationStorage = {
     return { conversations: convs, total: Number(count) };
   },
 
-  async getConversationMessages(zendeskConversationId: string) {
+  async getConversationMessages(externalConversationId: string) {
     const [conversation] = await db.select()
       .from(conversations)
-      .where(eq(conversations.zendeskConversationId, zendeskConversationId));
+      .where(eq(conversations.externalConversationId, externalConversationId));
     
     if (!conversation) return null;
     
@@ -126,7 +126,7 @@ export const conversationStorage = {
           ARRAY_AGG(
             JSON_BUILD_OBJECT(
               'id', id,
-              'zendesk_conversation_id', zendesk_conversation_id,
+              'external_conversation_id', external_conversation_id,
               'status', status,
               'created_at', TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
               'updated_at', TO_CHAR(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')

@@ -100,8 +100,8 @@ export const eventsStandard = pgTable("events_standard", {
 
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
-  zendeskConversationId: text("zendesk_conversation_id").notNull().unique(),
-  zendeskAppId: text("zendesk_app_id"),
+  externalConversationId: text("external_conversation_id").notNull().unique(),
+  externalAppId: text("external_app_id"),
   userId: text("user_id"),
   userExternalId: text("user_external_id"),
   status: text("status").default("active").notNull(),
