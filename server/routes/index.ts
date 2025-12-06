@@ -5,6 +5,7 @@ import webhookLogsRoutes from "./webhookLogs.js";
 import conversationsRoutes from "./conversations.js";
 import eventsRoutes from "./events.js";
 import configRoutes from "./config.js";
+import usersStandardRoutes from "./usersStandard.js";
 
 export function registerRoutes(app: Express) {
   app.use(webhooksRoutes);
@@ -13,4 +14,5 @@ export function registerRoutes(app: Express) {
   app.use(conversationsRoutes);
   app.use(eventsRoutes);
   app.use(configRoutes);
+  app.use("/api/users-standard", usersStandardRoutes);
 }

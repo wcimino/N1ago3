@@ -100,4 +100,17 @@ export const usersStandardStorage = {
       .orderBy(usersStandardHistory.changedAt);
     return history;
   },
+
+  async getAllStandardUsers(limit: number = 50, offset: number = 0): Promise<{ users: UserStandard[]; total: number }> {
+    const [countResult] = await db.select({ count: sql<number>`count(*)` }).from(usersStandard);
+    const total = Number(countResult.count);
+
+    const users = await db.select()
+      .from(usersStandard)
+      .orderBy(sql`${usersStandard.lastSeenAt} DESC`)
+      .limit(limit)
+      .offset(offset);
+
+    return { users, total };
+  },
 };
