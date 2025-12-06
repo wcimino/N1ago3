@@ -66,9 +66,14 @@ export const userStorage = {
   },
 
   async getUsersStats() {
-    const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(users);
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
+    const [{ total }] = await db.select({ 
+      total: sql<number>`count(*) filter (where last_seen_at >= ${twentyFourHoursAgo})` 
+    }).from(users);
+    
     const [{ authenticated }] = await db.select({ 
-      authenticated: sql<number>`count(*) filter (where authenticated = true)` 
+      authenticated: sql<number>`count(*) filter (where authenticated = true and last_seen_at >= ${twentyFourHoursAgo})` 
     }).from(users);
     
     return {

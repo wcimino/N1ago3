@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Users, MessageCircle, Activity, ChevronRight as ArrowRight, Package, Clock, Calendar } from "lucide-react";
 import { fetchApi } from "../lib/queryClient";
+import { DonutChart } from "../components/DonutChart";
 import type { UsersStatsResponse, ConversationsStatsResponse, StatsResponse, ProductStatsResponse } from "../types";
 
 export function HomePage() {
@@ -103,24 +104,18 @@ export function HomePage() {
           <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
             <Users className="w-5 h-5 text-blue-600" />
             Usuários
+            <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">últimas 24h</span>
           </h2>
           <Link href="/users" className="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
             Ver todos <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500">Total de Usuários</p>
-            <p className="text-4xl font-bold text-gray-900 mt-2">{usersStats?.total || 0}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500">Autenticados</p>
-            <p className="text-4xl font-bold text-green-600 mt-2">{usersStats?.authenticated || 0}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500">Anônimos</p>
-            <p className="text-4xl font-bold text-gray-600 mt-2">{usersStats?.anonymous || 0}</p>
-          </div>
+        <div className="bg-white rounded-lg shadow p-6">
+          <DonutChart
+            authenticated={usersStats?.authenticated || 0}
+            anonymous={usersStats?.anonymous || 0}
+            total={usersStats?.total || 0}
+          />
         </div>
       </div>
 
