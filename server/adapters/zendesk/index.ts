@@ -1,4 +1,4 @@
-import type { SourceAdapter, StandardEvent, ExtractedUser, ExtractedConversation, AuthorType } from "../types.js";
+import type { SourceAdapter, StandardEvent, ExtractedUser, ExtractedConversation, AuthorType, StandardUser } from "../types.js";
 import { verifyZendeskAuth, type AuthVerificationResult } from "./auth.js";
 
 export class ZendeskAdapter implements SourceAdapter {
@@ -181,6 +181,66 @@ export class ZendeskAdapter implements SourceAdapter {
         profile: rawPayload.user.profile,
         metadata: rawPayload.user.metadata,
         identities: rawPayload.user.identities,
+      };
+    }
+
+    return null;
+  }
+
+  extractStandardUser(rawPayload: any): StandardUser | null {
+    const events = rawPayload.events || [];
+    
+    for (const event of events) {
+      const payload = event.payload || {};
+      const userData = payload.user || payload.activity?.author?.user || rawPayload.user;
+      
+      if (userData?.profile?.email) {
+        const profile = userData.profile || {};
+        
+        let signedUpAt: Date | undefined;
+        if (userData.signedUpAt) {
+          try {
+            signedUpAt = new Date(userData.signedUpAt);
+          } catch {}
+        }
+
+        return {
+          email: profile.email.toLowerCase().trim(),
+          source: this.source,
+          sourceUserId: userData.id,
+          externalId: userData.externalId,
+          name: profile.surname || undefined,
+          cpf: profile.givenName || undefined,
+          phone: profile.phone || undefined,
+          locale: profile.locale || undefined,
+          signedUpAt,
+          metadata: userData.metadata,
+        };
+      }
+    }
+
+    if (rawPayload.user?.profile?.email) {
+      const user = rawPayload.user;
+      const profile = user.profile || {};
+      
+      let signedUpAt: Date | undefined;
+      if (user.signedUpAt) {
+        try {
+          signedUpAt = new Date(user.signedUpAt);
+        } catch {}
+      }
+
+      return {
+        email: profile.email.toLowerCase().trim(),
+        source: this.source,
+        sourceUserId: user.id,
+        externalId: user.externalId,
+        name: profile.surname || undefined,
+        cpf: profile.givenName || undefined,
+        phone: profile.phone || undefined,
+        locale: profile.locale || undefined,
+        signedUpAt,
+        metadata: user.metadata,
       };
     }
 

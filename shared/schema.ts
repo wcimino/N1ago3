@@ -200,6 +200,41 @@ export const responsesSuggested = pgTable("responses_suggested", {
   conversationIdIdx: index("idx_responses_suggested_conversation_id").on(table.conversationId),
 }));
 
+export const usersStandard = pgTable("users_standard", {
+  id: serial("id").primaryKey(),
+  email: varchar("email").notNull().unique(),
+  source: text("source").notNull(),
+  sourceUserId: text("source_user_id"),
+  externalId: text("external_id"),
+  name: text("name"),
+  cpf: text("cpf"),
+  phone: text("phone"),
+  locale: text("locale"),
+  signedUpAt: timestamp("signed_up_at"),
+  firstSeenAt: timestamp("first_seen_at").defaultNow().notNull(),
+  lastSeenAt: timestamp("last_seen_at").defaultNow().notNull(),
+  metadata: json("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  emailIdx: uniqueIndex("idx_users_standard_email").on(table.email),
+  cpfIdx: index("idx_users_standard_cpf").on(table.cpf),
+  sourceIdx: index("idx_users_standard_source").on(table.source),
+}));
+
+export const usersStandardHistory = pgTable("users_standard_history", {
+  id: serial("id").primaryKey(),
+  userEmail: varchar("user_email").notNull(),
+  fieldName: text("field_name").notNull(),
+  oldValue: text("old_value"),
+  newValue: text("new_value"),
+  changedAt: timestamp("changed_at").defaultNow().notNull(),
+  source: text("source"),
+}, (table) => ({
+  userEmailIdx: index("idx_users_standard_history_email").on(table.userEmail),
+  changedAtIdx: index("idx_users_standard_history_changed_at").on(table.changedAt),
+}));
+
 // Types
 export type AuthUser = typeof authUsers.$inferSelect;
 export type UpsertAuthUser = typeof authUsers.$inferInsert;
@@ -230,3 +265,9 @@ export type InsertOpenaiApiLog = Omit<typeof openaiApiLogs.$inferInsert, "id" | 
 
 export type SuggestedResponse = typeof responsesSuggested.$inferSelect;
 export type InsertSuggestedResponse = Omit<typeof responsesSuggested.$inferInsert, "id" | "createdAt">;
+
+export type UserStandard = typeof usersStandard.$inferSelect;
+export type InsertUserStandard = Omit<typeof usersStandard.$inferInsert, "id" | "createdAt" | "updatedAt" | "firstSeenAt" | "lastSeenAt">;
+
+export type UserStandardHistory = typeof usersStandardHistory.$inferSelect;
+export type InsertUserStandardHistory = Omit<typeof usersStandardHistory.$inferInsert, "id" | "changedAt">;

@@ -37,6 +37,16 @@ export async function processRawEvent(rawId: number, source: string): Promise<vo
       console.log(`User upsert - externalId: ${userData.externalId}, authenticated: ${userData.authenticated}`);
     }
 
+    const standardUserData = adapter.extractStandardUser(payload);
+    if (standardUserData) {
+      try {
+        await storage.upsertStandardUser(standardUserData);
+        console.log(`Standard user upsert - email: ${standardUserData.email}`);
+      } catch (error) {
+        console.error(`Failed to upsert standard user ${standardUserData.email}:`, error);
+      }
+    }
+
     const convData = adapter.extractConversation(payload);
     let conversationId: number | undefined;
     if (convData) {
