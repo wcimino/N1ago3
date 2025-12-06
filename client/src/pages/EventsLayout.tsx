@@ -8,7 +8,6 @@ const tabs = [
     path: "/events/events_standard",
     label: "Padronizados",
     component: EventsStandardPage,
-    matchPaths: ["/events", "/events/", "/events/events_standard"],
   },
   {
     path: "/events/zendesk_conversations_raw",

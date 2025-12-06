@@ -8,7 +8,6 @@ const tabs = [
     path: "/ai/settings/summary",
     label: "Resumo",
     component: OpenaiSummaryConfigPage,
-    matchPaths: ["/ai", "/ai/"],
   },
   {
     path: "/ai/settings/classification",
