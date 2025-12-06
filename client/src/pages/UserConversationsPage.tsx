@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type KeyboardEvent } from "react";
+import { useState, useEffect, useRef, useCallback, type KeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { RefreshCw, XCircle, MessageCircle, ChevronLeft, Sparkles, Clock, Package, Target, MessageSquare } from "lucide-react";
@@ -150,6 +150,37 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
   const [expandedImage, setExpandedImage] = useState<ImagePayload | null>(null);
   const [selectedConversationIndex, setSelectedConversationIndex] = useState(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(60);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const handleMouseDown = useCallback((e: ReactMouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing || !containerRef.current) return;
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+      setLeftPanelWidth(Math.min(Math.max(newWidth, 30), 70));
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
 
   const { data, isLoading, error } = useQuery<UserConversationsMessagesResponse>({
     queryKey: ["user-conversations-messages", userId],
@@ -218,9 +249,12 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
             <p>Nenhuma mensagem encontrada</p>
           </div>
         ) : (
-          <div className="h-full flex flex-col lg:flex-row">
-            {/* Seção de Resumos - Esquerda em desktop (60%), topo em mobile */}
-            <div className="lg:flex-[3] bg-white border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col">
+          <div ref={containerRef} className={`h-full flex flex-col lg:flex-row ${isResizing ? 'select-none' : ''}`}>
+            {/* Seção de Resumos - Esquerda em desktop, topo em mobile */}
+            <div 
+              className="bg-white border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col"
+              style={{ width: window.innerWidth >= 1024 ? `${leftPanelWidth}%` : undefined }}
+            >
               <div className="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-purple-600" />
@@ -247,8 +281,16 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
               </div>
             </div>
 
-            {/* Seção de Chat - Direita em desktop (40%), baixo em mobile */}
-            <div className="lg:flex-[2] flex flex-col min-h-0">
+            {/* Resize Handle - Visível apenas em desktop */}
+            <div
+              className="hidden lg:flex w-2 cursor-col-resize items-center justify-center bg-gray-100 hover:bg-purple-200 transition-colors group"
+              onMouseDown={handleMouseDown}
+            >
+              <div className="w-0.5 h-8 bg-gray-300 group-hover:bg-purple-400 rounded-full" />
+            </div>
+
+            {/* Seção de Chat - Direita em desktop, baixo em mobile */}
+            <div className="flex-1 flex flex-col min-h-0">
               {selectedConversation && (
                 <>
                   <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center gap-3">
