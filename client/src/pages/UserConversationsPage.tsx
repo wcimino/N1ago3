@@ -7,6 +7,7 @@ import { MessageBubble } from "../components/ui/MessageBubble";
 import { ImageLightbox } from "../components/ui/ImageLightbox";
 import { LoadingState } from "../components/ui/LoadingSpinner";
 import { SegmentedTabs } from "../components/ui/SegmentedTabs";
+import { useResizablePanel } from "../hooks/useResizablePanel";
 import { fetchApi } from "../lib/queryClient";
 import { formatDateTimeShort } from "../lib/dateUtils";
 import { getUserDisplayNameFromProfile } from "../lib/userUtils";
@@ -25,6 +26,12 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
   const [contentTab, setContentTab] = useState<ContentTab>("chat");
   const chatEndRef = useRef<HTMLDivElement>(null);
   const hasInitializedSelection = useRef(false);
+  
+  const { containerRef, leftPanelWidth, isResizing, handleMouseDown } = useResizablePanel({
+    initialWidth: 35,
+    minWidth: 25,
+    maxWidth: 50,
+  });
 
   const { data, isLoading, error } = useQuery<UserConversationsMessagesResponse>({
     queryKey: ["user-conversations-messages", userId],
@@ -262,22 +269,45 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
               </div>
             </div>
 
-            {/* Desktop Layout */}
+            {/* Desktop Layout - Split Panels */}
             <div className="hidden lg:flex h-full flex-col overflow-hidden">
               {renderConversationSelector()}
               
-              <div className="px-4 py-2 bg-white border-b border-gray-200 flex-shrink-0">
-                <SegmentedTabs
-                  tabs={contentTabs}
-                  activeTab={contentTab}
-                  onChange={(tab) => setContentTab(tab as ContentTab)}
-                  className="max-w-md mx-auto"
-                />
-              </div>
+              <div 
+                ref={containerRef}
+                className="flex-1 flex overflow-hidden"
+              >
+                {/* Left Panel - Summary */}
+                <div 
+                  className="flex flex-col overflow-hidden bg-white border-r border-gray-200"
+                  style={{ width: `${leftPanelWidth}%` }}
+                >
+                  <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-purple-600" />
+                    <span className="text-sm font-medium text-gray-700">Resumo</span>
+                  </div>
+                  {renderSummary()}
+                </div>
 
-              <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
-                {contentTab === "resumo" && renderSummary()}
-                {contentTab === "chat" && renderChat()}
+                {/* Resize Handle */}
+                <div
+                  className={`w-1 cursor-col-resize hover:bg-blue-400 transition-colors flex-shrink-0 ${
+                    isResizing ? "bg-blue-500" : "bg-gray-200"
+                  }`}
+                  onMouseDown={handleMouseDown}
+                />
+
+                {/* Right Panel - Chat */}
+                <div 
+                  className="flex-1 flex flex-col overflow-hidden bg-gray-50"
+                  style={{ width: `${100 - leftPanelWidth}%` }}
+                >
+                  <div className="px-4 py-2 bg-white border-b border-gray-200 flex items-center gap-2">
+                    <MessageCircle className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm font-medium text-gray-700">Chat</span>
+                  </div>
+                  {renderChat()}
+                </div>
               </div>
             </div>
           </>
