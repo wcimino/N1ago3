@@ -201,11 +201,6 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
     }
   }, [data]);
 
-  useEffect(() => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [selectedConversationIndex, sortedConversations]);
 
   const totalMessages = data?.conversations.reduce((acc, conv) => acc + conv.messages.length, 0) || 0;
   const selectedConversation = sortedConversations[selectedConversationIndex];
