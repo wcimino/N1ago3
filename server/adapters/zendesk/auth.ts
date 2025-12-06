@@ -11,7 +11,10 @@ export function verifyZendeskAuth(
   secret?: string
 ): AuthVerificationResult {
   if (!secret) {
-    return { isValid: true };
+    return { 
+      isValid: false, 
+      errorMessage: "ZENDESK_WEBHOOK_SECRET não configurado no servidor" 
+    };
   }
 
   const apiKey = headers["x-api-key"];
