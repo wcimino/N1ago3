@@ -54,8 +54,6 @@ export async function processRawEvent(rawId: number, source: string): Promise<vo
         userId,
       });
       
-      await storage.ensureEventTypeMapping(event.source, event.eventType);
-      
       try {
         await processSummaryForEvent(savedEvent);
       } catch (summaryError) {

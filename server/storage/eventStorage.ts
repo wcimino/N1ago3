@@ -27,6 +27,8 @@ export const eventStorage = {
       processingStatus: "processed",
     }).returning();
     
+    await this.ensureEventTypeMapping(event.source, event.eventType);
+    
     return saved;
   },
 
