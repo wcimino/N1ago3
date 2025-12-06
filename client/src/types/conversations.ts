@@ -87,6 +87,12 @@ export interface ConversationSummary {
   classified_at: string | null;
 }
 
+export interface SuggestedResponse {
+  text: string;
+  created_at: string;
+  last_event_id: number | null;
+}
+
 export interface ConversationWithMessages {
   conversation: {
     id: number;
@@ -97,6 +103,7 @@ export interface ConversationWithMessages {
   };
   messages: Message[];
   summary: ConversationSummary | null;
+  suggested_response: SuggestedResponse | null;
 }
 
 export interface UserConversationsMessagesResponse {
