@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Users, Activity, ChevronRight as ArrowRight, Package, Clock, Calendar, AlertCircle } from "lucide-react";
+import { MessageCircle, Activity, ChevronRight as ArrowRight, Package, Clock, Calendar, AlertCircle } from "lucide-react";
 import { fetchApi } from "../lib/queryClient";
 import { DonutChart } from "../components/DonutChart";
 import type { UsersStatsResponse, StatsResponse, ProductStatsResponse } from "../types";
@@ -99,11 +99,11 @@ export function HomePage() {
         <div className="bg-white rounded-lg shadow p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <Users className="w-4 h-4 text-blue-600" />
-              Usuários
+              <MessageCircle className="w-4 h-4 text-blue-600" />
+              Atendimentos
               <span className="text-xs font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">24h</span>
             </h2>
-            <Link href="/users" className="text-xs text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
+            <Link href="/conversations" className="text-xs text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
               Ver <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
