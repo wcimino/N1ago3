@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Users, MessageCircle, Activity, User, UserCheck, Filter, X } from "lucide-react";
+import { Users, MessageCircle, Activity, User, UserCheck, Filter, X, Bot, Brain, Headphones } from "lucide-react";
 import { UserDetailModal } from "../../../shared/components";
 import { LoadingState, EmptyState, Pagination, PageCard } from "../../../shared/components/ui";
 import { useDateFormatters, usePaginatedQuery } from "../../../shared/hooks";
@@ -12,6 +12,51 @@ import type { User as UserType, UserGroup } from "../../../types";
 interface FiltersResponse {
   productStandards: string[];
   intents: string[];
+}
+
+function getHandlerBadge(handlerName: string | null | undefined) {
+  if (!handlerName) return null;
+  
+  const name = handlerName.toLowerCase();
+  
+  if (name.includes("answerbot") || name.includes("zd-answerbot")) {
+    return {
+      label: "Bot",
+      icon: Bot,
+      className: "bg-emerald-100 text-emerald-800",
+    };
+  }
+  
+  if (name.includes("n1ago")) {
+    return {
+      label: "n1ago",
+      icon: Brain,
+      className: "bg-blue-100 text-blue-800",
+    };
+  }
+  
+  if (name.includes("agentworkspace") || name.includes("zd-agentworkspace")) {
+    return {
+      label: "Humano",
+      icon: Headphones,
+      className: "bg-amber-100 text-amber-800",
+    };
+  }
+  
+  return {
+    label: handlerName,
+    icon: MessageCircle,
+    className: "bg-gray-100 text-gray-800",
+  };
+}
+
+function getLatestHandler(conversations: Array<{ current_handler_name?: string | null }>) {
+  for (let i = conversations.length - 1; i >= 0; i--) {
+    if (conversations[i].current_handler_name) {
+      return conversations[i].current_handler_name;
+    }
+  }
+  return null;
 }
 
 export function AtendimentosPage() {
@@ -133,6 +178,8 @@ export function AtendimentosPage() {
           <div className="divide-y divide-gray-200">
             {userGroups.map((group) => {
               const activeCount = getActiveConversationsCount(group.conversations);
+              const latestHandler = getLatestHandler(group.conversations);
+              const handlerBadge = getHandlerBadge(latestHandler);
               
               return (
                 <div key={group.user_id} className="p-4 hover:bg-gray-50 transition-colors">
@@ -159,6 +206,12 @@ export function AtendimentosPage() {
                               <span className="inline-flex items-center gap-1 text-xs text-green-600">
                                 <span className="w-2 h-2 rounded-full bg-green-500"></span>
                                 {activeCount} ativa{activeCount > 1 ? "s" : ""}
+                              </span>
+                            )}
+                            {handlerBadge && (
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${handlerBadge.className}`}>
+                                <handlerBadge.icon className="w-3 h-3" />
+                                {handlerBadge.label}
                               </span>
                             )}
                           </div>

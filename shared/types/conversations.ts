@@ -56,6 +56,8 @@ export interface UserConversation {
   updated_at: string;
   product_standard: string | null;
   intent: string | null;
+  current_handler: string | null;
+  current_handler_name: string | null;
 }
 
 export interface UserGroup {

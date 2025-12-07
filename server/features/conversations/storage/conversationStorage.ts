@@ -148,7 +148,9 @@ export const conversationStorage = {
               'created_at', TO_CHAR(c.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
               'updated_at', TO_CHAR(c.updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
               'product_standard', cs.product_standard,
-              'intent', cs.intent
+              'intent', cs.intent,
+              'current_handler', c.current_handler,
+              'current_handler_name', c.current_handler_name
             ) ORDER BY c.created_at ASC
           ) as conversations
         FROM conversations c
@@ -264,5 +266,18 @@ export const conversationStorage = {
       userExternalId: data.userExternalId,
       metadata: data.metadata,
     });
+  },
+
+  async updateConversationHandler(externalConversationId: string, handlerId: string, handlerName: string) {
+    const result = await db.update(conversations)
+      .set({
+        currentHandler: handlerId,
+        currentHandlerName: handlerName,
+        updatedAt: new Date(),
+      })
+      .where(eq(conversations.externalConversationId, externalConversationId))
+      .returning();
+    
+    return result[0] || null;
   },
 };

@@ -104,6 +104,31 @@ export async function processRawEvent(rawId: number, source: string): Promise<vo
       } catch (handoffError) {
         console.error(`Failed to process handoff for event ${savedEvent.id}:`, handoffError);
       }
+
+      if (event.eventType === "switchboard:passControl" && event.externalConversationId) {
+        try {
+          const metadata = event.metadata as Record<string, unknown> | null;
+          let activeSwitchboard = metadata?.activeSwitchboardIntegration as Record<string, unknown> | undefined;
+          
+          if (!activeSwitchboard?.id) {
+            const originalEvent = metadata?.originalEvent as Record<string, unknown> | undefined;
+            const payload = originalEvent?.payload as Record<string, unknown> | undefined;
+            const conversation = payload?.conversation as Record<string, unknown> | undefined;
+            activeSwitchboard = conversation?.activeSwitchboardIntegration as Record<string, unknown> | undefined;
+          }
+          
+          if (activeSwitchboard?.id && activeSwitchboard?.name) {
+            await storage.updateConversationHandler(
+              event.externalConversationId,
+              activeSwitchboard.id as string,
+              activeSwitchboard.name as string
+            );
+            console.log(`Updated conversation handler: ${event.externalConversationId} -> ${activeSwitchboard.name}`);
+          }
+        } catch (handlerError) {
+          console.error(`Failed to update conversation handler for event ${savedEvent.id}:`, handlerError);
+        }
+      }
     }
 
     await storage.updateWebhookRawStatus(rawId, source, "success");

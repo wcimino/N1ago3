@@ -114,6 +114,8 @@ export const conversations = pgTable("conversations", {
   userId: text("user_id"),
   userExternalId: text("user_external_id"),
   status: text("status").default("active").notNull(),
+  currentHandler: text("current_handler"),
+  currentHandlerName: text("current_handler_name"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   metadataJson: json("metadata_json"),
