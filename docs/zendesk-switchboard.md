@@ -41,7 +41,8 @@ curl -u "app_XXXX:SECRET" https://api.smooch.io/v2/apps/{appId}/...
 ```
 
 **Secrets configurados:**
-- `ZENDESK_APP_API_KEY` (development) - Chave com escopo app para dev
+- `ZENDESK_APP_API_KEY` - Chave com escopo app para desenvolvimento
+- `ZENDESK_APP_API_KEY_PROD` - Chave com escopo app para produção
 
 ## Comandos Úteis
 
