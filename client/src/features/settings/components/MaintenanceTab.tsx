@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Package, ArrowRight, RefreshCw } from "lucide-react";
+import { Package, ArrowRight, RefreshCw, Activity } from "lucide-react";
 
 export function MaintenanceTab() {
   const [, navigate] = useLocation();
@@ -40,6 +40,25 @@ export function MaintenanceTab() {
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           Começar
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="bg-gray-50 rounded-lg p-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+            <Activity className="w-6 h-6 text-purple-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Eventos</h3>
+            <p className="text-sm text-gray-600">Visualize e gerencie eventos padronizados e webhooks recebidos</p>
+          </div>
+        </div>
+        <button
+          onClick={() => navigate("/settings/events")}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Acessar
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>

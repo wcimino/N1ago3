@@ -1,5 +1,5 @@
 import { Route, Switch, Link } from "wouter";
-import { Home, Users, Activity, Sparkles, Settings, LogOut, MessageCircle, Download, BookOpen } from "lucide-react";
+import { Home, Users, Sparkles, Settings, LogOut, MessageCircle, Download, BookOpen } from "lucide-react";
 import { useAuth } from "./shared/hooks";
 import { NavLink, EnvironmentBadge } from "./shared/components";
 import { TimezoneProvider } from "./contexts/TimezoneContext";
@@ -58,10 +58,6 @@ function AuthenticatedApp() {
               <MessageCircle className="w-4 h-4" />
               <span className="hidden sm:inline">Atendimentos</span>
             </NavLink>
-            <NavLink href="/events">
-              <Activity className="w-4 h-4" />
-              <span className="hidden sm:inline">Eventos</span>
-            </NavLink>
             <NavLink href="/ai">
               <Sparkles className="w-4 h-4" />
               <span className="hidden sm:inline">AI</span>
@@ -83,8 +79,8 @@ function AuthenticatedApp() {
           <Route path="/" component={HomePage} />
           <Route path="/ai" component={AIPage} />
           <Route path="/ai/settings/:rest*" component={AIPage} />
-          <Route path="/events" component={EventsLayout} />
-          <Route path="/events/:rest*" component={EventsLayout} />
+          <Route path="/settings/events" component={EventsLayout} />
+          <Route path="/settings/events/:rest*" component={EventsLayout} />
           <Route path="/cadastro">{() => <CadastroPage activeTab="usuarios" />}</Route>
           <Route path="/cadastro/organizacoes">{() => <CadastroPage activeTab="organizacoes" />}</Route>
           <Route path="/cadastro/users/:email">{(params) => <UserStandardDetailPage params={params} />}</Route>
