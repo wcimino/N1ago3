@@ -38,6 +38,16 @@ The React frontend provides a real-time dashboard for events and conversations, 
 *   **Shared Types Architecture:** Centralized type definitions in `shared/types/` for consistency between frontend and backend.
 *   **Backend Feature Architecture:** Each backend feature module follows a consistent structure including `routes/`, `storage/`, and `services/`.
 
+**Recent Refactoring (December 2025):**
+
+*   **Shared Formatters:** Centralized CPF/CNPJ/date formatting functions in `client/src/lib/formatters.ts`.
+*   **Reusable Detail Components:** Created shared components for detail pages (`DetailPageHeader`, `InfoField`, `HistoryList`, `RelatedEntityList`) in `client/src/shared/components/detail/`.
+*   **HandlerBadge Component:** Reusable badge for bot/human/n1ago handler identification in `client/src/shared/components/badges/`.
+*   **AtendimentosPage Refactor:** Extracted `FilterBar` and `UserGroupCard` components to reduce file size.
+*   **Storage Modularization:** Split large storage files for better maintainability:
+    *   `conversationStorage.ts` → `conversationCrud.ts` + `conversationStats.ts`
+    *   `configStorage.ts` → `summaryStorage.ts` + `classificationStorage.ts` + `openaiLogsStorage.ts`
+
 ## Deployment Configuration
 
 **Important:** This application uses `deploymentTarget = "vm"` instead of `autoscale`. This is required because the system has background workers (polling worker, event processor, AI orchestrators) that must run continuously. The `autoscale` mode only runs when requests are made, which would break these background processes.
