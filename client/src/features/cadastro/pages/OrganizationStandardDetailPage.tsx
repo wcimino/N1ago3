@@ -1,9 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ChevronLeft, Building2, FileText, Clock, History, Users } from "lucide-react";
-import { LoadingState, EmptyState } from "../../../shared/components";
+import { Building2, FileText, Clock, Users } from "lucide-react";
+import {
+  LoadingState,
+  EmptyState,
+  DetailPageHeader,
+  InfoField,
+  HistoryList,
+  RelatedEntityList
+} from "../../../shared/components";
 import { useDateFormatters } from "../../../shared/hooks";
 import { fetchApi } from "../../../lib/queryClient";
+import { formatCnpjRoot } from "../../../lib/formatters";
 
 interface OrganizationStandard {
   id: number;
@@ -37,6 +45,11 @@ interface OrganizationStandardDetailPageProps {
   params: { cnpjRoot: string };
 }
 
+const FIELD_LABELS: Record<string, string> = {
+  name: "Nome",
+  cnpj: "CNPJ Completo",
+};
+
 export function OrganizationStandardDetailPage({ params }: OrganizationStandardDetailPageProps) {
   const [, navigate] = useLocation();
   const cnpjRoot = decodeURIComponent(params.cnpjRoot);
@@ -56,18 +69,6 @@ export function OrganizationStandardDetailPage({ params }: OrganizationStandardD
     queryKey: ["organization-standard-users", cnpjRoot],
     queryFn: () => fetchApi<UserStandard[]>(`/api/organizations-standard/${encodeURIComponent(cnpjRoot)}/users`),
   });
-
-  const fieldLabels: Record<string, string> = {
-    name: "Nome",
-    cnpj: "CNPJ Completo",
-  };
-
-  const formatCnpjRoot = (cnpjRoot: string) => {
-    if (cnpjRoot.length === 8) {
-      return `${cnpjRoot.slice(0, 2)}.${cnpjRoot.slice(2, 5)}.${cnpjRoot.slice(5, 8)}`;
-    }
-    return cnpjRoot;
-  };
 
   if (orgLoading) {
     return <LoadingState />;
@@ -96,149 +97,79 @@ export function OrganizationStandardDetailPage({ params }: OrganizationStandardD
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-4 py-3 border-b flex items-center gap-3">
-          <button
-            onClick={() => navigate("/cadastro/organizacoes")}
-            className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Detalhes da Organização</h2>
-            <p className="text-sm text-gray-500">{formatCnpjRoot(organization.cnpjRoot)}</p>
-          </div>
-        </div>
+        <DetailPageHeader
+          title="Detalhes da Organização"
+          subtitle={formatCnpjRoot(organization.cnpjRoot)}
+          onBack={() => navigate("/cadastro/organizacoes")}
+        />
 
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Building2 className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Nome</p>
-                  <p className="font-medium">{organization.name || "-"}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <FileText className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">CNPJ Raiz</p>
-                  <p className="font-medium">{formatCnpjRoot(organization.cnpjRoot)}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <FileText className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">CNPJ Completo</p>
-                  <p className="font-medium">{organization.cnpj || "-"}</p>
-                </div>
-              </div>
+              <InfoField
+                icon={<Building2 className="w-5 h-5" />}
+                label="Nome"
+                value={organization.name}
+              />
+              <InfoField
+                icon={<FileText className="w-5 h-5" />}
+                label="CNPJ Raiz"
+                value={formatCnpjRoot(organization.cnpjRoot)}
+              />
+              <InfoField
+                icon={<FileText className="w-5 h-5" />}
+                label="CNPJ Completo"
+                value={organization.cnpj}
+              />
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Último contato</p>
-                  <p className="font-medium">{formatDateTime(organization.lastSeenAt)}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Primeiro contato</p>
-                  <p className="font-medium">{formatDateTime(organization.firstSeenAt)}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 flex items-center justify-center text-gray-400 mt-0.5">
-                  <span className="text-xs font-bold">SRC</span>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Fonte</p>
-                  <p className="font-medium">{organization.source}</p>
-                </div>
-              </div>
+              <InfoField
+                icon={<Clock className="w-5 h-5" />}
+                label="Último contato"
+                value={formatDateTime(organization.lastSeenAt)}
+              />
+              <InfoField
+                icon={<Clock className="w-5 h-5" />}
+                label="Primeiro contato"
+                value={formatDateTime(organization.firstSeenAt)}
+              />
+              <InfoField
+                icon={<span className="text-xs font-bold">SRC</span>}
+                label="Fonte"
+                value={organization.source}
+              />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-4 py-3 border-b flex items-center gap-2">
-          <Users className="w-5 h-5 text-gray-500" />
-          <h3 className="text-lg font-semibold text-gray-900">Usuários Associados</h3>
-        </div>
-
-        {usersLoading ? (
-          <LoadingState />
-        ) : !users || users.length === 0 ? (
-          <div className="p-6 text-center text-gray-500">
-            <p>Nenhum usuário associado</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-200">
-            {users.map((user) => (
-              <div
-                key={user.id}
-                className="p-4 hover:bg-gray-50 cursor-pointer"
-                onClick={() => navigate(`/cadastro/users/${encodeURIComponent(user.email)}`)}
-              >
-                <div className="flex items-center gap-3">
-                  <Users className="w-5 h-5 text-gray-400" />
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">{user.name || user.email}</p>
-                    <p className="text-sm text-gray-500">{user.email}</p>
-                  </div>
-                  <span className="text-xs text-gray-400">{user.source}</span>
-                </div>
-              </div>
-            ))}
+      <RelatedEntityList
+        title="Usuários Associados"
+        icon={<Users className="w-5 h-5 text-gray-500" />}
+        items={users}
+        isLoading={usersLoading}
+        emptyMessage="Nenhum usuário associado"
+        keyExtractor={(user) => user.id}
+        onItemClick={(user) => navigate(`/cadastro/users/${encodeURIComponent(user.email)}`)}
+        renderItem={(user) => (
+          <div className="flex items-center gap-3">
+            <Users className="w-5 h-5 text-gray-400" />
+            <div className="flex-1">
+              <p className="font-medium text-gray-900">{user.name || user.email}</p>
+              <p className="text-sm text-gray-500">{user.email}</p>
+            </div>
+            <span className="text-xs text-gray-400">{user.source}</span>
           </div>
         )}
-      </div>
+      />
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-4 py-3 border-b flex items-center gap-2">
-          <History className="w-5 h-5 text-gray-500" />
-          <h3 className="text-lg font-semibold text-gray-900">Histórico de Alterações</h3>
-        </div>
-
-        {historyLoading ? (
-          <LoadingState />
-        ) : !history || history.length === 0 ? (
-          <div className="p-6 text-center text-gray-500">
-            <p>Nenhuma alteração registrada</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-200">
-            {history.map((item, index) => (
-              <div key={index} className="p-4 hover:bg-gray-50">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">
-                      {fieldLabels[item.fieldName] || item.fieldName}
-                    </p>
-                    <div className="mt-1 text-sm">
-                      <span className="text-red-600 line-through">{item.oldValue || "(vazio)"}</span>
-                      <span className="mx-2 text-gray-400">→</span>
-                      <span className="text-green-600">{item.newValue || "(vazio)"}</span>
-                    </div>
-                  </div>
-                  <div className="text-right text-sm text-gray-500">
-                    <p>{formatShortDateTime(item.changedAt)}</p>
-                    {item.source && <p className="text-xs">{item.source}</p>}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <HistoryList
+        history={history}
+        isLoading={historyLoading}
+        fieldLabels={FIELD_LABELS}
+        formatDateTime={formatShortDateTime}
+      />
     </div>
   );
 }
