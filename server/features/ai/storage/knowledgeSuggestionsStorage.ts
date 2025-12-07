@@ -71,10 +71,12 @@ export const knowledgeSuggestionsStorage = {
         subproductStandard: suggestion.subproductStandard,
         category1: suggestion.category1,
         category2: suggestion.category2,
-        intent: "Extraído de conversa",
+        intent: suggestion.category1 || "Geral",
         description: suggestion.description || "",
         resolution: suggestion.resolution || "",
-        observations: suggestion.observations,
+        observations: suggestion.observations 
+          ? `${suggestion.observations}\n\n[Fonte: Extraído de conversa]`
+          : "[Fonte: Extraído de conversa]",
       })
       .returning();
 
