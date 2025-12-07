@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Users, MessageCircle, Activity, User, UserCheck, Filter, X, Bot, Brain, Headphones, ArrowLeftRight } from "lucide-react";
+import { Users, MessageCircle, Activity, User, UserCheck, Filter, X, Bot, Brain, UserCircle, ArrowLeftRight } from "lucide-react";
 import { UserDetailModal } from "../../../shared/components";
 import { LoadingState, EmptyState, Pagination, PageCard, SegmentedTabs } from "../../../shared/components/ui";
 import { useDateFormatters, usePaginatedQuery } from "../../../shared/hooks";
@@ -40,7 +40,7 @@ function getHandlerBadge(handlerName: string | null | undefined) {
   if (name.includes("agentworkspace") || name.includes("zd-agentworkspace")) {
     return {
       label: "Humano",
-      icon: Headphones,
+      icon: UserCircle,
       bgClassName: "bg-amber-100",
       iconClassName: "text-amber-600",
     };
@@ -89,7 +89,7 @@ export function AtendimentosPage() {
   const handlerTabs = [
     { id: "all", label: "Todos", icon: <Users className="w-4 h-4" /> },
     { id: "bot", label: "Bot Zendesk", icon: <Bot className="w-4 h-4" /> },
-    { id: "human", label: "Humano", icon: <Headphones className="w-4 h-4" /> },
+    { id: "human", label: "Humano", icon: <UserCircle className="w-4 h-4" /> },
     { id: "n1ago", label: "n1ago", icon: <Brain className="w-4 h-4" /> },
   ];
   const { formatShortDateTime } = useDateFormatters();
