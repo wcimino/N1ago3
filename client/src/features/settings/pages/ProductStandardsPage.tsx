@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Package, Save, Loader2, CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react";
-import { fetchApi, apiRequest } from "../lib/queryClient";
+import { fetchApi, apiRequest } from "../../../lib/queryClient";
 
 interface ProductStandard {
   product: string;

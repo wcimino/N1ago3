@@ -1,5 +1,5 @@
 import { Globe } from "lucide-react";
-import { useTimezone, TIMEZONE_OPTIONS, type TimezoneValue } from "../../contexts/TimezoneContext";
+import { useTimezone, TIMEZONE_OPTIONS, type TimezoneValue } from "../../../contexts/TimezoneContext";
 
 export function GeneralSettingsTab() {
   const { timezone, setTimezone } = useTimezone();

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Play, Pause, RotateCcw, Users, Building2, AlertCircle, CheckCircle2, ArrowLeft, RefreshCw } from "lucide-react";
-import { apiRequest, fetchApi } from "../lib/queryClient";
+import { Play, Pause, RotateCcw, Users, Building2, AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react";
+import { apiRequest, fetchApi } from "../../../lib/queryClient";
 
 type ReprocessingType = "users" | "organizations";
 

@@ -3,22 +3,20 @@ import { Home, Users, Activity, Sparkles, Settings, LogOut, MessageCircle, Downl
 import { useAuth } from "./shared/hooks";
 import { NavLink, EnvironmentBadge } from "./shared/components";
 import { TimezoneProvider } from "./contexts/TimezoneContext";
+import { AIPage } from "./features/ai";
+import { SettingsPage, ProductStandardsPage, ReprocessingPage } from "./features/settings";
+import { EventsLayout } from "./features/events";
 import {
   LandingPage,
   UnauthorizedPage,
   LoadingPage,
   HomePage,
-  AIPage,
-  EventsLayout,
   UserStandardDetailPage,
   OrganizationStandardDetailPage,
   AtendimentosPage,
   UserConversationsPage,
-  SettingsPage,
   CadastroPage,
   ExportPage,
-  ProductStandardsPage,
-  ReprocessingPage,
 } from "./pages";
 
 function AuthenticatedApp() {

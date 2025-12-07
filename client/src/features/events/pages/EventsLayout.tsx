@@ -1,6 +1,6 @@
-import { TabbedLayout } from "../shared/components";
+import { TabbedLayout } from "../../../shared/components";
 import { EventsStandardPage } from "./EventsStandardPage";
-import { ZendeskConversationsRawPage } from "./ZendeskConversationsRawPage";
+import { ZendeskConversationsRawPage } from "../../conversations";
 import { EventTypeMappingsPage } from "./EventTypeMappingsPage";
 
 const tabs = [

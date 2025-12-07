@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { CheckboxListItem, LoadingState } from "../shared/components/ui";
-import { useOpenaiApiConfig } from "../shared/hooks";
-import { AUTHOR_TYPE_OPTIONS, MODEL_OPTIONS } from "../lib/constants";
+import { CheckboxListItem, LoadingState } from "../../../shared/components/ui";
+import { useOpenaiApiConfig } from "../../../shared/hooks";
+import { AUTHOR_TYPE_OPTIONS, MODEL_OPTIONS } from "../../../lib/constants";
 
 export interface OpenaiConfigFormProps {
   configType: string;

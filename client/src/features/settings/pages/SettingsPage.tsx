@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Users, Settings, Wrench } from "lucide-react";
-import { AccessControlTab } from "../components/settings/AccessControlTab";
-import { GeneralSettingsTab } from "../components/settings/GeneralSettingsTab";
-import { MaintenanceTab } from "../components/settings/MaintenanceTab";
+import { AccessControlTab } from "../components/AccessControlTab";
+import { GeneralSettingsTab } from "../components/GeneralSettingsTab";
+import { MaintenanceTab } from "../components/MaintenanceTab";
 
 type TabId = "access-control" | "general" | "maintenance";
 

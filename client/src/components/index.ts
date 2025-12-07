@@ -28,5 +28,3 @@ export type { BadgeVariant, BadgeSize, Column, PageCardProps, TabConfig, TabbedL
 export { ConversationSummaryCard } from "./ConversationSummaryCard";
 export { SummaryCard } from "./SummaryCard";
 export type { SummaryCardProps } from "./SummaryCard";
-export { OpenaiConfigForm } from "./OpenaiConfigForm";
-export type { OpenaiConfigFormProps } from "./OpenaiConfigForm";

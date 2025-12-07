@@ -1,4 +1,4 @@
-import { OpenaiConfigForm } from "../components/OpenaiConfigForm";
+import { OpenaiConfigForm } from "../components";
 
 export function OpenaiSummaryConfigPage() {
   return (
