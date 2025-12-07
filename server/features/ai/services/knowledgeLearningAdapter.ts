@@ -1,6 +1,6 @@
 import { callOpenAI } from "./openaiApiService.js";
 import { knowledgeSuggestionsStorage } from "../storage/knowledgeSuggestionsStorage.js";
-import { knowledgeBaseStorage } from "../storage/knowledgeBaseStorage.js";
+import { knowledgeBaseService } from "./knowledgeBaseService.js";
 
 export interface LearningPayload {
   messages: Array<{
@@ -184,36 +184,27 @@ export async function extractKnowledge(
 }
 
 async function findSimilarArticle(extraction: ExtractedKnowledge): Promise<{ articleId: number; score: number } | null> {
-  if (!extraction.productStandard) return null;
+  if (!extraction.productStandard && !extraction.description) return null;
 
-  const articles = await knowledgeBaseStorage.getAllArticles({
-    productStandard: extraction.productStandard,
-  });
+  const descriptionKeywords = extraction.description
+    ?.toLowerCase()
+    .split(/\s+/)
+    .filter(word => word.length > 3) || [];
 
-  if (articles.length === 0) return null;
+  const results = await knowledgeBaseService.findRelatedArticles(
+    extraction.productStandard || undefined,
+    extraction.category1 || undefined,
+    descriptionKeywords,
+    { limit: 1, minScore: 40 }
+  );
 
-  let bestMatch: { articleId: number; score: number } | null = null;
-  
-  for (const article of articles) {
-    let score = 0;
-    
-    if (article.subproductStandard === extraction.subproductStandard) score += 25;
-    if (article.category1 === extraction.category1) score += 25;
-    if (article.category2 === extraction.category2) score += 25;
-    
-    if (extraction.description && article.description) {
-      const descWords = extraction.description.toLowerCase().split(/\s+/);
-      const articleWords = article.description.toLowerCase().split(/\s+/);
-      const commonWords = descWords.filter(w => articleWords.includes(w));
-      score += Math.min(25, (commonWords.length / Math.max(descWords.length, 1)) * 25);
-    }
-    
-    if (!bestMatch || score > bestMatch.score) {
-      bestMatch = { articleId: article.id, score: Math.round(score) };
-    }
-  }
+  if (results.length === 0) return null;
 
-  return bestMatch && bestMatch.score >= 50 ? bestMatch : null;
+  const bestMatch = results[0];
+  return {
+    articleId: bestMatch.article.id,
+    score: bestMatch.relevanceScore
+  };
 }
 
 export async function extractAndSaveKnowledge(
