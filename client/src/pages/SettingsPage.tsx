@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Users, Settings } from "lucide-react";
+import { Users, Settings, Wrench } from "lucide-react";
 import { AccessControlTab } from "../components/settings/AccessControlTab";
 import { GeneralSettingsTab } from "../components/settings/GeneralSettingsTab";
+import { MaintenanceTab } from "../components/settings/MaintenanceTab";
 
-type TabId = "access-control" | "general";
+type TabId = "access-control" | "general" | "maintenance";
 
 interface Tab {
   id: TabId;
@@ -14,6 +15,7 @@ interface Tab {
 const tabs: Tab[] = [
   { id: "access-control", label: "Controle de Acessos", icon: <Users className="w-4 h-4" /> },
   { id: "general", label: "Configurações Gerais", icon: <Settings className="w-4 h-4" /> },
+  { id: "maintenance", label: "Manutenção", icon: <Wrench className="w-4 h-4" /> },
 ];
 
 export function SettingsPage() {
@@ -46,6 +48,7 @@ export function SettingsPage() {
         <div className="p-6">
           {activeTab === "access-control" && <AccessControlTab />}
           {activeTab === "general" && <GeneralSettingsTab />}
+          {activeTab === "maintenance" && <MaintenanceTab />}
         </div>
       </div>
     </div>
