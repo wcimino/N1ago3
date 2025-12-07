@@ -94,7 +94,7 @@ export function HomePage() {
                       </td>
                       <td className="py-1.5 text-center">
                         <Link
-                          href={`/atendimentos?product=${encodeURIComponent(product)}`}
+                          href={`/atendimentos?productStandard=${encodeURIComponent(product)}`}
                           className="text-gray-400 hover:text-blue-600 transition-colors"
                           title={`Ver atendimentos de ${product}`}
                         >

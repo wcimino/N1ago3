@@ -133,17 +133,17 @@ export const configStorage = {
 
     const results = await db
       .select({
-        product: conversationsSummary.product,
+        product: conversationsSummary.productStandard,
         count: sql<number>`count(*)::int`,
       })
       .from(conversationsSummary)
       .where(
         and(
-          isNotNull(conversationsSummary.product),
+          isNotNull(conversationsSummary.productStandard),
           gte(conversationsSummary.classifiedAt, since)
         )
       )
-      .groupBy(conversationsSummary.product)
+      .groupBy(conversationsSummary.productStandard)
       .orderBy(sql`count(*) desc`)
       .limit(limit);
 
