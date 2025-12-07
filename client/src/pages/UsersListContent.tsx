@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Users, FileText } from "lucide-react";
+import { Users, FileText, ChevronRight } from "lucide-react";
 import { LoadingState, EmptyState, Pagination } from "../components";
 import { useDateFormatters } from "../hooks/useDateFormatters";
 import { usePaginatedQuery } from "../hooks/usePaginatedQuery";
@@ -69,6 +69,7 @@ export function UsersListContent() {
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">CPF</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Último contato</th>
+              <th className="px-4 py-3 w-10"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -83,6 +84,9 @@ export function UsersListContent() {
                 <td className="px-4 py-3 text-sm text-gray-500">{user.cpf || "-"}</td>
                 <td className="px-4 py-3 text-sm text-gray-500">
                   {user.lastSeenAt ? formatDateTime(user.lastSeenAt) : "-"}
+                </td>
+                <td className="px-4 py-3 text-gray-400">
+                  <ChevronRight className="w-5 h-5" />
                 </td>
               </tr>
             ))}
@@ -116,6 +120,7 @@ export function UsersListContent() {
                   {user.lastSeenAt && <span>Último: {formatDateTime(user.lastSeenAt)}</span>}
                 </div>
               </div>
+              <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
             </div>
           </div>
         ))}

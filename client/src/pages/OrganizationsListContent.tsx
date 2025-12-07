@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Building2 } from "lucide-react";
+import { Building2, ChevronRight } from "lucide-react";
 import { LoadingState, EmptyState, Pagination } from "../components";
 import { useDateFormatters } from "../hooks/useDateFormatters";
 import { usePaginatedQuery } from "../hooks/usePaginatedQuery";
@@ -71,6 +71,7 @@ export function OrganizationsListContent() {
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">CNPJ Completo</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Último contato</th>
+              <th className="px-4 py-3 w-10"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -87,6 +88,9 @@ export function OrganizationsListContent() {
                 <td className="px-4 py-3 text-sm text-gray-500">{org.cnpj || "-"}</td>
                 <td className="px-4 py-3 text-sm text-gray-500">
                   {org.lastSeenAt ? formatDateTime(org.lastSeenAt) : "-"}
+                </td>
+                <td className="px-4 py-3 text-gray-400">
+                  <ChevronRight className="w-5 h-5" />
                 </td>
               </tr>
             ))}
@@ -112,6 +116,7 @@ export function OrganizationsListContent() {
                   {org.lastSeenAt && <span>Último: {formatDateTime(org.lastSeenAt)}</span>}
                 </div>
               </div>
+              <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
             </div>
           </div>
         ))}
