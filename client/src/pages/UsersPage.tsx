@@ -1,4 +1,5 @@
-import { Users, Mail, FileText, Globe } from "lucide-react";
+import { useLocation } from "wouter";
+import { Users, FileText, Globe } from "lucide-react";
 import { LoadingState, EmptyState, Pagination } from "../components";
 import { useDateFormatters } from "../hooks/useDateFormatters";
 import { usePaginatedQuery } from "../hooks/usePaginatedQuery";
@@ -22,6 +23,7 @@ interface UserStandard {
 }
 
 export function UsersPage() {
+  const [, navigate] = useLocation();
   const { formatShortDateTime } = useDateFormatters();
 
   const {
@@ -74,8 +76,12 @@ export function UsersPage() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {users.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{user.email}</td>
+                  <tr 
+                    key={user.id} 
+                    className="hover:bg-gray-50 cursor-pointer"
+                    onClick={() => navigate(`/users/${encodeURIComponent(user.email)}`)}
+                  >
+                    <td className="px-4 py-3 text-sm font-medium text-blue-600 hover:text-blue-800">{user.email}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">{user.name || "-"}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">{user.cpf || "-"}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">{user.locale || "-"}</td>
@@ -93,7 +99,11 @@ export function UsersPage() {
 
           <div className="md:hidden divide-y divide-gray-200">
             {users.map((user) => (
-              <div key={user.id} className="p-4 hover:bg-gray-50">
+              <div 
+                key={user.id} 
+                className="p-4 hover:bg-gray-50 cursor-pointer"
+                onClick={() => navigate(`/users/${encodeURIComponent(user.email)}`)}
+              >
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
                     <Users className="w-5 h-5 text-blue-600" />

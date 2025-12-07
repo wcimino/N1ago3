@@ -11,6 +11,7 @@ import {
   AIPage,
   EventsLayout,
   UsersPage,
+  UserStandardDetailPage,
   AtendimentosPage,
   UserConversationsPage,
   SettingsPage,
@@ -82,6 +83,7 @@ function AuthenticatedApp() {
           <Route path="/events" component={EventsLayout} />
           <Route path="/events/:rest*" component={EventsLayout} />
           <Route path="/users" component={UsersPage} />
+          <Route path="/users/:email">{(params) => <UserStandardDetailPage params={params} />}</Route>
           <Route path="/atendimentos" component={AtendimentosPage} />
           <Route path="/atendimentos/:userId">{(params) => <UserConversationsPage params={params} />}</Route>
           <Route path="/settings" component={SettingsPage} />
