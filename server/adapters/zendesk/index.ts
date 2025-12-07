@@ -6,6 +6,7 @@ import {
   mapReadReceipt,
   mapTypingEvent,
   mapGenericEvent,
+  mapSwitchboardPassControl,
 } from "./eventTransformers.js";
 import { extractUser, extractStandardUser } from "./userTransformers.js";
 import { extractConversation } from "./conversationTransformers.js";
@@ -17,6 +18,15 @@ export class ZendeskAdapter implements SourceAdapter {
   normalize(rawPayload: any): StandardEvent[] {
     const events: StandardEvent[] = [];
     
+    // Handle switchboard triggers at the root payload level
+    // These are special events that should not process the internal events array
+    const trigger = rawPayload.trigger;
+    if (trigger === "switchboard:passControl") {
+      events.push(mapSwitchboardPassControl(rawPayload, this.source));
+      return events; // Don't process internal events for switchboard triggers
+    }
+    
+    // Process individual events for other triggers
     for (const event of rawPayload.events || []) {
       const standardEvents = this.mapEvent(event, rawPayload);
       events.push(...standardEvents);

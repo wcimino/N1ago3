@@ -111,3 +111,32 @@ export function mapGenericEvent(event: any, root: any, source: string): Standard
     metadata: { originalEvent: event },
   };
 }
+
+export function mapSwitchboardPassControl(root: any, source: string): StandardEvent {
+  const conversationData = root.conversation || {};
+  const appUser = root.appUser;
+  const activeSwitchboard = root.activeSwitchboardIntegration || {};
+  
+  // Get event ID from the first event or generate from switchboard data
+  const firstEvent = root.events?.[0];
+  const sourceEventId = firstEvent?.id || 
+    root.switchboardConversation?.id || 
+    `passControl_${conversationData.id}`;
+
+  return {
+    eventType: "switchboard:passControl",
+    eventSubtype: "received",
+    source,
+    sourceEventId,
+    externalConversationId: conversationData.id,
+    externalUserId: appUser?.id || root.user?.id,
+    authorType: "system",
+    occurredAt: new Date(),
+    channelType: "chat",
+    metadata: {
+      trigger: root.trigger,
+      activeSwitchboardIntegration: activeSwitchboard,
+      appUser: appUser,
+    },
+  };
+}
