@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Link, useLocation } from "wouter";
+import { useState, useMemo, useEffect } from "react";
+import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Users, MessageCircle, Activity, User, UserCheck, Filter, X } from "lucide-react";
 import { UserDetailModal, LoadingState, EmptyState, Pagination, PageCard } from "../components";
@@ -16,9 +16,25 @@ interface FiltersResponse {
 
 export function AtendimentosPage() {
   const [, navigate] = useLocation();
+  const search = useSearch();
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
-  const [productFilter, setProductFilter] = useState<string>("");
-  const [intentFilter, setIntentFilter] = useState<string>("");
+  
+  // Parse URL params for initial filter values
+  const urlParams = new URLSearchParams(search);
+  const initialProduct = urlParams.get("product") || "";
+  const initialIntent = urlParams.get("intent") || "";
+  
+  const [productFilter, setProductFilter] = useState<string>(initialProduct);
+  const [intentFilter, setIntentFilter] = useState<string>(initialIntent);
+  
+  // Update filters when URL changes
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const product = params.get("product") || "";
+    const intent = params.get("intent") || "";
+    setProductFilter(product);
+    setIntentFilter(intent);
+  }, [search]);
   const { formatShortDateTime } = useDateFormatters();
 
   const { data: filters } = useQuery<FiltersResponse>({

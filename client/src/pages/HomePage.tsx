@@ -43,6 +43,9 @@ export function HomePage() {
             const todayMap = new Map(productStats?.today?.map(p => [p.product, p.count]) || []);
             const allProducts = [...new Set([...lastHourMap.keys(), ...todayMap.keys()])];
             
+            // Sort by 24h count descending
+            allProducts.sort((a, b) => (todayMap.get(b) || 0) - (todayMap.get(a) || 0));
+            
             if (allProducts.length === 0) {
               return <p className="text-sm text-gray-400 italic">Nenhum produto ainda</p>;
             }
@@ -64,6 +67,7 @@ export function HomePage() {
                         24h
                       </span>
                     </th>
+                    <th className="w-8"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -87,6 +91,15 @@ export function HomePage() {
                         ) : (
                           <span className="text-gray-300">-</span>
                         )}
+                      </td>
+                      <td className="py-1.5 text-center">
+                        <Link
+                          href={`/atendimentos?product=${encodeURIComponent(product)}`}
+                          className="text-gray-400 hover:text-blue-600 transition-colors"
+                          title={`Ver atendimentos de ${product}`}
+                        >
+                          <ArrowRight className="w-4 h-4" />
+                        </Link>
                       </td>
                     </tr>
                   ))}
