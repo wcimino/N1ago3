@@ -3,7 +3,7 @@ import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Users, MessageCircle, Activity, User, UserCheck, Filter, X, Bot, Brain, Headphones, ArrowLeftRight } from "lucide-react";
 import { UserDetailModal } from "../../../shared/components";
-import { LoadingState, EmptyState, Pagination, PageCard } from "../../../shared/components/ui";
+import { LoadingState, EmptyState, Pagination, PageCard, SegmentedTabs } from "../../../shared/components/ui";
 import { useDateFormatters, usePaginatedQuery } from "../../../shared/hooks";
 import { getUserDisplayName, getActiveConversationsCount, getUserFromGroup } from "../../../lib/userUtils";
 import { fetchApi } from "../../../lib/queryClient";
@@ -87,10 +87,10 @@ export function AtendimentosPage() {
   }, [search]);
 
   const handlerTabs = [
-    { id: "all", label: "Todos", icon: Users },
-    { id: "bot", label: "Bot Zendesk", icon: Bot },
-    { id: "human", label: "Humano", icon: Headphones },
-    { id: "n1ago", label: "n1ago", icon: Brain },
+    { id: "all", label: "Todos", icon: <Users className="w-4 h-4" /> },
+    { id: "bot", label: "Bot Zendesk", icon: <Bot className="w-4 h-4" /> },
+    { id: "human", label: "Humano", icon: <Headphones className="w-4 h-4" /> },
+    { id: "n1ago", label: "n1ago", icon: <Brain className="w-4 h-4" /> },
   ];
   const { formatShortDateTime } = useDateFormatters();
 
@@ -139,25 +139,12 @@ export function AtendimentosPage() {
       title="Atendimentos"
       description="Lista de atendimentos agrupados por usuário"
     >
-      <div className="flex border-b">
-        {handlerTabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = handlerFilter === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setHandlerFilter(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                isActive
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          );
-        })}
+      <div className="px-4 py-3 border-b">
+        <SegmentedTabs
+          tabs={handlerTabs}
+          activeTab={handlerFilter}
+          onChange={setHandlerFilter}
+        />
       </div>
 
       <div className="px-4 py-3 border-b bg-gray-50 flex flex-wrap items-center gap-3">
