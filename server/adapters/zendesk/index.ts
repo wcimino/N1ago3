@@ -1,4 +1,4 @@
-import type { SourceAdapter, StandardEvent, ExtractedUser, ExtractedConversation, StandardUser } from "../types.js";
+import type { SourceAdapter, StandardEvent, ExtractedUser, ExtractedConversation, StandardUser, StandardOrganization } from "../types.js";
 import { verifyZendeskAuth, type AuthVerificationResult } from "./auth.js";
 import {
   mapMessageEvents,
@@ -9,6 +9,7 @@ import {
 } from "./eventTransformers.js";
 import { extractUser, extractStandardUser } from "./userTransformers.js";
 import { extractConversation } from "./conversationTransformers.js";
+import { extractStandardOrganization } from "./organizationTransformers.js";
 
 export class ZendeskAdapter implements SourceAdapter {
   source = "zendesk";
@@ -51,6 +52,10 @@ export class ZendeskAdapter implements SourceAdapter {
 
   extractStandardUser(rawPayload: any): StandardUser | null {
     return extractStandardUser(rawPayload, this.source);
+  }
+
+  extractStandardOrganization(rawPayload: any): StandardOrganization | null {
+    return extractStandardOrganization(rawPayload, this.source);
   }
 
   extractConversation(rawPayload: any): ExtractedConversation | null {

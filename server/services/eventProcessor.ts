@@ -4,6 +4,7 @@ import { eventBus, EVENTS } from "./eventBus.js";
 import { processSummaryForEvent } from "./summaryOrchestrator.js";
 import { processClassificationForEvent } from "./classificationOrchestrator.js";
 import { processResponseForEvent } from "./responseOrchestrator.js";
+import { organizationsStandardStorage } from "../storage/organizationsStandardStorage.js";
 import type { StandardEvent } from "../adapters/types.js";
 
 const SUPPORTED_SOURCES = ["zendesk"] as const;
@@ -44,6 +45,21 @@ export async function processRawEvent(rawId: number, source: string): Promise<vo
         console.log(`Standard user upsert - email: ${standardUserData.email}`);
       } catch (error) {
         console.error(`Failed to upsert standard user ${standardUserData.email}:`, error);
+      }
+    }
+
+    const standardOrgData = adapter.extractStandardOrganization(payload);
+    if (standardOrgData) {
+      try {
+        await organizationsStandardStorage.upsertStandardOrganization(standardOrgData);
+        console.log(`Standard organization upsert - cnpjRoot: ${standardOrgData.cnpjRoot}`);
+
+        if (standardUserData?.email) {
+          await organizationsStandardStorage.linkUserToOrganization(standardUserData.email, standardOrgData.cnpjRoot);
+          console.log(`User-Organization link created - email: ${standardUserData.email}, cnpjRoot: ${standardOrgData.cnpjRoot}`);
+        }
+      } catch (error) {
+        console.error(`Failed to upsert standard organization ${standardOrgData.cnpjRoot}:`, error);
       }
     }
 

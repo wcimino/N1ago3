@@ -8,6 +8,7 @@ import openaiConfigRoutes from "./openaiConfig.js";
 import openaiLogsRoutes from "./openaiLogs.js";
 import productsRoutes from "./products.js";
 import usersStandardRoutes from "./usersStandard.js";
+import organizationsStandardRoutes from "./organizationsStandard.js";
 
 export function registerRoutes(app: Express) {
   app.use(webhooksRoutes);
@@ -19,4 +20,5 @@ export function registerRoutes(app: Express) {
   app.use(openaiLogsRoutes);
   app.use(productsRoutes);
   app.use("/api/users-standard", usersStandardRoutes);
+  app.use("/api/organizations-standard", organizationsStandardRoutes);
 }

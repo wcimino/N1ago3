@@ -15,6 +15,7 @@ import {
   AtendimentosPage,
   UserConversationsPage,
   SettingsPage,
+  CadastroPage,
 } from "./pages";
 
 function AuthenticatedApp() {
@@ -55,9 +56,9 @@ function AuthenticatedApp() {
               <Home className="w-4 h-4" />
               <span className="hidden sm:inline">Home</span>
             </NavLink>
-            <NavLink href="/users">
+            <NavLink href="/cadastro">
               <Users className="w-4 h-4" />
-              <span className="hidden sm:inline">Usuários</span>
+              <span className="hidden sm:inline">Cadastro</span>
             </NavLink>
             <NavLink href="/atendimentos">
               <MessageCircle className="w-4 h-4" />
@@ -82,6 +83,9 @@ function AuthenticatedApp() {
           <Route path="/ai/settings/:rest*" component={AIPage} />
           <Route path="/events" component={EventsLayout} />
           <Route path="/events/:rest*" component={EventsLayout} />
+          <Route path="/cadastro">{() => <CadastroPage activeTab="usuarios" />}</Route>
+          <Route path="/cadastro/organizacoes">{() => <CadastroPage activeTab="organizacoes" />}</Route>
+          <Route path="/cadastro/users/:email">{(params) => <UserStandardDetailPage params={params} />}</Route>
           <Route path="/users" component={UsersPage} />
           <Route path="/users/:email">{(params) => <UserStandardDetailPage params={params} />}</Route>
           <Route path="/atendimentos" component={AtendimentosPage} />

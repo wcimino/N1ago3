@@ -15,3 +15,4 @@ export { AtendimentosPage } from "./AtendimentosPage";
 export { UserConversationsPage } from "./UserConversationsPage";
 export { AuthorizedUsersPage } from "./AuthorizedUsersPage";
 export { SettingsPage } from "./SettingsPage";
+export { CadastroPage } from "./CadastroPage";

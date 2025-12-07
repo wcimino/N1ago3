@@ -39,6 +39,14 @@ export interface StandardUser {
   metadata?: any;
 }
 
+export interface StandardOrganization {
+  cnpjRoot: string;
+  cnpj?: string;
+  source: string;
+  name?: string;
+  metadata?: any;
+}
+
 export interface ExtractedConversation {
   externalConversationId: string;
   externalAppId?: string;
@@ -52,6 +60,7 @@ export interface SourceAdapter {
   normalize(rawPayload: any): StandardEvent[];
   extractUser(rawPayload: any): ExtractedUser | null;
   extractStandardUser(rawPayload: any): StandardUser | null;
+  extractStandardOrganization(rawPayload: any): StandardOrganization | null;
   extractConversation(rawPayload: any): ExtractedConversation | null;
   verifyAuth(rawBody: Buffer, headers: Record<string, string>, secret?: string): { isValid: boolean; errorMessage?: string };
 }
