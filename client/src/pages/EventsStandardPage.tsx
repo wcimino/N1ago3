@@ -111,20 +111,29 @@ export function EventsStandardPage() {
 
   return (
     <>
-      <div className="mb-4 sm:mb-6 grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-        <div className="bg-white rounded-lg shadow p-3 sm:p-4">
-          <p className="text-xs sm:text-sm text-gray-500">Total de Eventos</p>
-          <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1">{stats?.total || 0}</p>
+      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row gap-4">
+        <div className="bg-white rounded-lg shadow p-4 sm:min-w-[200px]">
+          <p className="text-xs sm:text-sm text-gray-500">Últimas 24h</p>
+          <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">
+            {(stats?.total || 0).toLocaleString('pt-BR')}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">eventos</p>
         </div>
-        {stats?.byType &&
-          Object.entries(stats.byType)
-            .slice(0, 3)
-            .map(([type, count]) => (
-              <div key={type} className="bg-white rounded-lg shadow p-3 sm:p-4">
-                <p className="text-xs sm:text-sm text-gray-500 truncate">{type}</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1">{count}</p>
-              </div>
-            ))}
+        {stats?.byType && Object.keys(stats.byType).length > 0 && (
+          <div className="bg-white rounded-lg shadow p-4 flex-1">
+            <p className="text-xs sm:text-sm text-gray-500 mb-3">Por tipo de evento</p>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(stats.byType)
+                .sort((a, b) => b[1] - a[1])
+                .map(([type, count]) => (
+                  <div key={type} className="bg-gray-50 rounded px-3 py-1.5 text-sm">
+                    <span className="text-gray-700">{type}</span>
+                    <span className="ml-2 font-semibold text-gray-900">{count.toLocaleString('pt-BR')}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <DataTable

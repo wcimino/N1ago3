@@ -31,7 +31,6 @@ export interface StandardEventsResponse {
 export interface StandardEventsStatsResponse {
   total: number;
   byType: Record<string, number>;
-  bySource: Record<string, number>;
 }
 
 export interface EventTypeMapping {

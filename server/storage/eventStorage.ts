@@ -62,26 +62,23 @@ export const eventStorage = {
   },
 
   async getStandardEventsStats() {
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
     const byType = await db.select({
       eventType: eventsStandard.eventType,
       count: sql<number>`count(*)`,
     })
       .from(eventsStandard)
+      .where(sql`${eventsStandard.occurredAt} >= ${last24h}`)
       .groupBy(eventsStandard.eventType);
-
-    const bySource = await db.select({
-      source: eventsStandard.source,
-      count: sql<number>`count(*)`,
-    })
-      .from(eventsStandard)
-      .groupBy(eventsStandard.source);
     
-    const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(eventsStandard);
+    const [{ total }] = await db.select({ total: sql<number>`count(*)` })
+      .from(eventsStandard)
+      .where(sql`${eventsStandard.occurredAt} >= ${last24h}`);
     
     return {
       total: Number(total),
       byType: Object.fromEntries(byType.map(t => [t.eventType, Number(t.count)])),
-      bySource: Object.fromEntries(bySource.map(s => [s.source, Number(s.count)])),
     };
   },
 
