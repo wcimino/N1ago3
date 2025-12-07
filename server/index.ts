@@ -21,6 +21,11 @@ app.use(express.json({
 app.use(express.urlencoded({ extended: true }));
 
 async function startServer() {
+  // Health check endpoint (before auth setup to ensure it responds quickly)
+  app.get("/health", (req, res) => {
+    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
   // Setup authentication
   await setupAuth(app);
 
@@ -29,7 +34,11 @@ async function startServer() {
 
   if (process.env.NODE_ENV === "production") {
     app.use(express.static(path.join(__dirname, "../public")));
-    app.get("*", (req, res) => {
+    // Only handle non-API routes with the catch-all
+    app.get("*", (req, res, next) => {
+      if (req.path.startsWith("/api") || req.path.startsWith("/webhook") || req.path === "/health") {
+        return next();
+      }
       res.sendFile(path.join(__dirname, "../public/index.html"));
     });
   }
