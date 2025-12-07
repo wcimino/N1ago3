@@ -1,7 +1,7 @@
 import { Route, Switch, Link } from "wouter";
 import { Home, Users, Sparkles, Settings, LogOut, MessageCircle, Download, BookOpen } from "lucide-react";
 import { useAuth } from "./shared/hooks";
-import { NavLink, EnvironmentBadge } from "./shared/components";
+import { NavLink, EnvironmentBadge, N1agoLogo } from "./shared/components";
 import { TimezoneProvider } from "./contexts/TimezoneContext";
 import { AIPage } from "./features/ai";
 import { SettingsPage, ProductStandardsPage, ReprocessingPage } from "./features/settings";
@@ -21,7 +21,8 @@ function AuthenticatedApp() {
       <header className="bg-white shadow-sm border-b sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-3 sm:py-4">
-            <Link href="/" className="text-xl sm:text-2xl font-bold text-gray-900 hover:text-gray-700">
+            <Link href="/" className="flex items-center gap-2 text-xl sm:text-2xl font-bold text-gray-900 hover:text-gray-700">
+              <N1agoLogo className="w-8 h-8" />
               N1ago
             </Link>
             <div className="flex items-center gap-2 sm:gap-4">

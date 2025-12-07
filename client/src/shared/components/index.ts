@@ -3,3 +3,4 @@ export * from "./badges";
 export * from "./modals";
 export * from "./charts";
 export * from "./layout";
+export * from "./icons";
