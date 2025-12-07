@@ -7,6 +7,9 @@ export const knowledgeBaseStorage = {
   async getAllArticles(filters?: {
     search?: string;
     productStandard?: string;
+    subproductStandard?: string;
+    category1?: string;
+    category2?: string;
     intent?: string;
   }): Promise<KnowledgeBaseArticle[]> {
     const conditions: SQL[] = [];
@@ -17,6 +20,8 @@ export const knowledgeBaseStorage = {
         or(
           ilike(knowledgeBase.productStandard, searchPattern),
           ilike(knowledgeBase.subproductStandard, searchPattern),
+          ilike(knowledgeBase.category1, searchPattern),
+          ilike(knowledgeBase.category2, searchPattern),
           ilike(knowledgeBase.intent, searchPattern),
           ilike(knowledgeBase.description, searchPattern),
           ilike(knowledgeBase.resolution, searchPattern)
@@ -26,6 +31,18 @@ export const knowledgeBaseStorage = {
 
     if (filters?.productStandard) {
       conditions.push(eq(knowledgeBase.productStandard, filters.productStandard));
+    }
+
+    if (filters?.subproductStandard) {
+      conditions.push(eq(knowledgeBase.subproductStandard, filters.subproductStandard));
+    }
+
+    if (filters?.category1) {
+      conditions.push(eq(knowledgeBase.category1, filters.category1));
+    }
+
+    if (filters?.category2) {
+      conditions.push(eq(knowledgeBase.category2, filters.category2));
     }
 
     if (filters?.intent) {
@@ -85,5 +102,26 @@ export const knowledgeBaseStorage = {
       .from(knowledgeBase)
       .orderBy(knowledgeBase.intent);
     return results.map(r => r.intent);
+  },
+
+  async getDistinctSubproducts(): Promise<string[]> {
+    const results = await db.selectDistinct({ subproductStandard: knowledgeBase.subproductStandard })
+      .from(knowledgeBase)
+      .orderBy(knowledgeBase.subproductStandard);
+    return results.filter(r => r.subproductStandard).map(r => r.subproductStandard!);
+  },
+
+  async getDistinctCategories1(): Promise<string[]> {
+    const results = await db.selectDistinct({ category1: knowledgeBase.category1 })
+      .from(knowledgeBase)
+      .orderBy(knowledgeBase.category1);
+    return results.filter(r => r.category1).map(r => r.category1!);
+  },
+
+  async getDistinctCategories2(): Promise<string[]> {
+    const results = await db.selectDistinct({ category2: knowledgeBase.category2 })
+      .from(knowledgeBase)
+      .orderBy(knowledgeBase.category2);
+    return results.filter(r => r.category2).map(r => r.category2!);
   },
 };

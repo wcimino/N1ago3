@@ -1,15 +1,17 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
-import { FileText, Tags, MessageSquare } from "lucide-react";
+import { FileText, Tags, MessageSquare, GraduationCap } from "lucide-react";
 import { SegmentedTabs } from "../../../shared/components/ui";
 import { OpenaiSummaryConfigPage } from "./OpenaiSummaryConfigPage";
 import { ClassificationConfigPage } from "./ClassificationConfigPage";
 import { ResponseConfigPage } from "./ResponseConfigPage";
+import { LearningConfigPage } from "./LearningConfigPage";
 
 const tabs = [
   { id: "summary", label: "Resumo", icon: <FileText className="w-4 h-4" /> },
   { id: "classification", label: "Classificação", icon: <Tags className="w-4 h-4" /> },
   { id: "response", label: "Resposta", icon: <MessageSquare className="w-4 h-4" /> },
+  { id: "learning", label: "Aprendizado", icon: <GraduationCap className="w-4 h-4" /> },
 ];
 
 export function AIPage() {
@@ -24,6 +26,7 @@ export function AIPage() {
   const getActiveTab = () => {
     if (location.includes("/classification")) return "classification";
     if (location.includes("/response")) return "response";
+    if (location.includes("/learning")) return "learning";
     return "summary";
   };
 
@@ -52,6 +55,7 @@ export function AIPage() {
         {activeTab === "summary" && <OpenaiSummaryConfigPage />}
         {activeTab === "classification" && <ClassificationConfigPage />}
         {activeTab === "response" && <ResponseConfigPage />}
+        {activeTab === "learning" && <LearningConfigPage />}
       </div>
     </div>
   );

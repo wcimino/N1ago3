@@ -5,6 +5,7 @@ import { eventBus, EVENTS } from "./eventBus.js";
 import { processSummaryForEvent } from "../../ai/services/summaryOrchestrator.js";
 import { processClassificationForEvent } from "../../ai/services/classificationOrchestrator.js";
 import { processResponseForEvent } from "../../ai/services/responseOrchestrator.js";
+import { processLearningForEvent } from "../../ai/services/knowledgeLearningOrchestrator.js";
 import { processHandoffEvent } from "../../handoff/index.js";
 import type { StandardEvent } from "../../../adapters/types.js";
 
@@ -97,6 +98,12 @@ export async function processRawEvent(rawId: number, source: string): Promise<vo
         await processResponseForEvent(savedEvent);
       } catch (responseError) {
         console.error(`Failed to process response for event ${savedEvent.id}:`, responseError);
+      }
+
+      try {
+        await processLearningForEvent(savedEvent);
+      } catch (learningError) {
+        console.error(`Failed to process learning for event ${savedEvent.id}:`, learningError);
       }
 
       try {

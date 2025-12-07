@@ -304,6 +304,8 @@ export const knowledgeBase = pgTable("knowledge_base", {
   id: serial("id").primaryKey(),
   productStandard: text("product_standard").notNull(),
   subproductStandard: text("subproduct_standard"),
+  category1: text("category1"),
+  category2: text("category2"),
   intent: text("intent").notNull(),
   description: text("description").notNull(),
   resolution: text("resolution").notNull(),
@@ -313,6 +315,44 @@ export const knowledgeBase = pgTable("knowledge_base", {
 }, (table) => ({
   productIdx: index("idx_knowledge_base_product").on(table.productStandard),
   intentIdx: index("idx_knowledge_base_intent").on(table.intent),
+  category1Idx: index("idx_knowledge_base_category1").on(table.category1),
+}));
+
+export const knowledgeSuggestions = pgTable("knowledge_suggestions", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id"),
+  externalConversationId: text("external_conversation_id"),
+  
+  productStandard: text("product_standard"),
+  subproductStandard: text("subproduct_standard"),
+  category1: text("category1"),
+  category2: text("category2"),
+  
+  description: text("description"),
+  resolution: text("resolution"),
+  observations: text("observations"),
+  
+  confidenceScore: integer("confidence_score"),
+  qualityFlags: json("quality_flags"),
+  similarArticleId: integer("similar_article_id"),
+  similarityScore: integer("similarity_score"),
+  
+  status: text("status").default("pending").notNull(),
+  reviewedBy: varchar("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at"),
+  rejectionReason: text("rejection_reason"),
+  
+  conversationHandler: text("conversation_handler"),
+  extractedFromMessages: json("extracted_from_messages"),
+  rawExtraction: json("raw_extraction"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  statusIdx: index("idx_knowledge_suggestions_status").on(table.status),
+  conversationIdx: index("idx_knowledge_suggestions_conversation").on(table.conversationId),
+  productIdx: index("idx_knowledge_suggestions_product").on(table.productStandard),
+  createdAtIdx: index("idx_knowledge_suggestions_created_at").on(table.createdAt),
 }));
 
 // Types
@@ -366,3 +406,6 @@ export type InsertUserStandardHasOrganizationStandard = Omit<typeof userStandard
 
 export type KnowledgeBaseArticle = typeof knowledgeBase.$inferSelect;
 export type InsertKnowledgeBaseArticle = Omit<typeof knowledgeBase.$inferInsert, "id" | "createdAt" | "updatedAt">;
+
+export type KnowledgeSuggestion = typeof knowledgeSuggestions.$inferSelect;
+export type InsertKnowledgeSuggestion = Omit<typeof knowledgeSuggestions.$inferInsert, "id" | "createdAt" | "updatedAt">;
