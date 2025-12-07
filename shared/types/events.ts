@@ -1,4 +1,4 @@
-import type { AuthorType } from "./common";
+import type { AuthorType } from "./common.js";
 
 export interface StandardEvent {
   id: number;

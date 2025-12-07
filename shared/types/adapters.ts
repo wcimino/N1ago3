@@ -1,7 +1,7 @@
-import type { StandardEventInput } from "./events";
-import type { ExtractedUser, StandardUser } from "./users";
-import type { StandardOrganization } from "./organizations";
-import type { ExtractedConversation } from "./conversations";
+import type { StandardEventInput } from "./events.js";
+import type { ExtractedUser, StandardUser } from "./users.js";
+import type { StandardOrganization } from "./organizations.js";
+import type { ExtractedConversation } from "./conversations.js";
 
 export interface SourceAdapter {
   source: string;
