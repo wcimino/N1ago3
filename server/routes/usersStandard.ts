@@ -1,6 +1,5 @@
 import { Router } from "express";
-import { storage } from "../storage.js";
-import { organizationsStandardStorage } from "../storage/organizationsStandardStorage.js";
+import { storage, organizationsStandardStorage } from "../storage/index.js";
 import { requireAuthorizedUser } from "../middleware/auth.js";
 
 const router = Router();

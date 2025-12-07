@@ -1,10 +1,9 @@
 import { getAdapter } from "../adapters/index.js";
-import { storage } from "../storage.js";
+import { storage, organizationsStandardStorage } from "../storage/index.js";
 import { eventBus, EVENTS } from "./eventBus.js";
 import { processSummaryForEvent } from "./summaryOrchestrator.js";
 import { processClassificationForEvent } from "./classificationOrchestrator.js";
 import { processResponseForEvent } from "./responseOrchestrator.js";
-import { organizationsStandardStorage } from "../storage/organizationsStandardStorage.js";
 import type { StandardEvent } from "../adapters/types.js";
 
 const SUPPORTED_SOURCES = ["zendesk"] as const;

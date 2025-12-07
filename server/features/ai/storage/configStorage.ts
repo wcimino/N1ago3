@@ -1,7 +1,7 @@
-import { db } from "../db.js";
-import { conversationsSummary, openaiApiConfig, openaiApiLogs, responsesSuggested } from "../../shared/schema.js";
+import { db } from "../../../db.js";
+import { conversationsSummary, openaiApiConfig, openaiApiLogs, responsesSuggested } from "../../../../shared/schema.js";
 import { eq, desc, sql, gte, lte, and, isNotNull, type SQL } from "drizzle-orm";
-import type { ConversationSummary, InsertConversationSummary, OpenaiApiConfig, InsertOpenaiApiConfig, OpenaiApiLog, InsertOpenaiApiLog, SuggestedResponse, InsertSuggestedResponse } from "../../shared/schema.js";
+import type { ConversationSummary, InsertConversationSummary, OpenaiApiConfig, InsertOpenaiApiConfig, OpenaiApiLog, InsertOpenaiApiLog, SuggestedResponse, InsertSuggestedResponse } from "../../../../shared/schema.js";
 
 export const configStorage = {
   async getConversationSummary(conversationId: number): Promise<ConversationSummary | null> {

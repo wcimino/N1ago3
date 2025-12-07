@@ -1,7 +1,7 @@
-import { db } from "../db.js";
-import { knowledgeBase } from "../../shared/schema.js";
+import { db } from "../../../db.js";
+import { knowledgeBase } from "../../../../shared/schema.js";
 import { eq, desc, ilike, or, and, type SQL } from "drizzle-orm";
-import type { KnowledgeBaseArticle, InsertKnowledgeBaseArticle } from "../../shared/schema.js";
+import type { KnowledgeBaseArticle, InsertKnowledgeBaseArticle } from "../../../../shared/schema.js";
 
 export const knowledgeBaseStorage = {
   async getAllArticles(filters?: {

@@ -1,8 +1,8 @@
-import { db } from "../db.js";
-import { organizationsStandard, organizationsStandardHistory, userStandardHasOrganizationStandard, usersStandard } from "../../shared/schema.js";
+import { db } from "../../../db.js";
+import { organizationsStandard, organizationsStandardHistory, userStandardHasOrganizationStandard, usersStandard } from "../../../../shared/schema.js";
 import { eq, sql, and } from "drizzle-orm";
-import type { OrganizationStandard, UserStandardHasOrganizationStandard, UserStandard } from "../../shared/schema.js";
-import type { StandardOrganization } from "../adapters/types.js";
+import type { OrganizationStandard, UserStandardHasOrganizationStandard, UserStandard } from "../../../../shared/schema.js";
+import type { StandardOrganization } from "../../../adapters/types.js";
 
 const TRACKED_FIELDS = ["name", "cnpj"] as const;
 

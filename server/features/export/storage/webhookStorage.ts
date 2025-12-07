@@ -1,7 +1,7 @@
-import { db } from "../db.js";
-import { zendeskConversationsWebhookRaw } from "../../shared/schema.js";
+import { db } from "../../../db.js";
+import { zendeskConversationsWebhookRaw } from "../../../../shared/schema.js";
 import { eq, desc, sql, and } from "drizzle-orm";
-import type { InsertZendeskConversationsWebhookRaw, ZendeskConversationsWebhookRaw } from "../../shared/schema.js";
+import type { InsertZendeskConversationsWebhookRaw, ZendeskConversationsWebhookRaw } from "../../../../shared/schema.js";
 
 export const webhookStorage = {
   async createWebhookLog(data: InsertZendeskConversationsWebhookRaw) {

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { knowledgeBaseStorage } from "../storage/knowledgeBaseStorage.js";
+import { knowledgeBaseStorage } from "../storage/index.js";
 import type { InsertKnowledgeBaseArticle } from "../../shared/schema.js";
 
 const router = Router();

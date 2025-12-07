@@ -1,8 +1,8 @@
-import { db } from "../db.js";
-import { usersStandard, usersStandardHistory, users, conversations } from "../../shared/schema.js";
+import { db } from "../../../db.js";
+import { usersStandard, usersStandardHistory, users, conversations } from "../../../../shared/schema.js";
 import { eq, sql, gte, and } from "drizzle-orm";
-import type { UserStandard, InsertUserStandard } from "../../shared/schema.js";
-import type { StandardUser } from "../adapters/types.js";
+import type { UserStandard, InsertUserStandard } from "../../../../shared/schema.js";
+import type { StandardUser } from "../../../adapters/types.js";
 
 const TRACKED_FIELDS = ["name", "cpf", "phone", "locale", "externalId", "sourceUserId"] as const;
 
