@@ -2,12 +2,7 @@ import { getAdapter } from "../../../adapters/index.js";
 import { storage } from "../../../storage/index.js";
 import { organizationsStandardStorage } from "../../cadastro/storage/organizationsStandardStorage.js";
 import { eventBus, EVENTS } from "./eventBus.js";
-import { processSummaryForEvent } from "../../ai/services/summaryOrchestrator.js";
-import { processClassificationForEvent } from "../../ai/services/classificationOrchestrator.js";
-import { processResponseForEvent } from "../../ai/services/responseOrchestrator.js";
-import { processLearningForEvent } from "../../ai/services/knowledgeLearningOrchestrator.js";
-import { processHandoffEvent } from "../../handoff/index.js";
-import type { StandardEvent } from "../../../adapters/types.js";
+import { saveAndDispatchEvent } from "./eventDispatcher.js";
 
 const SUPPORTED_SOURCES = ["zendesk"] as const;
 type SupportedSource = typeof SUPPORTED_SOURCES[number];
@@ -75,42 +70,12 @@ export async function processRawEvent(rawId: number, source: string): Promise<vo
     const standardEvents = adapter.normalize(payload);
 
     for (const event of standardEvents) {
-      const savedEvent = await storage.saveStandardEvent({
+      const savedEvent = await saveAndDispatchEvent({
         ...event,
         sourceRawId: rawId,
         conversationId,
         userId,
       });
-      
-      try {
-        await processSummaryForEvent(savedEvent);
-      } catch (summaryError) {
-        console.error(`Failed to process summary for event ${savedEvent.id}:`, summaryError);
-      }
-
-      try {
-        await processClassificationForEvent(savedEvent);
-      } catch (classificationError) {
-        console.error(`Failed to process classification for event ${savedEvent.id}:`, classificationError);
-      }
-
-      try {
-        await processResponseForEvent(savedEvent);
-      } catch (responseError) {
-        console.error(`Failed to process response for event ${savedEvent.id}:`, responseError);
-      }
-
-      try {
-        await processLearningForEvent(savedEvent);
-      } catch (learningError) {
-        console.error(`Failed to process learning for event ${savedEvent.id}:`, learningError);
-      }
-
-      try {
-        await processHandoffEvent(savedEvent);
-      } catch (handoffError) {
-        console.error(`Failed to process handoff for event ${savedEvent.id}:`, handoffError);
-      }
 
       if (event.eventType === "switchboard:passControl" && event.externalConversationId) {
         try {

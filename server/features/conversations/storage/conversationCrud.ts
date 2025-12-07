@@ -3,7 +3,7 @@ import { conversations, eventsStandard } from "../../../../shared/schema.js";
 import { eq, desc, sql, and, lt, ne } from "drizzle-orm";
 import type { ExtractedConversation } from "../../../adapters/types.js";
 import { CONVERSATION_RULES, type ClosedReason } from "../../../config/conversationRules.js";
-import { eventStorage } from "../../events/storage/eventStorage.js";
+import { saveAndDispatchEvent } from "../../events/services/eventDispatcher.js";
 
 interface ConversationData {
   externalConversationId: string;
@@ -21,7 +21,7 @@ async function createConversationClosedEvent(
     const closedAt = conversation.closedAt || new Date();
     const sourceEventId = `close:${conversation.id}:${reason}:${closedAt.toISOString()}`;
     
-    await eventStorage.saveStandardEvent({
+    await saveAndDispatchEvent({
       eventType: "conversation_closed",
       eventSubtype: reason,
       source: "n1ago",
