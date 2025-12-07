@@ -12,8 +12,10 @@ interface AutoCloseStatus {
 
 export function AutoClosePage() {
   const [, navigate] = useLocation();
-  const [closeLimit, setCloseLimit] = useState(10);
+  const [closeLimitInput, setCloseLimitInput] = useState("10");
   const queryClient = useQueryClient();
+
+  const closeLimit = parseInt(closeLimitInput) || 10;
 
   const { data: status, isLoading } = useQuery<AutoCloseStatus>({
     queryKey: ["/api/maintenance/auto-close/status"],
@@ -142,8 +144,16 @@ export function AutoClosePage() {
               type="number"
               min="1"
               max="100"
-              value={closeLimit}
-              onChange={(e) => setCloseLimit(parseInt(e.target.value) || 10)}
+              value={closeLimitInput}
+              onChange={(e) => setCloseLimitInput(e.target.value)}
+              onBlur={() => {
+                const num = parseInt(closeLimitInput);
+                if (isNaN(num) || num < 1) {
+                  setCloseLimitInput("1");
+                } else if (num > 100) {
+                  setCloseLimitInput("100");
+                }
+              }}
               className="w-20 px-3 py-2 border rounded-lg text-center"
             />
           </div>
