@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Download, Calendar, Package, Target, Loader2 } from "lucide-react";
+import { Download, Calendar, Package, Target, Loader2, Tag } from "lucide-react";
 import { fetchApi } from "../lib/queryClient";
 import { formatDateTime } from "../lib/dateUtils";
 
@@ -15,6 +15,7 @@ interface SummaryExport {
 
 interface FilterOptions {
   products: string[];
+  productStandards: string[];
   intents: string[];
 }
 
@@ -65,6 +66,7 @@ export function ExportSummariesPage() {
   const [dateFrom, setDateFrom] = useState(formatDateForInput(thirtyDaysAgo));
   const [dateTo, setDateTo] = useState(formatDateForInput(today));
   const [product, setProduct] = useState("");
+  const [productStandard, setProductStandard] = useState("");
   const [intent, setIntent] = useState("");
   const [isExporting, setIsExporting] = useState(false);
 
@@ -80,6 +82,7 @@ export function ExportSummariesPage() {
       if (dateFrom) params.append("dateFrom", dateFrom);
       if (dateTo) params.append("dateTo", dateTo);
       if (product) params.append("product", product);
+      if (productStandard) params.append("productStandard", productStandard);
       if (intent) params.append("intent", intent);
 
       const data = await fetchApi<SummaryExport[]>(`/api/export/summaries?${params.toString()}`);
@@ -98,7 +101,7 @@ export function ExportSummariesPage() {
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Filtros</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               <Calendar className="w-4 h-4 inline mr-1" />
@@ -139,6 +142,25 @@ export function ExportSummariesPage() {
               {filterOptions?.products.map((p) => (
                 <option key={p} value={p}>
                   {p}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              <Tag className="w-4 h-4 inline mr-1" />
+              Produto Padronizado
+            </label>
+            <select
+              value={productStandard}
+              onChange={(e) => setProductStandard(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Todos</option>
+              {filterOptions?.productStandards.map((ps) => (
+                <option key={ps} value={ps}>
+                  {ps}
                 </option>
               ))}
             </select>

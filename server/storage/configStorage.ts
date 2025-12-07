@@ -182,11 +182,16 @@ export const configStorage = {
       .limit(limit);
   },
 
-  async getUniqueProductsAndIntents(): Promise<{ products: string[]; intents: string[] }> {
+  async getUniqueProductsAndIntents(): Promise<{ products: string[]; productStandards: string[]; intents: string[] }> {
     const productsResult = await db
       .selectDistinct({ product: conversationsSummary.product })
       .from(conversationsSummary)
       .where(isNotNull(conversationsSummary.product));
+    
+    const productStandardsResult = await db
+      .selectDistinct({ productStandard: conversationsSummary.productStandard })
+      .from(conversationsSummary)
+      .where(isNotNull(conversationsSummary.productStandard));
     
     const intentsResult = await db
       .selectDistinct({ intent: conversationsSummary.intent })
@@ -195,6 +200,7 @@ export const configStorage = {
 
     return {
       products: productsResult.map(r => r.product).filter((p): p is string => p !== null).sort(),
+      productStandards: productStandardsResult.map(r => r.productStandard).filter((ps): ps is string => ps !== null).sort(),
       intents: intentsResult.map(r => r.intent).filter((i): i is string => i !== null).sort(),
     };
   },
@@ -229,6 +235,7 @@ export const configStorage = {
     dateFrom?: Date;
     dateTo?: Date;
     product?: string;
+    productStandard?: string;
     intent?: string;
   }): Promise<Array<{
     id: number;
@@ -248,6 +255,9 @@ export const configStorage = {
     }
     if (filters.product) {
       conditions.push(eq(conversationsSummary.product, filters.product));
+    }
+    if (filters.productStandard) {
+      conditions.push(eq(conversationsSummary.productStandard, filters.productStandard));
     }
     if (filters.intent) {
       conditions.push(eq(conversationsSummary.intent, filters.intent));

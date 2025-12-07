@@ -6,12 +6,13 @@ const router = Router();
 
 router.get("/api/export/summaries", requireAuthorizedUser, async (req, res) => {
   try {
-    const { dateFrom, dateTo, product, intent } = req.query;
+    const { dateFrom, dateTo, product, productStandard, intent } = req.query;
 
     const filters: {
       dateFrom?: Date;
       dateTo?: Date;
       product?: string;
+      productStandard?: string;
       intent?: string;
     } = {};
 
@@ -25,6 +26,9 @@ router.get("/api/export/summaries", requireAuthorizedUser, async (req, res) => {
     }
     if (product && typeof product === "string") {
       filters.product = product;
+    }
+    if (productStandard && typeof productStandard === "string") {
+      filters.productStandard = productStandard;
     }
     if (intent && typeof intent === "string") {
       filters.intent = intent;
