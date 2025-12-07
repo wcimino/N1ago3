@@ -18,3 +18,4 @@ export { SettingsPage } from "./SettingsPage";
 export { CadastroPage } from "./CadastroPage";
 export { ExportPage } from "./ExportPage";
 export { ProductStandardsPage } from "./ProductStandardsPage";
+export { ReprocessingPage } from "./ReprocessingPage";
