@@ -36,3 +36,25 @@ export interface AuthorizedUser {
   createdBy: string | null;
   lastAccess: string | null;
 }
+
+export interface StandardUser {
+  email: string;
+  source: string;
+  sourceUserId?: string;
+  externalId?: string;
+  name?: string;
+  cpf?: string;
+  phone?: string;
+  locale?: string;
+  signedUpAt?: Date;
+  metadata?: any;
+}
+
+export interface ExtractedUser {
+  externalId: string;
+  signedUpAt?: Date;
+  authenticated?: boolean;
+  profile?: any;
+  metadata?: any;
+  identities?: any;
+}

@@ -1,4 +1,4 @@
-import type { SourceAdapter } from "./types.js";
+import type { SourceAdapter } from "../../shared/types/adapters.js";
 import { ZendeskAdapter } from "./zendesk/index.js";
 
 const adapters: Record<string, SourceAdapter> = {};
@@ -18,4 +18,4 @@ export function getAllAdapters(): SourceAdapter[] {
 registerAdapter(new ZendeskAdapter());
 
 export { ZendeskAdapter } from "./zendesk/index.js";
-export type { SourceAdapter, StandardEvent, ExtractedUser, ExtractedConversation, AuthorType } from "./types.js";
+export type { SourceAdapter, StandardEventInput as StandardEvent, ExtractedUser, ExtractedConversation, AuthorType } from "../../shared/types/index.js";

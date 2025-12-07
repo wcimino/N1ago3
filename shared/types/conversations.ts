@@ -115,3 +115,11 @@ export interface UserConversationsMessagesResponse {
   user_profile: UserProfile | null;
   conversations: ConversationWithMessages[];
 }
+
+export interface ExtractedConversation {
+  externalConversationId: string;
+  externalAppId?: string;
+  externalUserId?: string;
+  userExternalId?: string;
+  metadata?: any;
+}

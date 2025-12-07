@@ -1,3 +1,5 @@
+import type { AuthorType } from "./common";
+
 export interface StandardEvent {
   id: number;
   event_type: string;
@@ -19,6 +21,23 @@ export interface StandardEvent {
   type_description?: string | null;
   show_in_list?: boolean | null;
   icon?: string | null;
+}
+
+export interface StandardEventInput {
+  eventType: string;
+  eventSubtype?: string;
+  source: string;
+  sourceEventId?: string;
+  externalConversationId?: string;
+  externalUserId?: string;
+  authorType: AuthorType;
+  authorId?: string;
+  authorName?: string;
+  contentText?: string;
+  contentPayload?: any;
+  occurredAt: Date;
+  channelType?: string;
+  metadata?: any;
 }
 
 export interface StandardEventsResponse {

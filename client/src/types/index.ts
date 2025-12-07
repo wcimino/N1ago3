@@ -1,6 +1,3 @@
-export * from "./webhooks";
-export * from "./users";
-export * from "./conversations";
-export * from "./events";
-export * from "./config";
-export * from "./products";
+export * from "../../../shared/types";
+
+export type { WebhookStatsResponse as StatsResponse } from "../../../shared/types";

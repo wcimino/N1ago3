@@ -26,7 +26,7 @@ export interface WebhookLogsResponse {
   logs: WebhookLog[];
 }
 
-export interface StatsResponse {
+export interface WebhookStatsResponse {
   total: number;
   by_status: Record<string, number>;
 }

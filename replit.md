@@ -38,6 +38,30 @@ The frontend dashboard offers a real-time view of events and conversations, admi
 *   **API Endpoints:** REST resources are plural, `kebab-case`; config endpoints are singular; specific actions use verbs in the path.
 *   **File Structure:** Feature-based organization for both frontend and backend.
 
+**Shared Types Architecture (shared/types/):**
+
+Types shared between frontend and backend are centralized in `shared/types/`:
+```
+shared/
+├── schema.ts           # Drizzle database schema
+└── types/
+    ├── index.ts        # Re-exports all types
+    ├── common.ts       # AuthorType, PaginatedResponse
+    ├── users.ts        # User, UserProfile, StandardUser, AuthorizedUser
+    ├── organizations.ts # StandardOrganization
+    ├── events.ts       # StandardEvent, StandardEventInput, EventTypeMapping
+    ├── conversations.ts # Conversation, Message, UserGroup, etc
+    ├── webhooks.ts     # WebhookLog, WebhookLogDetail
+    ├── config.ts       # OpenaiConfigResponse
+    ├── products.ts     # ProductCount, ProductStatsResponse
+    └── adapters.ts     # SourceAdapter interface
+```
+
+- Frontend imports: `import { User } from "@/types"` (via client/src/types/index.ts re-export)
+- Backend imports: `import { StandardUser } from "../../shared/types"`
+- `StandardEvent` (snake_case) = API/DB format
+- `StandardEventInput` (camelCase) = Adapter internal format
+
 **Backend Feature Architecture (server/features/):**
 
 Each feature module follows a consistent structure:
