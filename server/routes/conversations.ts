@@ -17,10 +17,10 @@ router.get("/api/conversations/filters", isAuthenticated, requireAuthorizedUser,
 router.get("/api/conversations/grouped", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 50;
   const offset = parseInt(req.query.offset as string) || 0;
-  const product = req.query.product as string | undefined;
+  const productStandard = req.query.productStandard as string | undefined;
   const intent = req.query.intent as string | undefined;
 
-  const { userGroups, total } = await storage.getConversationsGroupedByUser(limit, offset, product, intent);
+  const { userGroups, total } = await storage.getConversationsGroupedByUser(limit, offset, productStandard, intent);
 
   const enrichedGroups = await Promise.all(
     userGroups.map(async (group: any) => {
@@ -31,7 +31,7 @@ router.get("/api/conversations/grouped", isAuthenticated, requireAuthorizedUser,
         last_activity: group.last_activity,
         first_activity: group.first_activity,
         conversations: group.conversations,
-        last_product: group.last_product || null,
+        last_product_standard: group.last_product_standard || null,
         last_intent: group.last_intent || null,
         user_info: user ? {
           id: user.id,

@@ -10,7 +10,7 @@ import { fetchApi } from "../lib/queryClient";
 import type { User as UserType, UserGroup } from "../types";
 
 interface FiltersResponse {
-  products: string[];
+  productStandards: string[];
   intents: string[];
 }
 
@@ -21,18 +21,18 @@ export function AtendimentosPage() {
   
   // Parse URL params for initial filter values
   const urlParams = new URLSearchParams(search);
-  const initialProduct = urlParams.get("product") || "";
+  const initialProductStandard = urlParams.get("productStandard") || "";
   const initialIntent = urlParams.get("intent") || "";
   
-  const [productFilter, setProductFilter] = useState<string>(initialProduct);
+  const [productStandardFilter, setProductStandardFilter] = useState<string>(initialProductStandard);
   const [intentFilter, setIntentFilter] = useState<string>(initialIntent);
   
   // Update filters when URL changes
   useEffect(() => {
     const params = new URLSearchParams(search);
-    const product = params.get("product") || "";
+    const productStandard = params.get("productStandard") || "";
     const intent = params.get("intent") || "";
-    setProductFilter(product);
+    setProductStandardFilter(productStandard);
     setIntentFilter(intent);
   }, [search]);
   const { formatShortDateTime } = useDateFormatters();
@@ -44,11 +44,11 @@ export function AtendimentosPage() {
 
   const endpoint = useMemo(() => {
     const params = new URLSearchParams();
-    if (productFilter) params.set("product", productFilter);
+    if (productStandardFilter) params.set("productStandard", productStandardFilter);
     if (intentFilter) params.set("intent", intentFilter);
     const queryString = params.toString();
     return queryString ? `/api/conversations/grouped?${queryString}` : "/api/conversations/grouped";
-  }, [productFilter, intentFilter]);
+  }, [productStandardFilter, intentFilter]);
 
   const {
     data: userGroups,
@@ -63,16 +63,16 @@ export function AtendimentosPage() {
     showingFrom,
     showingTo,
   } = usePaginatedQuery<UserGroup>({
-    queryKey: `conversations-grouped-${productFilter}-${intentFilter}`,
+    queryKey: `conversations-grouped-${productStandardFilter}-${intentFilter}`,
     endpoint,
     limit: 20,
     dataKey: "user_groups",
   });
 
-  const hasFilters = productFilter || intentFilter;
+  const hasFilters = productStandardFilter || intentFilter;
 
   const clearFilters = () => {
-    setProductFilter("");
+    setProductStandardFilter("");
     setIntentFilter("");
   };
 
@@ -85,14 +85,14 @@ export function AtendimentosPage() {
         <Filter className="w-4 h-4 text-gray-500" />
         <div className="flex flex-wrap items-center gap-2">
           <select
-            value={productFilter}
-            onChange={(e) => setProductFilter(e.target.value)}
+            value={productStandardFilter}
+            onChange={(e) => setProductStandardFilter(e.target.value)}
             className="text-sm border border-gray-300 rounded-md px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Todos os produtos</option>
-            {filters?.products.map((product) => (
-              <option key={product} value={product}>
-                {product}
+            {filters?.productStandards.map((productStandard) => (
+              <option key={productStandard} value={productStandard}>
+                {productStandard}
               </option>
             ))}
           </select>
@@ -196,9 +196,9 @@ export function AtendimentosPage() {
 
                     <div className="flex flex-wrap items-center gap-2 text-sm">
                       <span className="text-gray-500">Último atendimento:</span>
-                      {group.last_product && (
+                      {group.last_product_standard && (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {group.last_product}
+                          {group.last_product_standard}
                         </span>
                       )}
                       {group.last_intent && (

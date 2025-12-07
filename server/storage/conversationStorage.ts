@@ -115,15 +115,15 @@ export const conversationStorage = {
     };
   },
 
-  async getConversationsGroupedByUser(limit = 50, offset = 0, productFilter?: string, intentFilter?: string) {
-    const productCondition = productFilter ? sql`AND lc_filter.last_product = ${productFilter}` : sql``;
+  async getConversationsGroupedByUser(limit = 50, offset = 0, productStandardFilter?: string, intentFilter?: string) {
+    const productCondition = productStandardFilter ? sql`AND lc_filter.last_product_standard = ${productStandardFilter}` : sql``;
     const intentCondition = intentFilter ? sql`AND lc_filter.last_intent = ${intentFilter}` : sql``;
 
     const userConversations = await db.execute(sql`
       WITH last_conv_filter AS (
         SELECT DISTINCT ON (c.user_id)
           c.user_id,
-          cs.product as last_product,
+          cs.product_standard as last_product_standard,
           cs.intent as last_intent
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
@@ -147,7 +147,7 @@ export const conversationStorage = {
               'status', c.status,
               'created_at', TO_CHAR(c.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
               'updated_at', TO_CHAR(c.updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
-              'product', cs.product,
+              'product_standard', cs.product_standard,
               'intent', cs.intent
             ) ORDER BY c.created_at ASC
           ) as conversations
@@ -162,7 +162,7 @@ export const conversationStorage = {
       last_conv AS (
         SELECT DISTINCT ON (c.user_id)
           c.user_id,
-          cs.product as last_product,
+          cs.product_standard as last_product_standard,
           cs.intent as last_intent
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
@@ -175,7 +175,7 @@ export const conversationStorage = {
         TO_CHAR(us.last_activity, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as last_activity,
         TO_CHAR(us.first_activity, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as first_activity,
         us.conversations,
-        lc.last_product,
+        lc.last_product_standard,
         lc.last_intent
       FROM user_stats us
       LEFT JOIN last_conv lc ON lc.user_id = us.user_id
@@ -185,7 +185,7 @@ export const conversationStorage = {
       WITH last_conv_filter AS (
         SELECT DISTINCT ON (c.user_id)
           c.user_id,
-          cs.product as last_product,
+          cs.product_standard as last_product_standard,
           cs.intent as last_intent
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
