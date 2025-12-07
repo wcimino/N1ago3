@@ -32,6 +32,8 @@ export function KnowledgeBaseCard({ article, onEdit, onDelete }: KnowledgeBaseCa
     locale: ptBR,
   });
 
+  const categories = [article.category1, article.category2].filter(Boolean).join(" / ");
+
   return (
     <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
       <div 
@@ -40,30 +42,45 @@ export function KnowledgeBaseCard({ article, onEdit, onDelete }: KnowledgeBaseCa
       >
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-              <span className="font-medium text-blue-600">{article.productStandard}</span>
-              <span className="text-gray-300">/</span>
-              <span className="text-gray-600">{article.intent}</span>
+            <div className="mb-3">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm font-semibold text-blue-700">
+                  {article.productStandard}
+                </span>
+                {article.subproductStandard && (
+                  <>
+                    <span className="text-gray-300">›</span>
+                    <span className="text-sm text-purple-600">
+                      {article.subproductStandard}
+                    </span>
+                  </>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200">
+                  {article.intent}
+                </span>
+                {categories && (
+                  <span className="text-gray-500">
+                    {categories}
+                  </span>
+                )}
+              </div>
             </div>
 
-            <p className="text-sm text-gray-900 font-medium leading-snug line-clamp-2 mb-2">
+            <p className={`text-sm text-gray-800 leading-relaxed ${isExpanded ? '' : 'line-clamp-2'}`}>
               {article.description}
             </p>
 
-            <div className="bg-green-50 rounded-lg px-3 py-2 border-l-2 border-green-500">
-              <p className="text-xs text-green-800 line-clamp-2">
+            {!isExpanded && (
+              <p className="text-xs text-gray-400 mt-2 line-clamp-1">
+                <span className="text-green-600 font-medium">Solução:</span>{" "}
                 {article.resolution}
               </p>
-            </div>
+            )}
 
-            <div className="flex items-center gap-2 mt-3 text-xs text-gray-400">
-              <span>{timeAgo}</span>
-              {article.subproductStandard && (
-                <>
-                  <span>•</span>
-                  <span>{article.subproductStandard}</span>
-                </>
-              )}
+            <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+              <span>Atualizado há {timeAgo}</span>
             </div>
           </div>
 
@@ -136,16 +153,7 @@ export function KnowledgeBaseCard({ article, onEdit, onDelete }: KnowledgeBaseCa
       {isExpanded && (
         <div className="border-t bg-gray-50 p-4 space-y-4">
           <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-              Situação
-            </h4>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">
-              {article.description}
-            </p>
-          </div>
-
-          <div>
-            <h4 className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">
+            <h4 className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-2">
               Solução
             </h4>
             <div className="bg-white rounded-lg p-3 border border-green-200">
