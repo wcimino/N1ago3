@@ -4,6 +4,15 @@ import { verifyZendeskAuth, type AuthVerificationResult } from "./auth.js";
 export class ZendeskAdapter implements SourceAdapter {
   source = "zendesk";
 
+  private extractValidCpf(value: string | undefined): string | undefined {
+    if (!value) return undefined;
+    const digitsOnly = value.replace(/\D/g, '');
+    if (digitsOnly.length === 11) {
+      return digitsOnly;
+    }
+    return undefined;
+  }
+
   normalize(rawPayload: any): StandardEvent[] {
     const events: StandardEvent[] = [];
     
@@ -210,7 +219,7 @@ export class ZendeskAdapter implements SourceAdapter {
           sourceUserId: userData.id,
           externalId: userData.externalId,
           name: profile.surname || undefined,
-          cpf: profile.givenName || undefined,
+          cpf: this.extractValidCpf(profile.givenName),
           phone: profile.phone || undefined,
           locale: profile.locale || undefined,
           signedUpAt,
@@ -236,7 +245,7 @@ export class ZendeskAdapter implements SourceAdapter {
         sourceUserId: user.id,
         externalId: user.externalId,
         name: profile.surname || undefined,
-        cpf: profile.givenName || undefined,
+        cpf: this.extractValidCpf(profile.givenName),
         phone: profile.phone || undefined,
         locale: profile.locale || undefined,
         signedUpAt,
