@@ -56,16 +56,11 @@ export function KnowledgeBaseCard({ article, onEdit, onDelete }: KnowledgeBaseCa
                   </>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-xs">
-                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200">
-                  {article.intent}
-                </span>
-                {categories && (
-                  <span className="text-gray-500">
-                    {categories}
-                  </span>
-                )}
-              </div>
+              {categories && (
+                <div className="text-xs text-gray-500">
+                  {categories}
+                </div>
+              )}
             </div>
 
             {!isExpanded && (
