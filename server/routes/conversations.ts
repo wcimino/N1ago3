@@ -62,8 +62,8 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
           id: item.conversation.id,
           external_conversation_id: item.conversation.externalConversationId,
           status: item.conversation.status,
-          created_at: item.conversation.createdAt?.toISOString(),
-          updated_at: item.conversation.updatedAt?.toISOString(),
+          created_at: item.conversation.createdAt,
+          updated_at: item.conversation.updatedAt,
         },
         messages: item.messages,
         summary: summary ? {
