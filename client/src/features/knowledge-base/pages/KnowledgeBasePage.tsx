@@ -193,24 +193,24 @@ export function KnowledgeBasePage() {
         </div>
       ) : (
         <>
-          <div className="p-4 border-b space-y-3">
-            <div className="flex gap-3 flex-wrap">
-              <div className="flex-1 min-w-[200px] relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <div className="px-4 py-2 border-b">
+            <div className="flex gap-2 items-center">
+              <div className="flex-1 relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Buscar artigos..."
+                  placeholder="Buscar..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-8 pr-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               <select
                 value={selectedProduct}
                 onChange={(e) => setSelectedProduct(e.target.value)}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="px-2 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-w-[120px]"
               >
-                <option value="">Todos os Produtos</option>
+                <option value="">Produto</option>
                 {filters?.products.map((product) => (
                   <option key={product} value={product}>
                     {product}
@@ -220,9 +220,9 @@ export function KnowledgeBasePage() {
               <select
                 value={selectedIntent}
                 onChange={(e) => setSelectedIntent(e.target.value)}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="px-2 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-w-[100px]"
               >
-                <option value="">Todas as Intenções</option>
+                <option value="">Intent</option>
                 {filters?.intents.map((intent) => (
                   <option key={intent} value={intent}>
                     {intent}
