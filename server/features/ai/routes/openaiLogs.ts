@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
-import { isAuthenticated, requireAuthorizedUser } from "../middleware/auth.js";
-import { getOpenaiLogs, getOpenaiLogById } from "../services/openaiApiService.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
+import { getOpenaiLogs, getOpenaiLogById } from "../../../services/openaiApiService.js";
 
 const router = Router();
 

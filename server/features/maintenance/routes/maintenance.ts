@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { reprocessingService, type ReprocessingType } from "../services/reprocessingService.js";
+import { reprocessingService, type ReprocessingType } from "../../../services/reprocessingService.js";
 
 const router = Router();
 

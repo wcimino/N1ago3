@@ -1,17 +1,23 @@
 import type { Express } from "express";
-import webhooksRoutes from "./webhooks.js";
+
 import authRoutes from "./auth.js";
-import webhookLogsRoutes from "./webhookLogs.js";
 import conversationsRoutes from "./conversations.js";
-import eventsRoutes from "./events.js";
-import openaiConfigRoutes from "./openaiConfig.js";
-import openaiLogsRoutes from "./openaiLogs.js";
 import productsRoutes from "./products.js";
-import usersStandardRoutes from "./usersStandard.js";
-import organizationsStandardRoutes from "./organizationsStandard.js";
-import maintenanceRoutes from "./maintenance.js";
-import exportRoutes from "./export.js";
-import knowledgeBaseRoutes from "./knowledgeBase.js";
+
+import webhooksRoutes from "../features/export/routes/webhooks.js";
+import webhookLogsRoutes from "../features/export/routes/webhookLogs.js";
+import exportRoutes from "../features/export/routes/export.js";
+
+import eventsRoutes from "../features/events/routes/events.js";
+
+import usersStandardRoutes from "../features/cadastro/routes/usersStandard.js";
+import organizationsStandardRoutes from "../features/cadastro/routes/organizationsStandard.js";
+
+import openaiConfigRoutes from "../features/ai/routes/openaiConfig.js";
+import openaiLogsRoutes from "../features/ai/routes/openaiLogs.js";
+import knowledgeBaseRoutes from "../features/ai/routes/knowledgeBase.js";
+
+import maintenanceRoutes from "../features/maintenance/routes/maintenance.js";
 
 export function registerRoutes(app: Express) {
   app.use(webhooksRoutes);

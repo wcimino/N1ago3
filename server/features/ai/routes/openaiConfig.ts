@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
-import { storage } from "../storage.js";
-import { isAuthenticated, requireAuthorizedUser } from "../middleware/auth.js";
+import { storage } from "../../../storage.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
 
 const router = Router();
 
