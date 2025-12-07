@@ -25,7 +25,7 @@ export function formatDate(date: string | Date, timezone: string = DEFAULT_TIMEZ
 }
 
 export function formatShortDateTime(date: string | Date, timezone: string = DEFAULT_TIMEZONE): string {
-  return formatInTimeZone(toDate(date), timezone, "dd/MM HH:mm", { locale: ptBR });
+  return formatInTimeZone(toDate(date), timezone, "dd/MM/yyyy HH:mm", { locale: ptBR });
 }
 
 export function formatRelativeTime(date: string | Date): string {
