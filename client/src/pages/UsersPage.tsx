@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Users, FileText, Globe } from "lucide-react";
+import { Users, FileText } from "lucide-react";
 import { LoadingState, EmptyState, Pagination } from "../components";
 import { useDateFormatters } from "../hooks/useDateFormatters";
 import { usePaginatedQuery } from "../hooks/usePaginatedQuery";
@@ -24,7 +24,7 @@ interface UserStandard {
 
 export function UsersPage() {
   const [, navigate] = useLocation();
-  const { formatShortDateTime } = useDateFormatters();
+  const { formatDateTime } = useDateFormatters();
 
   const {
     data: users,
@@ -66,11 +66,9 @@ export function UsersPage() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">CPF</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Idioma</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Primeiro contato</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Último contato</th>
                 </tr>
               </thead>
@@ -81,15 +79,11 @@ export function UsersPage() {
                     className="hover:bg-gray-50 cursor-pointer"
                     onClick={() => navigate(`/users/${encodeURIComponent(user.email)}`)}
                   >
+                    <td className="px-4 py-3 text-sm text-gray-900">{user.name || "-"}</td>
                     <td className="px-4 py-3 text-sm font-medium text-blue-600 hover:text-blue-800">{user.email}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{user.name || "-"}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">{user.cpf || "-"}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{user.locale || "-"}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">
-                      {user.firstSeenAt ? formatShortDateTime(user.firstSeenAt) : "-"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
-                      {user.lastSeenAt ? formatShortDateTime(user.lastSeenAt) : "-"}
+                      {user.lastSeenAt ? formatDateTime(user.lastSeenAt) : "-"}
                     </td>
                   </tr>
                 ))}
@@ -109,8 +103,8 @@ export function UsersPage() {
                     <Users className="w-5 h-5 text-blue-600" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900 truncate">{user.email}</p>
-                    {user.name && <p className="text-sm text-gray-500 mt-0.5">{user.name}</p>}
+                    <p className="font-medium text-gray-900 truncate">{user.name || "-"}</p>
+                    <p className="text-sm text-blue-600 mt-0.5 truncate">{user.email}</p>
                     <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-gray-500">
                       {user.cpf && (
                         <span className="flex items-center gap-1">
@@ -118,16 +112,9 @@ export function UsersPage() {
                           {user.cpf}
                         </span>
                       )}
-                      {user.locale && (
-                        <span className="flex items-center gap-1">
-                          <Globe className="w-3 h-3" />
-                          {user.locale}
-                        </span>
-                      )}
                     </div>
                     <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-gray-400">
-                      {user.firstSeenAt && <span>Primeiro: {formatShortDateTime(user.firstSeenAt)}</span>}
-                      {user.lastSeenAt && <span>Último: {formatShortDateTime(user.lastSeenAt)}</span>}
+                      {user.lastSeenAt && <span>Último: {formatDateTime(user.lastSeenAt)}</span>}
                     </div>
                   </div>
                 </div>
