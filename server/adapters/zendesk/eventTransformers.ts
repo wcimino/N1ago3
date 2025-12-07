@@ -1,0 +1,113 @@
+import type { StandardEvent, AuthorType } from "../types.js";
+
+export function mapAuthorType(type: string | undefined): AuthorType {
+  const mapping: Record<string, AuthorType> = {
+    user: "customer",
+    business: "agent",
+    app: "bot",
+  };
+  return mapping[type || ""] || "system";
+}
+
+export function mapMessageEvents(payload: any, root: any, source: string): StandardEvent[] {
+  const events: StandardEvent[] = [];
+  
+  let messages = payload.messages || [];
+  if (!messages.length && payload.message) {
+    messages = [payload.message];
+  }
+
+  for (const message of messages) {
+    const author = message.author || {};
+    const content = message.content || {};
+    const conversationData = payload.conversation || root.conversation || {};
+    const userData = payload.user || root.user;
+
+    events.push({
+      eventType: "message",
+      eventSubtype: content.type || "text",
+      source,
+      sourceEventId: message.id,
+      externalConversationId: conversationData.id,
+      externalUserId: userData?.id,
+      authorType: mapAuthorType(author.type),
+      authorId: author.userId || author.appId,
+      authorName: author.displayName,
+      contentText: content.text,
+      contentPayload: content.type !== "text" ? content : null,
+      occurredAt: message.received ? new Date(message.received) : new Date(),
+      channelType: "chat",
+      metadata: message.metadata,
+    });
+  }
+
+  return events;
+}
+
+export function mapConversationCreated(payload: any, root: any, source: string): StandardEvent {
+  const conversationData = payload.conversation || {};
+  const userData = payload.user || root.user;
+
+  return {
+    eventType: "conversation_started",
+    source,
+    sourceEventId: conversationData.id,
+    externalConversationId: conversationData.id,
+    externalUserId: userData?.id,
+    authorType: "system",
+    occurredAt: new Date(),
+    channelType: "chat",
+    metadata: { conversation: conversationData },
+  };
+}
+
+export function mapReadReceipt(payload: any, root: any, source: string): StandardEvent {
+  const conversationData = payload.conversation || root.conversation || {};
+  const userData = payload.user || root.user;
+
+  return {
+    eventType: "read_receipt",
+    source,
+    externalConversationId: conversationData.id,
+    externalUserId: userData?.id,
+    authorType: mapAuthorType(payload.author?.type),
+    authorId: payload.author?.userId,
+    occurredAt: new Date(),
+    channelType: "chat",
+  };
+}
+
+export function mapTypingEvent(payload: any, root: any, source: string, subtype: "start" | "stop"): StandardEvent {
+  const conversationData = payload.conversation || root.conversation || {};
+  const userData = payload.user || payload.activity?.author?.user || root.user;
+
+  return {
+    eventType: "typing",
+    eventSubtype: subtype,
+    source,
+    externalConversationId: conversationData.id,
+    externalUserId: userData?.id,
+    authorType: mapAuthorType(payload.activity?.author?.type || "user"),
+    authorId: userData?.id,
+    occurredAt: new Date(),
+    channelType: "chat",
+  };
+}
+
+export function mapGenericEvent(event: any, root: any, source: string): StandardEvent {
+  const payload = event.payload || {};
+  const userData = payload.user || root.user;
+  const conversationData = payload.conversation || root.conversation || {};
+
+  return {
+    eventType: event.type || "unknown",
+    source,
+    sourceEventId: payload.id || event.id,
+    externalConversationId: conversationData.id,
+    externalUserId: userData?.id,
+    authorType: "system",
+    occurredAt: new Date(),
+    channelType: "chat",
+    metadata: { originalEvent: event },
+  };
+}

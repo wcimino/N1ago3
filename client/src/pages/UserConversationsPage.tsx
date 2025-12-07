@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { XCircle, MessageCircle, ChevronLeft, ChevronRight, Sparkles, FileText } from "lucide-react";
+import { XCircle, MessageCircle, ChevronLeft, FileText } from "lucide-react";
 import type { UserConversationsMessagesResponse, ImagePayload } from "../types";
-import { MessageBubble } from "../components/ui/MessageBubble";
 import { ImageLightbox } from "../components/ui/ImageLightbox";
 import { LoadingState } from "../components/ui/LoadingSpinner";
 import { SegmentedTabs } from "../components/ui/SegmentedTabs";
+import { ConversationSelector, ConversationSummary, ConversationChat } from "../components/conversation";
 import { useResizablePanel } from "../hooks/useResizablePanel";
 import { useDateFormatters } from "../hooks/useDateFormatters";
 import { fetchApi } from "../lib/queryClient";
@@ -84,134 +84,6 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
     }
   };
 
-  const renderConversationSelector = () => (
-    <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
-      <button
-        onClick={goToPreviousConversation}
-        disabled={selectedConversationIndex === 0}
-        className="p-2 rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-      >
-        <ChevronLeft className="w-5 h-5 text-gray-600" />
-      </button>
-      
-      <div className="flex-1 text-center">
-        <p className="text-sm font-medium text-gray-900">
-          Conversa {selectedConversationIndex + 1} de {sortedConversations.length}
-        </p>
-        <p className="text-xs text-gray-500">
-          {selectedConversation && formatDateTimeShort(selectedConversation.conversation.created_at)}
-          {selectedConversation?.conversation.status === "active" && (
-            <span className="ml-2 px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs">
-              ativa
-            </span>
-          )}
-        </p>
-      </div>
-      
-      <button
-        onClick={goToNextConversation}
-        disabled={selectedConversationIndex === sortedConversations.length - 1}
-        className="p-2 rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-      >
-        <ChevronRight className="w-5 h-5 text-gray-600" />
-      </button>
-    </div>
-  );
-
-  const renderSummary = () => (
-    <div className="flex-1 overflow-y-auto p-4">
-      {selectedConversation?.summary ? (
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-          <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="w-5 h-5 text-purple-600" />
-            <h3 className="font-semibold text-purple-900">Resumo da Conversa</h3>
-          </div>
-          
-          <div className="space-y-3">
-            {selectedConversation.summary.product && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">Produto:</span>
-                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
-                  {selectedConversation.summary.product}
-                </span>
-              </div>
-            )}
-            
-            {selectedConversation.summary.intent && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">Intenção:</span>
-                <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                  {selectedConversation.summary.intent}
-                </span>
-              </div>
-            )}
-            
-            {selectedConversation.summary.confidence !== null && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">Confiança:</span>
-                <span className="text-sm font-medium text-gray-700">
-                  {selectedConversation.summary.confidence}%
-                </span>
-              </div>
-            )}
-            
-            <div className="pt-2 border-t border-gray-100">
-              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                {selectedConversation.summary.text}
-              </p>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center h-full text-gray-400">
-          <Sparkles className="w-12 h-12 text-gray-300 mb-3" />
-          <p>Resumo ainda não gerado</p>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderChat = () => (
-    <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
-      <div className="space-y-3 max-w-2xl mx-auto">
-        {selectedConversation?.messages.length === 0 ? (
-          <div className="text-center py-8 text-gray-400 text-sm">
-            Nenhuma mensagem nesta conversa
-          </div>
-        ) : (
-          selectedConversation?.messages.map((msg) => (
-            <MessageBubble 
-              key={msg.id} 
-              message={msg} 
-              onImageClick={setExpandedImage}
-            />
-          ))
-        )}
-        
-        {selectedConversation?.suggested_response && (
-          <div className="flex justify-end">
-            <div className="max-w-[85%] bg-gray-200 opacity-60 rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl shadow-sm px-4 py-2 border-2 border-dashed border-gray-300">
-              <div className="flex items-center gap-2 mb-1">
-                <Sparkles className="w-3 h-3 text-gray-500" />
-                <span className="text-xs font-medium text-gray-500">
-                  Sugestão IA (não enviada)
-                </span>
-              </div>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap break-words">
-                {selectedConversation.suggested_response.text}
-              </p>
-              <p className="text-[10px] text-gray-400 mt-1 text-right">
-                {formatDateTimeShort(selectedConversation.suggested_response.created_at)}
-              </p>
-            </div>
-          </div>
-        )}
-        
-        <div ref={chatEndRef} />
-      </div>
-    </div>
-  );
-
   return (
     <div className="h-[calc(100vh-180px)] flex flex-col">
       <div className="bg-white rounded-t-lg shadow-sm border-b px-4 py-3 flex items-center gap-3 flex-shrink-0">
@@ -254,7 +126,14 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
           <>
             {/* Mobile Layout */}
             <div className="lg:hidden flex-1 flex flex-col overflow-hidden">
-              {renderConversationSelector()}
+              <ConversationSelector
+                selectedIndex={selectedConversationIndex}
+                totalCount={sortedConversations.length}
+                formattedDate={selectedConversation && formatDateTimeShort(selectedConversation.conversation.created_at)}
+                isActive={selectedConversation?.conversation.status === "active"}
+                onPrevious={goToPreviousConversation}
+                onNext={goToNextConversation}
+              />
               
               <div className="px-3 py-2 bg-white border-b border-gray-200 flex-shrink-0">
                 <SegmentedTabs
@@ -265,14 +144,31 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
               </div>
 
               <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
-                {contentTab === "resumo" && renderSummary()}
-                {contentTab === "chat" && renderChat()}
+                {contentTab === "resumo" && (
+                  <ConversationSummary summary={selectedConversation?.summary} />
+                )}
+                {contentTab === "chat" && (
+                  <ConversationChat
+                    messages={selectedConversation?.messages || []}
+                    suggestedResponse={selectedConversation?.suggested_response}
+                    onImageClick={setExpandedImage}
+                    formatDateTime={formatDateTimeShort}
+                    chatEndRef={chatEndRef}
+                  />
+                )}
               </div>
             </div>
 
             {/* Desktop Layout - Split Panels */}
             <div className="hidden lg:flex h-full flex-col overflow-hidden">
-              {renderConversationSelector()}
+              <ConversationSelector
+                selectedIndex={selectedConversationIndex}
+                totalCount={sortedConversations.length}
+                formattedDate={selectedConversation && formatDateTimeShort(selectedConversation.conversation.created_at)}
+                isActive={selectedConversation?.conversation.status === "active"}
+                onPrevious={goToPreviousConversation}
+                onNext={goToNextConversation}
+              />
               
               <div 
                 ref={containerRef}
@@ -287,7 +183,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                     <FileText className="w-4 h-4 text-purple-600" />
                     <span className="text-sm font-medium text-gray-700">Resumo</span>
                   </div>
-                  {renderSummary()}
+                  <ConversationSummary summary={selectedConversation?.summary} />
                 </div>
 
                 {/* Resize Handle */}
@@ -307,7 +203,13 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                     <MessageCircle className="w-4 h-4 text-blue-600" />
                     <span className="text-sm font-medium text-gray-700">Chat</span>
                   </div>
-                  {renderChat()}
+                  <ConversationChat
+                    messages={selectedConversation?.messages || []}
+                    suggestedResponse={selectedConversation?.suggested_response}
+                    onImageClick={setExpandedImage}
+                    formatDateTime={formatDateTimeShort}
+                    chatEndRef={chatEndRef}
+                  />
                 </div>
               </div>
             </div>

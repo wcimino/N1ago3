@@ -4,7 +4,9 @@ import authRoutes from "./auth.js";
 import webhookLogsRoutes from "./webhookLogs.js";
 import conversationsRoutes from "./conversations.js";
 import eventsRoutes from "./events.js";
-import configRoutes from "./config.js";
+import openaiConfigRoutes from "./openaiConfig.js";
+import openaiLogsRoutes from "./openaiLogs.js";
+import productsRoutes from "./products.js";
 import usersStandardRoutes from "./usersStandard.js";
 
 export function registerRoutes(app: Express) {
@@ -13,6 +15,8 @@ export function registerRoutes(app: Express) {
   app.use(webhookLogsRoutes);
   app.use(conversationsRoutes);
   app.use(eventsRoutes);
-  app.use(configRoutes);
+  app.use(openaiConfigRoutes);
+  app.use(openaiLogsRoutes);
+  app.use(productsRoutes);
   app.use("/api/users-standard", usersStandardRoutes);
 }
