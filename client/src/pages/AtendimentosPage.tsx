@@ -128,12 +128,24 @@ export function AtendimentosPage() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <h3 className="font-medium text-gray-900 truncate">{getUserDisplayName(group)}</h3>
-                          {group.user_info?.authenticated && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-1">
-                              <UserCheck className="w-3 h-3" />
-                              Autenticado
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                            {group.user_info?.authenticated && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <UserCheck className="w-3 h-3" />
+                                Autenticado
+                              </span>
+                            )}
+                            <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                              <MessageCircle className="w-3 h-3" />
+                              {group.conversation_count} {group.conversation_count === 1 ? "conversa" : "conversas"}
                             </span>
-                          )}
+                            {activeCount > 0 && (
+                              <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                {activeCount} ativa{activeCount > 1 ? "s" : ""}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
@@ -166,22 +178,8 @@ export function AtendimentosPage() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500 pl-0 md:pl-0">
-                      <span className="inline-flex items-center gap-1">
-                        <MessageCircle className="w-4 h-4" />
-                        {group.conversation_count} {group.conversation_count === 1 ? "conversa" : "conversas"}
-                      </span>
-                      {activeCount > 0 && (
-                        <span className="inline-flex items-center gap-1 text-green-600">
-                          <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                          {activeCount} ativa{activeCount > 1 ? "s" : ""}
-                        </span>
-                      )}
-                    </div>
-
                     <div className="flex flex-wrap items-center gap-2 text-sm">
                       <span className="text-gray-500">Último atendimento:</span>
-                      <span className="text-xs text-gray-500">{formatShortDateTime(group.last_activity)}</span>
                       {group.last_product && (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           {group.last_product}
@@ -192,6 +190,7 @@ export function AtendimentosPage() {
                           {group.last_intent}
                         </span>
                       )}
+                      <span className="text-xs text-gray-500">{formatShortDateTime(group.last_activity)}</span>
                     </div>
 
                     {group.conversations.length > 1 && (
