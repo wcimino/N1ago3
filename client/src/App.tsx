@@ -1,6 +1,6 @@
 import { Route, Switch, Link } from "wouter";
 import { Home, Users, Activity, Sparkles, Settings, LogOut, MessageCircle, Download } from "lucide-react";
-import { useAuth } from "./shared/hooks/useAuth";
+import { useAuth } from "./hooks/useAuth";
 import { NavLink, EnvironmentBadge } from "./components";
 import { TimezoneProvider } from "./contexts/TimezoneContext";
 import {

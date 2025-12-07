@@ -1,10 +1,10 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { setupAuth } from "./core/replitAuth.js";
+import { setupAuth } from "./replitAuth.js";
 import { registerRoutes } from "./routes/index.js";
-import { startPollingWorker } from "./workers/pollingWorker.js";
-import "./features/events/processor.js";
+import { startPollingWorker } from "./services/pollingWorker.js";
+import "./services/eventProcessor.js";
 
 
 const __filename = fileURLToPath(import.meta.url);

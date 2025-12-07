@@ -1,10 +1,10 @@
-import { authStorage } from "../features/auth/storage.js";
-import { webhookStorage } from "../features/events/webhookStorage.js";
-import { userStorage } from "../features/users/userStorage.js";
-import { conversationStorage } from "../features/conversations/storage.js";
-import { eventStorage } from "../features/events/storage.js";
-import { configStorage } from "../features/ai/configStorage.js";
-import { usersStandardStorage } from "../features/users/storage.js";
+import { authStorage } from "./authStorage.js";
+import { webhookStorage } from "./webhookStorage.js";
+import { userStorage } from "./userStorage.js";
+import { conversationStorage } from "./conversationStorage.js";
+import { eventStorage } from "./eventStorage.js";
+import { configStorage } from "./configStorage.js";
+import { usersStandardStorage } from "./usersStandardStorage.js";
 
 export const storage = {
   ...authStorage,
@@ -16,10 +16,10 @@ export const storage = {
   ...usersStandardStorage,
 };
 
-export { authStorage } from "../features/auth/storage.js";
-export { webhookStorage } from "../features/events/webhookStorage.js";
-export { userStorage } from "../features/users/userStorage.js";
-export { conversationStorage } from "../features/conversations/storage.js";
-export { eventStorage } from "../features/events/storage.js";
-export { configStorage } from "../features/ai/configStorage.js";
-export { usersStandardStorage } from "../features/users/storage.js";
+export { authStorage } from "./authStorage.js";
+export { webhookStorage } from "./webhookStorage.js";
+export { userStorage } from "./userStorage.js";
+export { conversationStorage } from "./conversationStorage.js";
+export { eventStorage } from "./eventStorage.js";
+export { configStorage } from "./configStorage.js";
+export { usersStandardStorage } from "./usersStandardStorage.js";
