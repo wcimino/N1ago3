@@ -75,6 +75,7 @@ export function AtendimentosPage() {
   
   const [productStandardFilter, setProductStandardFilter] = useState<string>(initialProductStandard);
   const [intentFilter, setIntentFilter] = useState<string>(initialIntent);
+  const [handlerFilter, setHandlerFilter] = useState<string>("all");
   
   // Update filters when URL changes
   useEffect(() => {
@@ -84,6 +85,13 @@ export function AtendimentosPage() {
     setProductStandardFilter(productStandard);
     setIntentFilter(intent);
   }, [search]);
+
+  const handlerTabs = [
+    { id: "all", label: "Todos", icon: Users },
+    { id: "bot", label: "Bot Zendesk", icon: Bot },
+    { id: "human", label: "Humano", icon: Headphones },
+    { id: "n1ago", label: "n1ago", icon: Brain },
+  ];
   const { formatShortDateTime } = useDateFormatters();
 
   const { data: filters } = useQuery<FiltersResponse>({
@@ -95,9 +103,10 @@ export function AtendimentosPage() {
     const params = new URLSearchParams();
     if (productStandardFilter) params.set("productStandard", productStandardFilter);
     if (intentFilter) params.set("intent", intentFilter);
+    if (handlerFilter && handlerFilter !== "all") params.set("handler", handlerFilter);
     const queryString = params.toString();
     return queryString ? `/api/conversations/grouped?${queryString}` : "/api/conversations/grouped";
-  }, [productStandardFilter, intentFilter]);
+  }, [productStandardFilter, intentFilter, handlerFilter]);
 
   const {
     data: userGroups,
@@ -112,7 +121,7 @@ export function AtendimentosPage() {
     showingFrom,
     showingTo,
   } = usePaginatedQuery<UserGroup>({
-    queryKey: `conversations-grouped-${productStandardFilter}-${intentFilter}`,
+    queryKey: `conversations-grouped-${productStandardFilter}-${intentFilter}-${handlerFilter}`,
     endpoint,
     limit: 20,
     dataKey: "user_groups",
@@ -130,6 +139,27 @@ export function AtendimentosPage() {
       title="Atendimentos"
       description="Lista de atendimentos agrupados por usuário"
     >
+      <div className="flex border-b">
+        {handlerTabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = handlerFilter === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setHandlerFilter(tab.id)}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                isActive
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="px-4 py-3 border-b bg-gray-50 flex flex-wrap items-center gap-3">
         <Filter className="w-4 h-4 text-gray-500" />
         <div className="flex flex-wrap items-center gap-2">

@@ -115,16 +115,26 @@ export const conversationStorage = {
     };
   },
 
-  async getConversationsGroupedByUser(limit = 50, offset = 0, productStandardFilter?: string, intentFilter?: string) {
+  async getConversationsGroupedByUser(limit = 50, offset = 0, productStandardFilter?: string, intentFilter?: string, handlerFilter?: string) {
     const productCondition = productStandardFilter ? sql`AND lc_filter.last_product_standard = ${productStandardFilter}` : sql``;
     const intentCondition = intentFilter ? sql`AND lc_filter.last_intent = ${intentFilter}` : sql``;
+    
+    let handlerCondition = sql``;
+    if (handlerFilter === 'bot') {
+      handlerCondition = sql`AND (LOWER(lc_filter.current_handler_name) LIKE '%answerbot%' OR LOWER(lc_filter.current_handler_name) LIKE '%zd-answerbot%')`;
+    } else if (handlerFilter === 'human') {
+      handlerCondition = sql`AND (LOWER(lc_filter.current_handler_name) LIKE '%agentworkspace%' OR LOWER(lc_filter.current_handler_name) LIKE '%zd-agentworkspace%')`;
+    } else if (handlerFilter === 'n1ago') {
+      handlerCondition = sql`AND LOWER(lc_filter.current_handler_name) LIKE '%n1ago%'`;
+    }
 
     const userConversations = await db.execute(sql`
       WITH last_conv_filter AS (
         SELECT DISTINCT ON (c.user_id)
           c.user_id,
           cs.product_standard as last_product_standard,
-          cs.intent as last_intent
+          cs.intent as last_intent,
+          c.current_handler_name
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
         WHERE c.user_id IS NOT NULL
@@ -132,7 +142,7 @@ export const conversationStorage = {
       ),
       filtered_users AS (
         SELECT user_id FROM last_conv_filter lc_filter
-        WHERE 1=1 ${productCondition} ${intentCondition}
+        WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition}
       ),
       user_stats AS (
         SELECT 
@@ -188,14 +198,15 @@ export const conversationStorage = {
         SELECT DISTINCT ON (c.user_id)
           c.user_id,
           cs.product_standard as last_product_standard,
-          cs.intent as last_intent
+          cs.intent as last_intent,
+          c.current_handler_name
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
         WHERE c.user_id IS NOT NULL
         ORDER BY c.user_id, c.updated_at DESC
       )
       SELECT COUNT(*) as count FROM last_conv_filter lc_filter
-      WHERE 1=1 ${productCondition} ${intentCondition}
+      WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition}
     `);
 
     return { 
