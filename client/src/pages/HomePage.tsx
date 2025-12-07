@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { MessageCircle, Activity, ChevronRight as ArrowRight, Package, Clock, Calendar, AlertCircle } from "lucide-react";
-import { fetchApi } from "../lib/queryClient";
-import { DonutChart } from "../components/DonutChart";
+import { fetchApi } from "../shared/lib/queryClient";
+import { DonutChart } from "../shared/components/DonutChart";
 import type { UsersStatsResponse, StatsResponse, ProductStatsResponse } from "../types";
 
 function formatNumber(num: number): string {

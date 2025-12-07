@@ -1,3 +1,3 @@
-export { eventBus, EVENTS } from "./eventBus.js";
-export { processRawEvent, processPendingRaws } from "./eventProcessor.js";
-export { startPollingWorker, stopPollingWorker, isPollingWorkerRunning } from "./pollingWorker.js";
+export { eventBus, EVENTS } from "../features/events/eventBus.js";
+export { processRawEvent, processPendingRaws } from "../features/events/processor.js";
+export { startPollingWorker, stopPollingWorker, isPollingWorkerRunning } from "../workers/pollingWorker.js";
