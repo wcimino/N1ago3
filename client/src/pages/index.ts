@@ -10,6 +10,7 @@ export { ClassificationConfigPage } from "./ClassificationConfigPage";
 export { AIPage } from "./AIPage";
 export { EventsLayout } from "./EventsLayout";
 export { UserStandardDetailPage } from "./UserStandardDetailPage";
+export { OrganizationStandardDetailPage } from "./OrganizationStandardDetailPage";
 export { AtendimentosPage } from "./AtendimentosPage";
 export { UserConversationsPage } from "./UserConversationsPage";
 export { AuthorizedUsersPage } from "./AuthorizedUsersPage";

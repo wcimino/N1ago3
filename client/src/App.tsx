@@ -11,6 +11,7 @@ import {
   AIPage,
   EventsLayout,
   UserStandardDetailPage,
+  OrganizationStandardDetailPage,
   AtendimentosPage,
   UserConversationsPage,
   SettingsPage,
@@ -85,6 +86,7 @@ function AuthenticatedApp() {
           <Route path="/cadastro">{() => <CadastroPage activeTab="usuarios" />}</Route>
           <Route path="/cadastro/organizacoes">{() => <CadastroPage activeTab="organizacoes" />}</Route>
           <Route path="/cadastro/users/:email">{(params) => <UserStandardDetailPage params={params} />}</Route>
+          <Route path="/cadastro/organizations/:cnpjRoot">{(params) => <OrganizationStandardDetailPage params={params} />}</Route>
           <Route path="/atendimentos" component={AtendimentosPage} />
           <Route path="/atendimentos/:userId">{(params) => <UserConversationsPage params={params} />}</Route>
           <Route path="/settings" component={SettingsPage} />
