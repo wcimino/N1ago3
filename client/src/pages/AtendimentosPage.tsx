@@ -48,12 +48,12 @@ export function AtendimentosPage() {
         />
       ) : (
         <>
-          <div className="divide-y divide-gray-200 md:divide-y-0 md:grid md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-0 md:gap-4 md:p-4">
+          <div className="divide-y divide-gray-200">
             {userGroups.map((group) => {
               const activeCount = getActiveConversationsCount(group.conversations);
               
               return (
-                <div key={group.user_id} className="p-4 hover:bg-gray-50 transition-colors md:border md:border-gray-200 md:rounded-xl md:shadow-sm md:hover:shadow-md">
+                <div key={group.user_id} className="p-4 hover:bg-gray-50 transition-colors">
                   <div className="flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
