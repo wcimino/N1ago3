@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Package, ArrowRight, RefreshCw, Activity } from "lucide-react";
+import { Package, ArrowRight, RefreshCw, Activity, MessageSquareX } from "lucide-react";
 
 export function MaintenanceTab() {
   const [, navigate] = useLocation();
@@ -59,6 +59,25 @@ export function MaintenanceTab() {
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           Acessar
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="bg-gray-50 rounded-lg p-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+            <MessageSquareX className="w-6 h-6 text-red-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Encerramento de Conversas</h3>
+            <p className="text-sm text-gray-600">Controle o encerramento automático de conversas inativas</p>
+          </div>
+        </div>
+        <button
+          onClick={() => navigate("/settings/auto-close")}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Gerenciar
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>

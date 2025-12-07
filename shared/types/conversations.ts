@@ -6,6 +6,9 @@ export interface Conversation {
   external_app_id: string | null;
   user_id: string | null;
   status: string;
+  external_status: string | null;
+  closed_at: string | null;
+  closed_reason: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -52,6 +55,8 @@ export interface UserConversation {
   id: number;
   external_conversation_id: string;
   status: string;
+  closed_at: string | null;
+  closed_reason: string | null;
   created_at: string;
   updated_at: string;
   product_standard: string | null;
@@ -104,6 +109,8 @@ export interface ConversationWithMessages {
     id: number;
     external_conversation_id: string;
     status: string;
+    closed_at: string | null;
+    closed_reason: string | null;
     created_at: string;
     updated_at: string;
   };

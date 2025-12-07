@@ -4,7 +4,7 @@ import { useAuth } from "./shared/hooks";
 import { NavLink, EnvironmentBadge, N1agoLogo } from "./shared/components";
 import { TimezoneProvider } from "./contexts/TimezoneContext";
 import { AIPage } from "./features/ai";
-import { SettingsPage, ProductStandardsPage, ReprocessingPage } from "./features/settings";
+import { SettingsPage, ProductStandardsPage, ReprocessingPage, AutoClosePage } from "./features/settings";
 import { EventsLayout } from "./features/events";
 import { AtendimentosPage, UserConversationsPage } from "./features/conversations";
 import { CadastroPage, UserStandardDetailPage, OrganizationStandardDetailPage } from "./features/cadastro";
@@ -94,6 +94,7 @@ function AuthenticatedApp() {
           <Route path="/settings" component={SettingsPage} />
           <Route path="/settings/product-standards" component={ProductStandardsPage} />
           <Route path="/settings/reprocessing" component={ReprocessingPage} />
+          <Route path="/settings/auto-close" component={AutoClosePage} />
         </Switch>
       </main>
     </div>

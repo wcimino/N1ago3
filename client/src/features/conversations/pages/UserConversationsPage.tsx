@@ -128,6 +128,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                 totalCount={sortedConversations.length}
                 formattedDate={selectedConversation && formatDateTimeShort(selectedConversation.conversation.created_at)}
                 isActive={selectedConversation?.conversation.status === "active"}
+                closedReason={selectedConversation?.conversation.closed_reason}
                 onPrevious={goToPreviousConversation}
                 onNext={goToNextConversation}
               />
@@ -163,6 +164,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                 totalCount={sortedConversations.length}
                 formattedDate={selectedConversation && formatDateTimeShort(selectedConversation.conversation.created_at)}
                 isActive={selectedConversation?.conversation.status === "active"}
+                closedReason={selectedConversation?.conversation.closed_reason}
                 onPrevious={goToPreviousConversation}
                 onNext={goToNextConversation}
               />

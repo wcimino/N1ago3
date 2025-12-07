@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { reprocessingService, type ReprocessingType } from "../../sync/services/reprocessingService.js";
+import { autoCloseService } from "../../conversations/services/autoCloseService.js";
 
 const router = Router();
 
@@ -49,6 +50,51 @@ router.post("/api/maintenance/reprocessing/reset/:type", async (req, res) => {
 
     await reprocessingService.reset(type);
     res.json({ message: `Reprocessamento de ${type} resetado`, progress: reprocessingService.getProgress(type) });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get("/api/maintenance/auto-close/status", async (req, res) => {
+  try {
+    const status = await autoCloseService.getStatus();
+    res.json(status);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/api/maintenance/auto-close/enable", async (req, res) => {
+  try {
+    autoCloseService.enable();
+    const status = await autoCloseService.getStatus();
+    res.json({ message: "Encerramento automático ativado", status });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/api/maintenance/auto-close/disable", async (req, res) => {
+  try {
+    autoCloseService.disable();
+    const status = await autoCloseService.getStatus();
+    res.json({ message: "Encerramento automático pausado", status });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/api/maintenance/auto-close/close-inactive", async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 10;
+    const closed = await autoCloseService.closeManual(limit);
+    const status = await autoCloseService.getStatus();
+    res.json({ 
+      message: `${closed.length} conversas encerradas`, 
+      closedCount: closed.length,
+      closedConversations: closed.map(c => ({ id: c.id, externalId: c.externalConversationId })),
+      status 
+    });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

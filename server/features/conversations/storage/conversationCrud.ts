@@ -1,7 +1,8 @@
 import { db } from "../../../db.js";
 import { conversations, eventsStandard } from "../../../../shared/schema.js";
-import { eq, desc, sql, and } from "drizzle-orm";
+import { eq, desc, sql, and, lt, ne } from "drizzle-orm";
 import type { ExtractedConversation } from "../../../adapters/types.js";
+import { CONVERSATION_RULES, type ClosedReason } from "../../../config/conversationRules.js";
 
 interface ConversationData {
   externalConversationId: string;
@@ -12,6 +13,13 @@ interface ConversationData {
 }
 
 async function upsertConversation(data: ConversationData) {
+  const existing = await db.select({ id: conversations.id })
+    .from(conversations)
+    .where(eq(conversations.externalConversationId, data.externalConversationId))
+    .limit(1);
+  
+  const isNewConversation = existing.length === 0;
+
   const [conversation] = await db.insert(conversations)
     .values({
       externalConversationId: data.externalConversationId,
@@ -33,7 +41,36 @@ async function upsertConversation(data: ConversationData) {
     })
     .returning();
   
+  if (isNewConversation && data.userExternalId && CONVERSATION_RULES.CLOSE_PREVIOUS_ON_NEW) {
+    try {
+      const closed = await closePreviousConversationsForUser(data.userExternalId, conversation.id);
+      if (closed.length > 0) {
+        console.log(`Closed ${closed.length} previous conversations for user ${data.userExternalId}`);
+      }
+    } catch (error) {
+      console.error(`Failed to close previous conversations for user ${data.userExternalId}:`, error);
+    }
+  }
+  
   return conversation;
+}
+
+async function closePreviousConversationsForUser(userExternalId: string, excludeConversationId: number) {
+  const result = await db.update(conversations)
+    .set({
+      status: 'closed',
+      closedAt: new Date(),
+      closedReason: 'new_conversation',
+      updatedAt: new Date(),
+    })
+    .where(and(
+      eq(conversations.userExternalId, userExternalId),
+      eq(conversations.status, 'active'),
+      ne(conversations.id, excludeConversationId)
+    ))
+    .returning();
+  
+  return result;
 }
 
 export const conversationCrud = {
@@ -107,6 +144,123 @@ export const conversationCrud = {
       .set({
         currentHandler: handlerId,
         currentHandlerName: handlerName,
+        updatedAt: new Date(),
+      })
+      .where(eq(conversations.externalConversationId, externalConversationId))
+      .returning();
+    
+    return result[0] || null;
+  },
+
+  async closeConversation(conversationId: number, reason: ClosedReason) {
+    const result = await db.update(conversations)
+      .set({
+        status: 'closed',
+        closedAt: new Date(),
+        closedReason: reason,
+        updatedAt: new Date(),
+      })
+      .where(eq(conversations.id, conversationId))
+      .returning();
+    
+    return result[0] || null;
+  },
+
+  async closeUserPreviousConversations(userExternalId: string, excludeConversationId?: number) {
+    const conditions = [
+      eq(conversations.userExternalId, userExternalId),
+      eq(conversations.status, 'active'),
+    ];
+    
+    if (excludeConversationId) {
+      conditions.push(ne(conversations.id, excludeConversationId));
+    }
+
+    const result = await db.update(conversations)
+      .set({
+        status: 'closed',
+        closedAt: new Date(),
+        closedReason: 'new_conversation',
+        updatedAt: new Date(),
+      })
+      .where(and(...conditions))
+      .returning();
+    
+    return result;
+  },
+
+  async getInactiveConversations(limit: number = 10) {
+    const cutoffTime = new Date(Date.now() - CONVERSATION_RULES.INACTIVITY_TIMEOUT_MINUTES * 60 * 1000);
+    
+    const result = await db.select()
+      .from(conversations)
+      .where(and(
+        eq(conversations.status, 'active'),
+        lt(conversations.updatedAt, cutoffTime)
+      ))
+      .orderBy(conversations.updatedAt)
+      .limit(limit);
+    
+    return result;
+  },
+
+  async closeInactiveConversations(limit: number = 10) {
+    const cutoffTime = new Date(Date.now() - CONVERSATION_RULES.INACTIVITY_TIMEOUT_MINUTES * 60 * 1000);
+    
+    const result = await db.update(conversations)
+      .set({
+        status: 'closed',
+        closedAt: new Date(),
+        closedReason: 'inactivity',
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(conversations.status, 'active'),
+        lt(conversations.updatedAt, cutoffTime),
+        sql`id IN (SELECT id FROM conversations WHERE status = 'active' AND updated_at < ${cutoffTime} ORDER BY updated_at LIMIT ${limit})`
+      ))
+      .returning();
+    
+    return result;
+  },
+
+  async countInactiveConversations() {
+    const cutoffTime = new Date(Date.now() - CONVERSATION_RULES.INACTIVITY_TIMEOUT_MINUTES * 60 * 1000);
+    
+    const [{ count }] = await db.select({ count: sql<number>`count(*)` })
+      .from(conversations)
+      .where(and(
+        eq(conversations.status, 'active'),
+        lt(conversations.updatedAt, cutoffTime)
+      ));
+    
+    return Number(count);
+  },
+
+  async closeInactiveConversationsManual(limit: number = 10) {
+    const cutoffTime = new Date(Date.now() - CONVERSATION_RULES.INACTIVITY_TIMEOUT_MINUTES * 60 * 1000);
+    
+    const result = await db.update(conversations)
+      .set({
+        status: 'closed',
+        closedAt: new Date(),
+        closedReason: 'manual',
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(conversations.status, 'active'),
+        lt(conversations.updatedAt, cutoffTime),
+        sql`id IN (SELECT id FROM conversations WHERE status = 'active' AND updated_at < ${cutoffTime} ORDER BY updated_at LIMIT ${limit})`
+      ))
+      .returning();
+    
+    return result;
+  },
+
+  async updateExternalStatus(externalConversationId: string, externalStatus: string) {
+    const result = await db.update(conversations)
+      .set({
+        externalStatus,
         updatedAt: new Date(),
       })
       .where(eq(conversations.externalConversationId, externalConversationId))

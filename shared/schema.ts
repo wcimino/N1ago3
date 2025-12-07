@@ -114,6 +114,9 @@ export const conversations = pgTable("conversations", {
   userId: text("user_id"),
   userExternalId: text("user_external_id"),
   status: text("status").default("active").notNull(),
+  externalStatus: text("external_status"),
+  closedAt: timestamp("closed_at"),
+  closedReason: text("closed_reason"),
   currentHandler: text("current_handler"),
   currentHandlerName: text("current_handler_name"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -122,6 +125,7 @@ export const conversations = pgTable("conversations", {
 }, (table) => ({
   userIdIdx: index("idx_conversations_user_id").on(table.userId),
   updatedAtIdx: index("idx_conversations_updated_at").on(table.updatedAt),
+  statusIdx: index("idx_conversations_status").on(table.status),
 }));
 
 export const eventTypeMappings = pgTable("event_type_mappings", {

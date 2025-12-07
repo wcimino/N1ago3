@@ -5,15 +5,24 @@ interface ConversationSelectorProps {
   totalCount: number;
   formattedDate: string | undefined;
   isActive: boolean;
+  closedReason?: string | null;
   onPrevious: () => void;
   onNext: () => void;
 }
+
+const closedReasonLabels: Record<string, string> = {
+  inactivity: "inatividade",
+  new_conversation: "nova conversa",
+  manual: "manual",
+  external: "sistema externo",
+};
 
 export function ConversationSelector({
   selectedIndex,
   totalCount,
   formattedDate,
   isActive,
+  closedReason,
   onPrevious,
   onNext,
 }: ConversationSelectorProps) {
@@ -33,9 +42,13 @@ export function ConversationSelector({
         </p>
         <p className="text-xs text-gray-500">
           {formattedDate}
-          {isActive && (
+          {isActive ? (
             <span className="ml-2 px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs">
               ativa
+            </span>
+          ) : (
+            <span className="ml-2 px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+              encerrada{closedReason && ` (${closedReasonLabels[closedReason] || closedReason})`}
             </span>
           )}
         </p>
