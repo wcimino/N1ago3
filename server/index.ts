@@ -59,11 +59,14 @@ async function initializeApp() {
       console.log("Static files configured");
     }
 
-    startPollingWorker();
-    console.log("Polling worker started");
-    
     isInitialized = true;
     console.log("App initialization complete");
+    
+    // Delay polling worker start to ensure server is fully stable
+    setTimeout(() => {
+      startPollingWorker();
+      console.log("Polling worker started");
+    }, 5000);
   } catch (error) {
     console.error("App initialization failed:", error);
     initError = error as Error;
