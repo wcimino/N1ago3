@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, BookOpen, Edit2, Trash2, X } from "lucide-react";
+import { Plus, Search, BookOpen, X, Lightbulb } from "lucide-react";
 import { KnowledgeBaseForm } from "../components/KnowledgeBaseForm";
 import { KnowledgeBaseCard } from "../components/KnowledgeBaseCard";
+import { SuggestionsPage } from "./SuggestionsPage";
+import { SegmentedTabs } from "../../../shared/components/ui";
 
 interface KnowledgeBaseArticle {
   id: number;
@@ -30,7 +32,13 @@ interface Filters {
   intents: string[];
 }
 
+const tabs = [
+  { id: "articles", label: "Artigos", icon: <BookOpen className="w-4 h-4" /> },
+  { id: "suggestions", label: "Sugestões", icon: <Lightbulb className="w-4 h-4" /> },
+];
+
 export function KnowledgeBasePage() {
+  const [activeTab, setActiveTab] = useState("articles");
   const [showForm, setShowForm] = useState(false);
   const [editingArticle, setEditingArticle] = useState<KnowledgeBaseArticle | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -49,6 +57,7 @@ export function KnowledgeBasePage() {
       if (!res.ok) throw new Error("Failed to fetch articles");
       return res.json();
     },
+    enabled: activeTab === "articles",
   });
 
   const { data: filters } = useQuery<Filters>({
@@ -58,6 +67,7 @@ export function KnowledgeBasePage() {
       if (!res.ok) throw new Error("Failed to fetch filters");
       return res.json();
     },
+    enabled: activeTab === "articles",
   });
 
   const createMutation = useMutation({
@@ -138,18 +148,30 @@ export function KnowledgeBasePage() {
             Repositório de informações para apoio ao atendimento
           </p>
         </div>
-        {!showForm && (
+        {activeTab === "articles" && !showForm && (
           <button
             onClick={() => setShowForm(true)}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Novo Artigo
+            <span className="hidden sm:inline">Novo Artigo</span>
           </button>
         )}
       </div>
 
-      {showForm ? (
+      <div className="px-4 py-3 border-b">
+        <SegmentedTabs
+          tabs={tabs}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+        />
+      </div>
+
+      {activeTab === "suggestions" ? (
+        <div className="p-4">
+          <SuggestionsPage />
+        </div>
+      ) : showForm ? (
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium">

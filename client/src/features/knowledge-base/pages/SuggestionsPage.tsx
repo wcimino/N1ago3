@@ -220,7 +220,7 @@ function SuggestionCard({
   );
 }
 
-export function KnowledgeSuggestionsPage() {
+export function SuggestionsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending");
   const { 
     suggestions, 
