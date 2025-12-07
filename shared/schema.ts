@@ -277,6 +277,27 @@ export const userStandardHasOrganizationStandard = pgTable("user_standard_has_or
   orgIdx: index("idx_user_standard_has_org_org").on(table.organizationStandardId),
 }));
 
+export const zendeskApiLogs = pgTable("zendesk_api_logs", {
+  id: serial("id").primaryKey(),
+  requestType: text("request_type").notNull(),
+  endpoint: text("endpoint").notNull(),
+  method: text("method").notNull(),
+  conversationId: text("conversation_id"),
+  requestPayload: json("request_payload"),
+  responseRaw: json("response_raw"),
+  responseStatus: integer("response_status"),
+  durationMs: integer("duration_ms"),
+  success: boolean("success").notNull(),
+  errorMessage: text("error_message"),
+  contextType: text("context_type"),
+  contextId: text("context_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  conversationIdIdx: index("idx_zendesk_api_logs_conversation_id").on(table.conversationId),
+  requestTypeIdx: index("idx_zendesk_api_logs_request_type").on(table.requestType),
+  createdAtIdx: index("idx_zendesk_api_logs_created_at").on(table.createdAt),
+}));
+
 export const knowledgeBase = pgTable("knowledge_base", {
   id: serial("id").primaryKey(),
   productStandard: text("product_standard").notNull(),
@@ -319,6 +340,9 @@ export type InsertOpenaiApiConfig = Omit<typeof openaiApiConfig.$inferInsert, "i
 
 export type OpenaiApiLog = typeof openaiApiLogs.$inferSelect;
 export type InsertOpenaiApiLog = Omit<typeof openaiApiLogs.$inferInsert, "id" | "createdAt">;
+
+export type ZendeskApiLog = typeof zendeskApiLogs.$inferSelect;
+export type InsertZendeskApiLog = Omit<typeof zendeskApiLogs.$inferInsert, "id" | "createdAt">;
 
 export type SuggestedResponse = typeof responsesSuggested.$inferSelect;
 export type InsertSuggestedResponse = Omit<typeof responsesSuggested.$inferInsert, "id" | "createdAt">;
