@@ -64,6 +64,61 @@ export function ProductStandardsPage() {
     setEditedValues((prev) => ({ ...prev, [product]: value }));
   };
 
+  const renderSaveButton = (p: ProductStandard) => {
+    const isSaving = savingProduct === p.product;
+    const isSaved = savedProducts.has(p.product);
+    const hasChanges = editedValues[p.product] !== (p.productStandard || "");
+
+    if (isSaved) {
+      return (
+        <span className="inline-flex items-center gap-1 text-green-600 text-sm">
+          <CheckCircle2 className="w-4 h-4" />
+          Salvo
+        </span>
+      );
+    }
+
+    return (
+      <button
+        onClick={() => handleSave(p.product)}
+        disabled={isSaving || !editedValues[p.product]?.trim()}
+        className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+          hasChanges && editedValues[p.product]?.trim()
+            ? "bg-blue-600 text-white hover:bg-blue-700"
+            : "bg-gray-100 text-gray-400 cursor-not-allowed"
+        } disabled:opacity-50`}
+      >
+        {isSaving ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <Save className="w-4 h-4" />
+        )}
+        Salvar
+      </button>
+    );
+  };
+
+  const renderMobileCard = (p: ProductStandard) => (
+    <div key={p.product} className="p-4 bg-white border-b last:border-b-0">
+      <div className="flex items-center gap-2 mb-3">
+        <Package className="w-4 h-4 text-gray-400" />
+        <span className="text-sm text-gray-900 font-medium">{p.product}</span>
+      </div>
+      <div className="space-y-3">
+        <input
+          type="text"
+          value={editedValues[p.product] || ""}
+          onChange={(e) => handleInputChange(p.product, e.target.value)}
+          placeholder="Digite o nome padronizado..."
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+        />
+        <div className="flex justify-end">
+          {renderSaveButton(p)}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -74,12 +129,12 @@ export function ProductStandardsPage() {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Padronização de Produtos</h1>
-          <p className="text-gray-600 mt-1">Defina nomes padronizados para os produtos classificados pela IA</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Padronização de Produtos</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">Defina nomes padronizados para os produtos classificados pela IA</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
@@ -104,7 +159,7 @@ export function ProductStandardsPage() {
               </p>
             </div>
 
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="hidden md:block border border-gray-200 rounded-lg overflow-hidden">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
@@ -120,58 +175,34 @@ export function ProductStandardsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {products.map((p) => {
-                    const isSaving = savingProduct === p.product;
-                    const isSaved = savedProducts.has(p.product);
-                    const hasChanges = editedValues[p.product] !== (p.productStandard || "");
-
-                    return (
-                      <tr key={p.product} className="hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <Package className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-900 font-medium">{p.product}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <input
-                            type="text"
-                            value={editedValues[p.product] || ""}
-                            onChange={(e) => handleInputChange(p.product, e.target.value)}
-                            placeholder="Digite o nome padronizado..."
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          {isSaved ? (
-                            <span className="inline-flex items-center gap-1 text-green-600 text-sm">
-                              <CheckCircle2 className="w-4 h-4" />
-                              Salvo
-                            </span>
-                          ) : (
-                            <button
-                              onClick={() => handleSave(p.product)}
-                              disabled={isSaving || !editedValues[p.product]?.trim()}
-                              className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                                hasChanges && editedValues[p.product]?.trim()
-                                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                              } disabled:opacity-50`}
-                            >
-                              {isSaving ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Save className="w-4 h-4" />
-                              )}
-                              Salvar
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {products.map((p) => (
+                    <tr key={p.product} className="hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <Package className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-900 font-medium">{p.product}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="text"
+                          value={editedValues[p.product] || ""}
+                          onChange={(e) => handleInputChange(p.product, e.target.value)}
+                          placeholder="Digite o nome padronizado..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {renderSaveButton(p)}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
+            </div>
+
+            <div className="md:hidden border border-gray-200 rounded-lg overflow-hidden">
+              {products.map(renderMobileCard)}
             </div>
           </div>
         )}

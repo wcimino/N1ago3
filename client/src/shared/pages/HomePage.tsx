@@ -50,60 +50,44 @@ export function HomePage() {
             }
             
             return (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="text-left text-xs font-medium text-gray-500 pb-2">Produto</th>
-                    <th className="text-center text-xs font-medium text-gray-500 pb-2 w-16">
-                      <span className="flex items-center justify-center gap-1">
+              <div className="space-y-2">
+                {allProducts.map((product) => (
+                  <div key={product} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                    <div className="min-w-0 flex-1 mr-2">
+                      <span className="text-sm text-gray-800 truncate block">{product}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-1" title="Última hora">
                         <Clock className="w-3 h-3 text-orange-500" />
-                        1h
-                      </span>
-                    </th>
-                    <th className="text-center text-xs font-medium text-gray-500 pb-2 w-16">
-                      <span className="flex items-center justify-center gap-1">
-                        <Calendar className="w-3 h-3 text-orange-500" />
-                        24h
-                      </span>
-                    </th>
-                    <th className="w-8"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allProducts.map((product) => (
-                    <tr key={product} className="border-b border-gray-50 last:border-0">
-                      <td className="py-1.5 text-gray-800">{product}</td>
-                      <td className="py-1.5 text-center">
                         {lastHourMap.get(product) ? (
-                          <span className="font-semibold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded text-xs">
+                          <span className="font-semibold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
                             {lastHourMap.get(product)}
                           </span>
                         ) : (
-                          <span className="text-gray-300">-</span>
+                          <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
                         )}
-                      </td>
-                      <td className="py-1.5 text-center">
+                      </div>
+                      <div className="flex items-center gap-1" title="Hoje">
+                        <Calendar className="w-3 h-3 text-orange-500" />
                         {todayMap.get(product) ? (
-                          <span className="font-semibold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded text-xs">
+                          <span className="font-semibold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
                             {todayMap.get(product)}
                           </span>
                         ) : (
-                          <span className="text-gray-300">-</span>
+                          <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
                         )}
-                      </td>
-                      <td className="py-1.5 text-center">
-                        <Link
-                          href={`/atendimentos?productStandard=${encodeURIComponent(product)}`}
-                          className="text-gray-400 hover:text-blue-600 transition-colors"
-                          title={`Ver atendimentos de ${product}`}
-                        >
-                          <ArrowRight className="w-4 h-4" />
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                      <Link
+                        href={`/atendimentos?productStandard=${encodeURIComponent(product)}`}
+                        className="text-gray-400 hover:text-blue-600 transition-colors p-1"
+                        title={`Ver atendimentos de ${product}`}
+                      >
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
             );
           })()}
         </div>
