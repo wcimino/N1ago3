@@ -119,8 +119,7 @@ export const knowledgeBaseService = {
 
   async findRelatedArticles(
     product?: string,
-    category1?: string,
-    category2?: string,
+    intent?: string,
     descriptionKeywords?: string[],
     options: SearchOptions = {}
   ): Promise<SearchResult[]> {
@@ -145,20 +144,14 @@ export const knowledgeBaseService = {
         }
       }
 
-      if (category1 && article.category1) {
-        if (article.category1.toLowerCase() === category1.toLowerCase()) {
-          score += 25;
-          matchedFields.push("category1");
-        } else if (article.category1.toLowerCase().includes(category1.toLowerCase())) {
-          score += 10;
-          matchedFields.push("category1");
-        }
-      }
-
-      if (category2 && article.category2) {
-        if (article.category2.toLowerCase() === category2.toLowerCase()) {
+      if (intent && article.intent) {
+        if (article.intent.toLowerCase() === intent.toLowerCase()) {
+          score += 30;
+          matchedFields.push("intent");
+        } else if (article.intent.toLowerCase().includes(intent.toLowerCase()) ||
+                   intent.toLowerCase().includes(article.intent.toLowerCase())) {
           score += 15;
-          matchedFields.push("category2");
+          matchedFields.push("intent");
         }
       }
 

@@ -66,8 +66,7 @@ export async function extractConversationKnowledge(event: EventStandard): Promis
 
     const relatedArticles = await knowledgeBaseService.findRelatedArticles(
       classification?.productStandard || undefined,
-      classification?.category1 || undefined,
-      classification?.category2 || undefined,
+      classification?.intent || undefined,
       descriptionKeywords,
       { limit: 3, minScore: 30 }
     );

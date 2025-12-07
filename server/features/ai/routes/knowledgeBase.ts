@@ -109,7 +109,7 @@ router.delete("/api/knowledge-base/:id", async (req, res) => {
 
 router.get("/api/knowledge-base-search", isAuthenticated, requireAuthorizedUser, async (req, res) => {
   try {
-    const { product, category1, category2, keywords, limit } = req.query;
+    const { product, intent, keywords, limit } = req.query;
 
     const keywordsArray = keywords 
       ? (keywords as string).split(",").map(k => k.trim()).filter(k => k.length > 0)
@@ -117,8 +117,7 @@ router.get("/api/knowledge-base-search", isAuthenticated, requireAuthorizedUser,
 
     const results = await knowledgeBaseService.findRelatedArticles(
       product as string | undefined,
-      category1 as string | undefined,
-      category2 as string | undefined,
+      intent as string | undefined,
       keywordsArray,
       { limit: parseInt(limit as string) || 10 }
     );
@@ -126,7 +125,7 @@ router.get("/api/knowledge-base-search", isAuthenticated, requireAuthorizedUser,
     res.json({
       results,
       total: results.length,
-      query: { product, category1, category2, keywords: keywordsArray },
+      query: { product, intent, keywords: keywordsArray },
     });
   } catch (error) {
     console.error("Error searching knowledge base:", error);

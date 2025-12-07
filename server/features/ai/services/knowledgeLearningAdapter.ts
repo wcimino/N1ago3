@@ -11,6 +11,7 @@ export interface LearningPayload {
   }>;
   currentSummary: string | null;
   conversationHandler: string | null;
+  relatedArticles?: string | null;
 }
 
 export interface ExtractedKnowledge {
@@ -79,7 +80,10 @@ CONVERSA:
 {{MENSAGENS}}
 
 RESUMO DA CONVERSA:
-{{RESUMO}}`;
+{{RESUMO}}
+
+ARTIGOS RELACIONADOS NA BASE DE CONHECIMENTO:
+{{ARTIGOS_RELACIONADOS}}`;
 
 export async function extractKnowledge(
   payload: LearningPayload,
@@ -94,7 +98,8 @@ export async function extractKnowledge(
 
   const promptUser = (promptTemplate || DEFAULT_PROMPT)
     .replace('{{MENSAGENS}}', messagesContext || 'Nenhuma mensagem.')
-    .replace('{{RESUMO}}', payload.currentSummary || 'Nenhum resumo disponível.');
+    .replace('{{RESUMO}}', payload.currentSummary || 'Nenhum resumo disponível.')
+    .replace('{{ARTIGOS_RELACIONADOS}}', payload.relatedArticles || 'Nenhum artigo relacionado encontrado.');
 
   const promptSystem = "Você é um especialista em extrair conhecimento de conversas de atendimento ao cliente. Responda sempre em JSON válido.";
 

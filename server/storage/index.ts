@@ -8,6 +8,7 @@ import { organizationsStandardStorage } from "../features/cadastro/storage/organ
 import { knowledgeBaseStorage } from "../features/ai/storage/knowledgeBaseStorage.js";
 import { knowledgeSuggestionsStorage } from "../features/ai/storage/knowledgeSuggestionsStorage.js";
 import { configStorage } from "../features/ai/storage/configStorage.js";
+import { classificationStorage } from "../features/ai/storage/classificationStorage.js";
 import { webhookStorage } from "../features/export/storage/webhookStorage.js";
 
 export const storage = {
@@ -17,6 +18,7 @@ export const storage = {
   ...conversationStorage,
   ...eventStorage,
   ...configStorage,
+  ...classificationStorage,
   ...usersStandardStorage,
   ...knowledgeBaseStorage,
   ...knowledgeSuggestionsStorage,

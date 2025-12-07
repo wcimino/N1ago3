@@ -3,6 +3,26 @@ import { conversationsSummary } from "../../../../shared/schema.js";
 import { eq, sql, gte, and, isNotNull } from "drizzle-orm";
 
 export const classificationStorage = {
+  async getConversationClassification(conversationId: number): Promise<{
+    product: string | null;
+    productStandard: string | null;
+    intent: string | null;
+    confidence: number | null;
+  } | null> {
+    const result = await db
+      .select({
+        product: conversationsSummary.product,
+        productStandard: conversationsSummary.productStandard,
+        intent: conversationsSummary.intent,
+        confidence: conversationsSummary.confidence,
+      })
+      .from(conversationsSummary)
+      .where(eq(conversationsSummary.conversationId, conversationId))
+      .limit(1);
+
+    return result[0] || null;
+  },
+
   async updateConversationClassification(
     conversationId: number, 
     data: { product: string | null; intent: string | null; confidence: number | null }
