@@ -41,32 +41,47 @@ export interface LearningResult {
   error?: string;
 }
 
-const DEFAULT_PROMPT = `Você é um especialista em extrair conhecimento de conversas de atendimento ao cliente para criar artigos de base de conhecimento.
+const DEFAULT_PROMPT = `Você é um especialista em criar artigos de base de conhecimento a partir de conversas de atendimento ao cliente.
 
-Analise a conversa abaixo e extraia o conhecimento relevante. Identifique:
-1. O produto principal envolvido (ex: Conta Digital, Cartão de Crédito, Empréstimo)
-2. O subproduto específico (ex: Pix, Fatura, Limite)
-3. A categoria do problema nível 1 (ex: Limite, Bloqueio, Estorno)
-4. A categoria do problema nível 2 (ex: Aumento, Redução, Liberação)
-5. Uma descrição clara do problema/situação do cliente
-6. A solução ou orientação dada ao cliente
-7. Observações relevantes
+## REGRAS IMPORTANTES:
 
-Seja criterioso na qualidade:
-- Se a conversa não contiver uma solução clara, marque isComplete como false
-- Se houver incerteza na orientação, marque isUncertain como true
-- Se a orientação parecer incorreta ou desatualizada, marque possibleError como true
-- Se precisar de revisão humana por qualquer motivo, marque needsReview como true
+### 1. UM ASSUNTO POR ARTIGO
+- Cada artigo deve tratar de APENAS UM tema/problema específico
+- Se a conversa menciona múltiplos assuntos (ex: "antecipação" e "repasse"), escolha o PRINCIPAL que foi resolvido
+- NÃO misture temas diferentes no mesmo artigo (ex: NÃO misture "valores não recebidos" com "plano de antecipação")
 
-Retorne APENAS um JSON válido no seguinte formato:
+### 2. SOLUÇÃO GENÉRICA E REPLICÁVEL
+- A solução deve ser GENÉRICA e aplicável a qualquer cliente com o mesmo problema
+- NÃO inclua detalhes específicos do cliente na solução (ex: nomes, planos específicos, valores)
+- A solução deve responder: "O que um atendente deve fazer quando qualquer cliente tiver esse problema?"
+- Exemplo RUIM: "Cliente foi informado que possui plano iFood Delivery e precisa usar Portal do Parceiro"
+- Exemplo BOM: "Orientar cliente sobre como acessar informações de antecipação pelo aplicativo"
+
+### 3. OBSERVAÇÕES PARA DETALHES ESPECÍFICOS
+- Use o campo "observations" para detalhes específicos que podem ser úteis mas não são a regra geral
+- Exemplo: "Alguns clientes podem ter planos diferentes que requerem acesso por outros canais"
+
+## IDENTIFICAÇÃO:
+1. Produto principal (ex: Antecipação, Repasse, Conta Digital, Cartão)
+2. Subproduto específico (ex: Receber Agora, Agenda de Recebíveis)
+3. Categoria do problema (ex: Solicitação, Consulta, Reclamação, Cancelamento)
+4. Subcategoria (ex: Valores, Prazo, Contratação)
+
+## QUALIDADE:
+- isComplete = false: se NÃO houver solução clara e replicável
+- isUncertain = true: se a orientação não for definitiva
+- possibleError = true: se a orientação parecer incorreta
+- needsReview = true: se misturar assuntos ou tiver detalhes muito específicos
+
+Retorne APENAS um JSON válido:
 {
-  "productStandard": "string ou null",
-  "subproductStandard": "string ou null",
-  "category1": "string ou null",
-  "category2": "string ou null",
-  "description": "descrição da situação do cliente",
-  "resolution": "solução ou orientação dada",
-  "observations": "observações adicionais ou null",
+  "productStandard": "produto principal",
+  "subproductStandard": "subproduto ou null",
+  "category1": "categoria principal",
+  "category2": "subcategoria ou null",
+  "description": "descrição GENÉRICA do problema (aplicável a qualquer cliente)",
+  "resolution": "solução GENÉRICA e replicável (sem detalhes específicos do cliente)",
+  "observations": "detalhes específicos ou contextos especiais ou null",
   "confidenceScore": 0-100,
   "qualityFlags": {
     "isComplete": true/false,
