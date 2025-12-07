@@ -54,6 +54,8 @@ export interface UserConversation {
   status: string;
   created_at: string;
   updated_at: string;
+  product: string | null;
+  intent: string | null;
 }
 
 export interface UserGroup {
@@ -62,6 +64,8 @@ export interface UserGroup {
   last_activity: string;
   first_activity: string;
   conversations: UserConversation[];
+  last_product: string | null;
+  last_intent: string | null;
   user_info: {
     id: number;
     external_id: string | null;

@@ -119,32 +119,48 @@ export const conversationStorage = {
     const userConversations = await db.execute(sql`
       WITH user_stats AS (
         SELECT 
-          user_id,
+          c.user_id,
           COUNT(*) as conversation_count,
-          MAX(updated_at) as last_activity,
-          MIN(created_at) as first_activity,
+          MAX(c.updated_at) as last_activity,
+          MIN(c.created_at) as first_activity,
           ARRAY_AGG(
             JSON_BUILD_OBJECT(
-              'id', id,
-              'external_conversation_id', external_conversation_id,
-              'status', status,
-              'created_at', TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
-              'updated_at', TO_CHAR(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
-            ) ORDER BY created_at ASC
+              'id', c.id,
+              'external_conversation_id', c.external_conversation_id,
+              'status', c.status,
+              'created_at', TO_CHAR(c.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+              'updated_at', TO_CHAR(c.updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+              'product', cs.product,
+              'intent', cs.intent
+            ) ORDER BY c.created_at ASC
           ) as conversations
-        FROM conversations
-        WHERE user_id IS NOT NULL
-        GROUP BY user_id
+        FROM conversations c
+        LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
+        WHERE c.user_id IS NOT NULL
+        GROUP BY c.user_id
         ORDER BY last_activity DESC
         LIMIT ${limit} OFFSET ${offset}
+      ),
+      last_conv AS (
+        SELECT DISTINCT ON (c.user_id)
+          c.user_id,
+          cs.product as last_product,
+          cs.intent as last_intent
+        FROM conversations c
+        LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
+        WHERE c.user_id IS NOT NULL
+        ORDER BY c.user_id, c.updated_at DESC
       )
       SELECT 
-        user_id,
-        conversation_count,
-        TO_CHAR(last_activity, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as last_activity,
-        TO_CHAR(first_activity, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as first_activity,
-        conversations
-      FROM user_stats
+        us.user_id,
+        us.conversation_count,
+        TO_CHAR(us.last_activity, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as last_activity,
+        TO_CHAR(us.first_activity, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as first_activity,
+        us.conversations,
+        lc.last_product,
+        lc.last_intent
+      FROM user_stats us
+      LEFT JOIN last_conv lc ON lc.user_id = us.user_id
     `);
 
     const [{ count }] = await db.select({ 
