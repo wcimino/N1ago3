@@ -1,6 +1,6 @@
 import { db } from "../db.js";
-import { usersStandard, usersStandardHistory } from "../../shared/schema.js";
-import { eq, sql } from "drizzle-orm";
+import { usersStandard, usersStandardHistory, users, conversations } from "../../shared/schema.js";
+import { eq, sql, gte, and } from "drizzle-orm";
 import type { UserStandard, InsertUserStandard } from "../../shared/schema.js";
 import type { StandardUser } from "../adapters/types.js";
 
@@ -112,5 +112,29 @@ export const usersStandardStorage = {
       .offset(offset);
 
     return { users, total };
+  },
+
+  async getConversationCountsByEmail(emails: string[]): Promise<Map<string, number>> {
+    if (emails.length === 0) return new Map();
+    
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    
+    const result = await db.execute(sql`
+      SELECT 
+        us.email,
+        COUNT(DISTINCT c.id) as conversation_count
+      FROM users_standard us
+      LEFT JOIN users u ON u.profile->>'email' = us.email
+      LEFT JOIN conversations c ON c.user_id = u.sunshine_id 
+        AND c.created_at >= ${sevenDaysAgo}
+      WHERE us.email = ANY(${emails})
+      GROUP BY us.email
+    `);
+
+    const counts = new Map<string, number>();
+    for (const row of result.rows as any[]) {
+      counts.set(row.email, Number(row.conversation_count) || 0);
+    }
+    return counts;
   },
 };
