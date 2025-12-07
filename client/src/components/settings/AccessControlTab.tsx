@@ -121,6 +121,7 @@ export function AccessControlTab() {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Adicionado em</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Adicionado por</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Último acesso</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
                   </tr>
                 </thead>
@@ -133,6 +134,9 @@ export function AccessControlTab() {
                         {user.createdAt ? formatShortDateTime(user.createdAt) : "-"}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500">{user.createdBy || "-"}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">
+                        {user.lastAccess ? formatShortDateTime(user.lastAccess) : "-"}
+                      </td>
                       <td className="px-4 py-3">
                         <button
                           onClick={() => removeMutation.mutate(user.id)}
@@ -159,6 +163,7 @@ export function AccessControlTab() {
                       <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-gray-500">
                         {user.createdAt && <span>Adicionado: {formatShortDateTime(user.createdAt)}</span>}
                         {user.createdBy && <span>Por: {user.createdBy}</span>}
+                        {user.lastAccess && <span>Último acesso: {formatShortDateTime(user.lastAccess)}</span>}
                       </div>
                     </div>
                     <button

@@ -34,4 +34,5 @@ export interface AuthorizedUser {
   name: string | null;
   createdAt: string;
   createdBy: string | null;
+  lastAccess: string | null;
 }
