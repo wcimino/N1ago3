@@ -73,7 +73,7 @@ export function UserStandardDetailPage({ params }: UserStandardDetailPageProps) 
         />
         <div className="text-center mt-4">
           <button
-            onClick={() => navigate("/users")}
+            onClick={() => navigate("/cadastro")}
             className="text-blue-600 hover:text-blue-800"
           >
             Voltar para lista
@@ -88,7 +88,7 @@ export function UserStandardDetailPage({ params }: UserStandardDetailPageProps) 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-4 py-3 border-b flex items-center gap-3">
           <button
-            onClick={() => navigate("/users")}
+            onClick={() => navigate("/cadastro")}
             className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900"
           >
             <ChevronLeft className="w-5 h-5" />
