@@ -54,8 +54,12 @@ const DEFAULT_PROMPT = `Você é um especialista em criar artigos de base de con
 - A solução deve ser GENÉRICA e aplicável a qualquer cliente com o mesmo problema
 - NÃO inclua detalhes específicos do cliente na solução (ex: nomes, planos específicos, valores)
 - A solução deve responder: "O que um atendente deve fazer quando qualquer cliente tiver esse problema?"
-- Exemplo RUIM: "Cliente foi informado que possui plano iFood Delivery e precisa usar Portal do Parceiro"
-- Exemplo BOM: "Orientar cliente sobre como acessar informações de antecipação pelo aplicativo"
+- IMPORTANTE: Escreva a solução no INFINITIVO, como uma instrução para o atendente:
+  - Exemplo RUIM: "Cliente foi informado sobre o plano" (passado, específico)
+  - Exemplo RUIM: "Orientação para clicar em..." (substantivo)
+  - Exemplo BOM: "Orientar o cliente a clicar em 'Esqueci minha senha' e seguir o passo a passo"
+  - Exemplo BOM: "Verificar se o cliente possui saldo disponível e orientar sobre o prazo de liberação"
+  - Exemplo BOM: "Informar ao cliente que o prazo para estorno é de até 7 dias úteis"
 
 ### 3. OBSERVAÇÕES PARA DETALHES ESPECÍFICOS
 - Use o campo "observations" para detalhes específicos que podem ser úteis mas não são a regra geral
@@ -80,7 +84,7 @@ Retorne APENAS um JSON válido:
   "category1": "categoria principal",
   "category2": "subcategoria ou null",
   "description": "descrição GENÉRICA do problema (aplicável a qualquer cliente)",
-  "resolution": "solução GENÉRICA e replicável (sem detalhes específicos do cliente)",
+  "resolution": "instrução no INFINITIVO para o atendente (ex: Orientar o cliente a...)",
   "observations": "detalhes específicos ou contextos especiais ou null",
   "confidenceScore": 0-100,
   "qualityFlags": {
