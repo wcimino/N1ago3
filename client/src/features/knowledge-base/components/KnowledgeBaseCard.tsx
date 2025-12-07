@@ -68,20 +68,11 @@ export function KnowledgeBaseCard({ article, onEdit, onDelete }: KnowledgeBaseCa
               </div>
             </div>
 
-            <p className={`text-sm text-gray-800 leading-relaxed ${isExpanded ? '' : 'line-clamp-2'}`}>
-              {article.description}
-            </p>
-
             {!isExpanded && (
-              <p className="text-xs text-gray-400 mt-2 line-clamp-1">
-                <span className="text-green-600 font-medium">Solução:</span>{" "}
-                {article.resolution}
-              </p>
+              <div className="text-xs text-gray-400 mt-1">
+                Atualizado há {timeAgo}
+              </div>
             )}
-
-            <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
-              <span>Atualizado há {timeAgo}</span>
-            </div>
           </div>
 
           <div className="flex flex-col items-center gap-1 shrink-0">
@@ -152,6 +143,17 @@ export function KnowledgeBaseCard({ article, onEdit, onDelete }: KnowledgeBaseCa
 
       {isExpanded && (
         <div className="border-t bg-gray-50 p-4 space-y-4">
+          {article.description && (
+            <div>
+              <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+                Situação
+              </h4>
+              <p className="text-sm text-gray-700">
+                {article.description}
+              </p>
+            </div>
+          )}
+
           <div>
             <h4 className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-2">
               Solução
