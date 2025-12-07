@@ -1,8 +1,8 @@
 import { useLocation } from "wouter";
 import { Building2, ChevronRight } from "lucide-react";
-import { LoadingState, EmptyState, Pagination } from "../components";
-import { useDateFormatters } from "../hooks/useDateFormatters";
-import { usePaginatedQuery } from "../hooks/usePaginatedQuery";
+import { LoadingState, EmptyState, Pagination } from "../shared/components";
+import { useDateFormatters } from "../shared/hooks";
+import { usePaginatedQuery } from "../shared/hooks";
 
 interface OrganizationStandard {
   id: number;

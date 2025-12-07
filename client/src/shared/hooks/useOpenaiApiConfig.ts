@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchApi, apiRequest } from "../lib/queryClient";
-import type { EventTypeMappingsResponse } from "../types";
+import { fetchApi, apiRequest } from "../../lib/queryClient";
+import type { EventTypeMappingsResponse } from "../../types";
 
 export interface OpenaiApiConfigResponse {
   id?: number;

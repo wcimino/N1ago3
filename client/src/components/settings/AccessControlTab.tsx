@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { apiRequest, fetchApi } from "../../lib/queryClient";
 import { LoadingState, EmptyState, LoadingSpinner } from "../index";
-import { useDateFormatters } from "../../hooks/useDateFormatters";
+import { useDateFormatters } from "../../shared/hooks";
 import type { AuthorizedUser } from "../../types";
 
 export function AccessControlTab() {

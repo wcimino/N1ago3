@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { getAuthorColor, isCustomerMessage } from "../../../lib/messageUtils";
-import { useDateFormatters } from "../../../hooks/useDateFormatters";
+import { useDateFormatters } from "../../hooks";
 import type { Message, ImagePayload } from "../../../types";
 
 interface MessageBubbleProps {

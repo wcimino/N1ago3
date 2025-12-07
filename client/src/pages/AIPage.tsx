@@ -1,4 +1,4 @@
-import { TabbedLayout } from "../components/TabbedLayout";
+import { TabbedLayout } from "../shared/components";
 import { OpenaiSummaryConfigPage } from "./OpenaiSummaryConfigPage";
 import { ClassificationConfigPage } from "./ClassificationConfigPage";
 import { ResponseConfigPage } from "./ResponseConfigPage";

@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { Modal, ModalField, ModalGrid, ModalCodeBlock, LoadingState } from "../shared/components/ui";
-import { StatusBadge } from "./StatusBadge";
-import { useDateFormatters } from "../hooks/useDateFormatters";
-import { fetchApi } from "../lib/queryClient";
-import type { WebhookLogDetail } from "../types";
+import { Modal, ModalField, ModalGrid, ModalCodeBlock, LoadingState } from "../ui";
+import { StatusBadge } from "../badges";
+import { useDateFormatters } from "../../hooks";
+import { fetchApi } from "../../../lib/queryClient";
+import type { WebhookLogDetail } from "../../../types";
 
 interface LogDetailModalProps {
   logId: number;

@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Eye } from "lucide-react";
-import { EventTypeBadge, AuthorTypeBadge, DataTable, EventDetailModal, type Column } from "../components";
-import { useDateFormatters } from "../hooks/useDateFormatters";
+import { EventTypeBadge, AuthorTypeBadge, DataTable, EventDetailModal, type Column } from "../shared/components";
+import { useDateFormatters } from "../shared/hooks";
 import { fetchApi } from "../lib/queryClient";
-import { usePaginatedQuery } from "../hooks/usePaginatedQuery";
+import { usePaginatedQuery } from "../shared/hooks";
 import type { StandardEvent, StandardEventsStatsResponse } from "../types";
 
 export function EventsStandardPage() {

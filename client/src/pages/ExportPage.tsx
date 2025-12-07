@@ -1,4 +1,4 @@
-import { TabbedLayout } from "../components/TabbedLayout";
+import { TabbedLayout } from "../shared/components";
 import { ExportSummariesPage } from "./ExportSummariesPage";
 
 const tabs = [

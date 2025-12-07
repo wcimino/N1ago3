@@ -1,7 +1,7 @@
 import { Users } from "lucide-react";
-import { AuthBadge } from "./AuthBadge";
-import { useDateFormatters } from "../hooks/useDateFormatters";
-import type { User } from "../types";
+import { AuthBadge } from "../badges";
+import { useDateFormatters } from "../../hooks";
+import type { User } from "../../../types";
 
 interface UserDetailModalProps {
   user: User;

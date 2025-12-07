@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Eye } from "lucide-react";
-import { StatusBadge } from "../../../components/StatusBadge";
-import { LogDetailModal } from "../../../components/LogDetailModal";
+import { StatusBadge } from "../../../shared/components";
+import { LogDetailModal } from "../../../shared/components";
 import { DataTable, type Column } from "../../../shared/components/ui/DataTable";
 import { useDateFormatters, usePaginatedQuery } from "../../../shared/hooks";
 import type { WebhookLog } from "../../../types";

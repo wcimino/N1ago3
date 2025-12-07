@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchWithAuth } from "../lib/queryClient";
+import { fetchWithAuth } from "../../lib/queryClient";
 
 interface AuthUser {
   id: string;

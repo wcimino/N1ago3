@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { ChevronLeft, Building2, FileText, Clock, History, Users } from "lucide-react";
-import { LoadingState, EmptyState } from "../components";
-import { useDateFormatters } from "../hooks/useDateFormatters";
+import { LoadingState, EmptyState } from "../shared/components";
+import { useDateFormatters } from "../shared/hooks";
 import { fetchApi } from "../lib/queryClient";
 
 interface OrganizationStandard {

@@ -1,4 +1,4 @@
-import { TabbedLayout } from "../components/TabbedLayout";
+import { TabbedLayout } from "../shared/components";
 import { EventsStandardPage } from "./EventsStandardPage";
 import { ZendeskConversationsRawPage } from "./ZendeskConversationsRawPage";
 import { EventTypeMappingsPage } from "./EventTypeMappingsPage";
