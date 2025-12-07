@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { knowledgeBaseStorage } from "../../../storage/index.js";
+import { knowledgeBaseService } from "../services/knowledgeBaseService.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
 import type { InsertKnowledgeBaseArticle } from "../../../../shared/schema.js";
 
 const router = Router();
@@ -102,6 +104,96 @@ router.delete("/api/knowledge-base/:id", async (req, res) => {
   } catch (error) {
     console.error("Error deleting article:", error);
     res.status(500).json({ error: "Failed to delete article" });
+  }
+});
+
+router.get("/api/knowledge-base-search", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+  try {
+    const { product, category1, category2, keywords, limit } = req.query;
+
+    const keywordsArray = keywords 
+      ? (keywords as string).split(",").map(k => k.trim()).filter(k => k.length > 0)
+      : undefined;
+
+    const results = await knowledgeBaseService.findRelatedArticles(
+      product as string | undefined,
+      category1 as string | undefined,
+      category2 as string | undefined,
+      keywordsArray,
+      { limit: parseInt(limit as string) || 10 }
+    );
+
+    res.json({
+      results,
+      total: results.length,
+      query: { product, category1, category2, keywords: keywordsArray },
+    });
+  } catch (error) {
+    console.error("Error searching knowledge base:", error);
+    res.status(500).json({ error: "Failed to search knowledge base" });
+  }
+});
+
+router.get("/api/knowledge-base-search/product", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+  try {
+    const { q, limit } = req.query;
+
+    if (!q) {
+      return res.status(400).json({ error: "Query parameter 'q' is required" });
+    }
+
+    const results = await knowledgeBaseService.searchByProduct(
+      q as string,
+      { limit: parseInt(limit as string) || 10 }
+    );
+
+    res.json({ results, total: results.length });
+  } catch (error) {
+    console.error("Error searching by product:", error);
+    res.status(500).json({ error: "Failed to search by product" });
+  }
+});
+
+router.get("/api/knowledge-base-search/category", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+  try {
+    const { category1, category2, limit } = req.query;
+
+    if (!category1) {
+      return res.status(400).json({ error: "Query parameter 'category1' is required" });
+    }
+
+    const results = await knowledgeBaseService.searchByCategory(
+      category1 as string,
+      category2 as string | undefined,
+      { limit: parseInt(limit as string) || 10 }
+    );
+
+    res.json({ results, total: results.length });
+  } catch (error) {
+    console.error("Error searching by category:", error);
+    res.status(500).json({ error: "Failed to search by category" });
+  }
+});
+
+router.get("/api/knowledge-base-search/keywords", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+  try {
+    const { q, limit } = req.query;
+
+    if (!q) {
+      return res.status(400).json({ error: "Query parameter 'q' is required" });
+    }
+
+    const keywords = (q as string).split(",").map(k => k.trim()).filter(k => k.length > 0);
+
+    const results = await knowledgeBaseService.searchByKeywords(
+      keywords,
+      { limit: parseInt(limit as string) || 10 }
+    );
+
+    res.json({ results, total: results.length, keywords });
+  } catch (error) {
+    console.error("Error searching by keywords:", error);
+    res.status(500).json({ error: "Failed to search by keywords" });
   }
 });
 

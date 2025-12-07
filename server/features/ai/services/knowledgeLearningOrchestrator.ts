@@ -1,5 +1,6 @@
 import { storage } from "../../../storage/index.js";
 import { extractAndSaveKnowledge, type LearningPayload } from "./knowledgeLearningAdapter.js";
+import { knowledgeBaseService } from "./knowledgeBaseService.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 
 export async function shouldExtractKnowledge(event: EventStandard): Promise<boolean> {
@@ -49,6 +50,7 @@ export async function extractConversationKnowledge(event: EventStandard): Promis
   try {
     const last20Messages = await storage.getLast20MessagesForConversation(event.conversationId);
     const existingSummary = await storage.getConversationSummary(event.conversationId);
+    const classification = await storage.getConversationClassification(event.conversationId);
 
     if (last20Messages.length < 3) {
       console.log(`[Learning Orchestrator] Skipping conversation ${event.conversationId}: insufficient messages (${last20Messages.length})`);
@@ -56,6 +58,23 @@ export async function extractConversationKnowledge(event: EventStandard): Promis
     }
 
     const reversedMessages = [...last20Messages].reverse();
+
+    const descriptionKeywords = existingSummary?.summary
+      ?.split(/\s+/)
+      .filter(w => w.length > 4)
+      .slice(0, 10) || [];
+
+    const relatedArticles = await knowledgeBaseService.findRelatedArticles(
+      classification?.productStandard || undefined,
+      classification?.category1 || undefined,
+      classification?.category2 || undefined,
+      descriptionKeywords,
+      { limit: 3, minScore: 30 }
+    );
+
+    const articlesContext = knowledgeBaseService.formatArticlesForPrompt(relatedArticles);
+
+    console.log(`[Learning Orchestrator] Found ${relatedArticles.length} related articles for conversation ${event.conversationId}`);
 
     const payload: LearningPayload = {
       messages: reversedMessages.map(m => ({
@@ -66,6 +85,7 @@ export async function extractConversationKnowledge(event: EventStandard): Promis
       })),
       currentSummary: existingSummary?.summary || null,
       conversationHandler: null,
+      relatedArticles: articlesContext,
     };
 
     console.log(`[Learning Orchestrator] Extracting knowledge from conversation ${event.conversationId} with ${reversedMessages.length} messages`);
