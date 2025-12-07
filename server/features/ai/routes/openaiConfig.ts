@@ -96,11 +96,13 @@ function getDefaultConfig(configType: string) {
   };
 }
 
+const VALID_CONFIG_TYPES = ["summary", "classification", "response", "learning"];
+
 router.get("/api/openai-config/:configType", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const { configType } = req.params;
   
-  if (!["summary", "classification", "response"].includes(configType)) {
-    return res.status(400).json({ error: "Invalid config type. Must be 'summary', 'classification' or 'response'" });
+  if (!VALID_CONFIG_TYPES.includes(configType)) {
+    return res.status(400).json({ error: `Invalid config type. Must be one of: ${VALID_CONFIG_TYPES.join(", ")}` });
   }
 
   const config = await storage.getOpenaiApiConfig(configType);
@@ -115,8 +117,8 @@ router.get("/api/openai-config/:configType", isAuthenticated, requireAuthorizedU
 router.put("/api/openai-config/:configType", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const { configType } = req.params;
   
-  if (!["summary", "classification", "response"].includes(configType)) {
-    return res.status(400).json({ error: "Invalid config type. Must be 'summary', 'classification' or 'response'" });
+  if (!VALID_CONFIG_TYPES.includes(configType)) {
+    return res.status(400).json({ error: `Invalid config type. Must be one of: ${VALID_CONFIG_TYPES.join(", ")}` });
   }
 
   const { enabled, trigger_event_types, trigger_author_types, prompt_template, model_name } = req.body;
