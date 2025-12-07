@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import { setupAuth } from "./replitAuth.js";
 import { registerRoutes } from "./routes/index.js";
 import { startPollingWorker } from "./services/pollingWorker.js";
-import "./services/eventProcessor.js";
+import "./features/events/services/eventProcessor.js";
 
 
 const __filename = fileURLToPath(import.meta.url);

@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from "express";
-import { storage } from "../../../storage.js";
+import { storage } from "../../../storage/index.js";
 import { getAdapter } from "../../../adapters/index.js";
-import { eventBus, EVENTS } from "../../../services/eventBus.js";
+import { eventBus, EVENTS } from "../../events/services/eventBus.js";
 
 declare global {
   namespace Express {

@@ -1,6 +1,6 @@
-import { storage } from "../storage.js";
+import { storage } from "../../../storage/index.js";
 import { classifyAndSave, type ClassificationPayload } from "./productClassificationAdapter.js";
-import type { EventStandard } from "../../shared/schema.js";
+import type { EventStandard } from "../../../../shared/schema.js";
 
 export async function shouldClassify(event: EventStandard): Promise<boolean> {
   const config = await storage.getOpenaiApiConfig("classification");

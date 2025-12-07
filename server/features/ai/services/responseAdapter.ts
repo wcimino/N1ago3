@@ -1,5 +1,5 @@
 import { callOpenAI } from "./openaiApiService.js";
-import { storage } from "../storage.js";
+import { storage } from "../../../storage/index.js";
 
 export interface ResponsePayload {
   currentSummary: string | null;

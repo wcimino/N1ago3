@@ -94,28 +94,42 @@ The frontend dashboard provides a real-time view of events and conversations, wi
 
 ```
 server/
-  ├── services/       # Lógica de negócio (orchestrators, processors)
-  ├── adapters/       # Transformadores de dados por source
-  ├── routes/         # Rotas modularizadas por domínio
-  │   ├── index.ts      # Registrador central de rotas
-  │   ├── auth.ts       # Endpoints de autenticação
-  │   ├── webhooks.ts   # Webhook consolidado (/webhook/zendesk)
-  │   ├── events.ts     # Eventos padronizados
+  ├── features/         # Arquitetura feature-based (domínios de negócio)
+  │   ├── ai/             # Funcionalidades de IA
+  │   │   ├── routes/       # openaiConfig.ts, openaiLogs.ts, knowledgeBase.ts
+  │   │   ├── services/     # openaiApiService.ts, summaryAdapter.ts, summaryOrchestrator.ts,
+  │   │   │                 # productClassificationAdapter.ts, classificationOrchestrator.ts,
+  │   │   │                 # responseAdapter.ts, responseOrchestrator.ts
+  │   │   └── storage/      # configStorage.ts, knowledgeBaseStorage.ts
+  │   ├── cadastro/       # Usuários e organizações
+  │   │   ├── routes/       # usersStandard.ts, organizationsStandard.ts
+  │   │   └── storage/      # usersStandardStorage.ts, organizationsStandardStorage.ts
+  │   ├── events/         # Processamento de eventos
+  │   │   ├── routes/       # events.ts
+  │   │   ├── services/     # eventBus.ts, eventProcessor.ts
+  │   │   └── storage/      # eventStorage.ts
+  │   ├── export/         # Exportação e webhooks
+  │   │   ├── routes/       # export.ts, webhookLogs.ts, webhooks.ts
+  │   │   └── storage/      # webhookStorage.ts
+  │   └── maintenance/    # Manutenção do sistema
+  │       └── routes/       # maintenance.ts
+  ├── adapters/         # Transformadores de dados por source (Zendesk)
+  ├── routes/           # Rotas core (agregador + auth, conversations, products)
+  │   ├── index.ts        # Registrador central (importa de features)
+  │   ├── auth.ts         # Endpoints de autenticação
   │   ├── conversations.ts # Conversas e mensagens
-  │   ├── config.ts     # Configurações (OpenAI, event types)
-  │   └── webhookLogs.ts # Logs de webhook
-  ├── middleware/     # Middlewares compartilhados
-  │   └── auth.ts       # Guards: isAuthenticated, requireAuthorizedUser
-  ├── storage/        # Módulos de acesso a dados (modularizado)
-  │   ├── index.ts        # Agregador que exporta storage unificado
-  │   ├── authStorage.ts  # Operações de autenticação e usuários autorizados
-  │   ├── webhookStorage.ts # Operações de webhook/logs
+  │   └── products.ts     # Produtos
+  ├── services/         # Services compartilhados
+  │   ├── index.ts        # Re-exporta services de features
+  │   ├── pollingWorker.ts # Worker para processar eventos pendentes
+  │   └── reprocessingService.ts # Serviço de reprocessamento
+  ├── storage/          # Módulos de acesso a dados (agregador + core)
+  │   ├── index.ts        # Agregador que importa de features e core
+  │   ├── authStorage.ts  # Operações de autenticação
   │   ├── userStorage.ts  # Operações de usuários Zendesk
-  │   ├── conversationStorage.ts # Operações de conversas
-  │   ├── eventStorage.ts # Operações de eventos e mapeamentos
-  │   ├── configStorage.ts # Configurações (OpenAI summary)
-  │   └── messageStorage.ts # Operações de mensagens
-  └── storage.ts      # Re-exporta módulos de storage (facade para retrocompatibilidade)
+  │   └── conversationStorage.ts # Operações de conversas
+  └── middleware/       # Middlewares compartilhados
+      └── auth.ts         # Guards: isAuthenticated, requireAuthorizedUser
 client/src/
   ├── features/       # Módulos de funcionalidades (feature-based architecture)
   │   ├── ai/           # Configurações e páginas de IA

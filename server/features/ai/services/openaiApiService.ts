@@ -1,6 +1,6 @@
 import OpenAI from "openai";
-import { storage } from "../storage.js";
-import type { OpenaiApiLog } from "../../shared/schema.js";
+import { storage } from "../../../storage/index.js";
+import type { OpenaiApiLog } from "../../../../shared/schema.js";
 
 let openaiClient: OpenAI | null = null;
 

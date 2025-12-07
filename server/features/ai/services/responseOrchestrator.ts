@@ -1,9 +1,9 @@
-import { storage } from "../storage.js";
-import { generateAndSaveSummary, type SummaryPayload } from "./summaryAdapter.js";
-import type { EventStandard } from "../../shared/schema.js";
+import { storage } from "../../../storage/index.js";
+import { generateAndSaveResponse, type ResponsePayload } from "./responseAdapter.js";
+import type { EventStandard } from "../../../../shared/schema.js";
 
-export async function shouldGenerateSummary(event: EventStandard): Promise<boolean> {
-  const config = await storage.getOpenaiApiConfig("summary");
+export async function shouldGenerateResponse(event: EventStandard): Promise<boolean> {
+  const config = await storage.getOpenaiApiConfig("response");
   
   if (!config || !config.enabled) {
     return false;
@@ -34,15 +34,15 @@ export async function shouldGenerateSummary(event: EventStandard): Promise<boole
   return triggerAuthorTypes.includes(event.authorType);
 }
 
-export async function generateConversationSummary(event: EventStandard): Promise<void> {
+export async function generateConversationResponse(event: EventStandard): Promise<void> {
   if (!event.conversationId) {
-    console.log("[Summary Orchestrator] Cannot generate summary: no conversationId");
+    console.log("[Response Orchestrator] Cannot generate response: no conversationId");
     return;
   }
 
-  const config = await storage.getOpenaiApiConfig("summary");
+  const config = await storage.getOpenaiApiConfig("response");
   if (!config) {
-    console.log("[Summary Orchestrator] Cannot generate summary: no config found");
+    console.log("[Response Orchestrator] Cannot generate response: no config found");
     return;
   }
 
@@ -53,8 +53,15 @@ export async function generateConversationSummary(event: EventStandard): Promise
 
     const reversedMessages = [...last20Messages].reverse();
 
-    const payload: SummaryPayload = {
+    const classification = (existingSummary?.product || existingSummary?.intent) ? {
+      product: existingSummary.product,
+      intent: existingSummary.intent,
+      confidence: existingSummary.confidence,
+    } : null;
+
+    const payload: ResponsePayload = {
       currentSummary: existingSummary?.summary || null,
+      classification,
       last20Messages: reversedMessages.map(m => ({
         authorType: m.authorType,
         authorName: m.authorName,
@@ -69,9 +76,9 @@ export async function generateConversationSummary(event: EventStandard): Promise
       }
     };
 
-    console.log(`[Summary Orchestrator] Generating summary for conversation ${event.conversationId} with ${reversedMessages.length} messages`);
+    console.log(`[Response Orchestrator] Generating response for conversation ${event.conversationId} with ${reversedMessages.length} messages`);
 
-    const result = await generateAndSaveSummary(
+    const result = await generateAndSaveResponse(
       payload,
       config.promptTemplate,
       config.modelName,
@@ -81,19 +88,19 @@ export async function generateConversationSummary(event: EventStandard): Promise
     );
 
     if (result.success) {
-      console.log(`[Summary Orchestrator] Summary generated and saved for conversation ${event.conversationId}`);
+      console.log(`[Response Orchestrator] Response generated successfully for conversation ${event.conversationId}, logId: ${result.logId}`);
     } else {
-      console.error(`[Summary Orchestrator] Failed to generate summary for conversation ${event.conversationId}: ${result.error}`);
+      console.error(`[Response Orchestrator] Failed to generate response: ${result.error}`);
     }
   } catch (error: any) {
-    console.error(`[Summary Orchestrator] Error in generateConversationSummary for conversation ${event.conversationId}:`, error);
+    console.error(`[Response Orchestrator] Error generating response: ${error.message}`);
   }
 }
 
-export async function processSummaryForEvent(event: EventStandard): Promise<void> {
-  const shouldGenerate = await shouldGenerateSummary(event);
+export async function processResponseForEvent(event: EventStandard): Promise<void> {
+  const shouldGenerate = await shouldGenerateResponse(event);
   
   if (shouldGenerate) {
-    await generateConversationSummary(event);
+    await generateConversationResponse(event);
   }
 }

@@ -1,10 +1,11 @@
-import { getAdapter } from "../adapters/index.js";
-import { storage, organizationsStandardStorage } from "../storage/index.js";
+import { getAdapter } from "../../../adapters/index.js";
+import { storage } from "../../../storage/index.js";
+import { organizationsStandardStorage } from "../../cadastro/storage/organizationsStandardStorage.js";
 import { eventBus, EVENTS } from "./eventBus.js";
-import { processSummaryForEvent } from "./summaryOrchestrator.js";
-import { processClassificationForEvent } from "./classificationOrchestrator.js";
-import { processResponseForEvent } from "./responseOrchestrator.js";
-import type { StandardEvent } from "../adapters/types.js";
+import { processSummaryForEvent } from "../../ai/services/summaryOrchestrator.js";
+import { processClassificationForEvent } from "../../ai/services/classificationOrchestrator.js";
+import { processResponseForEvent } from "../../ai/services/responseOrchestrator.js";
+import type { StandardEvent } from "../../../adapters/types.js";
 
 const SUPPORTED_SOURCES = ["zendesk"] as const;
 type SupportedSource = typeof SUPPORTED_SOURCES[number];
