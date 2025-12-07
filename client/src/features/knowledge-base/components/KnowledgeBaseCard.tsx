@@ -37,34 +37,31 @@ export function KnowledgeBaseCard({ article, onEdit, onDelete }: KnowledgeBaseCa
   return (
     <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
       <div 
-        className="p-4 cursor-pointer"
+        className="px-4 py-3 cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex items-start gap-3">
+        <div className="flex items-center gap-3">
           <div className="flex-1 min-w-0">
-            <div className="mb-3">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm font-semibold text-blue-700">
-                  {article.productStandard}
-                </span>
-                {article.subproductStandard && (
-                  <>
-                    <span className="text-gray-300">›</span>
-                    <span className="text-sm text-purple-600">
-                      {article.subproductStandard}
-                    </span>
-                  </>
-                )}
-              </div>
-              {categories && (
-                <div className="text-xs text-gray-500">
-                  {categories}
-                </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-blue-700">
+                {article.productStandard}
+              </span>
+              {article.subproductStandard && (
+                <>
+                  <span className="text-gray-300">›</span>
+                  <span className="font-medium text-purple-600">
+                    {article.subproductStandard}
+                  </span>
+                </>
               )}
             </div>
-
+            {categories && (
+              <div className="text-sm text-gray-600 mt-1">
+                {categories}
+              </div>
+            )}
             {!isExpanded && (
-              <div className="text-xs text-gray-400 mt-1">
+              <div className="text-xs text-gray-400 mt-1.5">
                 Atualizado há {timeAgo}
               </div>
             )}
