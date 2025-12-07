@@ -9,6 +9,22 @@ export function extractValidCpf(value: string | undefined): string | undefined {
   return undefined;
 }
 
+export function extractCpfFromName(name: string | undefined): { cleanName: string | undefined; cpf: string | undefined } {
+  if (!name) return { cleanName: undefined, cpf: undefined };
+  
+  const trimmedName = name.trim();
+  const cpfPattern = /\s*(\d{11})$/;
+  const match = trimmedName.match(cpfPattern);
+  
+  if (match) {
+    const cpf = match[1];
+    const cleanName = trimmedName.replace(cpfPattern, '').trim();
+    return { cleanName: cleanName || undefined, cpf };
+  }
+  
+  return { cleanName: trimmedName || undefined, cpf: undefined };
+}
+
 export function extractUser(rawPayload: any): ExtractedUser | null {
   const events = rawPayload.events || [];
   
@@ -65,13 +81,22 @@ export function extractStandardUser(rawPayload: any, source: string): StandardUs
         } catch {}
       }
 
+      let cpf = extractValidCpf(profile.givenName);
+      let name = profile.surname || undefined;
+      
+      if (!cpf && name) {
+        const extracted = extractCpfFromName(name);
+        cpf = extracted.cpf;
+        name = extracted.cleanName;
+      }
+
       return {
         email: profile.email.toLowerCase().trim(),
         source,
         sourceUserId: userData.id,
         externalId: userData.externalId,
-        name: profile.surname || undefined,
-        cpf: extractValidCpf(profile.givenName),
+        name,
+        cpf,
         phone: profile.phone || undefined,
         locale: profile.locale || undefined,
         signedUpAt,
@@ -91,13 +116,22 @@ export function extractStandardUser(rawPayload: any, source: string): StandardUs
       } catch {}
     }
 
+    let cpf = extractValidCpf(profile.givenName);
+    let name = profile.surname || undefined;
+    
+    if (!cpf && name) {
+      const extracted = extractCpfFromName(name);
+      cpf = extracted.cpf;
+      name = extracted.cleanName;
+    }
+
     return {
       email: profile.email.toLowerCase().trim(),
       source,
       sourceUserId: user.id,
       externalId: user.externalId,
-      name: profile.surname || undefined,
-      cpf: extractValidCpf(profile.givenName),
+      name,
+      cpf,
       phone: profile.phone || undefined,
       locale: profile.locale || undefined,
       signedUpAt,
