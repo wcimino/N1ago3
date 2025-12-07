@@ -114,7 +114,7 @@ export const configStorage = {
   },
 
   async getTopProductsByPeriod(
-    period: "lastHour" | "today",
+    period: "lastHour" | "last24Hours",
     limit: number = 5
   ): Promise<{ product: string; count: number }[]> {
     const now = new Date();
@@ -123,7 +123,7 @@ export const configStorage = {
     if (period === "lastHour") {
       since = new Date(now.getTime() - 60 * 60 * 1000);
     } else {
-      since = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     }
 
     const results = await db

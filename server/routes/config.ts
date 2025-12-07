@@ -225,14 +225,14 @@ router.get("/api/openai-logs/:id", isAuthenticated, requireAuthorizedUser, async
 
 router.get("/api/products/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
-    const [lastHour, today] = await Promise.all([
+    const [lastHour, last24Hours] = await Promise.all([
       storage.getTopProductsByPeriod("lastHour", 5),
-      storage.getTopProductsByPeriod("today", 5),
+      storage.getTopProductsByPeriod("last24Hours", 5),
     ]);
 
     res.json({
       last_hour: lastHour,
-      today: today,
+      today: last24Hours,
     });
   } catch (error: any) {
     console.error("[Products Stats] Error:", error.message);

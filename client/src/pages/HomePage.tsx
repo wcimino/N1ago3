@@ -61,7 +61,7 @@ export function HomePage() {
                     <th className="text-center text-sm font-medium text-gray-700 pb-3 w-24">
                       <span className="flex items-center justify-center gap-1">
                         <Calendar className="w-3.5 h-3.5 text-orange-500" />
-                        Hoje
+                        24h
                       </span>
                     </th>
                   </tr>
