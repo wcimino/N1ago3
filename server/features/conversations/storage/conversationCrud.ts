@@ -12,12 +12,8 @@ interface ConversationData {
 }
 
 async function upsertConversation(data: ConversationData) {
-  let [conversation] = await db.select()
-    .from(conversations)
-    .where(eq(conversations.externalConversationId, data.externalConversationId));
-  
-  if (!conversation) {
-    [conversation] = await db.insert(conversations).values({
+  const [conversation] = await db.insert(conversations)
+    .values({
       externalConversationId: data.externalConversationId,
       externalAppId: data.externalAppId,
       userId: data.externalUserId,
@@ -25,21 +21,17 @@ async function upsertConversation(data: ConversationData) {
       metadataJson: data.metadata,
       currentHandler: "64d65d81a40bc6cf30ebfbb1",
       currentHandlerName: "zd-answerBot",
-    }).returning();
-  } else {
-    const updates: any = { updatedAt: new Date() };
-    
-    if (!conversation.userId && data.externalUserId) {
-      updates.userId = data.externalUserId;
-      updates.userExternalId = data.userExternalId;
-      updates.metadataJson = data.metadata;
-    }
-    
-    [conversation] = await db.update(conversations)
-      .set(updates)
-      .where(eq(conversations.id, conversation.id))
-      .returning();
-  }
+    })
+    .onConflictDoUpdate({
+      target: conversations.externalConversationId,
+      set: {
+        updatedAt: new Date(),
+        userId: sql`CASE WHEN ${conversations.userId} IS NULL THEN excluded.user_id ELSE ${conversations.userId} END`,
+        userExternalId: sql`CASE WHEN ${conversations.userExternalId} IS NULL THEN excluded.user_external_id ELSE ${conversations.userExternalId} END`,
+        metadataJson: sql`CASE WHEN ${conversations.metadataJson} IS NULL THEN excluded.metadata_json ELSE ${conversations.metadataJson} END`,
+      },
+    })
+    .returning();
   
   return conversation;
 }
