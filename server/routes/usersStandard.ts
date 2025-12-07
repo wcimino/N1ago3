@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { storage } from "../storage.js";
+import { organizationsStandardStorage } from "../storage/organizationsStandardStorage.js";
 import { requireAuthorizedUser } from "../middleware/auth.js";
 
 const router = Router();
@@ -39,6 +40,15 @@ router.get("/:email/history", requireAuthorizedUser, async (req, res, next) => {
   try {
     const history = await storage.getUserHistory(req.params.email);
     res.json(history);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/:email/organizations", requireAuthorizedUser, async (req, res, next) => {
+  try {
+    const organizations = await organizationsStandardStorage.getOrganizationsByUser(req.params.email);
+    res.json(organizations);
   } catch (error) {
     next(error);
   }

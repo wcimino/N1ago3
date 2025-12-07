@@ -1,7 +1,7 @@
 import { db } from "../db.js";
 import { organizationsStandard, organizationsStandardHistory, userStandardHasOrganizationStandard, usersStandard } from "../../shared/schema.js";
 import { eq, sql, and } from "drizzle-orm";
-import type { OrganizationStandard, UserStandardHasOrganizationStandard } from "../../shared/schema.js";
+import type { OrganizationStandard, UserStandardHasOrganizationStandard, UserStandard } from "../../shared/schema.js";
 import type { StandardOrganization } from "../adapters/types.js";
 
 const TRACKED_FIELDS = ["name", "cnpj"] as const;
@@ -160,5 +160,17 @@ export const organizationsStandardStorage = {
       .where(eq(organizationsStandard.cnpjRoot, cnpjRoot));
 
     return Number(result.count);
+  },
+
+  async getUsersListByOrganization(cnpjRoot: string): Promise<UserStandard[]> {
+    const result = await db.select({
+      user: usersStandard,
+    })
+      .from(userStandardHasOrganizationStandard)
+      .innerJoin(usersStandard, eq(userStandardHasOrganizationStandard.userStandardId, usersStandard.id))
+      .innerJoin(organizationsStandard, eq(userStandardHasOrganizationStandard.organizationStandardId, organizationsStandard.id))
+      .where(eq(organizationsStandard.cnpjRoot, cnpjRoot));
+
+    return result.map(r => r.user);
   },
 };

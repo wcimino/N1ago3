@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ChevronLeft, Building2, FileText, Clock, History } from "lucide-react";
+import { ChevronLeft, Building2, FileText, Clock, History, Users } from "lucide-react";
 import { LoadingState, EmptyState } from "../components";
 import { useDateFormatters } from "../hooks/useDateFormatters";
 import { fetchApi } from "../lib/queryClient";
@@ -26,6 +26,13 @@ interface OrganizationHistory {
   source: string | null;
 }
 
+interface UserStandard {
+  id: number;
+  email: string;
+  source: string;
+  name: string | null;
+}
+
 interface OrganizationStandardDetailPageProps {
   params: { cnpjRoot: string };
 }
@@ -43,6 +50,11 @@ export function OrganizationStandardDetailPage({ params }: OrganizationStandardD
   const { data: history, isLoading: historyLoading } = useQuery<OrganizationHistory[]>({
     queryKey: ["organization-standard-history", cnpjRoot],
     queryFn: () => fetchApi<OrganizationHistory[]>(`/api/organizations-standard/${encodeURIComponent(cnpjRoot)}/history`),
+  });
+
+  const { data: users, isLoading: usersLoading } = useQuery<UserStandard[]>({
+    queryKey: ["organization-standard-users", cnpjRoot],
+    queryFn: () => fetchApi<UserStandard[]>(`/api/organizations-standard/${encodeURIComponent(cnpjRoot)}/users`),
   });
 
   const fieldLabels: Record<string, string> = {
@@ -154,6 +166,40 @@ export function OrganizationStandardDetailPage({ params }: OrganizationStandardD
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="px-4 py-3 border-b flex items-center gap-2">
+          <Users className="w-5 h-5 text-gray-500" />
+          <h3 className="text-lg font-semibold text-gray-900">Usuários Associados</h3>
+        </div>
+
+        {usersLoading ? (
+          <LoadingState />
+        ) : !users || users.length === 0 ? (
+          <div className="p-6 text-center text-gray-500">
+            <p>Nenhum usuário associado</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {users.map((user) => (
+              <div
+                key={user.id}
+                className="p-4 hover:bg-gray-50 cursor-pointer"
+                onClick={() => navigate(`/cadastro/users/${encodeURIComponent(user.email)}`)}
+              >
+                <div className="flex items-center gap-3">
+                  <Users className="w-5 h-5 text-gray-400" />
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">{user.name || user.email}</p>
+                    <p className="text-sm text-gray-500">{user.email}</p>
+                  </div>
+                  <span className="text-xs text-gray-400">{user.source}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">

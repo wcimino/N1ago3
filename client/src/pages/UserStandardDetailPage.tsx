@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ChevronLeft, Users, Mail, FileText, Clock, History } from "lucide-react";
+import { ChevronLeft, Users, Mail, FileText, Clock, History, Building2 } from "lucide-react";
 import { LoadingState, EmptyState } from "../components";
 import { useDateFormatters } from "../hooks/useDateFormatters";
 import { fetchApi } from "../lib/queryClient";
@@ -31,6 +31,14 @@ interface UserHistory {
   source: string | null;
 }
 
+interface OrganizationStandard {
+  id: number;
+  cnpj: string | null;
+  cnpjRoot: string;
+  source: string;
+  name: string | null;
+}
+
 interface UserStandardDetailPageProps {
   params: { email: string };
 }
@@ -49,6 +57,18 @@ export function UserStandardDetailPage({ params }: UserStandardDetailPageProps) 
     queryKey: ["user-standard-history", email],
     queryFn: () => fetchApi<UserHistory[]>(`/api/users-standard/${encodeURIComponent(email)}/history`),
   });
+
+  const { data: organizations, isLoading: orgsLoading } = useQuery<OrganizationStandard[]>({
+    queryKey: ["user-standard-organizations", email],
+    queryFn: () => fetchApi<OrganizationStandard[]>(`/api/users-standard/${encodeURIComponent(email)}/organizations`),
+  });
+
+  const formatCnpjRoot = (cnpjRoot: string) => {
+    if (cnpjRoot.length === 8) {
+      return `${cnpjRoot.slice(0, 2)}.${cnpjRoot.slice(2, 5)}.${cnpjRoot.slice(5, 8)}`;
+    }
+    return cnpjRoot;
+  };
 
   const fieldLabels: Record<string, string> = {
     name: "Nome",
@@ -148,6 +168,40 @@ export function UserStandardDetailPage({ params }: UserStandardDetailPageProps) 
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="px-4 py-3 border-b flex items-center gap-2">
+          <Building2 className="w-5 h-5 text-gray-500" />
+          <h3 className="text-lg font-semibold text-gray-900">Organizações Associadas</h3>
+        </div>
+
+        {orgsLoading ? (
+          <LoadingState />
+        ) : !organizations || organizations.length === 0 ? (
+          <div className="p-6 text-center text-gray-500">
+            <p>Nenhuma organização associada</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {organizations.map((org) => (
+              <div
+                key={org.id}
+                className="p-4 hover:bg-gray-50 cursor-pointer"
+                onClick={() => navigate(`/cadastro/organizations/${encodeURIComponent(org.cnpjRoot)}`)}
+              >
+                <div className="flex items-center gap-3">
+                  <Building2 className="w-5 h-5 text-gray-400" />
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">{org.name || "Sem nome"}</p>
+                    <p className="text-sm text-gray-500">CNPJ Raiz: {formatCnpjRoot(org.cnpjRoot)}</p>
+                  </div>
+                  <span className="text-xs text-gray-400">{org.source}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">

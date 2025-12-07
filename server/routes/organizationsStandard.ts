@@ -47,4 +47,13 @@ router.get("/:cnpjRoot/history", requireAuthorizedUser, async (req, res, next) =
   }
 });
 
+router.get("/:cnpjRoot/users", requireAuthorizedUser, async (req, res, next) => {
+  try {
+    const users = await organizationsStandardStorage.getUsersListByOrganization(req.params.cnpjRoot);
+    res.json(users);
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;
