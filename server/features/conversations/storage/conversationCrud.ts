@@ -3,6 +3,7 @@ import { conversations, eventsStandard } from "../../../../shared/schema.js";
 import { eq, desc, sql, and, lt, ne } from "drizzle-orm";
 import type { ExtractedConversation } from "../../../adapters/types.js";
 import { CONVERSATION_RULES, type ClosedReason } from "../../../config/conversationRules.js";
+import { eventStorage } from "../../events/storage/eventStorage.js";
 
 interface ConversationData {
   externalConversationId: string;
@@ -10,6 +11,36 @@ interface ConversationData {
   externalUserId?: string;
   userExternalId?: string;
   metadata?: any;
+}
+
+async function createConversationClosedEvent(
+  conversation: { id: number; externalConversationId: string; userExternalId?: string | null; closedAt?: Date | null },
+  reason: ClosedReason
+) {
+  try {
+    const closedAt = conversation.closedAt || new Date();
+    const sourceEventId = `close:${conversation.id}:${reason}:${closedAt.toISOString()}`;
+    
+    await eventStorage.saveStandardEvent({
+      eventType: "conversation_closed",
+      eventSubtype: reason,
+      source: "n1ago",
+      sourceEventId,
+      externalConversationId: conversation.externalConversationId,
+      externalUserId: conversation.userExternalId || undefined,
+      authorType: "system",
+      authorId: "n1ago",
+      authorName: "N1ago System",
+      contentText: `Conversa encerrada: ${reason}`,
+      occurredAt: closedAt,
+      metadata: { reason, closedAt: closedAt.toISOString() },
+      conversationId: conversation.id,
+    });
+    
+    console.log(`Created conversation_closed event for conversation ${conversation.id} (${reason})`);
+  } catch (error) {
+    console.error(`Failed to create conversation_closed event for conversation ${conversation.id}:`, error);
+  }
 }
 
 async function upsertConversation(data: ConversationData) {
@@ -69,6 +100,10 @@ async function closePreviousConversationsForUser(userExternalId: string, exclude
       ne(conversations.id, excludeConversationId)
     ))
     .returning();
+  
+  for (const conv of result) {
+    await createConversationClosedEvent(conv, 'new_conversation');
+  }
   
   return result;
 }
@@ -163,6 +198,10 @@ export const conversationCrud = {
       .where(eq(conversations.id, conversationId))
       .returning();
     
+    if (result[0]) {
+      await createConversationClosedEvent(result[0], reason);
+    }
+    
     return result[0] || null;
   },
 
@@ -185,6 +224,10 @@ export const conversationCrud = {
       })
       .where(and(...conditions))
       .returning();
+    
+    for (const conv of result) {
+      await createConversationClosedEvent(conv, 'new_conversation');
+    }
     
     return result;
   },
@@ -221,6 +264,10 @@ export const conversationCrud = {
       ))
       .returning();
     
+    for (const conv of result) {
+      await createConversationClosedEvent(conv, 'inactivity');
+    }
+    
     return result;
   },
 
@@ -253,6 +300,10 @@ export const conversationCrud = {
         sql`id IN (SELECT id FROM conversations WHERE status = 'active' AND updated_at < ${cutoffTime} ORDER BY updated_at LIMIT ${limit})`
       ))
       .returning();
+    
+    for (const conv of result) {
+      await createConversationClosedEvent(conv, 'manual');
+    }
     
     return result;
   },
