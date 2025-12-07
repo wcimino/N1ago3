@@ -44,10 +44,6 @@ localPort = 5001
 externalPort = 5173
 
 [[ports]]
-localPort = 33801
-externalPort = 9000
-
-[[ports]]
 localPort = 34789
 externalPort = 8080
 
@@ -112,6 +108,6 @@ ZENDESK_SWITCHBOARD_INTEGRATION_ID = "693577c73ef61062218d9705"
 ZENDESK_AGENT_WORKSPACE_ID = "5fbcf90112addf000c227bb2"
 
 [deployment]
-deploymentTarget = "vm"
+deploymentTarget = "autoscale"
 run = ["npm", "run", "start"]
 build = ["npm", "run", "build"]

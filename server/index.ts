@@ -13,21 +13,6 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = Number(process.env.PORT) || (process.env.NODE_ENV === "production" ? 5000 : 3000);
 
-// Track initialization status
-let isInitialized = false;
-let initError: Error | null = null;
-
-// Health check endpoint - MUST be first to respond to deployment health checks
-app.get("/health", (req, res) => {
-  if (initError) {
-    res.status(503).json({ status: "error", error: initError.message });
-  } else if (!isInitialized) {
-    res.status(200).json({ status: "starting", timestamp: new Date().toISOString() });
-  } else {
-    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
-  }
-});
-
 app.use(express.json({
   verify: (req: express.Request, res, buf) => {
     req.rawBody = buf;
@@ -35,52 +20,25 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: true }));
 
-async function initializeApp() {
-  try {
-    console.log("Initializing app...");
-    
-    // Setup authentication
-    await setupAuth(app);
-    console.log("Auth setup complete");
+async function startServer() {
+  // Setup authentication
+  await setupAuth(app);
 
-    // Register routes
-    registerRoutes(app);
-    console.log("Routes registered");
+  // Register routes
+  registerRoutes(app);
 
-    if (process.env.NODE_ENV === "production") {
-      app.use(express.static(path.join(__dirname, "../public")));
-      // Only handle non-API routes with the catch-all
-      app.get("*", (req, res, next) => {
-        if (req.path.startsWith("/api") || req.path.startsWith("/webhook") || req.path === "/health") {
-          return next();
-        }
-        res.sendFile(path.join(__dirname, "../public/index.html"));
-      });
-      console.log("Static files configured");
-    }
-
-    isInitialized = true;
-    console.log("App initialization complete");
-    
-    // Delay polling worker start to ensure server is fully stable
-    setTimeout(() => {
-      startPollingWorker();
-      console.log("Polling worker started");
-    }, 5000);
-  } catch (error) {
-    console.error("App initialization failed:", error);
-    initError = error as Error;
+  if (process.env.NODE_ENV === "production") {
+    app.use(express.static(path.join(__dirname, "../public")));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(__dirname, "../public/index.html"));
+    });
   }
+
+  startPollingWorker();
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Servidor N1ago iniciado em http://0.0.0.0:${PORT}`);
+  });
 }
 
-// Start server immediately, then initialize async
-const server = app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Servidor N1ago iniciado em http://0.0.0.0:${PORT}`);
-  // Initialize app after server is listening
-  initializeApp();
-});
-
-server.on("error", (error) => {
-  console.error("Server error:", error);
-  process.exit(1);
-});
+startServer().catch(console.error);
