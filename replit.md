@@ -2,7 +2,7 @@
 
 ## Overview
 
-N1ago is a system designed to receive and monitor webhooks from Zendesk Sunshine Conversations. Its primary purpose is to act as an attendance agent for credit-related inquiries. It captures and stores all conversation data, displays real-time events on a React dashboard, and provides robust access control. The project aims to streamline customer interaction data management and provide a foundation for advanced customer service automation.
+N1ago is a system designed to receive and monitor webhooks from Zendesk Sunshine Conversations, acting as an attendance agent for credit-related inquiries. It captures and stores all conversation data, displays real-time events on a React dashboard, and provides robust access control. The project aims to streamline customer interaction data management, provide a real-time overview of events, and serve as a foundation for advanced customer service automation, including AI-powered features for conversation summarization and product classification. The business vision is to enhance customer service efficiency and data utilization, offering significant market potential in automated support and customer insights.
 
 ## User Preferences
 
@@ -10,202 +10,228 @@ I prefer clear and direct communication. When suggesting changes, please provide
 
 ## System Architecture
 
-The system is built with a clear separation between frontend and backend. The frontend uses React with TypeScript, Vite, Tailwind CSS for styling, TanStack Query for state management, and wouter for routing. The backend is an Express.js server utilizing Drizzle ORM for PostgreSQL interaction and Replit Auth for secure authentication.
+The system employs a clear separation between frontend and backend. The frontend uses React with TypeScript, Vite, Tailwind CSS, TanStack Query, and wouter. The backend is an Express.js server utilizing Drizzle ORM for PostgreSQL interaction and Replit Auth for secure authentication.
 
 **Core Architectural Patterns:**
 
-*   **Standardized Event Architecture:** The system employs a modular architecture to ingest events from various sources and normalize them into a consistent `StandardEvent` format.
-    *   **Data Flow:** Raw webhooks are received and saved. An `EventBus` then triggers an `Event Processor` which uses `Adapters` to normalize the raw data into `events_standard`.
-    *   **Polymorphic References:** Events in `events_standard` link back to their original raw data via `source` and `source_raw_id` fields, allowing for flexible expansion with new data sources.
-*   **Component-Based Design:**
-    *   **Webhook Isolado:** Dedicated endpoints for receiving raw webhook data without immediate processing logic.
-    *   **EventBus:** Facilitates asynchronous communication between system components.
-    *   **Event Processor:** Orchestrates the normalization of raw events using registered adapters.
-    *   **Polling Worker:** Provides a fallback/retry mechanism for processing pending events.
-    *   **Adapters:** Source-specific modules responsible for transforming raw payload structures into the standardized `StandardEvent` format.
-*   **Authentication System:** Implements a dual authentication strategy:
-    *   **Replit Auth (Google Login):** Users authenticate via Google accounts.
-    *   **Access Control List:** Restricts access to specific email domains (`@ifood.com.br`) and requires users to be listed in the `authorized_users` table.
+*   **Standardized Event Architecture:** Ingests events from various sources and normalizes them into a consistent `StandardEvent` format. Raw webhooks are saved, an `EventBus` triggers an `Event Processor`, which uses `Adapters` to normalize data into `events_standard`. Events maintain polymorphic references to their raw data.
+*   **Component-Based Design:** Includes `Webhook Isolado` (dedicated webhook endpoints), `EventBus` (asynchronous communication), `Event Processor` (normalization orchestration), `Polling Worker` (retry mechanism for pending events), and `Adapters` (source-specific transformations).
+*   **Authentication System:** Dual strategy using Replit Auth (Google Login) with an Access Control List that restricts access to specific email domains (`@ifood.com.br`) and `authorized_users` table entries.
+*   **AI-Powered Features:** Unified architecture for multiple AI capabilities (summary, classification, response generation) using a single `openai_api_config` table. Each feature has a 3-layer architecture: `openaiApiService.ts` (API interaction & logging), `*Adapter.ts` (business logic), and `*Orchestrator.ts` (trigger orchestration). All OpenAI calls are logged for auditing and analysis. Features include configurable triggers and lazy initialization of the OpenAI client.
 
 **UI/UX Decisions:**
 
-The frontend dashboard provides a real-time view of events and conversations, with administrative interfaces for managing authorized users and reviewing webhook logs.
+The frontend dashboard offers a real-time view of events and conversations, administrative interfaces for user management, and webhook logs. It utilizes a component-based design with reusable UI components for badges, data tables, modals, pagination, and more, all styled with Tailwind CSS.
 
 **Feature Specifications:**
 
-*   **Webhook Ingestion:** Receives and logs all incoming webhooks, including failures.
+*   **Webhook Ingestion:** Receives, logs, and processes incoming webhooks.
 *   **Conversation Storage:** Stores all conversation data and events in PostgreSQL.
-*   **Real-time Dashboard:** Displays events and conversation metrics.
-*   **User Management:** Secure authentication and authorization for system access.
-*   **Extensibility:** Designed to easily integrate new communication channels via adapters.
-*   **AI-Powered Features:** Unified architecture for multiple AI capabilities (summary and classification).
-    *   **Unified Configuration:** All AI features use a single `openai_api_config` table with `config_type` discriminator.
-    *   **Architecture (3 Layers per Feature):**
-        *   `openaiApiService.ts`: Pure API layer - makes OpenAI calls and saves complete logs to `openai_api_logs` table.
-        *   `*Adapter.ts`: Business logic layer - prepares prompts, calls API service, saves results.
-        *   `*Orchestrator.ts`: Orchestration layer - determines when to trigger based on event type/author.
-    *   **Conversation Summaries:**
-        *   Auto-generates summaries using `summaryAdapter.ts` and `summaryOrchestrator.ts`
-        *   Saves to `conversations_summary` table
-    *   **Product Classification:**
-        *   Auto-classifies products using `productClassificationAdapter.ts` and `classificationOrchestrator.ts`
-        *   Saves to `conversation_classifications` table
-    *   **API Logging:** All OpenAI calls logged with: request_type, model, prompts, full response, tokens used, duration, success/error status.
-    *   **Endpoints:**
-        *   `GET /api/openai-logs` - List all API call logs (supports ?limit and ?request_type filters)
-        *   `GET /api/openai-logs/:id` - Get full details of a specific API call
-        *   `GET/PUT /api/openai-config/:configType` - Generic config endpoints for all AI features
-    *   **Configurable Triggers:** Each feature can be configured with specific event types and author types.
-    *   **Lazy Initialization:** OpenAI client is only initialized when needed, preventing startup errors when API key is not configured.
-    *   **Configuration UI:** Available at `/ai/settings/summary` and `/ai/settings/classification` with tabbed navigation.
+*   **Real-time Dashboard:** Displays events, conversation metrics, and allows user/webhook management.
+*   **User Management:** Secure authentication and authorization with domain and user-list restrictions.
+*   **Extensibility:** Designed for easy integration of new communication channels via adapters.
+*   **AI Integrations:** Conversation Summaries, Product Classification, API Logging, and Configurable Triggers for AI features.
 
-## Development Conventions
+**System Design Choices:**
 
-**IMPORTANTE:** Sempre siga estas convenções ao criar ou modificar código neste projeto.
-
-### Database Schema (PostgreSQL/Drizzle)
-
-| Tipo | Padrão | Exemplo |
-|------|--------|---------|
-| Tabelas (coleções) | plural, snake_case | `users`, `events_standard`, `conversations` |
-| Tabelas (config única) | singular, snake_case | `openai_summary_config` |
-| Foreign keys | singular, snake_case | `user_id`, `conversation_id` |
-| Índices | `idx_<tabela>_<campo>` | `idx_events_standard_conversation_id` |
-
-### TypeScript Naming
-
-| Tipo | Padrão | Exemplo |
-|------|--------|---------|
-| Variáveis (export tabela) | camelCase, plural | `eventsStandard`, `conversationsSummary` |
-| Types/Interfaces | PascalCase | `EventStandard`, `ConversationSummary` |
-| Funções | camelCase, verbo | `getConversationSummary`, `upsertUser` |
-| Arquivos de serviço | camelCase | `summaryOrchestrator.ts`, `eventProcessor.ts` |
-| Adapters | camelCase + Adapter | `zendeskAdapter.ts` |
-
-### API Endpoints
-
-| Tipo | Padrão | Exemplo |
-|------|--------|---------|
-| REST resources | plural, kebab-case | `/api/conversations`, `/api/event-type-mappings` |
-| Config endpoints | singular | `/api/openai-summary-config` |
-| Ações específicas | verbo no path | `/api/conversations/:id/summary` |
-
-### Estrutura de Arquivos
-
-```
-server/
-  ├── features/         # Arquitetura feature-based (domínios de negócio)
-  │   ├── ai/             # Funcionalidades de IA
-  │   │   ├── routes/       # openaiConfig.ts, openaiLogs.ts, knowledgeBase.ts
-  │   │   ├── services/     # openaiApiService.ts, summaryAdapter.ts, summaryOrchestrator.ts,
-  │   │   │                 # productClassificationAdapter.ts, classificationOrchestrator.ts,
-  │   │   │                 # responseAdapter.ts, responseOrchestrator.ts
-  │   │   └── storage/      # configStorage.ts, knowledgeBaseStorage.ts
-  │   ├── cadastro/       # Usuários e organizações
-  │   │   ├── routes/       # usersStandard.ts, organizationsStandard.ts
-  │   │   └── storage/      # usersStandardStorage.ts, organizationsStandardStorage.ts
-  │   ├── events/         # Processamento de eventos
-  │   │   ├── routes/       # events.ts
-  │   │   ├── services/     # eventBus.ts, eventProcessor.ts
-  │   │   └── storage/      # eventStorage.ts
-  │   ├── export/         # Exportação e webhooks
-  │   │   ├── routes/       # export.ts, webhookLogs.ts, webhooks.ts
-  │   │   └── storage/      # webhookStorage.ts
-  │   └── maintenance/    # Manutenção do sistema
-  │       └── routes/       # maintenance.ts
-  ├── adapters/         # Transformadores de dados por source (Zendesk)
-  ├── routes/           # Rotas core (agregador + auth, conversations, products)
-  │   ├── index.ts        # Registrador central (importa de features)
-  │   ├── auth.ts         # Endpoints de autenticação
-  │   ├── conversations.ts # Conversas e mensagens
-  │   └── products.ts     # Produtos
-  ├── services/         # Services compartilhados
-  │   ├── index.ts        # Re-exporta services de features
-  │   ├── pollingWorker.ts # Worker para processar eventos pendentes
-  │   └── reprocessingService.ts # Serviço de reprocessamento
-  ├── storage/          # Módulos de acesso a dados (agregador + core)
-  │   ├── index.ts        # Agregador que importa de features e core
-  │   ├── authStorage.ts  # Operações de autenticação
-  │   ├── userStorage.ts  # Operações de usuários Zendesk
-  │   └── conversationStorage.ts # Operações de conversas
-  └── middleware/       # Middlewares compartilhados
-      └── auth.ts         # Guards: isAuthenticated, requireAuthorizedUser
-client/src/
-  ├── features/       # Módulos de funcionalidades (feature-based architecture)
-  │   ├── ai/           # Configurações e páginas de IA
-  │   │   ├── components/  # OpenaiConfigForm, etc
-  │   │   └── pages/       # AIPage, ClassificationConfigPage, etc
-  │   ├── cadastro/     # Gestão de usuários e organizações
-  │   │   ├── components/  # UsersListContent, OrganizationsListContent
-  │   │   └── pages/       # CadastroPage, UserStandardDetailPage, etc
-  │   ├── conversations/ # Atendimentos e conversas
-  │   │   ├── components/  # ConversationChat, ConversationSelector, etc
-  │   │   ├── pages/       # AtendimentosPage, UserConversationsPage
-  │   │   └── types/       # Tipos específicos de conversas
-  │   ├── events/       # Visualização de eventos
-  │   │   └── pages/       # EventsLayout, EventsStandardPage, etc
-  │   ├── export/       # Exportação de dados
-  │   │   └── pages/       # ExportPage, ExportSummariesPage
-  │   └── settings/     # Configurações do sistema
-  │       ├── components/  # AccessControlTab, GeneralSettingsTab, etc
-  │       └── pages/       # SettingsPage, ProductStandardsPage, etc
-  ├── shared/         # Recursos compartilhados entre features
-  │   ├── components/   # Componentes reutilizáveis
-  │   │   ├── ui/         # Badge, Pagination, DataTable, Modal, etc
-  │   │   ├── badges/     # StatusBadge, AuthorTypeBadge, etc
-  │   │   ├── charts/     # DonutChart
-  │   │   ├── layout/     # NavLink, EnvironmentBadge, TabbedLayout
-  │   │   └── modals/     # EventDetailModal, UserDetailModal, etc
-  │   ├── hooks/        # usePaginatedQuery, useAuth, useDateFormatters, etc
-  │   └── pages/        # Páginas core (LandingPage, LoadingPage, HomePage, etc)
-  ├── contexts/       # React contexts (TimezoneContext)
-  ├── lib/            # Utilitários e helpers (queryClient, dateUtils, userUtils)
-  └── types/          # Tipos compartilhados globalmente
-      ├── dateUtils.ts  # Formatação de datas
-      ├── userUtils.ts  # Formatação e extração de dados de usuário
-      └── queryClient.ts # Configuração TanStack Query e helpers (fetchApi, fetchWithAuth, apiRequest)
-shared/
-  └── schema.ts       # Definições de tabelas Drizzle (fonte única)
-```
-
-### Padrões de Componentes
-
-**Badge Component (client/src/components/ui/Badge.tsx):**
-Componente genérico reutilizável para badges com variantes de estilo:
-- Variants: `success`, `error`, `warning`, `info`, `purple`, `teal`, `default`
-- Sizes: `sm`, `md`
-- Suporte a ícones opcionais
-- Badges especializados (StatusBadge, AuthorTypeBadge, EventTypeBadge, AuthBadge) usam este componente base
-
-**Fetch/API Pattern (client/src/lib/queryClient.ts):**
-- `fetchApi<T>`: Fetch tipado com tratamento de erros e redirect para login em 401/403
-- `fetchWithAuth<T>`: Similar ao fetchApi mas retorna null em erros de autenticação (para hooks de auth)
-- `apiRequest`: Para requisições com body (POST, PUT, DELETE)
-- **SEMPRE** use estas funções em vez de `fetch` direto para manter consistência no tratamento de erros
-
-### Checklist para Novas Features
-
-Antes de considerar uma feature completa, verifique:
-
-- [ ] Nomes de tabelas seguem o padrão (plural para coleções)?
-- [ ] Variáveis TypeScript consistentes com o padrão?
-- [ ] APIs protegidas com middleware de autenticação?
-- [ ] Erros tratados graciosamente (try/catch, retorno de erro estruturado)?
-- [ ] Lazy initialization para serviços externos (ex: OpenAI)?
-- [ ] Documentação atualizada no replit.md?
+*   **Database Schema:** Tables are plural, `snake_case`; single-config tables are singular, `snake_case`; foreign keys are singular, `snake_case`; indices are `idx_<table_name>_<field>`.
+*   **API Endpoints:** REST resources are plural, `kebab-case`; config endpoints are singular; specific actions use verbs in the path.
+*   **File Structure:** Feature-based organization for `server/` (e.g., `ai/`, `events/`) and `client/src/` (e.g., `ai/`, `conversations/`), with shared resources in `shared/` and `lib/`.
 
 ## External Dependencies
 
-*   **Zendesk Sunshine Conversations:** Primary source for webhook events.
-*   **PostgreSQL/Neon:** Relational database for persistent storage.
-*   **Replit Auth:** Handles user authentication via OpenID Connect (Google Login).
-*   **Passport.js:** Used for managing authentication sessions.
-*   **Express.js:** Web application framework for the backend.
-*   **Drizzle ORM:** TypeScript ORM for database interaction.
-*   **React:** Frontend JavaScript library for building user interfaces.
-*   **Vite:** Fast build tool and development server for the frontend.
-*   **Tailwind CSS:** Utility-first CSS framework for styling.
-*   **TanStack Query:** Data fetching and state management library.
+*   **Zendesk Sunshine Conversations:** Primary webhook source.
+*   **PostgreSQL/Neon:** Relational database.
+*   **Replit Auth:** User authentication (Google Login).
+*   **Passport.js:** Authentication session management.
+*   **Express.js:** Backend web framework.
+*   **Drizzle ORM:** TypeScript ORM for database.
+*   **React:** Frontend UI library.
+*   **Vite:** Frontend build tool.
+*   **Tailwind CSS:** Styling framework.
+*   **TanStack Query:** Data fetching and state management.
 *   **Lucide React:** Icon library.
 *   **date-fns:** Date utility library.
-*   **wouter:** Small routing library for React.
+*   **wouter:** React routing library.
+
+---
+
+## API Endpoints Reference
+
+### Autenticação
+| Método | Endpoint | Auth | Descrição |
+|--------|----------|------|-----------|
+| GET | /api/login | - | Inicia fluxo de login OAuth |
+| GET | /api/callback | - | Callback do OAuth |
+| GET | /api/logout | - | Encerra sessão |
+| GET | /api/auth/user | Yes | Retorna usuário autenticado |
+| GET | /api/authorized-users | Yes | Lista usuários autorizados |
+| POST | /api/authorized-users | Yes | Adiciona usuário autorizado |
+| DELETE | /api/authorized-users/:id | Yes | Remove usuário autorizado |
+
+### Webhooks
+| Método | Endpoint | Auth | Descrição |
+|--------|----------|------|-----------|
+| GET | /health | - | Health check do servidor |
+| POST | /webhook/zendesk | HMAC | Recebe webhooks do Zendesk |
+| GET | /api/webhook-logs | Yes | Lista logs de webhooks |
+| GET | /api/webhook-logs/stats | Yes | Estatísticas de webhooks |
+| GET | /api/webhook-logs/:id | Yes | Detalhes de um webhook |
+
+### Conversas
+| Método | Endpoint | Auth | Descrição |
+|--------|----------|------|-----------|
+| GET | /api/conversations/stats | Yes | Estatísticas de conversas |
+| GET | /api/conversations/filters | Yes | Filtros disponíveis |
+| GET | /api/conversations/grouped | Yes | Conversas agrupadas por usuário |
+| GET | /api/conversations/user/:userId/messages | Yes | Mensagens de um usuário |
+| GET | /api/conversations/:id/summary | Yes | Resumo de uma conversa |
+
+### Eventos
+| Método | Endpoint | Auth | Descrição |
+|--------|----------|------|-----------|
+| GET | /api/events/events_standard | Yes | Lista eventos normalizados |
+| GET | /api/events/stats | Yes | Estatísticas de eventos |
+| GET | /api/event-type-mappings | Yes | Mapeamentos de tipos |
+| POST | /api/event-type-mappings | Yes | Cria mapeamento |
+| PUT | /api/event-type-mappings/:id | Yes | Atualiza mapeamento |
+| DELETE | /api/event-type-mappings/:id | Yes | Remove mapeamento |
+
+### IA - OpenAI
+| Método | Endpoint | Auth | Descrição |
+|--------|----------|------|-----------|
+| GET | /api/openai-config/:configType | Yes | Obtém config |
+| PUT | /api/openai-config/:configType | Yes | Atualiza config |
+| GET | /api/openai-logs | Yes | Lista logs de chamadas OpenAI |
+| GET | /api/openai-logs/:id | Yes | Detalhes de uma chamada |
+
+### Knowledge Base
+| Método | Endpoint | Auth | Descrição |
+|--------|----------|------|-----------|
+| GET | /api/knowledge-base | - | Lista artigos |
+| GET | /api/knowledge-base/:id | - | Detalhes de um artigo |
+| POST | /api/knowledge-base | - | Cria artigo |
+| PUT | /api/knowledge-base/:id | - | Atualiza artigo |
+| DELETE | /api/knowledge-base/:id | - | Remove artigo |
+
+### Cadastro
+| Método | Endpoint | Auth | Descrição |
+|--------|----------|------|-----------|
+| GET | /api/users-standard | Yes | Lista usuários padrão |
+| GET | /api/users-standard/:email | Yes | Detalhes por email |
+| GET | /api/organizations-standard | Yes | Lista organizações |
+| GET | /api/organizations-standard/:cnpjRoot | Yes | Detalhes por CNPJ |
+
+### Produtos
+| Método | Endpoint | Auth | Descrição |
+|--------|----------|------|-----------|
+| GET | /api/products/stats | Yes | Estatísticas de produtos |
+| GET | /api/product-standards | Yes | Lista padrões de produto |
+| PUT | /api/product-standards | Yes | Atualiza padrões |
+
+### Exportação
+| Método | Endpoint | Auth | Descrição |
+|--------|----------|------|-----------|
+| GET | /api/export/summaries | Yes | Exporta resumos |
+| GET | /api/export/filters | Yes | Filtros disponíveis |
+
+### Manutenção
+| Método | Endpoint | Auth | Descrição |
+|--------|----------|------|-----------|
+| GET | /api/maintenance/reprocessing/progress | - | Progresso do reprocessamento |
+| POST | /api/maintenance/reprocessing/start/:type | - | Inicia reprocessamento |
+| POST | /api/maintenance/reprocessing/stop/:type | - | Para reprocessamento |
+
+---
+
+## Environment Variables
+
+### Secrets Obrigatórios
+- DATABASE_URL: URL de conexão PostgreSQL
+- SESSION_SECRET: Chave secreta para sessões Express
+- OPENAI_API_KEY: Chave da API OpenAI
+
+### Secrets do Banco (Auto-gerenciados)
+- PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE
+
+### Environment Variables Por Ambiente
+- ZENDESK_WEBHOOK_SECRET (dev/prod): Chave HMAC para webhooks
+- ZENDESK_WEBHOOK_ID (dev/prod): ID do webhook no Zendesk
+
+---
+
+## Deploy / Publicação
+
+### Pré-requisitos
+1. Banco de dados PostgreSQL configurado
+2. Secrets configurados: SESSION_SECRET, OPENAI_API_KEY
+3. Variáveis de ambiente de produção configuradas
+
+### Passos para Publicar
+1. Verifique se o app funciona em desenvolvimento
+2. Configure variáveis de produção no painel Secrets
+3. Clique Deploy no Replit
+4. Escolha Autoscale (recomendado para APIs)
+
+---
+
+## Troubleshooting
+
+### Webhooks não chegando
+1. Verifique ZENDESK_WEBHOOK_SECRET
+2. Confirme endpoint /webhook/zendesk acessível
+3. Verifique logs em /api/webhook-logs
+
+### Autenticação falhando
+1. Verifique usuário em authorized_users
+2. Confirme email com @ifood.com.br
+3. Verifique SESSION_SECRET configurado
+
+### IA não gerando resumos
+1. Verifique OPENAI_API_KEY configurado
+2. Confirme config ativa em /api/openai-config/:type
+3. Verifique logs em /api/openai-logs
+
+### Eventos não processando
+1. Verifique logs em /api/webhook-raws/stats
+2. Use /api/maintenance/reprocessing/start/all
+
+---
+
+## UI Components Catalog
+
+Componentes em client/src/shared/components/ui/:
+
+### Badge
+- variant: success, error, warning, info, purple, teal, default
+- size: sm, md
+- icon: ReactNode opcional
+- rounded: full, default
+
+### DataTable
+- columns: Column<T>[] - definição das colunas
+- data: T[] - dados a exibir
+- keyExtractor: extrai chave única
+- pagination: props de paginação
+- onRowClick: callback ao clicar
+
+### Modal
+- title: título do modal
+- onClose: callback ao fechar
+- maxWidth: sm, md, lg, xl, 2xl, 4xl
+
+### Pagination
+- page, totalPages, total
+- onPreviousPage, onNextPage
+- hasPreviousPage, hasNextPage
+
+### Outros Componentes
+- LoadingSpinner: spinner animado
+- EmptyState: estado vazio
+- Drawer: painel lateral
+- ToggleSwitch: toggle on/off
+- SegmentedTabs: tabs segmentadas
+- PageCard: container para páginas
+- MessageBubble: bolha de chat
+- ImageLightbox: visualizador de imagens
+
