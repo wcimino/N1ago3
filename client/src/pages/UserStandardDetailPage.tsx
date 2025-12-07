@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ChevronLeft, Users, Mail, FileText, Globe, Clock, History } from "lucide-react";
+import { ChevronLeft, Users, Mail, FileText, Clock, History } from "lucide-react";
 import { LoadingState, EmptyState } from "../components";
 import { useDateFormatters } from "../hooks/useDateFormatters";
 import { fetchApi } from "../lib/queryClient";
@@ -103,18 +103,18 @@ export function UserStandardDetailPage({ params }: UserStandardDetailPageProps) 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <Mail className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Email</p>
-                  <p className="font-medium">{user.email}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
                 <Users className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>
                   <p className="text-sm text-gray-500">Nome</p>
                   <p className="font-medium">{user.name || "-"}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <Mail className="w-5 h-5 text-gray-400 mt-0.5" />
+                <div>
+                  <p className="text-sm text-gray-500">Email</p>
+                  <p className="font-medium">{user.email}</p>
                 </div>
               </div>
 
@@ -125,25 +125,9 @@ export function UserStandardDetailPage({ params }: UserStandardDetailPageProps) 
                   <p className="font-medium">{user.cpf || "-"}</p>
                 </div>
               </div>
-
-              <div className="flex items-start gap-3">
-                <Globe className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Idioma</p>
-                  <p className="font-medium">{user.locale || "-"}</p>
-                </div>
-              </div>
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Primeiro contato</p>
-                  <p className="font-medium">{formatDateTime(user.firstSeenAt)}</p>
-                </div>
-              </div>
-
               <div className="flex items-start gap-3">
                 <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>

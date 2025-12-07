@@ -9,7 +9,7 @@ function toDate(date: string | Date): Date {
 }
 
 export function formatDateTime(date: string | Date, timezone: string = DEFAULT_TIMEZONE): string {
-  return formatInTimeZone(toDate(date), timezone, "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
+  return formatInTimeZone(toDate(date), timezone, "dd/MM/yyyy HH:mm", { locale: ptBR });
 }
 
 export function formatDateTimeShort(date: string | Date, timezone: string = DEFAULT_TIMEZONE): string {

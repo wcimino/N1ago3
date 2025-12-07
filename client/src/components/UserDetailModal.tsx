@@ -57,10 +57,6 @@ export function UserDetailModal({ user, onClose }: UserDetailModalProps) {
                   <p className="text-sm font-medium text-gray-900 mt-1">{user.profile?.email || "-"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 uppercase">Idioma</p>
-                  <p className="text-sm font-medium text-gray-900 mt-1">{user.profile?.locale || "-"}</p>
-                </div>
-                <div>
                   <p className="text-xs text-gray-500 uppercase">External ID</p>
                   <p className="text-sm font-medium text-gray-900 mt-1 font-mono">{user.external_id || "-"}</p>
                 </div>
@@ -70,12 +66,6 @@ export function UserDetailModal({ user, onClose }: UserDetailModalProps) {
             <div className="bg-white border rounded-lg p-4">
               <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Atividade</h3>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-gray-500 uppercase">Primeira interação</p>
-                  <p className="text-sm font-medium text-gray-900 mt-1">
-                    {formatDateTimeWithPrefix(user.first_seen_at)}
-                  </p>
-                </div>
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Última interação</p>
                   <p className="text-sm font-medium text-gray-900 mt-1">
