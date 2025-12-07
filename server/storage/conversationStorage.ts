@@ -115,9 +115,26 @@ export const conversationStorage = {
     };
   },
 
-  async getConversationsGroupedByUser(limit = 50, offset = 0) {
+  async getConversationsGroupedByUser(limit = 50, offset = 0, productFilter?: string, intentFilter?: string) {
+    const productCondition = productFilter ? sql`AND lc_filter.last_product = ${productFilter}` : sql``;
+    const intentCondition = intentFilter ? sql`AND lc_filter.last_intent = ${intentFilter}` : sql``;
+
     const userConversations = await db.execute(sql`
-      WITH user_stats AS (
+      WITH last_conv_filter AS (
+        SELECT DISTINCT ON (c.user_id)
+          c.user_id,
+          cs.product as last_product,
+          cs.intent as last_intent
+        FROM conversations c
+        LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
+        WHERE c.user_id IS NOT NULL
+        ORDER BY c.user_id, c.updated_at DESC
+      ),
+      filtered_users AS (
+        SELECT user_id FROM last_conv_filter lc_filter
+        WHERE 1=1 ${productCondition} ${intentCondition}
+      ),
+      user_stats AS (
         SELECT 
           c.user_id,
           COUNT(*) as conversation_count,
@@ -137,6 +154,7 @@ export const conversationStorage = {
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
         WHERE c.user_id IS NOT NULL
+          AND c.user_id IN (SELECT user_id FROM filtered_users)
         GROUP BY c.user_id
         ORDER BY last_activity DESC
         LIMIT ${limit} OFFSET ${offset}
@@ -163,13 +181,24 @@ export const conversationStorage = {
       LEFT JOIN last_conv lc ON lc.user_id = us.user_id
     `);
 
-    const [{ count }] = await db.select({ 
-      count: sql<number>`COUNT(DISTINCT user_id)` 
-    }).from(conversations).where(sql`user_id IS NOT NULL`);
+    const countResult = await db.execute(sql`
+      WITH last_conv_filter AS (
+        SELECT DISTINCT ON (c.user_id)
+          c.user_id,
+          cs.product as last_product,
+          cs.intent as last_intent
+        FROM conversations c
+        LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
+        WHERE c.user_id IS NOT NULL
+        ORDER BY c.user_id, c.updated_at DESC
+      )
+      SELECT COUNT(*) as count FROM last_conv_filter lc_filter
+      WHERE 1=1 ${productCondition} ${intentCondition}
+    `);
 
     return { 
       userGroups: userConversations.rows as any[], 
-      total: Number(count) 
+      total: Number((countResult.rows[0] as any).count) 
     };
   },
 

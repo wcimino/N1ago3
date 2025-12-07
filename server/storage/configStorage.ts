@@ -176,4 +176,21 @@ export const configStorage = {
       .orderBy(desc(responsesSuggested.createdAt))
       .limit(limit);
   },
+
+  async getUniqueProductsAndIntents(): Promise<{ products: string[]; intents: string[] }> {
+    const productsResult = await db
+      .selectDistinct({ product: conversationsSummary.product })
+      .from(conversationsSummary)
+      .where(isNotNull(conversationsSummary.product));
+    
+    const intentsResult = await db
+      .selectDistinct({ intent: conversationsSummary.intent })
+      .from(conversationsSummary)
+      .where(isNotNull(conversationsSummary.intent));
+
+    return {
+      products: productsResult.map(r => r.product).filter((p): p is string => p !== null).sort(),
+      intents: intentsResult.map(r => r.intent).filter((i): i is string => i !== null).sort(),
+    };
+  },
 };

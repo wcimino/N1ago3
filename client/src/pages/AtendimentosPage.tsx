@@ -1,16 +1,38 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { Users, MessageCircle, Activity, User, UserCheck } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Users, MessageCircle, Activity, User, UserCheck, Filter, X } from "lucide-react";
 import { UserDetailModal, LoadingState, EmptyState, Pagination, PageCard } from "../components";
 import { useDateFormatters } from "../hooks/useDateFormatters";
 import { getUserDisplayName, getActiveConversationsCount, getUserFromGroup } from "../lib/userUtils";
 import { usePaginatedQuery } from "../hooks/usePaginatedQuery";
+import { fetchApi } from "../lib/queryClient";
 import type { User as UserType, UserGroup } from "../types";
+
+interface FiltersResponse {
+  products: string[];
+  intents: string[];
+}
 
 export function AtendimentosPage() {
   const [, navigate] = useLocation();
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
+  const [productFilter, setProductFilter] = useState<string>("");
+  const [intentFilter, setIntentFilter] = useState<string>("");
   const { formatShortDateTime } = useDateFormatters();
+
+  const { data: filters } = useQuery<FiltersResponse>({
+    queryKey: ["conversations-filters"],
+    queryFn: () => fetchApi<FiltersResponse>("/api/conversations/filters"),
+  });
+
+  const endpoint = useMemo(() => {
+    const params = new URLSearchParams();
+    if (productFilter) params.set("product", productFilter);
+    if (intentFilter) params.set("intent", intentFilter);
+    const queryString = params.toString();
+    return queryString ? `/api/conversations/grouped?${queryString}` : "/api/conversations/grouped";
+  }, [productFilter, intentFilter]);
 
   const {
     data: userGroups,
@@ -25,25 +47,70 @@ export function AtendimentosPage() {
     showingFrom,
     showingTo,
   } = usePaginatedQuery<UserGroup>({
-    queryKey: "conversations-grouped",
-    endpoint: "/api/conversations/grouped",
+    queryKey: `conversations-grouped-${productFilter}-${intentFilter}`,
+    endpoint,
     limit: 20,
     dataKey: "user_groups",
   });
+
+  const hasFilters = productFilter || intentFilter;
+
+  const clearFilters = () => {
+    setProductFilter("");
+    setIntentFilter("");
+  };
 
   return (
     <PageCard
       title="Atendimentos"
       description="Lista de atendimentos agrupados por usuário"
     >
+      <div className="px-4 py-3 border-b bg-gray-50 flex flex-wrap items-center gap-3">
+        <Filter className="w-4 h-4 text-gray-500" />
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={productFilter}
+            onChange={(e) => setProductFilter(e.target.value)}
+            className="text-sm border border-gray-300 rounded-md px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Todos os produtos</option>
+            {filters?.products.map((product) => (
+              <option key={product} value={product}>
+                {product}
+              </option>
+            ))}
+          </select>
+          <select
+            value={intentFilter}
+            onChange={(e) => setIntentFilter(e.target.value)}
+            className="text-sm border border-gray-300 rounded-md px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            <option value="">Todas as intenções</option>
+            {filters?.intents.map((intent) => (
+              <option key={intent} value={intent}>
+                {intent}
+              </option>
+            ))}
+          </select>
+          {hasFilters && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-red-600 px-2 py-1"
+            >
+              <X className="w-4 h-4" />
+              Limpar
+            </button>
+          )}
+        </div>
+      </div>
 
       {isLoading ? (
         <LoadingState />
       ) : userGroups.length === 0 ? (
         <EmptyState
           icon={<MessageCircle className="w-12 h-12 text-gray-300" />}
-          title="Nenhuma conversa registrada ainda."
-          description="As conversas serão criadas quando mensagens chegarem via webhook."
+          title={hasFilters ? "Nenhum resultado encontrado." : "Nenhuma conversa registrada ainda."}
+          description={hasFilters ? "Tente ajustar os filtros selecionados." : "As conversas serão criadas quando mensagens chegarem via webhook."}
         />
       ) : (
         <>

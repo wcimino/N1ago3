@@ -9,11 +9,18 @@ router.get("/api/conversations/stats", isAuthenticated, requireAuthorizedUser, a
   res.json(stats);
 });
 
+router.get("/api/conversations/filters", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  const filters = await storage.getUniqueProductsAndIntents();
+  res.json(filters);
+});
+
 router.get("/api/conversations/grouped", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 50;
   const offset = parseInt(req.query.offset as string) || 0;
+  const product = req.query.product as string | undefined;
+  const intent = req.query.intent as string | undefined;
 
-  const { userGroups, total } = await storage.getConversationsGroupedByUser(limit, offset);
+  const { userGroups, total } = await storage.getConversationsGroupedByUser(limit, offset, product, intent);
 
   const enrichedGroups = await Promise.all(
     userGroups.map(async (group: any) => {
