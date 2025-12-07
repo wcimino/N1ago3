@@ -1,10 +1,7 @@
 import OpenAI from "openai";
 import { knowledgeSuggestionsStorage } from "../storage/knowledgeSuggestionsStorage.js";
 import { knowledgeBaseService } from "./knowledgeBaseService.js";
-import { db } from "../../../db.js";
-import { openaiApiLogs } from "../../../../shared/schema.js";
-
-const openai = new OpenAI();
+import { callOpenAIWithTools } from "./openaiApiService.js";
 
 export interface AgentLearningPayload {
   messages: Array<{
@@ -28,7 +25,7 @@ export interface AgentLearningResult {
 
 type SuggestionType = "create" | "update" | "skip";
 
-const AGENT_SYSTEM_PROMPT = `Você é um especialista em gestão de base de conhecimento para atendimento ao cliente.
+const DEFAULT_AGENT_SYSTEM_PROMPT = `Você é um especialista em gestão de base de conhecimento para atendimento ao cliente.
 
 Sua tarefa é analisar conversas de atendimento e decidir se o conhecimento extraído deve:
 1. CRIAR um novo artigo na base de conhecimento
@@ -187,19 +184,12 @@ async function handleSearchKnowledgeBase(args: {
 `).join("\n");
 }
 
-export async function extractKnowledgeWithAgent(
-  payload: AgentLearningPayload,
-  modelName: string = "gpt-4o",
-  conversationId: number,
-  externalConversationId: string | null
-): Promise<AgentLearningResult> {
-  const startTime = Date.now();
-  
+function buildUserPrompt(payload: AgentLearningPayload): string {
   const messagesContext = payload.messages
     .map(m => `[${m.authorType}${m.authorName ? ` - ${m.authorName}` : ''}]: ${m.contentText || '(sem texto)'}`)
     .join('\n');
 
-  const userMessage = `## Conversa de Atendimento
+  return `## Conversa de Atendimento
 
 ${messagesContext}
 
@@ -211,161 +201,86 @@ ${payload.currentSummary || 'Nenhum resumo disponível.'}
 2. Use search_knowledge_base para buscar artigos existentes
 3. Analise se algum artigo existente cobre o tema
 4. Use create_knowledge_suggestion para registrar sua decisão`;
+}
 
-  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-    { role: "system", content: AGENT_SYSTEM_PROMPT },
-    { role: "user", content: userMessage }
-  ];
+export async function extractKnowledgeWithAgent(
+  payload: AgentLearningPayload,
+  modelName: string,
+  promptTemplate: string | null,
+  conversationId: number,
+  externalConversationId: string | null
+): Promise<AgentLearningResult> {
+  const systemPrompt = promptTemplate || DEFAULT_AGENT_SYSTEM_PROMPT;
+  const userPrompt = buildUserPrompt(payload);
 
-  let suggestionResult: {
-    action: SuggestionType;
-    targetArticleId?: number;
-    updateReason?: string;
-    productStandard?: string;
-    subproductStandard?: string;
-    category1?: string;
-    category2?: string;
-    description?: string;
-    resolution?: string;
-    observations?: string;
-    confidenceScore?: number;
-    skipReason?: string;
-  } | null = null;
-
-  let totalTokens = 0;
-  let iterations = 0;
-  const maxIterations = 5;
-
-  try {
-    while (iterations < maxIterations) {
-      iterations++;
-      
-      const response = await openai.chat.completions.create({
-        model: modelName,
-        messages,
-        tools,
-        tool_choice: "auto",
-        max_tokens: 2048
-      });
-
-      const choice = response.choices[0];
-      totalTokens += response.usage?.total_tokens || 0;
-
-      if (choice.finish_reason === "stop" || !choice.message.tool_calls) {
-        break;
+  const result = await callOpenAIWithTools({
+    requestType: "learning_agent",
+    modelName,
+    promptSystem: systemPrompt,
+    promptUser: userPrompt,
+    tools,
+    maxTokens: 2048,
+    maxIterations: 5,
+    contextType: "conversation",
+    contextId: externalConversationId || String(conversationId),
+    onToolCall: async (name, args) => {
+      if (name === "search_knowledge_base") {
+        const searchResult = await handleSearchKnowledgeBase(args);
+        console.log(`[Learning Agent] Search KB: product=${args.product}, found results`);
+        return searchResult;
+      } else if (name === "create_knowledge_suggestion") {
+        console.log(`[Learning Agent] Suggestion: action=${args.action}, targetArticleId=${args.targetArticleId || 'N/A'}`);
+        return `Sugestão registrada: action=${args.action}${args.targetArticleId ? `, targetArticleId=${args.targetArticleId}` : ''}`;
       }
-
-      messages.push(choice.message);
-
-      for (const toolCall of choice.message.tool_calls) {
-        if (toolCall.type !== "function") continue;
-        
-        const args = JSON.parse(toolCall.function.arguments);
-        let toolResult: string;
-
-        if (toolCall.function.name === "search_knowledge_base") {
-          toolResult = await handleSearchKnowledgeBase(args);
-          console.log(`[Learning Agent] Search KB: product=${args.product}, found results`);
-        } else if (toolCall.function.name === "create_knowledge_suggestion") {
-          suggestionResult = args;
-          toolResult = `Sugestão registrada: action=${args.action}${args.targetArticleId ? `, targetArticleId=${args.targetArticleId}` : ''}`;
-          console.log(`[Learning Agent] Suggestion: action=${args.action}, targetArticleId=${args.targetArticleId || 'N/A'}`);
-        } else {
-          toolResult = "Ferramenta desconhecida";
-        }
-
-        messages.push({
-          role: "tool",
-          tool_call_id: toolCall.id,
-          content: toolResult
-        });
-      }
-
-      if (suggestionResult) {
-        break;
-      }
+      return "Ferramenta desconhecida";
     }
+  });
 
-    const durationMs = Date.now() - startTime;
-
-    const [logEntry] = await db.insert(openaiApiLogs).values({
-      requestType: "learning_agent",
-      modelName,
-      promptSystem: AGENT_SYSTEM_PROMPT,
-      promptUser: userMessage,
-      responseRaw: { iterations, suggestionResult },
-      responseContent: JSON.stringify(suggestionResult),
-      tokensTotal: totalTokens,
-      durationMs,
-      success: !!suggestionResult,
-      contextType: "conversation",
-      contextId: externalConversationId || String(conversationId)
-    }).returning();
-
-    if (!suggestionResult) {
-      return {
-        success: false,
-        error: "Agent did not produce a suggestion",
-        logId: logEntry.id
-      };
-    }
-
-    if (suggestionResult.action === "skip") {
-      console.log(`[Learning Agent] Skipping conversation ${conversationId}: ${suggestionResult.skipReason}`);
-      return {
-        success: true,
-        suggestionType: "skip",
-        logId: logEntry.id
-      };
-    }
-
-    const suggestion = await knowledgeSuggestionsStorage.createSuggestion({
-      conversationId,
-      externalConversationId,
-      suggestionType: suggestionResult.action,
-      productStandard: suggestionResult.productStandard,
-      subproductStandard: suggestionResult.subproductStandard,
-      category1: suggestionResult.category1,
-      category2: suggestionResult.category2,
-      description: suggestionResult.description,
-      resolution: suggestionResult.resolution,
-      observations: suggestionResult.observations,
-      confidenceScore: suggestionResult.confidenceScore,
-      similarArticleId: suggestionResult.targetArticleId,
-      updateReason: suggestionResult.updateReason,
-      status: "pending",
-      conversationHandler: payload.conversationHandler,
-      rawExtraction: suggestionResult
-    });
-
-    console.log(`[Learning Agent] Suggestion saved: id=${suggestion.id}, type=${suggestionResult.action}, targetArticle=${suggestionResult.targetArticleId || 'N/A'}`);
-
-    return {
-      success: true,
-      suggestionId: suggestion.id,
-      suggestionType: suggestionResult.action,
-      targetArticleId: suggestionResult.targetArticleId,
-      logId: logEntry.id
-    };
-
-  } catch (error) {
-    console.error("[Learning Agent] Error:", error);
-    
-    const [logEntry] = await db.insert(openaiApiLogs).values({
-      requestType: "learning_agent",
-      modelName,
-      promptSystem: AGENT_SYSTEM_PROMPT,
-      promptUser: userMessage,
-      success: false,
-      errorMessage: String(error),
-      contextType: "conversation",
-      contextId: externalConversationId || String(conversationId)
-    }).returning();
-
+  if (!result.success || !result.finalResult) {
     return {
       success: false,
-      error: String(error),
-      logId: logEntry.id
+      error: result.error || "Agent did not produce a suggestion",
+      logId: result.logId
     };
   }
+
+  const suggestionResult = result.finalResult;
+
+  if (suggestionResult.action === "skip") {
+    console.log(`[Learning Agent] Skipping conversation ${conversationId}: ${suggestionResult.skipReason}`);
+    return {
+      success: true,
+      suggestionType: "skip",
+      logId: result.logId
+    };
+  }
+
+  const suggestion = await knowledgeSuggestionsStorage.createSuggestion({
+    conversationId,
+    externalConversationId,
+    suggestionType: suggestionResult.action,
+    productStandard: suggestionResult.productStandard,
+    subproductStandard: suggestionResult.subproductStandard,
+    category1: suggestionResult.category1,
+    category2: suggestionResult.category2,
+    description: suggestionResult.description,
+    resolution: suggestionResult.resolution,
+    observations: suggestionResult.observations,
+    confidenceScore: suggestionResult.confidenceScore,
+    similarArticleId: suggestionResult.targetArticleId,
+    updateReason: suggestionResult.updateReason,
+    status: "pending",
+    conversationHandler: payload.conversationHandler,
+    rawExtraction: suggestionResult
+  });
+
+  console.log(`[Learning Agent] Suggestion saved: id=${suggestion.id}, type=${suggestionResult.action}, targetArticle=${suggestionResult.targetArticleId || 'N/A'}`);
+
+  return {
+    success: true,
+    suggestionId: suggestion.id,
+    suggestionType: suggestionResult.action,
+    targetArticleId: suggestionResult.targetArticleId,
+    logId: result.logId
+  };
 }
