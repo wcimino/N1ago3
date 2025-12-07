@@ -1,3 +1,5 @@
-export { ConversationSelector } from "./ConversationSelector";
-export { ConversationSummary } from "./ConversationSummary";
-export { ConversationChat } from "./ConversationChat";
+export { 
+  ConversationSelector, 
+  ConversationSummary, 
+  ConversationChat 
+} from "../../features/conversations";
