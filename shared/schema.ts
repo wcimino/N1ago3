@@ -143,6 +143,7 @@ export const conversationsSummary = pgTable("conversations_summary", {
   summary: text("summary").notNull(),
   lastEventId: integer("last_event_id"),
   product: text("product"),
+  productStandard: text("product_standard"),
   intent: text("intent"),
   confidence: integer("confidence"),
   classifiedAt: timestamp("classified_at"),
