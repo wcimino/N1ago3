@@ -17,6 +17,7 @@ import {
   SettingsPage,
   CadastroPage,
   ExportPage,
+  ProductStandardsPage,
 } from "./pages";
 
 function AuthenticatedApp() {
@@ -97,6 +98,7 @@ function AuthenticatedApp() {
           <Route path="/export" component={ExportPage} />
           <Route path="/export/:rest*" component={ExportPage} />
           <Route path="/settings" component={SettingsPage} />
+          <Route path="/settings/product-standards" component={ProductStandardsPage} />
         </Switch>
       </main>
     </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { Play, Pause, RotateCcw, Users, Building2, AlertCircle, CheckCircle2, Package } from "lucide-react";
+import { useLocation } from "wouter";
+import { Play, Pause, RotateCcw, Users, Building2, AlertCircle, CheckCircle2, Package, ArrowRight } from "lucide-react";
 import { apiRequest, fetchApi } from "../../lib/queryClient";
-import { ProductStandardsSection } from "./ProductStandardsSection";
 
 type ReprocessingType = "users" | "organizations";
 
@@ -24,6 +24,7 @@ interface AllProgress {
 }
 
 export function MaintenanceTab() {
+  const [, navigate] = useLocation();
   const [progress, setProgress] = useState<AllProgress | null>(null);
   const [loading, setLoading] = useState<Record<ReprocessingType, boolean>>({
     users: false,
@@ -206,11 +207,24 @@ export function MaintenanceTab() {
   return (
     <div className="space-y-8">
       <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Package className="w-5 h-5" />
-          Padronização de Produtos
-        </h2>
-        <ProductStandardsSection />
+        <div className="bg-gray-50 rounded-lg p-6 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <Package className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Padronização de Produtos</h3>
+              <p className="text-sm text-gray-600">Defina nomes padronizados para os produtos classificados pela IA</p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate("/settings/product-standards")}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Começar
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
       </section>
 
       <hr className="border-gray-200" />
