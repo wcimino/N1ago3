@@ -36,14 +36,18 @@ function AuthenticatedApp() {
               >
                 <Settings className="w-5 h-5" />
               </Link>
-              <a
-                href="/api/logout"
+              <button
+                onClick={() => {
+                  if (window.confirm("Tem certeza que deseja sair?")) {
+                    window.location.href = "/api/logout";
+                  }
+                }}
                 className="inline-flex items-center gap-1 p-1.5 sm:px-3 sm:py-1.5 text-sm text-gray-600 hover:text-gray-900 border rounded-lg hover:bg-gray-50"
                 title="Sair"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="hidden sm:inline">Sair</span>
-              </a>
+              </button>
             </div>
           </div>
           <nav className="flex gap-1 -mb-px overflow-x-auto scrollbar-hide pb-px">
