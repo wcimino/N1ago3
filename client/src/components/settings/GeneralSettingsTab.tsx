@@ -1,4 +1,4 @@
-import { Globe, Check } from "lucide-react";
+import { Globe } from "lucide-react";
 import { useTimezone, TIMEZONE_OPTIONS, type TimezoneValue } from "../../contexts/TimezoneContext";
 
 export function GeneralSettingsTab() {
@@ -15,26 +15,17 @@ export function GeneralSettingsTab() {
           Selecione o fuso horário para exibição de datas e horários em toda a aplicação.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <select
+          value={timezone}
+          onChange={(e) => setTimezone(e.target.value as TimezoneValue)}
+          className="w-full max-w-md px-4 py-3 rounded-lg border-2 border-gray-200 bg-white text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all cursor-pointer"
+        >
           {TIMEZONE_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => setTimezone(option.value as TimezoneValue)}
-              className={`
-                flex items-center justify-between px-4 py-3 rounded-lg border-2 text-left transition-all
-                ${timezone === option.value
-                  ? "border-blue-500 bg-blue-50 text-blue-700"
-                  : "border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50"
-                }
-              `}
-            >
-              <span className="font-medium">{option.label}</span>
-              {timezone === option.value && (
-                <Check className="w-5 h-5 text-blue-600" />
-              )}
-            </button>
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
           ))}
-        </div>
+        </select>
 
         <p className="text-xs text-gray-500 mt-4">
           Configuração salva automaticamente. Os horários em toda a aplicação serão ajustados.
