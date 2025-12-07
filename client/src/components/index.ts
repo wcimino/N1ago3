@@ -23,3 +23,5 @@ export { OpenaiConfigForm } from "./OpenaiConfigForm";
 export type { OpenaiConfigFormProps } from "./OpenaiConfigForm";
 export { TabbedLayout } from "./TabbedLayout";
 export type { TabConfig, TabbedLayoutProps } from "./TabbedLayout";
+export { PageCard } from "./ui/PageCard";
+export type { PageCardProps } from "./ui/PageCard";

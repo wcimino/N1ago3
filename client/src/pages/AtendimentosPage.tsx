@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Users, MessageCircle, Activity, User, UserCheck } from "lucide-react";
-import { UserDetailModal, LoadingState, EmptyState, Pagination } from "../components";
+import { UserDetailModal, LoadingState, EmptyState, Pagination, PageCard } from "../components";
 import { useDateFormatters } from "../hooks/useDateFormatters";
 import { getUserDisplayName, getActiveConversationsCount, getUserFromGroup } from "../lib/userUtils";
 import { usePaginatedQuery } from "../hooks/usePaginatedQuery";
@@ -32,11 +32,10 @@ export function AtendimentosPage() {
   });
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="px-4 py-3 border-b">
-        <h2 className="text-lg font-semibold text-gray-900">Atendimentos</h2>
-        <p className="text-sm text-gray-500 mt-1">Lista de atendimentos agrupados por usuário</p>
-      </div>
+    <PageCard
+      title="Atendimentos"
+      description="Lista de atendimentos agrupados por usuário"
+    >
 
       {isLoading ? (
         <LoadingState />
@@ -150,6 +149,6 @@ export function AtendimentosPage() {
       )}
 
       {selectedUser !== null && <UserDetailModal user={selectedUser} onClose={() => setSelectedUser(null)} />}
-    </div>
+    </PageCard>
   );
 }
