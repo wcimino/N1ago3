@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { Modal, ModalField, ModalGrid, ModalCodeBlock } from "./ui/Modal";
-import { LoadingState } from "./ui/LoadingSpinner";
+import { Modal, ModalField, ModalGrid, ModalCodeBlock } from "../shared/components/ui/Modal";
+import { LoadingState } from "../shared/components/ui/LoadingSpinner";
 import { StatusBadge } from "./StatusBadge";
 import { useDateFormatters } from "../hooks/useDateFormatters";
 import { fetchApi } from "../lib/queryClient";

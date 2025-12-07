@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { CheckboxListItem } from "./ui/CheckboxListItem";
-import { LoadingState } from "./ui/LoadingSpinner";
+import { CheckboxListItem } from "../shared/components/ui/CheckboxListItem";
+import { LoadingState } from "../shared/components/ui/LoadingSpinner";
 import { useOpenaiApiConfig } from "../hooks/useOpenaiApiConfig";
 import { AUTHOR_TYPE_OPTIONS, MODEL_OPTIONS } from "../lib/constants";
 

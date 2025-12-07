@@ -1,6 +1,6 @@
 import { RefObject } from "react";
 import { Sparkles } from "lucide-react";
-import { MessageBubble } from "../ui/MessageBubble";
+import { MessageBubble } from "../../shared/components/ui/MessageBubble";
 import type { ImagePayload, Message } from "../../types";
 
 interface SuggestedResponse {
