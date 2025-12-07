@@ -1,13 +1,13 @@
 import { Router, type Request, type Response } from "express";
-import { storage } from "../storage.js";
-import { isAuthenticated, requireAuthorizedUser } from "../middleware/auth.js";
+import { authStorage } from "../storage/authStorage.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
 
 const router = Router();
 
 router.get('/api/auth/user', isAuthenticated, requireAuthorizedUser, async (req: any, res) => {
   try {
     const userId = req.user.claims.sub;
-    const user = await storage.getAuthUser(userId);
+    const user = await authStorage.getAuthUser(userId);
     res.json(user);
   } catch (error) {
     console.error("Error fetching user:", error);
@@ -16,7 +16,7 @@ router.get('/api/auth/user', isAuthenticated, requireAuthorizedUser, async (req:
 });
 
 router.get("/api/authorized-users", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  const users = await storage.getAuthorizedUsers();
+  const users = await authStorage.getAuthorizedUsers();
   res.json(users);
 });
 
@@ -33,12 +33,12 @@ router.post("/api/authorized-users", isAuthenticated, requireAuthorizedUser, asy
   }
 
   try {
-    const existingUser = await storage.isUserAuthorized(emailLower);
+    const existingUser = await authStorage.isUserAuthorized(emailLower);
     if (existingUser) {
       return res.status(409).json({ error: "Usuário já cadastrado" });
     }
 
-    const user = await storage.addAuthorizedUser({
+    const user = await authStorage.addAuthorizedUser({
       email: emailLower,
       name,
       createdBy: (req as any).user?.claims?.email,
@@ -51,7 +51,7 @@ router.post("/api/authorized-users", isAuthenticated, requireAuthorizedUser, asy
 
 router.delete("/api/authorized-users/:id", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
-  await storage.removeAuthorizedUser(id);
+  await authStorage.removeAuthorizedUser(id);
   res.json({ success: true });
 });
 

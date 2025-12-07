@@ -36,7 +36,35 @@ The frontend dashboard offers a real-time view of events and conversations, admi
 
 *   **Database Schema:** Tables are plural, `snake_case`; single-config tables are singular, `snake_case`; foreign keys are singular, `snake_case`; indices are `idx_<table_name>_<field>`.
 *   **API Endpoints:** REST resources are plural, `kebab-case`; config endpoints are singular; specific actions use verbs in the path.
-*   **File Structure:** Feature-based organization for `server/` (e.g., `ai/`, `events/`) and `client/src/` (e.g., `ai/`, `conversations/`), with shared resources in `shared/` and `lib/`.
+*   **File Structure:** Feature-based organization for both frontend and backend.
+
+**Backend Feature Architecture (server/features/):**
+
+Each feature module follows a consistent structure:
+```
+server/features/<feature>/
+├── routes/      # Express route handlers
+├── storage/     # Database operations (Drizzle)
+├── services/    # Business logic
+└── index.ts     # Public exports
+```
+
+Current features:
+- `auth/` - Authentication and authorization (authStorage, auth routes)
+- `ai/` - OpenAI integrations (config, logs, knowledge base)
+- `cadastro/` - User and organization management
+- `conversations/` - Conversation and message handling (includes userStorage)
+- `events/` - Event processing and normalization
+- `export/` - Webhooks and data export
+- `maintenance/` - System maintenance utilities
+- `products/` - Product classification and stats
+- `sync/` - Background workers (pollingWorker, reprocessingService)
+
+Centralized entry points:
+- `server/routes/index.ts` - Route registration
+- `server/storage/index.ts` - Consolidated storage exports
+- `server/services/index.ts` - Consolidated service exports
+- `server/storage.ts` - Main storage facade
 
 ## External Dependencies
 

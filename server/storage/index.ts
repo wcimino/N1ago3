@@ -1,6 +1,6 @@
-import { authStorage } from "./authStorage.js";
-import { userStorage } from "./userStorage.js";
-import { conversationStorage } from "./conversationStorage.js";
+import { authStorage } from "../features/auth/storage/authStorage.js";
+import { userStorage } from "../features/conversations/storage/userStorage.js";
+import { conversationStorage } from "../features/conversations/storage/index.js";
 
 import { eventStorage } from "../features/events/storage/eventStorage.js";
 import { usersStandardStorage } from "../features/cadastro/storage/usersStandardStorage.js";
@@ -21,9 +21,9 @@ export const storage = {
   ...organizationsStandardStorage,
 };
 
-export { authStorage } from "./authStorage.js";
-export { userStorage } from "./userStorage.js";
-export { conversationStorage } from "./conversationStorage.js";
+export { authStorage } from "../features/auth/storage/authStorage.js";
+export { userStorage } from "../features/conversations/storage/userStorage.js";
+export { conversationStorage } from "../features/conversations/storage/index.js";
 
 export { eventStorage } from "../features/events/storage/eventStorage.js";
 export { usersStandardStorage } from "../features/cadastro/storage/usersStandardStorage.js";

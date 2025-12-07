@@ -1,7 +1,7 @@
-import { db } from "../db.js";
-import { authUsers, authorizedUsers } from "../../shared/schema.js";
+import { db } from "../../../db.js";
+import { authUsers, authorizedUsers } from "../../../../shared/schema.js";
 import { eq, desc } from "drizzle-orm";
-import type { UpsertAuthUser, AuthUser, AuthorizedUser, InsertAuthorizedUser } from "../../shared/schema.js";
+import type { UpsertAuthUser, AuthUser, AuthorizedUser, InsertAuthorizedUser } from "../../../../shared/schema.js";
 
 export const authStorage = {
   async getAuthUser(id: string): Promise<AuthUser | undefined> {

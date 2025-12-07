@@ -1,8 +1,8 @@
 import type { Express } from "express";
 
-import authRoutes from "./auth.js";
-import conversationsRoutes from "./conversations.js";
-import productsRoutes from "./products.js";
+import authRoutes from "../features/auth/routes/auth.js";
+import { conversationsRoutes } from "../features/conversations/routes/index.js";
+import productsRoutes from "../features/products/routes/products.js";
 
 import webhooksRoutes from "../features/export/routes/webhooks.js";
 import webhookLogsRoutes from "../features/export/routes/webhookLogs.js";
