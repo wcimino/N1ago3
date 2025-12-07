@@ -23,6 +23,8 @@ async function upsertConversation(data: ConversationData) {
       userId: data.externalUserId,
       userExternalId: data.userExternalId,
       metadataJson: data.metadata,
+      currentHandler: "64d65d81a40bc6cf30ebfbb1",
+      currentHandlerName: "zd-answerBot",
     }).returning();
   } else {
     const updates: any = { updatedAt: new Date() };
