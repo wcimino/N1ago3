@@ -14,10 +14,13 @@ export async function processHandoffEvent(event: EventStandard): Promise<void> {
 
   const metadata = event.metadata as Record<string, unknown> | null;
   const n1agoIntegrationId = ZendeskApiService.getN1agoIntegrationId();
-  const receivedIntegration = metadata?.switchboardIntegration as string | undefined;
   
-  if (receivedIntegration !== n1agoIntegrationId) {
-    console.log(`[HandoffOrchestrator] Ignoring passControl - not for n1ago (received: ${receivedIntegration}, expected: ${n1agoIntegrationId})`);
+  // Extract integration ID from activeSwitchboardIntegration object
+  const activeSwitchboard = metadata?.activeSwitchboardIntegration as Record<string, unknown> | undefined;
+  const receivedIntegrationId = activeSwitchboard?.id as string | undefined;
+  
+  if (receivedIntegrationId !== n1agoIntegrationId) {
+    console.log(`[HandoffOrchestrator] Ignoring passControl - not for n1ago (received: ${receivedIntegrationId}, expected: ${n1agoIntegrationId})`);
     return;
   }
 
