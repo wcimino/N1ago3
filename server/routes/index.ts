@@ -11,6 +11,7 @@ import usersStandardRoutes from "./usersStandard.js";
 import organizationsStandardRoutes from "./organizationsStandard.js";
 import maintenanceRoutes from "./maintenance.js";
 import exportRoutes from "./export.js";
+import knowledgeBaseRoutes from "./knowledgeBase.js";
 
 export function registerRoutes(app: Express) {
   app.use(webhooksRoutes);
@@ -25,4 +26,5 @@ export function registerRoutes(app: Express) {
   app.use("/api/organizations-standard", organizationsStandardRoutes);
   app.use(maintenanceRoutes);
   app.use(exportRoutes);
+  app.use(knowledgeBaseRoutes);
 }

@@ -1,5 +1,5 @@
 import { Route, Switch, Link } from "wouter";
-import { Home, Users, Activity, Sparkles, Settings, LogOut, MessageCircle, Download } from "lucide-react";
+import { Home, Users, Activity, Sparkles, Settings, LogOut, MessageCircle, Download, BookOpen } from "lucide-react";
 import { useAuth } from "./shared/hooks";
 import { NavLink, EnvironmentBadge } from "./shared/components";
 import { TimezoneProvider } from "./contexts/TimezoneContext";
@@ -9,6 +9,7 @@ import { EventsLayout } from "./features/events";
 import { AtendimentosPage, UserConversationsPage } from "./features/conversations";
 import { CadastroPage, UserStandardDetailPage, OrganizationStandardDetailPage } from "./features/cadastro";
 import { ExportPage } from "./features/export";
+import { KnowledgeBasePage } from "./features/knowledge-base";
 import { LandingPage, LoadingPage, UnauthorizedPage, HomePage } from "./shared/pages";
 
 function AuthenticatedApp() {
@@ -69,6 +70,10 @@ function AuthenticatedApp() {
               <Download className="w-4 h-4" />
               <span className="hidden sm:inline">Exportações</span>
             </NavLink>
+            <NavLink href="/knowledge-base">
+              <BookOpen className="w-4 h-4" />
+              <span className="hidden sm:inline">Base de Conhecimento</span>
+            </NavLink>
           </nav>
         </div>
       </header>
@@ -88,6 +93,7 @@ function AuthenticatedApp() {
           <Route path="/atendimentos/:userId">{(params) => <UserConversationsPage params={params} />}</Route>
           <Route path="/export" component={ExportPage} />
           <Route path="/export/:rest*" component={ExportPage} />
+          <Route path="/knowledge-base" component={KnowledgeBasePage} />
           <Route path="/settings" component={SettingsPage} />
           <Route path="/settings/product-standards" component={ProductStandardsPage} />
           <Route path="/settings/reprocessing" component={ReprocessingPage} />

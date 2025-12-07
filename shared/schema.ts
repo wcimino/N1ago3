@@ -277,6 +277,21 @@ export const userStandardHasOrganizationStandard = pgTable("user_standard_has_or
   orgIdx: index("idx_user_standard_has_org_org").on(table.organizationStandardId),
 }));
 
+export const knowledgeBase = pgTable("knowledge_base", {
+  id: serial("id").primaryKey(),
+  productStandard: text("product_standard").notNull(),
+  subproductStandard: text("subproduct_standard"),
+  intent: text("intent").notNull(),
+  description: text("description").notNull(),
+  resolution: text("resolution").notNull(),
+  observations: text("observations"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  productIdx: index("idx_knowledge_base_product").on(table.productStandard),
+  intentIdx: index("idx_knowledge_base_intent").on(table.intent),
+}));
+
 // Types
 export type AuthUser = typeof authUsers.$inferSelect;
 export type UpsertAuthUser = typeof authUsers.$inferInsert;
@@ -322,3 +337,6 @@ export type InsertOrganizationStandardHistory = Omit<typeof organizationsStandar
 
 export type UserStandardHasOrganizationStandard = typeof userStandardHasOrganizationStandard.$inferSelect;
 export type InsertUserStandardHasOrganizationStandard = Omit<typeof userStandardHasOrganizationStandard.$inferInsert, "id" | "createdAt">;
+
+export type KnowledgeBaseArticle = typeof knowledgeBase.$inferSelect;
+export type InsertKnowledgeBaseArticle = Omit<typeof knowledgeBase.$inferInsert, "id" | "createdAt" | "updatedAt">;
