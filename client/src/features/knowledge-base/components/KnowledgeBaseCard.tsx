@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Edit2, Trash2, ChevronDown, ChevronUp, Package, Target, FileText, CheckCircle, MessageSquare, Clock, Layers } from "lucide-react";
+import { Edit2, Trash2, ChevronDown, ChevronUp, MoreVertical } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -25,87 +25,103 @@ interface KnowledgeBaseCardProps {
 
 export function KnowledgeBaseCard({ article, onEdit, onDelete }: KnowledgeBaseCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showActions, setShowActions] = useState(false);
 
   const timeAgo = formatDistanceToNow(new Date(article.updatedAt), {
-    addSuffix: true,
+    addSuffix: false,
     locale: ptBR,
   });
 
   return (
-    <div className="border rounded-lg overflow-hidden bg-white hover:shadow-md transition-shadow">
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-3">
+    <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
+      <div 
+        className="p-4 cursor-pointer"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-200">
-                <Package className="w-3.5 h-3.5" />
-                {article.productStandard}
-              </span>
-              {article.subproductStandard && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded-full border border-purple-200">
-                  <Layers className="w-3 h-3" />
-                  {article.subproductStandard}
-                </span>
-              )}
+            <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+              <span className="font-medium text-blue-600">{article.productStandard}</span>
+              <span className="text-gray-300">/</span>
+              <span className="text-gray-600">{article.intent}</span>
             </div>
 
-            <div className="flex items-center gap-2 mb-3">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full border border-emerald-200">
-                <Target className="w-3.5 h-3.5" />
-                {article.intent}
-              </span>
-              {article.category1 && (
-                <span className="text-xs text-gray-500">
-                  {article.category1}
-                  {article.category2 && ` / ${article.category2}`}
-                </span>
-              )}
-            </div>
-
-            <h3 className="text-sm font-medium text-gray-900 mb-1 line-clamp-2">
+            <p className="text-sm text-gray-900 font-medium leading-snug line-clamp-2 mb-2">
               {article.description}
-            </h3>
-
-            <p className="text-sm text-gray-500 line-clamp-2">
-              <span className="font-medium text-green-700">Solução:</span>{" "}
-              {article.resolution}
             </p>
 
-            <div className="flex items-center gap-3 mt-3 text-xs text-gray-400">
-              <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                Atualizado {timeAgo}
-              </span>
-              <span className="text-gray-300">•</span>
-              <span>ID #{article.id}</span>
+            <div className="bg-green-50 rounded-lg px-3 py-2 border-l-2 border-green-500">
+              <p className="text-xs text-green-800 line-clamp-2">
+                {article.resolution}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 mt-3 text-xs text-gray-400">
+              <span>{timeAgo}</span>
+              {article.subproductStandard && (
+                <>
+                  <span>•</span>
+                  <span>{article.subproductStandard}</span>
+                </>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex flex-col items-center gap-1 shrink-0">
+            <div className="relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowActions(!showActions);
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+
+              {showActions && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-10" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowActions(false);
+                    }}
+                  />
+                  <div className="absolute right-0 top-full mt-1 bg-white border rounded-lg shadow-lg z-20 py-1 min-w-[120px]">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowActions(false);
+                        onEdit();
+                      }}
+                      className="w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      Editar
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowActions(false);
+                        onDelete();
+                      }}
+                      className="w-full px-4 py-2 text-sm text-left text-red-600 hover:bg-red-50 flex items-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Excluir
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onEdit();
+                setIsExpanded(!isExpanded);
               }}
-              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              title="Editar"
-            >
-              <Edit2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              title="Excluir"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
               className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              title={isExpanded ? "Recolher" : "Expandir"}
             >
               {isExpanded ? (
                 <ChevronUp className="w-4 h-4" />
@@ -118,46 +134,44 @@ export function KnowledgeBaseCard({ article, onEdit, onDelete }: KnowledgeBaseCa
       </div>
 
       {isExpanded && (
-        <div className="px-4 pb-4 pt-0 space-y-4 border-t bg-gray-50">
-          <div className="pt-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-              <FileText className="w-4 h-4 text-blue-600" />
-              Descrição do Problema
-            </div>
-            <p className="text-sm text-gray-600 whitespace-pre-wrap bg-white p-3 rounded-lg border">
+        <div className="border-t bg-gray-50 p-4 space-y-4">
+          <div>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              Situação
+            </h4>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">
               {article.description}
             </p>
           </div>
 
           <div>
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-              <CheckCircle className="w-4 h-4 text-green-600" />
-              Solução / Orientação
+            <h4 className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">
+              Solução
+            </h4>
+            <div className="bg-white rounded-lg p-3 border border-green-200">
+              <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                {article.resolution}
+              </p>
             </div>
-            <p className="text-sm text-gray-600 whitespace-pre-wrap bg-green-50 p-3 rounded-lg border border-green-200">
-              {article.resolution}
-            </p>
           </div>
 
           {article.observations && (
             <div>
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <MessageSquare className="w-4 h-4 text-amber-600" />
+              <h4 className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-2">
                 Observações
+              </h4>
+              <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                  {article.observations}
+                </p>
               </div>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap bg-amber-50 p-3 rounded-lg border border-amber-200">
-                {article.observations}
-              </p>
             </div>
           )}
 
-          <div className="flex items-center justify-between text-xs text-gray-400 pt-2 border-t">
-            <span>
-              Criado em: {new Date(article.createdAt).toLocaleString("pt-BR")}
-            </span>
-            <span>
-              Atualizado em: {new Date(article.updatedAt).toLocaleString("pt-BR")}
-            </span>
+          <div className="pt-3 border-t flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-400">
+            <span>ID #{article.id}</span>
+            <span>Criado: {new Date(article.createdAt).toLocaleDateString("pt-BR")}</span>
+            <span>Atualizado: {new Date(article.updatedAt).toLocaleDateString("pt-BR")}</span>
           </div>
         </div>
       )}
