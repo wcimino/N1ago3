@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Users, MessageCircle, Activity, User, UserCheck, Filter, X, Bot, Brain, Headphones } from "lucide-react";
+import { Users, MessageCircle, Activity, User, UserCheck, Filter, X, Bot, Brain, Headphones, ArrowLeftRight } from "lucide-react";
 import { UserDetailModal } from "../../../shared/components";
 import { LoadingState, EmptyState, Pagination, PageCard } from "../../../shared/components/ui";
 import { useDateFormatters, usePaginatedQuery } from "../../../shared/hooks";
@@ -23,7 +23,8 @@ function getHandlerBadge(handlerName: string | null | undefined) {
     return {
       label: "Bot",
       icon: Bot,
-      className: "bg-emerald-100 text-emerald-800",
+      bgClassName: "bg-emerald-100",
+      iconClassName: "text-emerald-600",
     };
   }
   
@@ -31,7 +32,8 @@ function getHandlerBadge(handlerName: string | null | undefined) {
     return {
       label: "n1ago",
       icon: Brain,
-      className: "bg-blue-100 text-blue-800",
+      bgClassName: "bg-purple-100",
+      iconClassName: "text-purple-600",
     };
   }
   
@@ -39,14 +41,16 @@ function getHandlerBadge(handlerName: string | null | undefined) {
     return {
       label: "Humano",
       icon: Headphones,
-      className: "bg-amber-100 text-amber-800",
+      bgClassName: "bg-amber-100",
+      iconClassName: "text-amber-600",
     };
   }
   
   return {
     label: handlerName,
     icon: MessageCircle,
-    className: "bg-gray-100 text-gray-800",
+    bgClassName: "bg-gray-100",
+    iconClassName: "text-gray-600",
   };
 }
 
@@ -186,6 +190,12 @@ export function AtendimentosPage() {
                   <div className="flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
+                        {handlerBadge && (
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${handlerBadge.bgClassName}`}>
+                            <handlerBadge.icon className={`w-5 h-5 ${handlerBadge.iconClassName}`} />
+                          </div>
+                        )}
+                        <ArrowLeftRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
                         <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
                           <Users className="w-5 h-5 text-blue-600" />
                         </div>
@@ -206,12 +216,6 @@ export function AtendimentosPage() {
                               <span className="inline-flex items-center gap-1 text-xs text-green-600">
                                 <span className="w-2 h-2 rounded-full bg-green-500"></span>
                                 {activeCount} ativa{activeCount > 1 ? "s" : ""}
-                              </span>
-                            )}
-                            {handlerBadge && (
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${handlerBadge.className}`}>
-                                <handlerBadge.icon className="w-3 h-3" />
-                                {handlerBadge.label}
                               </span>
                             )}
                           </div>
