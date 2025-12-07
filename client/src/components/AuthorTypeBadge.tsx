@@ -1,4 +1,4 @@
-import { Badge, type BadgeVariant } from "../shared/components/ui/Badge";
+import { Badge, type BadgeVariant } from "../shared/components/ui";
 
 interface AuthorTypeBadgeProps {
   type: string;

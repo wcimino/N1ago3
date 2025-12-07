@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 import { Users, Building2 } from "lucide-react";
-import { SegmentedTabs } from "../shared/components/ui/SegmentedTabs";
+import { SegmentedTabs } from "../shared/components/ui";
 import { UsersListContent } from "./UsersListContent";
 import { OrganizationsListContent } from "./OrganizationsListContent";
 

@@ -1,5 +1,5 @@
 import { CheckCircle, XCircle, Clock } from "lucide-react";
-import { Badge, type BadgeVariant } from "../shared/components/ui/Badge";
+import { Badge, type BadgeVariant } from "../shared/components/ui";
 
 interface StatusBadgeProps {
   status: string;

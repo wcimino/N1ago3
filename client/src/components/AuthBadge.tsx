@@ -1,5 +1,5 @@
 import { UserCheck, UserX } from "lucide-react";
-import { Badge } from "../shared/components/ui/Badge";
+import { Badge } from "../shared/components/ui";
 
 interface AuthBadgeProps {
   authenticated: boolean;

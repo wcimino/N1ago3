@@ -1,4 +1,4 @@
-import { Modal, ModalField, ModalGrid, ModalCodeBlock } from "../shared/components/ui/Modal";
+import { Modal, ModalField, ModalGrid, ModalCodeBlock } from "../shared/components/ui";
 import { EventTypeBadge, AuthorTypeBadge } from "./index";
 import { useDateFormatters } from "../hooks/useDateFormatters";
 import type { StandardEvent } from "../types";

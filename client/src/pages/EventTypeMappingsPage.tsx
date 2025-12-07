@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi, apiRequest } from "../lib/queryClient";
-import { ToggleSwitch } from "../shared/components/ui/ToggleSwitch";
-import { LoadingState } from "../shared/components/ui/LoadingSpinner";
+import { ToggleSwitch, LoadingState } from "../shared/components/ui";
 import type { EventTypeMapping, EventTypeMappingsResponse } from "../types";
 
 export function EventTypeMappingsPage() {
