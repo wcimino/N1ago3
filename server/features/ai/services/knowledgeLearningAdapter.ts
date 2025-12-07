@@ -50,20 +50,29 @@ const DEFAULT_PROMPT = `Você é um especialista em criar artigos de base de con
 - Se a conversa menciona múltiplos assuntos (ex: "antecipação" e "repasse"), escolha o PRINCIPAL que foi resolvido
 - NÃO misture temas diferentes no mesmo artigo (ex: NÃO misture "valores não recebidos" com "plano de antecipação")
 
-### 2. SOLUÇÃO GENÉRICA E REPLICÁVEL
-- A solução deve ser GENÉRICA e aplicável a qualquer cliente com o mesmo problema
-- NÃO inclua detalhes específicos do cliente na solução (ex: nomes, planos específicos, valores)
-- A solução deve responder: "O que um atendente deve fazer quando qualquer cliente tiver esse problema?"
-- IMPORTANTE: Escreva a solução no INFINITIVO, como uma instrução para o atendente:
-  - Exemplo RUIM: "Cliente foi informado sobre o plano" (passado, específico)
-  - Exemplo RUIM: "Orientação para clicar em..." (substantivo)
-  - Exemplo BOM: "Orientar o cliente a clicar em 'Esqueci minha senha' e seguir o passo a passo"
-  - Exemplo BOM: "Verificar se o cliente possui saldo disponível e orientar sobre o prazo de liberação"
-  - Exemplo BOM: "Informar ao cliente que o prazo para estorno é de até 7 dias úteis"
+### 2. SOLUÇÃO ESPECÍFICA E PRÁTICA (CRÍTICO!)
+A solução deve ser um PASSO A PASSO DETALHADO que um atendente possa seguir. NÃO resuma o que foi feito - DETALHE COMO fazer.
 
-### 3. OBSERVAÇÕES PARA DETALHES ESPECÍFICOS
-- Use o campo "observations" para detalhes específicos que podem ser úteis mas não são a regra geral
-- Exemplo: "Alguns clientes podem ter planos diferentes que requerem acesso por outros canais"
+EXEMPLOS DE SOLUÇÕES RUINS (genéricas, inúteis):
+- "Orientações fornecidas sobre os requisitos" (O que orientar? Quais requisitos?)
+- "Cliente foi orientado sobre o processo" (Qual processo? Como funciona?)
+- "Informações sobre documentação enviadas" (Quais informações? Que documentos?)
+
+EXEMPLOS DE SOLUÇÕES BOAS (específicas, acionáveis):
+- "Orientar o cliente a enviar os documentos no formato PDF ou JPG, com tamanho máximo de 5MB. O documento deve estar legível e completo (frente e verso). Caso a imagem esteja cortada ou ilegível, solicitar novo envio."
+- "Verificar no sistema se a conta está com status 'pendente de documentação'. Solicitar: 1) CNH ou RG frente e verso, 2) Comprovante de endereço dos últimos 3 meses. Após envio, aguardar até 48h para análise."
+- "Acessar o menu Configurações > Senha > Esqueci minha senha. O cliente receberá um e-mail em até 5 minutos. Se não receber, verificar a pasta de spam ou tentar com outro e-mail cadastrado."
+
+O QUE INCLUIR NA SOLUÇÃO:
+- Passos específicos (menus, botões, telas)
+- Requisitos técnicos (formato, tamanho, prazo)
+- O que verificar/validar antes de orientar
+- Alternativas se o primeiro caminho não funcionar
+- Prazos e expectativas realistas
+
+### 3. OBSERVAÇÕES PARA DETALHES ADICIONAIS
+- Use para exceções, casos especiais, ou contextos específicos
+- Exemplo: "Clientes PJ precisam enviar contrato social ao invés de RG"
 
 ## IDENTIFICAÇÃO:
 1. Produto principal (ex: Antecipação, Repasse, Conta Digital, Cartão)
@@ -72,10 +81,10 @@ const DEFAULT_PROMPT = `Você é um especialista em criar artigos de base de con
 4. Subcategoria (ex: Valores, Prazo, Contratação)
 
 ## QUALIDADE:
-- isComplete = false: se NÃO houver solução clara e replicável
-- isUncertain = true: se a orientação não for definitiva
+- isComplete = false: se a solução for genérica ou não tiver passos claros
+- isUncertain = true: se não conseguir extrair detalhes específicos da conversa
 - possibleError = true: se a orientação parecer incorreta
-- needsReview = true: se misturar assuntos ou tiver detalhes muito específicos
+- needsReview = true: se faltar informação importante ou precisar de mais detalhes
 
 Retorne APENAS um JSON válido:
 {
@@ -83,9 +92,9 @@ Retorne APENAS um JSON válido:
   "subproductStandard": "subproduto ou null",
   "category1": "categoria principal",
   "category2": "subcategoria ou null",
-  "description": "descrição GENÉRICA do problema (aplicável a qualquer cliente)",
-  "resolution": "instrução no INFINITIVO para o atendente (ex: Orientar o cliente a...)",
-  "observations": "detalhes específicos ou contextos especiais ou null",
+  "description": "descrição do problema (aplicável a qualquer cliente)",
+  "resolution": "PASSO A PASSO DETALHADO com instruções específicas, menus, prazos, requisitos",
+  "observations": "exceções, casos especiais, ou detalhes adicionais",
   "confidenceScore": 0-100,
   "qualityFlags": {
     "isComplete": true/false,
