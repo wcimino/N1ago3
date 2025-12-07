@@ -1,5 +1,5 @@
 import { Route, Switch, Link } from "wouter";
-import { Home, Users, Activity, Sparkles, Settings, LogOut, MessageCircle } from "lucide-react";
+import { Home, Users, Activity, Sparkles, Settings, LogOut, MessageCircle, Download } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { NavLink, EnvironmentBadge } from "./components";
 import { TimezoneProvider } from "./contexts/TimezoneContext";
@@ -16,6 +16,7 @@ import {
   UserConversationsPage,
   SettingsPage,
   CadastroPage,
+  ExportPage,
 } from "./pages";
 
 function AuthenticatedApp() {
@@ -72,6 +73,10 @@ function AuthenticatedApp() {
               <Sparkles className="w-4 h-4" />
               <span className="hidden sm:inline">AI</span>
             </NavLink>
+            <NavLink href="/export">
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Exportações</span>
+            </NavLink>
           </nav>
         </div>
       </header>
@@ -89,6 +94,8 @@ function AuthenticatedApp() {
           <Route path="/cadastro/organizations/:cnpjRoot">{(params) => <OrganizationStandardDetailPage params={params} />}</Route>
           <Route path="/atendimentos" component={AtendimentosPage} />
           <Route path="/atendimentos/:userId">{(params) => <UserConversationsPage params={params} />}</Route>
+          <Route path="/export" component={ExportPage} />
+          <Route path="/export/:rest*" component={ExportPage} />
           <Route path="/settings" component={SettingsPage} />
         </Switch>
       </main>

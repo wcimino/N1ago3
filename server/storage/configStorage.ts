@@ -1,6 +1,6 @@
 import { db } from "../db.js";
 import { conversationsSummary, openaiApiConfig, openaiApiLogs, responsesSuggested } from "../../shared/schema.js";
-import { eq, desc, sql, gte, and, isNotNull } from "drizzle-orm";
+import { eq, desc, sql, gte, lte, and, isNotNull, type SQL } from "drizzle-orm";
 import type { ConversationSummary, InsertConversationSummary, OpenaiApiConfig, InsertOpenaiApiConfig, OpenaiApiLog, InsertOpenaiApiLog, SuggestedResponse, InsertSuggestedResponse } from "../../shared/schema.js";
 
 export const configStorage = {
@@ -192,5 +192,49 @@ export const configStorage = {
       products: productsResult.map(r => r.product).filter((p): p is string => p !== null).sort(),
       intents: intentsResult.map(r => r.intent).filter((i): i is string => i !== null).sort(),
     };
+  },
+
+  async getSummariesForExport(filters: {
+    dateFrom?: Date;
+    dateTo?: Date;
+    product?: string;
+    intent?: string;
+  }): Promise<Array<{
+    id: number;
+    generatedAt: Date;
+    product: string | null;
+    intent: string | null;
+    summary: string;
+  }>> {
+    const conditions: SQL<unknown>[] = [];
+
+    if (filters.dateFrom) {
+      conditions.push(gte(conversationsSummary.generatedAt, filters.dateFrom));
+    }
+    if (filters.dateTo) {
+      conditions.push(lte(conversationsSummary.generatedAt, filters.dateTo));
+    }
+    if (filters.product) {
+      conditions.push(eq(conversationsSummary.product, filters.product));
+    }
+    if (filters.intent) {
+      conditions.push(eq(conversationsSummary.intent, filters.intent));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const results = await db
+      .select({
+        id: conversationsSummary.id,
+        generatedAt: conversationsSummary.generatedAt,
+        product: conversationsSummary.product,
+        intent: conversationsSummary.intent,
+        summary: conversationsSummary.summary,
+      })
+      .from(conversationsSummary)
+      .where(whereClause)
+      .orderBy(desc(conversationsSummary.generatedAt));
+
+    return results;
   },
 };

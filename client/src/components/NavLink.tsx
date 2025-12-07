@@ -7,7 +7,9 @@ interface NavLinkProps {
 
 export function NavLink({ href, children }: NavLinkProps) {
   const [location] = useLocation();
-  const isActive = location === href;
+  const isActive = href === "/" 
+    ? location === "/" 
+    : location === href || location.startsWith(href + "/");
 
   return (
     <Link
