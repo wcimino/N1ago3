@@ -216,7 +216,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
     <div className="h-[calc(100vh-180px)] flex flex-col">
       <div className="bg-white rounded-t-lg shadow-sm border-b px-4 py-3 flex items-center gap-3 flex-shrink-0">
         <button
-          onClick={() => navigate("/users")}
+          onClick={() => navigate("/atendimentos")}
           className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -239,7 +239,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
             <XCircle className="w-12 h-12 text-red-300 mb-3" />
             <p>Conversas não encontradas</p>
             <button
-              onClick={() => navigate("/users")}
+              onClick={() => navigate("/atendimentos")}
               className="mt-4 text-blue-600 hover:text-blue-800"
             >
               Voltar para lista
