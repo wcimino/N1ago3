@@ -110,23 +110,22 @@ export function AtendimentosPage() {
                           {activeCount} ativa{activeCount > 1 ? "s" : ""}
                         </span>
                       )}
-                      <span className="text-xs md:text-sm">Última atividade: {formatShortDateTime(group.last_activity)}</span>
                     </div>
 
-                    {(group.last_product || group.last_intent) && (
-                      <div className="flex flex-wrap items-center gap-2 text-sm">
-                        {group.last_product && (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {group.last_product}
-                          </span>
-                        )}
-                        {group.last_intent && (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                            {group.last_intent}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                      <span className="text-gray-500">Último atendimento:</span>
+                      <span className="text-xs text-gray-500">{formatShortDateTime(group.last_activity)}</span>
+                      {group.last_product && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {group.last_product}
+                        </span>
+                      )}
+                      {group.last_intent && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          {group.last_intent}
+                        </span>
+                      )}
+                    </div>
 
                     {group.conversations.length > 1 && (
                       <div className="flex flex-wrap gap-2">
