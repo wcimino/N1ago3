@@ -22,6 +22,7 @@ export const configStorage = {
     const [summary] = await db.insert(conversationsSummary)
       .values({
         ...data,
+        productStandard: data.product || null,
         generatedAt: new Date(),
       })
       .onConflictDoUpdate({
@@ -30,6 +31,10 @@ export const configStorage = {
           summary: data.summary,
           lastEventId: data.lastEventId,
           externalConversationId: data.externalConversationId,
+          product: data.product,
+          intent: data.intent,
+          confidence: data.confidence,
+          classifiedAt: data.classifiedAt,
           generatedAt: new Date(),
           updatedAt: new Date(),
         },
@@ -194,6 +199,32 @@ export const configStorage = {
     };
   },
 
+  async getProductStandards(): Promise<Array<{ product: string; productStandard: string | null }>> {
+    const results = await db
+      .select({
+        product: conversationsSummary.product,
+        productStandard: sql<string | null>`MAX(${conversationsSummary.productStandard})`,
+      })
+      .from(conversationsSummary)
+      .where(isNotNull(conversationsSummary.product))
+      .groupBy(conversationsSummary.product)
+      .orderBy(conversationsSummary.product);
+
+    return results.filter(r => r.product !== null) as Array<{ product: string; productStandard: string | null }>;
+  },
+
+  async updateProductStandard(product: string, productStandard: string): Promise<number> {
+    const result = await db
+      .update(conversationsSummary)
+      .set({ 
+        productStandard,
+        updatedAt: new Date(),
+      })
+      .where(eq(conversationsSummary.product, product));
+    
+    return result.rowCount ?? 0;
+  },
+
   async getSummariesForExport(filters: {
     dateFrom?: Date;
     dateTo?: Date;
@@ -203,6 +234,7 @@ export const configStorage = {
     id: number;
     generatedAt: Date;
     product: string | null;
+    productStandard: string | null;
     intent: string | null;
     summary: string;
   }>> {
@@ -228,6 +260,7 @@ export const configStorage = {
         id: conversationsSummary.id,
         generatedAt: conversationsSummary.generatedAt,
         product: conversationsSummary.product,
+        productStandard: conversationsSummary.productStandard,
         intent: conversationsSummary.intent,
         summary: conversationsSummary.summary,
       })

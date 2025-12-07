@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Play, Pause, RotateCcw, Users, Building2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Play, Pause, RotateCcw, Users, Building2, AlertCircle, CheckCircle2, Package } from "lucide-react";
 import { apiRequest, fetchApi } from "../../lib/queryClient";
+import { ProductStandardsSection } from "./ProductStandardsSection";
 
 type ReprocessingType = "users" | "organizations";
 
@@ -203,15 +204,30 @@ export function MaintenanceTab() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <p className="text-sm text-yellow-800">
-          <strong>Atenção:</strong> O reprocessamento percorre todo o histórico de webhooks e pode levar bastante tempo em bancos de dados grandes. O processo roda 1 item por vez para não sobrecarregar o sistema.
-        </p>
-      </div>
+    <div className="space-y-8">
+      <section>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Package className="w-5 h-5" />
+          Padronização de Produtos
+        </h2>
+        <ProductStandardsSection />
+      </section>
 
-      {renderProgressCard("users", "Reprocessar Usuários", <Users className="w-5 h-5" />)}
-      {renderProgressCard("organizations", "Reprocessar Organizações", <Building2 className="w-5 h-5" />)}
+      <hr className="border-gray-200" />
+
+      <section>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Reprocessamento de Dados</h2>
+        <div className="space-y-6">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <p className="text-sm text-yellow-800">
+              <strong>Atenção:</strong> O reprocessamento percorre todo o histórico de webhooks e pode levar bastante tempo em bancos de dados grandes. O processo roda 1 item por vez para não sobrecarregar o sistema.
+            </p>
+          </div>
+
+          {renderProgressCard("users", "Reprocessar Usuários", <Users className="w-5 h-5" />)}
+          {renderProgressCard("organizations", "Reprocessar Organizações", <Building2 className="w-5 h-5" />)}
+        </div>
+      </section>
     </div>
   );
 }

@@ -8,6 +8,7 @@ interface SummaryExport {
   id: number;
   generatedAt: string;
   product: string | null;
+  productStandard: string | null;
   intent: string | null;
   summary: string;
 }
@@ -31,11 +32,12 @@ function escapeCsvField(field: string | null): string {
 }
 
 function downloadCsv(data: SummaryExport[], filename: string) {
-  const headers = ["id", "timestamp", "produto", "intencao", "resumo"];
+  const headers = ["id", "timestamp", "produto", "produto_padronizado", "intencao", "resumo"];
   const rows = data.map((item) => [
     String(item.id),
     formatDateTime(item.generatedAt),
     escapeCsvField(item.product),
+    escapeCsvField(item.productStandard),
     escapeCsvField(item.intent),
     escapeCsvField(item.summary),
   ]);
@@ -181,7 +183,7 @@ export function ExportSummariesPage() {
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-sm font-medium text-gray-700 mb-2">Campos exportados</h3>
         <p className="text-sm text-gray-500">
-          O arquivo CSV incluirá: <strong>id</strong>, <strong>timestamp</strong>, <strong>produto</strong>, <strong>intenção</strong> e <strong>resumo</strong>.
+          O arquivo CSV incluirá: <strong>id</strong>, <strong>timestamp</strong>, <strong>produto</strong>, <strong>produto_padronizado</strong>, <strong>intenção</strong> e <strong>resumo</strong>.
         </p>
       </div>
     </div>
