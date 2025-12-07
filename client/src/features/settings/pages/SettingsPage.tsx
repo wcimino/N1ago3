@@ -24,14 +24,14 @@ export function SettingsPage() {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow">
-        <div className="border-b">
-          <nav className="flex gap-1 p-2" aria-label="Tabs">
+        <div className="border-b overflow-x-auto">
+          <nav className="flex gap-1 p-2 min-w-max" aria-label="Tabs">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                  flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap
                   ${activeTab === tab.id
                     ? "bg-blue-100 text-blue-700"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
@@ -39,7 +39,12 @@ export function SettingsPage() {
                 `}
               >
                 {tab.icon}
-                {tab.label}
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">
+                  {tab.id === "access-control" && "Acessos"}
+                  {tab.id === "general" && "Geral"}
+                  {tab.id === "maintenance" && "Manutenção"}
+                </span>
               </button>
             ))}
           </nav>
