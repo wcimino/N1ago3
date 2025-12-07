@@ -1,6 +1,5 @@
 import { storage } from "../../../storage/index.js";
-import { extractAndSaveKnowledge, type LearningPayload } from "./knowledgeLearningAdapter.js";
-import { knowledgeBaseService } from "./knowledgeBaseService.js";
+import { extractKnowledgeWithAgent, type AgentLearningPayload } from "./knowledgeLearningAgentAdapter.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 
 export async function shouldExtractKnowledge(event: EventStandard): Promise<boolean> {
@@ -50,7 +49,6 @@ export async function extractConversationKnowledge(event: EventStandard): Promis
   try {
     const last20Messages = await storage.getLast20MessagesForConversation(event.conversationId);
     const existingSummary = await storage.getConversationSummary(event.conversationId);
-    const classification = await storage.getConversationClassification(event.conversationId);
 
     if (last20Messages.length < 3) {
       console.log(`[Learning Orchestrator] Skipping conversation ${event.conversationId}: insufficient messages (${last20Messages.length})`);
@@ -59,23 +57,7 @@ export async function extractConversationKnowledge(event: EventStandard): Promis
 
     const reversedMessages = [...last20Messages].reverse();
 
-    const descriptionKeywords = existingSummary?.summary
-      ?.split(/\s+/)
-      .filter(w => w.length > 4)
-      .slice(0, 10) || [];
-
-    const relatedArticles = await knowledgeBaseService.findRelatedArticles(
-      classification?.productStandard || undefined,
-      classification?.intent || undefined,
-      descriptionKeywords,
-      { limit: 3, minScore: 30 }
-    );
-
-    const articlesContext = knowledgeBaseService.formatArticlesForPrompt(relatedArticles);
-
-    console.log(`[Learning Orchestrator] Found ${relatedArticles.length} related articles for conversation ${event.conversationId}`);
-
-    const payload: LearningPayload = {
+    const payload: AgentLearningPayload = {
       messages: reversedMessages.map(m => ({
         authorType: m.authorType,
         authorName: m.authorName,
@@ -84,23 +66,22 @@ export async function extractConversationKnowledge(event: EventStandard): Promis
       })),
       currentSummary: existingSummary?.summary || null,
       conversationHandler: null,
-      relatedArticles: articlesContext,
     };
 
-    console.log(`[Learning Orchestrator] Extracting knowledge from conversation ${event.conversationId} with ${reversedMessages.length} messages`);
+    console.log(`[Learning Orchestrator] Extracting knowledge with agent from conversation ${event.conversationId} with ${reversedMessages.length} messages`);
 
-    const result = await extractAndSaveKnowledge(
+    const result = await extractKnowledgeWithAgent(
       payload,
-      config.promptTemplate,
       config.modelName,
       event.conversationId,
       event.externalConversationId
     );
 
     if (result.success) {
-      console.log(`[Learning Orchestrator] Knowledge extracted for conversation ${event.conversationId}, suggestionId: ${result.suggestionId}`);
-      if (result.similarArticleId) {
-        console.log(`[Learning Orchestrator] Found similar article ${result.similarArticleId} with score ${result.similarityScore}`);
+      if (result.suggestionType === "skip") {
+        console.log(`[Learning Orchestrator] Agent decided to skip conversation ${event.conversationId}`);
+      } else {
+        console.log(`[Learning Orchestrator] Knowledge extracted: type=${result.suggestionType}, suggestionId=${result.suggestionId}${result.targetArticleId ? `, targetArticle=${result.targetArticleId}` : ''}`);
       }
     } else {
       console.error(`[Learning Orchestrator] Failed to extract knowledge for conversation ${event.conversationId}: ${result.error}`);

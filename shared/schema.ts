@@ -327,6 +327,8 @@ export const knowledgeSuggestions = pgTable("knowledge_suggestions", {
   conversationId: integer("conversation_id"),
   externalConversationId: text("external_conversation_id"),
   
+  suggestionType: text("suggestion_type").default("create").notNull(),
+  
   productStandard: text("product_standard"),
   subproductStandard: text("subproduct_standard"),
   category1: text("category1"),
@@ -340,6 +342,8 @@ export const knowledgeSuggestions = pgTable("knowledge_suggestions", {
   qualityFlags: json("quality_flags"),
   similarArticleId: integer("similar_article_id"),
   similarityScore: integer("similarity_score"),
+  
+  updateReason: text("update_reason"),
   
   status: text("status").default("pending").notNull(),
   reviewedBy: varchar("reviewed_by"),

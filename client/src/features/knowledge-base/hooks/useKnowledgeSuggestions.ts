@@ -5,6 +5,7 @@ export interface KnowledgeSuggestion {
   id: number;
   conversationId: number | null;
   externalConversationId: string | null;
+  suggestionType: "create" | "update";
   productStandard: string | null;
   subproductStandard: string | null;
   category1: string | null;
@@ -21,6 +22,7 @@ export interface KnowledgeSuggestion {
   } | null;
   similarArticleId: number | null;
   similarityScore: number | null;
+  updateReason: string | null;
   status: "pending" | "approved" | "rejected" | "merged";
   reviewedBy: string | null;
   reviewedAt: string | null;

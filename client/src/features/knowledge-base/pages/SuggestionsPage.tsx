@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useKnowledgeSuggestions, type KnowledgeSuggestion } from "../hooks/useKnowledgeSuggestions";
-import { Check, X, GitMerge, AlertTriangle, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Check, X, GitMerge, AlertTriangle, Clock, CheckCircle, XCircle, Plus, Pencil } from "lucide-react";
 
 type StatusFilter = "pending" | "approved" | "rejected" | "merged" | "all";
 
@@ -42,6 +42,24 @@ function ConfidenceBadge({ score }: { score: number | null }) {
   return (
     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${color}`}>
       {score}%
+    </span>
+  );
+}
+
+function SuggestionTypeBadge({ type, targetArticleId }: { type: string; targetArticleId: number | null }) {
+  if (type === "update" && targetArticleId) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+        <Pencil className="w-3 h-3" />
+        Atualizar #{targetArticleId}
+      </span>
+    );
+  }
+  
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+      <Plus className="w-3 h-3" />
+      Criar novo
     </span>
   );
 }
@@ -95,19 +113,21 @@ function SuggestionCard({
     <div className="bg-white border rounded-lg p-4 space-y-3">
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
+          <SuggestionTypeBadge type={suggestion.suggestionType} targetArticleId={suggestion.similarArticleId} />
           <StatusBadge status={suggestion.status} />
           <ConfidenceBadge score={suggestion.confidenceScore} />
-          {suggestion.similarArticleId && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-              <GitMerge className="w-3 h-3" />
-              Similar ({suggestion.similarityScore}%)
-            </span>
-          )}
         </div>
         <span className="text-xs text-gray-500">
           {new Date(suggestion.createdAt).toLocaleDateString("pt-BR")}
         </span>
       </div>
+      
+      {suggestion.suggestionType === "update" && suggestion.updateReason && (
+        <div className="bg-orange-50 border border-orange-200 rounded-md p-2">
+          <span className="text-xs font-medium text-orange-800">Motivo da atualização:</span>
+          <p className="text-sm text-orange-700 mt-1">{suggestion.updateReason}</p>
+        </div>
+      )}
 
       <QualityFlags flags={suggestion.qualityFlags} />
 
