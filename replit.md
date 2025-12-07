@@ -209,6 +209,29 @@ Centralized entry points:
 ### Environment Variables Por Ambiente
 - ZENDESK_WEBHOOK_SECRET (dev/prod): Chave HMAC para webhooks
 - ZENDESK_WEBHOOK_ID (dev/prod): ID do webhook no Zendesk
+- ZENDESK_APP_API_KEY (dev/prod): API key com escopo "app" para Switchboard API
+
+---
+
+## Zendesk Switchboard
+
+O n1ago está integrado ao Zendesk Switchboard para controle de conversas.
+
+**Documentação completa:** [docs/zendesk-switchboard.md](docs/zendesk-switchboard.md)
+
+### IDs Importantes
+
+| Integração | Switchboard ID | Ambiente |
+|------------|----------------|----------|
+| n1ago-dev | `69357782256891c6fda71018` | Development |
+| n1ago-prod | `693577c73ef61062218d9705` | Production |
+| zd-agentWorkspace | `5fbcf90112addf000c227bb2` | (Humanos) |
+| zd-answerBot | `64d65d81a40bc6cf30ebfbb1` | (Bot Zendesk) |
+
+### Fluxo de Handoff
+1. Cliente entra → zd-answerBot atende
+2. Cliente escolhe "cartão" → passControl para n1ago
+3. n1ago responde → resolve ou passControl para agentWorkspace
 
 ---
 
