@@ -50,25 +50,33 @@ const DEFAULT_PROMPT = `Você é um especialista em criar artigos de base de con
 - Se a conversa menciona múltiplos assuntos (ex: "antecipação" e "repasse"), escolha o PRINCIPAL que foi resolvido
 - NÃO misture temas diferentes no mesmo artigo (ex: NÃO misture "valores não recebidos" com "plano de antecipação")
 
-### 2. SOLUÇÃO ESPECÍFICA E PRÁTICA (CRÍTICO!)
-A solução deve ser um PASSO A PASSO DETALHADO que um atendente possa seguir. NÃO resuma o que foi feito - DETALHE COMO fazer.
+### 2. SOLUÇÃO COMO INSTRUÇÃO FUTURA (CRÍTICO!)
+A solução é uma INSTRUÇÃO para futuros atendimentos. NÃO é um relato do que aconteceu na conversa.
 
-EXEMPLOS DE SOLUÇÕES RUINS (genéricas, inúteis):
-- "Orientações fornecidas sobre os requisitos" (O que orientar? Quais requisitos?)
-- "Cliente foi orientado sobre o processo" (Qual processo? Como funciona?)
-- "Informações sobre documentação enviadas" (Quais informações? Que documentos?)
+REGRA DE OURO: NUNCA use verbos no passado. SEMPRE use INFINITIVO ou IMPERATIVO.
 
-EXEMPLOS DE SOLUÇÕES BOAS (específicas, acionáveis):
-- "Orientar o cliente a enviar os documentos no formato PDF ou JPG, com tamanho máximo de 5MB. O documento deve estar legível e completo (frente e verso). Caso a imagem esteja cortada ou ilegível, solicitar novo envio."
-- "Verificar no sistema se a conta está com status 'pendente de documentação'. Solicitar: 1) CNH ou RG frente e verso, 2) Comprovante de endereço dos últimos 3 meses. Após envio, aguardar até 48h para análise."
-- "Acessar o menu Configurações > Senha > Esqueci minha senha. O cliente receberá um e-mail em até 5 minutos. Se não receber, verificar a pasta de spam ou tentar com outro e-mail cadastrado."
+❌ PROIBIDO (narrativa do passado):
+- "Cliente foi orientado a..." → ERRADO, é relato
+- "Foi explicado ao cliente que..." → ERRADO, é relato
+- "O atendente informou sobre..." → ERRADO, é relato
+- "Cliente foi orientada a acompanhar o banner" → ERRADO, é relato
 
-O QUE INCLUIR NA SOLUÇÃO:
+✅ CORRETO (instrução para o futuro):
+- "Orientar o cliente a..." → CERTO, é instrução
+- "Explicar ao cliente que..." → CERTO, é instrução
+- "Informar sobre..." → CERTO, é instrução
+- "Direcionar o cliente para o banner de ofertas no app" → CERTO, é instrução
+
+EXEMPLOS COMPLETOS DE SOLUÇÕES BOAS:
+- "Orientar o cliente a acessar o app, clicar no banner de ofertas na tela inicial. O cartão é gratuito e sem anuidade. Prazo de aprovação: até 7 dias úteis. Se não visualizar o banner, verificar se o app está atualizado."
+- "Solicitar envio de documentos: 1) CNH ou RG (frente e verso), 2) Comprovante de endereço (últimos 3 meses). Formatos aceitos: PDF ou JPG, máximo 5MB. Prazo de análise: até 48h."
+- "Verificar no sistema se há saldo bloqueado. Informar que a antecipação é creditada em D+1. Se o valor não aparecer, abrir chamado para equipe de análise."
+
+O QUE A SOLUÇÃO DEVE CONTER:
+- Verbos no INFINITIVO (Orientar, Verificar, Solicitar, Informar)
 - Passos específicos (menus, botões, telas)
-- Requisitos técnicos (formato, tamanho, prazo)
-- O que verificar/validar antes de orientar
-- Alternativas se o primeiro caminho não funcionar
-- Prazos e expectativas realistas
+- Requisitos e prazos
+- O que fazer se não funcionar
 
 ### 3. OBSERVAÇÕES PARA DETALHES ADICIONAIS
 - Use para exceções, casos especiais, ou contextos específicos
