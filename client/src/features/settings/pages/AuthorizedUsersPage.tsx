@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
-import { apiRequest, fetchApi } from "../lib/queryClient";
-import { useDateFormatters } from "../shared/hooks";
-import { LoadingState, EmptyState, LoadingSpinner } from "../shared/components";
-import type { AuthorizedUser } from "../types";
+import { apiRequest, fetchApi } from "../../../lib/queryClient";
+import { useDateFormatters } from "../../../shared/hooks";
+import { LoadingState, EmptyState, LoadingSpinner } from "../../../shared/components";
+import type { AuthorizedUser } from "../../../types";
 
 export function AuthorizedUsersPage() {
   const [newEmail, setNewEmail] = useState("");

@@ -117,12 +117,36 @@ server/
   │   └── messageStorage.ts # Operações de mensagens
   └── storage.ts      # Re-exporta módulos de storage (facade para retrocompatibilidade)
 client/src/
-  ├── components/     # Componentes React reutilizáveis
-  │   ├── ui/           # Componentes base (Badge, Pagination, DataTable, LoadingSpinner)
-  │   └── *.tsx         # Badges especializados, modais (EventDetailModal, UserDetailModal, etc)
-  ├── pages/          # Páginas/views
-  ├── hooks/          # Hooks customizados (usePaginatedQuery, useAuth, useOpenaiApiConfig)
-  └── lib/            # Utilitários e helpers
+  ├── features/       # Módulos de funcionalidades (feature-based architecture)
+  │   ├── ai/           # Configurações e páginas de IA
+  │   │   ├── components/  # OpenaiConfigForm, etc
+  │   │   └── pages/       # AIPage, ClassificationConfigPage, etc
+  │   ├── cadastro/     # Gestão de usuários e organizações
+  │   │   ├── components/  # UsersListContent, OrganizationsListContent
+  │   │   └── pages/       # CadastroPage, UserStandardDetailPage, etc
+  │   ├── conversations/ # Atendimentos e conversas
+  │   │   ├── components/  # ConversationChat, ConversationSelector, etc
+  │   │   ├── pages/       # AtendimentosPage, UserConversationsPage
+  │   │   └── types/       # Tipos específicos de conversas
+  │   ├── events/       # Visualização de eventos
+  │   │   └── pages/       # EventsLayout, EventsStandardPage, etc
+  │   ├── export/       # Exportação de dados
+  │   │   └── pages/       # ExportPage, ExportSummariesPage
+  │   └── settings/     # Configurações do sistema
+  │       ├── components/  # AccessControlTab, GeneralSettingsTab, etc
+  │       └── pages/       # SettingsPage, ProductStandardsPage, etc
+  ├── shared/         # Recursos compartilhados entre features
+  │   ├── components/   # Componentes reutilizáveis
+  │   │   ├── ui/         # Badge, Pagination, DataTable, Modal, etc
+  │   │   ├── badges/     # StatusBadge, AuthorTypeBadge, etc
+  │   │   ├── charts/     # DonutChart
+  │   │   ├── layout/     # NavLink, EnvironmentBadge, TabbedLayout
+  │   │   └── modals/     # EventDetailModal, UserDetailModal, etc
+  │   ├── hooks/        # usePaginatedQuery, useAuth, useDateFormatters, etc
+  │   └── pages/        # Páginas core (LandingPage, LoadingPage, HomePage, etc)
+  ├── contexts/       # React contexts (TimezoneContext)
+  ├── lib/            # Utilitários e helpers (queryClient, dateUtils, userUtils)
+  └── types/          # Tipos compartilhados globalmente
       ├── dateUtils.ts  # Formatação de datas
       ├── userUtils.ts  # Formatação e extração de dados de usuário
       └── queryClient.ts # Configuração TanStack Query e helpers (fetchApi, fetchWithAuth, apiRequest)

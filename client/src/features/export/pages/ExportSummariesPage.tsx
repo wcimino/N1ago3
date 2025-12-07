@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Download, Calendar, Target, Loader2, Tag } from "lucide-react";
-import { fetchApi } from "../lib/queryClient";
-import { formatDateTime } from "../lib/dateUtils";
+import { fetchApi } from "../../../lib/queryClient";
+import { formatDateTime } from "../../../lib/dateUtils";
 
 interface SummaryExport {
   id: number;

@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { MessageCircle, Activity, ChevronRight as ArrowRight, Package, Clock, Calendar, AlertCircle } from "lucide-react";
-import { fetchApi } from "../lib/queryClient";
-import { DonutChart } from "../shared/components";
-import type { UsersStatsResponse, StatsResponse, ProductStatsResponse } from "../types";
+import { fetchApi } from "../../lib/queryClient";
+import { DonutChart } from "../components";
+import type { UsersStatsResponse, StatsResponse, ProductStatsResponse } from "../../types";
 
 function formatNumber(num: number): string {
   return num.toLocaleString("pt-BR");
@@ -43,7 +43,6 @@ export function HomePage() {
             const todayMap = new Map(productStats?.today?.map(p => [p.product, p.count]) || []);
             const allProducts = [...new Set([...lastHourMap.keys(), ...todayMap.keys()])];
             
-            // Sort by 24h count descending
             allProducts.sort((a, b) => (todayMap.get(b) || 0) - (todayMap.get(a) || 0));
             
             if (allProducts.length === 0) {

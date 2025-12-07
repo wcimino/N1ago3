@@ -6,18 +6,10 @@ import { TimezoneProvider } from "./contexts/TimezoneContext";
 import { AIPage } from "./features/ai";
 import { SettingsPage, ProductStandardsPage, ReprocessingPage } from "./features/settings";
 import { EventsLayout } from "./features/events";
-import {
-  LandingPage,
-  UnauthorizedPage,
-  LoadingPage,
-  HomePage,
-  UserStandardDetailPage,
-  OrganizationStandardDetailPage,
-  AtendimentosPage,
-  UserConversationsPage,
-  CadastroPage,
-  ExportPage,
-} from "./pages";
+import { AtendimentosPage, UserConversationsPage } from "./features/conversations";
+import { CadastroPage, UserStandardDetailPage, OrganizationStandardDetailPage } from "./features/cadastro";
+import { ExportPage } from "./features/export";
+import { LandingPage, LoadingPage, UnauthorizedPage, HomePage } from "./shared/pages";
 
 function AuthenticatedApp() {
   const { user } = useAuth();

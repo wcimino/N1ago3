@@ -1,8 +1,7 @@
 import { useLocation } from "wouter";
 import { Users, Building2 } from "lucide-react";
-import { SegmentedTabs } from "../shared/components/ui";
-import { UsersListContent } from "./UsersListContent";
-import { OrganizationsListContent } from "./OrganizationsListContent";
+import { SegmentedTabs } from "../../../shared/components/ui";
+import { UsersListContent, OrganizationsListContent } from "../components";
 
 interface CadastroPageProps {
   activeTab?: "usuarios" | "organizacoes";

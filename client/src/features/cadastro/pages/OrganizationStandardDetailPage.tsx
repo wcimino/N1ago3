@@ -1,35 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ChevronLeft, Users, Mail, FileText, Clock, History, Building2 } from "lucide-react";
-import { LoadingState, EmptyState } from "../shared/components";
-import { useDateFormatters } from "../shared/hooks";
-import { fetchApi } from "../lib/queryClient";
-
-interface UserStandard {
-  id: number;
-  email: string;
-  source: string;
-  sourceUserId: string | null;
-  externalId: string | null;
-  name: string | null;
-  cpf: string | null;
-  phone: string | null;
-  locale: string | null;
-  signedUpAt: string | null;
-  firstSeenAt: string;
-  lastSeenAt: string;
-  metadata: any;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface UserHistory {
-  fieldName: string;
-  oldValue: string | null;
-  newValue: string | null;
-  changedAt: string;
-  source: string | null;
-}
+import { ChevronLeft, Building2, FileText, Clock, History, Users } from "lucide-react";
+import { LoadingState, EmptyState } from "../../../shared/components";
+import { useDateFormatters } from "../../../shared/hooks";
+import { fetchApi } from "../../../lib/queryClient";
 
 interface OrganizationStandard {
   id: number;
@@ -37,31 +11,56 @@ interface OrganizationStandard {
   cnpjRoot: string;
   source: string;
   name: string | null;
+  metadata: any;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-interface UserStandardDetailPageProps {
-  params: { email: string };
+interface OrganizationHistory {
+  fieldName: string;
+  oldValue: string | null;
+  newValue: string | null;
+  changedAt: string;
+  source: string | null;
 }
 
-export function UserStandardDetailPage({ params }: UserStandardDetailPageProps) {
+interface UserStandard {
+  id: number;
+  email: string;
+  source: string;
+  name: string | null;
+}
+
+interface OrganizationStandardDetailPageProps {
+  params: { cnpjRoot: string };
+}
+
+export function OrganizationStandardDetailPage({ params }: OrganizationStandardDetailPageProps) {
   const [, navigate] = useLocation();
-  const email = decodeURIComponent(params.email);
+  const cnpjRoot = decodeURIComponent(params.cnpjRoot);
   const { formatDateTime, formatShortDateTime } = useDateFormatters();
 
-  const { data: user, isLoading: userLoading } = useQuery<UserStandard>({
-    queryKey: ["user-standard", email],
-    queryFn: () => fetchApi<UserStandard>(`/api/users-standard/${encodeURIComponent(email)}`),
+  const { data: organization, isLoading: orgLoading } = useQuery<OrganizationStandard>({
+    queryKey: ["organization-standard", cnpjRoot],
+    queryFn: () => fetchApi<OrganizationStandard>(`/api/organizations-standard/${encodeURIComponent(cnpjRoot)}`),
   });
 
-  const { data: history, isLoading: historyLoading } = useQuery<UserHistory[]>({
-    queryKey: ["user-standard-history", email],
-    queryFn: () => fetchApi<UserHistory[]>(`/api/users-standard/${encodeURIComponent(email)}/history`),
+  const { data: history, isLoading: historyLoading } = useQuery<OrganizationHistory[]>({
+    queryKey: ["organization-standard-history", cnpjRoot],
+    queryFn: () => fetchApi<OrganizationHistory[]>(`/api/organizations-standard/${encodeURIComponent(cnpjRoot)}/history`),
   });
 
-  const { data: organizations, isLoading: orgsLoading } = useQuery<OrganizationStandard[]>({
-    queryKey: ["user-standard-organizations", email],
-    queryFn: () => fetchApi<OrganizationStandard[]>(`/api/users-standard/${encodeURIComponent(email)}/organizations`),
+  const { data: users, isLoading: usersLoading } = useQuery<UserStandard[]>({
+    queryKey: ["organization-standard-users", cnpjRoot],
+    queryFn: () => fetchApi<UserStandard[]>(`/api/organizations-standard/${encodeURIComponent(cnpjRoot)}/users`),
   });
+
+  const fieldLabels: Record<string, string> = {
+    name: "Nome",
+    cnpj: "CNPJ Completo",
+  };
 
   const formatCnpjRoot = (cnpjRoot: string) => {
     if (cnpjRoot.length === 8) {
@@ -70,30 +69,21 @@ export function UserStandardDetailPage({ params }: UserStandardDetailPageProps) 
     return cnpjRoot;
   };
 
-  const fieldLabels: Record<string, string> = {
-    name: "Nome",
-    cpf: "CPF",
-    phone: "Telefone",
-    locale: "Idioma",
-    externalId: "ID Externo",
-    sourceUserId: "ID na Fonte",
-  };
-
-  if (userLoading) {
+  if (orgLoading) {
     return <LoadingState />;
   }
 
-  if (!user) {
+  if (!organization) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
         <EmptyState
-          icon={<Users className="w-12 h-12 text-gray-300" />}
-          title="Usuário não encontrado"
-          description={`Não foi possível encontrar o usuário com email ${email}`}
+          icon={<Building2 className="w-12 h-12 text-gray-300" />}
+          title="Organização não encontrada"
+          description={`Não foi possível encontrar a organização com CNPJ raiz ${cnpjRoot}`}
         />
         <div className="text-center mt-4">
           <button
-            onClick={() => navigate("/cadastro")}
+            onClick={() => navigate("/cadastro/organizacoes")}
             className="text-blue-600 hover:text-blue-800"
           >
             Voltar para lista
@@ -108,14 +98,14 @@ export function UserStandardDetailPage({ params }: UserStandardDetailPageProps) 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-4 py-3 border-b flex items-center gap-3">
           <button
-            onClick={() => navigate("/cadastro")}
+            onClick={() => navigate("/cadastro/organizacoes")}
             className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Detalhes do Usuário</h2>
-            <p className="text-sm text-gray-500">{user.email}</p>
+            <h2 className="text-lg font-semibold text-gray-900">Detalhes da Organização</h2>
+            <p className="text-sm text-gray-500">{formatCnpjRoot(organization.cnpjRoot)}</p>
           </div>
         </div>
 
@@ -123,26 +113,26 @@ export function UserStandardDetailPage({ params }: UserStandardDetailPageProps) 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <Users className="w-5 h-5 text-gray-400 mt-0.5" />
+                <Building2 className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>
                   <p className="text-sm text-gray-500">Nome</p>
-                  <p className="font-medium">{user.name || "-"}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <Mail className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500">Email</p>
-                  <p className="font-medium">{user.email}</p>
+                  <p className="font-medium">{organization.name || "-"}</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
                 <FileText className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>
-                  <p className="text-sm text-gray-500">CPF</p>
-                  <p className="font-medium">{user.cpf || "-"}</p>
+                  <p className="text-sm text-gray-500">CNPJ Raiz</p>
+                  <p className="font-medium">{formatCnpjRoot(organization.cnpjRoot)}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <FileText className="w-5 h-5 text-gray-400 mt-0.5" />
+                <div>
+                  <p className="text-sm text-gray-500">CNPJ Completo</p>
+                  <p className="font-medium">{organization.cnpj || "-"}</p>
                 </div>
               </div>
             </div>
@@ -152,7 +142,15 @@ export function UserStandardDetailPage({ params }: UserStandardDetailPageProps) 
                 <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>
                   <p className="text-sm text-gray-500">Último contato</p>
-                  <p className="font-medium">{formatDateTime(user.lastSeenAt)}</p>
+                  <p className="font-medium">{formatDateTime(organization.lastSeenAt)}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
+                <div>
+                  <p className="text-sm text-gray-500">Primeiro contato</p>
+                  <p className="font-medium">{formatDateTime(organization.firstSeenAt)}</p>
                 </div>
               </div>
 
@@ -162,7 +160,7 @@ export function UserStandardDetailPage({ params }: UserStandardDetailPageProps) 
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Fonte</p>
-                  <p className="font-medium">{user.source}</p>
+                  <p className="font-medium">{organization.source}</p>
                 </div>
               </div>
             </div>
@@ -172,31 +170,31 @@ export function UserStandardDetailPage({ params }: UserStandardDetailPageProps) 
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-4 py-3 border-b flex items-center gap-2">
-          <Building2 className="w-5 h-5 text-gray-500" />
-          <h3 className="text-lg font-semibold text-gray-900">Organizações Associadas</h3>
+          <Users className="w-5 h-5 text-gray-500" />
+          <h3 className="text-lg font-semibold text-gray-900">Usuários Associados</h3>
         </div>
 
-        {orgsLoading ? (
+        {usersLoading ? (
           <LoadingState />
-        ) : !organizations || organizations.length === 0 ? (
+        ) : !users || users.length === 0 ? (
           <div className="p-6 text-center text-gray-500">
-            <p>Nenhuma organização associada</p>
+            <p>Nenhum usuário associado</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {organizations.map((org) => (
+            {users.map((user) => (
               <div
-                key={org.id}
+                key={user.id}
                 className="p-4 hover:bg-gray-50 cursor-pointer"
-                onClick={() => navigate(`/cadastro/organizations/${encodeURIComponent(org.cnpjRoot)}`)}
+                onClick={() => navigate(`/cadastro/users/${encodeURIComponent(user.email)}`)}
               >
                 <div className="flex items-center gap-3">
-                  <Building2 className="w-5 h-5 text-gray-400" />
+                  <Users className="w-5 h-5 text-gray-400" />
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900">{org.name || "Sem nome"}</p>
-                    <p className="text-sm text-gray-500">CNPJ Raiz: {formatCnpjRoot(org.cnpjRoot)}</p>
+                    <p className="font-medium text-gray-900">{user.name || user.email}</p>
+                    <p className="text-sm text-gray-500">{user.email}</p>
                   </div>
-                  <span className="text-xs text-gray-400">{org.source}</span>
+                  <span className="text-xs text-gray-400">{user.source}</span>
                 </div>
               </div>
             ))}

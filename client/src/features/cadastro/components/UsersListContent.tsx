@@ -1,8 +1,7 @@
 import { useLocation } from "wouter";
 import { Users, FileText, ChevronRight } from "lucide-react";
-import { LoadingState, EmptyState, Pagination } from "../shared/components";
-import { useDateFormatters } from "../shared/hooks";
-import { usePaginatedQuery } from "../shared/hooks";
+import { LoadingState, EmptyState, Pagination } from "../../../shared/components";
+import { useDateFormatters, usePaginatedQuery } from "../../../shared/hooks";
 
 interface UserStandard {
   id: number;
