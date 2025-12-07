@@ -24,7 +24,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
   const { formatDateTimeShort } = useDateFormatters();
   const [expandedImage, setExpandedImage] = useState<ImagePayload | null>(null);
   const [selectedConversationIndex, setSelectedConversationIndex] = useState(0);
-  const [contentTab, setContentTab] = useState<ContentTab>("chat");
+  const [contentTab, setContentTab] = useState<ContentTab>("resumo");
   const chatEndRef = useRef<HTMLDivElement>(null);
   const hasInitializedSelection = useRef(false);
   
@@ -50,7 +50,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
   useEffect(() => {
     hasInitializedSelection.current = false;
     setSelectedConversationIndex(0);
-    setContentTab("chat");
+    setContentTab("resumo");
   }, [userId]);
 
   useEffect(() => {
