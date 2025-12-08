@@ -221,7 +221,8 @@ export async function generateAndSaveResponse(
   lastEventId: number,
   useKnowledgeBaseTool: boolean = false,
   useProductCatalogTool: boolean = false,
-  useZendeskKnowledgeBaseTool: boolean = false
+  useZendeskKnowledgeBaseTool: boolean = false,
+  inResponseTo: string | null = null
 ): Promise<ResponseResult> {
   const result = await generateResponse(
     payload,
@@ -241,6 +242,7 @@ export async function generateAndSaveResponse(
       lastEventId,
       openaiLogId: result.logId,
       externalConversationId,
+      inResponseTo,
     });
 
     await storage.saveStandardEvent({

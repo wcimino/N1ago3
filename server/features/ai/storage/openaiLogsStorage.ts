@@ -71,7 +71,7 @@ export const openaiLogsStorage = {
 
   async saveSuggestedResponse(
     conversationId: number,
-    data: { suggestedResponse: string; lastEventId: number; openaiLogId: number; externalConversationId?: string | null }
+    data: { suggestedResponse: string; lastEventId: number; openaiLogId: number; externalConversationId?: string | null; inResponseTo?: string | null }
   ): Promise<SuggestedResponse> {
     const [response] = await db.insert(responsesSuggested)
       .values({
@@ -80,6 +80,7 @@ export const openaiLogsStorage = {
         lastEventId: data.lastEventId,
         openaiLogId: data.openaiLogId,
         externalConversationId: data.externalConversationId || null,
+        inResponseTo: data.inResponseTo || null,
       })
       .returning();
     return response;
