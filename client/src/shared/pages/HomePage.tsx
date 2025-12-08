@@ -114,6 +114,7 @@ export function HomePage() {
             <div className="flex items-center gap-3">
               <span title="Última hora"><Clock className="w-3 h-3 text-pink-500" /></span>
               <span title="Hoje"><Calendar className="w-3 h-3 text-pink-500" /></span>
+              <div className="w-4" />
             </div>
           </div>
           {(() => {
@@ -153,6 +154,13 @@ export function HomePage() {
                         ) : (
                           <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
                         )}
+                        <Link
+                          href={`/atendimentos?emotionLevel=${level}`}
+                          className="text-gray-400 hover:text-blue-600 transition-colors"
+                          title={`Ver atendimentos com sentimento ${config.label}`}
+                        >
+                          <ArrowRight className="w-4 h-4" />
+                        </Link>
                       </div>
                     </div>
                   );
