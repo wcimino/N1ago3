@@ -29,13 +29,6 @@ function AuthenticatedApp() {
               <span className="hidden sm:inline text-sm text-gray-600 truncate max-w-[200px]">
                 {user?.email}
               </span>
-              <Link
-                href="/settings"
-                className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
-                title="Configurações"
-              >
-                <Settings className="w-5 h-5" />
-              </Link>
               <button
                 onClick={() => {
                   if (window.confirm("Tem certeza que deseja sair?")) {
@@ -50,23 +43,31 @@ function AuthenticatedApp() {
               </button>
             </div>
           </div>
-          <nav className="flex gap-1 -mb-px overflow-x-auto scrollbar-hide pb-px">
-            <NavLink href="/">
-              <Home className="w-4 h-4" />
-              <span className="hidden sm:inline">Home</span>
-            </NavLink>
-            <NavLink href="/atendimentos">
-              <MessageCircle className="w-4 h-4" />
-              <span className="hidden sm:inline">Atendimentos</span>
-            </NavLink>
-            <NavLink href="/ai">
-              <Sparkles className="w-4 h-4" />
-              <span className="hidden sm:inline">AI</span>
-            </NavLink>
-            <NavLink href="/knowledge-base">
-              <BookOpen className="w-4 h-4" />
-              <span className="hidden sm:inline">Base de Conhecimento</span>
-            </NavLink>
+          <nav className="flex items-center -mb-px overflow-x-auto scrollbar-hide pb-px">
+            <div className="flex gap-1">
+              <NavLink href="/">
+                <Home className="w-4 h-4" />
+                <span className="hidden sm:inline">Home</span>
+              </NavLink>
+              <NavLink href="/atendimentos">
+                <MessageCircle className="w-4 h-4" />
+                <span className="hidden sm:inline">Atendimentos</span>
+              </NavLink>
+              <NavLink href="/ai">
+                <Sparkles className="w-4 h-4" />
+                <span className="hidden sm:inline">AI</span>
+              </NavLink>
+              <NavLink href="/knowledge-base">
+                <BookOpen className="w-4 h-4" />
+                <span className="hidden sm:inline">Base de Conhecimento</span>
+              </NavLink>
+            </div>
+            <div className="ml-auto">
+              <NavLink href="/settings">
+                <Settings className="w-4 h-4" />
+                <span className="hidden sm:inline">Configurações</span>
+              </NavLink>
+            </div>
           </nav>
         </div>
       </header>
