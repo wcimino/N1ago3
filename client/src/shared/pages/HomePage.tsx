@@ -44,7 +44,7 @@ export function HomePage() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg shadow p-5">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
