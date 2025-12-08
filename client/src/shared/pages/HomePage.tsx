@@ -295,11 +295,13 @@ export function HomePage() {
           linkTo="/events"
           badge="24h"
         >
-          <p className="text-sm text-gray-500">Total de Eventos</p>
-          <p className="text-3xl font-bold text-gray-900 mt-2">{formatNumber(eventsStats?.total || 0)}</p>
-          <div className={`mt-4 pt-4 border-t border-gray-100 flex items-center gap-2 ${(eventsStats?.by_status?.error || 0) > 0 ? 'text-red-600' : 'text-gray-400'}`}>
-            <AlertCircle className="w-4 h-4" />
-            <span className="text-sm">{formatNumber(eventsStats?.by_status?.error || 0)} com erro</span>
+          <div className="flex flex-col items-center text-center">
+            <p className="text-sm text-gray-500">Total de Eventos</p>
+            <p className="text-3xl font-bold text-gray-900 mt-2">{formatNumber(eventsStats?.total || 0)}</p>
+            <div className={`mt-4 pt-4 border-t border-gray-100 flex items-center gap-2 ${(eventsStats?.by_status?.error || 0) > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+              <AlertCircle className="w-4 h-4" />
+              <span className="text-sm">{formatNumber(eventsStats?.by_status?.error || 0)} com erro</span>
+            </div>
           </div>
         </StatsCard>
 
