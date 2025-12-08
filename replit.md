@@ -107,6 +107,12 @@ The React frontend provides a real-time dashboard for events and conversations, 
     *   Added UNIQUE constraint on `(source, source_event_id)` in `events_standard` table as guardrail
     *   Polling worker now skips webhooks with "processing" status and recovers stuck webhooks (>5 minutes)
     *   Duplicate events cleanup tool at `/settings/maintenance/duplicates` with dry-run mode
+    *   **Enhanced idempotent event creation (December 2025):**
+        *   `saveStandardEvent` catches unique constraint violation (23505) and returns existing event with `isNew=false`
+        *   Dispatch always runs (even for duplicates) to handle crash-after-insert-before-dispatch scenarios
+        *   All downstream orchestrators are idempotent: summary, classification, response, learning, handoff, routing
+        *   `eventsCreatedCount` tracks only NEW events created (not duplicates)
+        *   Polling worker only reprocesses webhooks with `eventsCreatedCount=0` using `COALESCE` for NULL handling
 
 ## Deployment Configuration
 
