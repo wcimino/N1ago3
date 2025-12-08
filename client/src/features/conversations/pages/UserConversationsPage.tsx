@@ -22,7 +22,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
   const [expandedImage, setExpandedImage] = useState<ImagePayload | null>(null);
   const [selectedConversationIndex, setSelectedConversationIndex] = useState(0);
   const [contentTab, setContentTab] = useState<ContentTab>("resumo");
-  const [showSuggestions, setShowSuggestions] = useState(true);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const hasInitializedSelection = useRef(false);
   
