@@ -10,7 +10,7 @@ const router = Router();
 const TARGET_INTEGRATIONS: Record<string, () => string> = {
   n1ago: ZendeskApiService.getN1agoIntegrationId,
   human: ZendeskApiService.getAgentWorkspaceIntegrationId,
-  bot: () => "64d65d81a40bc6cf30ebfbb1",
+  bot: ZendeskApiService.getAnswerBotIntegrationId,
 };
 
 router.post("/api/conversations/:conversationId/transfer", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {

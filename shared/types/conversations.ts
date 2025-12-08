@@ -116,6 +116,8 @@ export interface ConversationWithMessages {
     id: number;
     external_conversation_id: string;
     status: string;
+    current_handler: string | null;
+    current_handler_name: string | null;
     closed_at: string | null;
     closed_reason: string | null;
     created_at: string;

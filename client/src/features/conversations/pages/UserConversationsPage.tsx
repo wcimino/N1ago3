@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { XCircle, MessageCircle, ChevronLeft, FileText, Eye, EyeOff } from "lucide-react";
+import { XCircle, MessageCircle, ChevronLeft, FileText, Eye, EyeOff, ArrowRightLeft } from "lucide-react";
 import type { UserConversationsMessagesResponse, ImagePayload } from "../../../types";
 import { ImageLightbox, LoadingState, SegmentedTabs } from "../../../shared/components/ui";
-import { ConversationSelector, ConversationSummary, ConversationChat } from "../components";
+import { HandlerBadge } from "../../../shared/components/badges/HandlerBadge";
+import { ConversationSelector, ConversationSummary, ConversationChat, TransferConversationModal } from "../components";
 import { useResizablePanel, useDateFormatters } from "../../../shared/hooks";
 import { fetchApi } from "../../../lib/queryClient";
 import { getUserDisplayNameFromProfile } from "../../../lib/userUtils";
@@ -23,6 +24,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
   const [selectedConversationIndex, setSelectedConversationIndex] = useState(0);
   const [contentTab, setContentTab] = useState<ContentTab>("resumo");
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const hasInitializedSelection = useRef(false);
   
@@ -98,6 +100,23 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
             {data?.conversations.length || 0} {(data?.conversations.length || 0) === 1 ? "conversa" : "conversas"} - {totalMessages} {totalMessages === 1 ? "mensagem" : "mensagens"}
           </p>
         </div>
+        {selectedConversation && (
+          <div className="flex items-center gap-3">
+            <HandlerBadge 
+              handlerName={selectedConversation.conversation.current_handler_name} 
+              size="sm" 
+              showLabel 
+            />
+            <button
+              onClick={() => setShowTransferModal(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-purple-600 hover:text-purple-700 border border-purple-200 hover:border-purple-300 rounded-lg hover:bg-purple-50 transition-colors"
+              title="Transferir conversa"
+            >
+              <ArrowRightLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Transferir</span>
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 bg-gray-100 overflow-hidden flex flex-col">
@@ -232,6 +251,15 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
         altText={expandedImage?.altText}
         onClose={() => setExpandedImage(null)}
       />
+
+      {selectedConversation && (
+        <TransferConversationModal
+          isOpen={showTransferModal}
+          onClose={() => setShowTransferModal(false)}
+          conversationId={selectedConversation.conversation.id}
+          currentHandler={selectedConversation.conversation.current_handler_name}
+        />
+      )}
     </div>
   );
 }

@@ -5,3 +5,4 @@ export { ConversationSummaryCard } from "./ConversationSummaryCard";
 export { SummaryCard } from "./SummaryCard";
 export { FilterBar } from "./FilterBar";
 export { UserGroupCard } from "./UserGroupCard";
+export { TransferConversationModal } from "./TransferConversationModal";

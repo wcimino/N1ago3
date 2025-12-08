@@ -251,6 +251,10 @@ export function getN1agoIntegrationId(): string {
   return isDev ? "69357782256891c6fda71018" : "693577c73ef61062218d9705";
 }
 
+export function getAnswerBotIntegrationId(): string {
+  return "64d65d81a40bc6cf30ebfbb1";
+}
+
 export const ZendeskApiService = {
   sendMessage,
   passControl,
@@ -259,4 +263,5 @@ export const ZendeskApiService = {
   releaseControl,
   getAgentWorkspaceIntegrationId,
   getN1agoIntegrationId,
+  getAnswerBotIntegrationId,
 };
