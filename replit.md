@@ -126,6 +126,18 @@ The React frontend provides a real-time dashboard for events and conversations, 
         *   All downstream orchestrators are idempotent: summary, classification, response, learning, handoff, routing
         *   `eventsCreatedCount` tracks only NEW events created (not duplicates)
         *   Polling worker only reprocesses webhooks with `eventsCreatedCount=0` using `COALESCE` for NULL handling
+*   **AutoPilot - Automatic Response Sending (December 2025):**
+    *   New component at `server/features/autoPilot/services/autoPilotService.ts`
+    *   Added `status` field to `responses_suggested` table with values: `created`, `sent`, `expired`
+    *   AutoPilot is called after each suggestion is created in `responseAdapter.ts`
+    *   Conditions for sending:
+        1. Conversation is assigned to n1ago (verified by handler ID and name)
+        2. Last message is from the client (authorType === "user")
+        3. No newer messages exist after the suggestion was created
+        4. `in_response_to` matches the client's last message text (normalized)
+    *   Race condition prevention: atomic status update with conditional WHERE clause
+    *   On send failure: marks as `expired` to prevent infinite retries
+    *   Sends via `ZendeskApiService.sendMessage()` when all conditions are met
 
 ## Deployment Configuration
 
