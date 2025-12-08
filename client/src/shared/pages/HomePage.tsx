@@ -52,8 +52,10 @@ export function HomePage() {
             Produtos Mencionados
           </h2>
           {(() => {
-            const lastHourMap = new Map(productStats?.last_hour?.map(p => [p.product, p.count]) || []);
-            const todayMap = new Map(productStats?.today?.map(p => [p.product, p.count]) || []);
+            const lastHourItems = productStats?.last_hour?.items || [];
+            const todayItems = productStats?.today?.items || [];
+            const lastHourMap = new Map(lastHourItems.map(p => [p.product, p.count]));
+            const todayMap = new Map(todayItems.map(p => [p.product, p.count]));
             const allProducts = [...new Set([...lastHourMap.keys(), ...todayMap.keys()])];
             
             allProducts.sort((a, b) => (todayMap.get(b) || 0) - (todayMap.get(a) || 0));
@@ -62,8 +64,8 @@ export function HomePage() {
               return <p className="text-sm text-gray-400 italic">Nenhum produto ainda</p>;
             }
             
-            const totalLastHour = [...lastHourMap.values()].reduce((sum, v) => sum + v, 0);
-            const totalToday = [...todayMap.values()].reduce((sum, v) => sum + v, 0);
+            const totalLastHour = productStats?.last_hour?.total || 0;
+            const totalToday = productStats?.today?.total || 0;
             
             return (
               <div>
@@ -126,8 +128,10 @@ export function HomePage() {
             Sentimento Atual
           </h2>
           {(() => {
-            const lastHourMap = new Map(emotionStats?.last_hour?.map(e => [e.emotionLevel, e.count]) || []);
-            const todayMap = new Map(emotionStats?.today?.map(e => [e.emotionLevel, e.count]) || []);
+            const lastHourItems = emotionStats?.last_hour?.items || [];
+            const todayItems = emotionStats?.today?.items || [];
+            const lastHourMap = new Map(lastHourItems.map(e => [e.emotionLevel, e.count]));
+            const todayMap = new Map(todayItems.map(e => [e.emotionLevel, e.count]));
             const emotionLevels = [1, 2, 3, 4, 5, 0];
             
             const hasData = emotionLevels.some(level => lastHourMap.has(level) || todayMap.has(level));
@@ -136,8 +140,8 @@ export function HomePage() {
               return <p className="text-sm text-gray-400 italic">Nenhum dado ainda</p>;
             }
             
-            const totalLastHour = [...lastHourMap.values()].reduce((sum, v) => sum + v, 0);
-            const totalToday = [...todayMap.values()].reduce((sum, v) => sum + v, 0);
+            const totalLastHour = emotionStats?.last_hour?.total || 0;
+            const totalToday = emotionStats?.today?.total || 0;
             
             return (
               <div>

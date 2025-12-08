@@ -1,6 +1,6 @@
 import { db } from "../../../db.js";
-import { users } from "../../../../shared/schema.js";
-import { eq, desc, sql } from "drizzle-orm";
+import { users, conversations, eventsStandard } from "../../../../shared/schema.js";
+import { eq, desc, sql, gte } from "drizzle-orm";
 import type { User } from "../../../../shared/schema.js";
 import type { ExtractedUser } from "../../../adapters/types.js";
 
@@ -68,13 +68,20 @@ export const userStorage = {
   async getUsersStats() {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     
-    const [{ total }] = await db.select({ 
-      total: sql<number>`count(*) filter (where last_seen_at >= ${twentyFourHoursAgo})` 
-    }).from(users);
+    // Count unique users based on events/conversations (same source as products/emotions stats)
+    // This ensures consistency across all dashboard cards
+    const result = await db
+      .select({
+        total: sql<number>`count(DISTINCT ${conversations.userId})::int`,
+        authenticated: sql<number>`count(DISTINCT ${conversations.userId}) FILTER (WHERE ${users.authenticated} = true)::int`,
+      })
+      .from(eventsStandard)
+      .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
+      .leftJoin(users, eq(conversations.userId, users.sunshineId))
+      .where(gte(eventsStandard.occurredAt, twentyFourHoursAgo));
     
-    const [{ authenticated }] = await db.select({ 
-      authenticated: sql<number>`count(*) filter (where authenticated = true and last_seen_at >= ${twentyFourHoursAgo})` 
-    }).from(users);
+    const total = result[0]?.total || 0;
+    const authenticated = result[0]?.authenticated || 0;
     
     return {
       total: Number(total),

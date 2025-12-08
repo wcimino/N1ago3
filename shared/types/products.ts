@@ -3,9 +3,14 @@ export interface ProductCount {
   count: number;
 }
 
+export interface ProductStatsPeriod {
+  items: ProductCount[];
+  total: number;
+}
+
 export interface ProductStatsResponse {
-  last_hour: ProductCount[];
-  today: ProductCount[];
+  last_hour: ProductStatsPeriod;
+  today: ProductStatsPeriod;
 }
 
 export interface EmotionCount {
@@ -13,7 +18,12 @@ export interface EmotionCount {
   count: number;
 }
 
+export interface EmotionStatsPeriod {
+  items: EmotionCount[];
+  total: number;
+}
+
 export interface EmotionStatsResponse {
-  last_hour: EmotionCount[];
-  today: EmotionCount[];
+  last_hour: EmotionStatsPeriod;
+  today: EmotionStatsPeriod;
 }

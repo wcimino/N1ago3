@@ -41,7 +41,7 @@ export const classificationStorage = {
   async getTopProductsByPeriod(
     period: "lastHour" | "last24Hours",
     limit: number = 5
-  ): Promise<{ product: string; count: number }[]> {
+  ): Promise<{ items: { product: string; count: number }[]; total: number }> {
     const now = new Date();
     let since: Date;
 
@@ -51,21 +51,33 @@ export const classificationStorage = {
       since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     }
 
-    // Count distinct conversations that had at least one message in the period
+    // Get total unique users in the period (without duplicating across categories)
+    const [{ totalUnique }] = await db
+      .select({
+        totalUnique: sql<number>`count(DISTINCT ${conversations.userId})::int`,
+      })
+      .from(eventsStandard)
+      .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
+      .where(gte(eventsStandard.occurredAt, since));
+
+    // Count distinct users (clients) that had at least one message in the period
     // grouped by product (including conversations without product classification)
     const results = await db
       .select({
         product: sql<string>`COALESCE(${conversationsSummary.productStandard}, 'Sem classificação')`,
-        count: sql<number>`count(DISTINCT ${eventsStandard.conversationId})::int`,
+        count: sql<number>`count(DISTINCT ${conversations.userId})::int`,
       })
       .from(eventsStandard)
       .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
       .leftJoin(conversationsSummary, eq(conversations.id, conversationsSummary.conversationId))
       .where(gte(eventsStandard.occurredAt, since))
       .groupBy(sql`COALESCE(${conversationsSummary.productStandard}, 'Sem classificação')`)
-      .orderBy(sql`count(DISTINCT ${eventsStandard.conversationId}) desc`);
+      .orderBy(sql`count(DISTINCT ${conversations.userId}) desc`);
 
-    return results as { product: string; count: number }[];
+    return { 
+      items: results as { product: string; count: number }[], 
+      total: totalUnique || 0 
+    };
   },
 
   async getUniqueProductsAndIntents(): Promise<{ products: string[]; productStandards: string[]; intents: string[] }> {
@@ -119,7 +131,7 @@ export const classificationStorage = {
 
   async getEmotionStatsByPeriod(
     period: "lastHour" | "last24Hours"
-  ): Promise<{ emotionLevel: number; count: number }[]> {
+  ): Promise<{ items: { emotionLevel: number; count: number }[]; total: number }> {
     const now = new Date();
     let since: Date;
 
@@ -129,12 +141,21 @@ export const classificationStorage = {
       since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     }
 
-    // Count distinct conversations that had at least one message in the period
+    // Get total unique users in the period (without duplicating across categories)
+    const [{ totalUnique }] = await db
+      .select({
+        totalUnique: sql<number>`count(DISTINCT ${conversations.userId})::int`,
+      })
+      .from(eventsStandard)
+      .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
+      .where(gte(eventsStandard.occurredAt, since));
+
+    // Count distinct users (clients) that had at least one message in the period
     // grouped by emotion level (0 = without classification)
     const results = await db
       .select({
         emotionLevel: sql<number>`COALESCE(${conversationsSummary.customerEmotionLevel}, 0)`,
-        count: sql<number>`count(DISTINCT ${eventsStandard.conversationId})::int`,
+        count: sql<number>`count(DISTINCT ${conversations.userId})::int`,
       })
       .from(eventsStandard)
       .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
@@ -143,6 +164,9 @@ export const classificationStorage = {
       .groupBy(sql`COALESCE(${conversationsSummary.customerEmotionLevel}, 0)`)
       .orderBy(sql`COALESCE(${conversationsSummary.customerEmotionLevel}, 0)`);
 
-    return results as { emotionLevel: number; count: number }[];
+    return { 
+      items: results as { emotionLevel: number; count: number }[], 
+      total: totalUnique || 0 
+    };
   },
 };
