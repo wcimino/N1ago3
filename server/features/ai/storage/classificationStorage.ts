@@ -1,5 +1,5 @@
 import { db } from "../../../db.js";
-import { conversationsSummary, conversations } from "../../../../shared/schema.js";
+import { conversationsSummary, conversations, eventsStandard } from "../../../../shared/schema.js";
 import { eq, sql, gte, and, isNotNull } from "drizzle-orm";
 
 export const classificationStorage = {
@@ -51,21 +51,25 @@ export const classificationStorage = {
       since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     }
 
+    // Count unique users (userExternalId) who had at least one message in the period
+    // grouped by product
     const results = await db
       .select({
         product: conversationsSummary.productStandard,
-        count: sql<number>`count(*)::int`,
+        count: sql<number>`count(DISTINCT ${conversations.userExternalId})::int`,
       })
-      .from(conversationsSummary)
-      .innerJoin(conversations, eq(conversationsSummary.conversationId, conversations.id))
+      .from(eventsStandard)
+      .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
+      .innerJoin(conversationsSummary, eq(conversations.id, conversationsSummary.conversationId))
       .where(
         and(
           isNotNull(conversationsSummary.productStandard),
-          gte(conversations.updatedAt, since)
+          isNotNull(conversations.userExternalId),
+          gte(eventsStandard.occurredAt, since)
         )
       )
       .groupBy(conversationsSummary.productStandard)
-      .orderBy(sql`count(*) desc`);
+      .orderBy(sql`count(DISTINCT ${conversations.userExternalId}) desc`);
 
     return results.filter(r => r.product !== null) as { product: string; count: number }[];
   },
@@ -131,17 +135,21 @@ export const classificationStorage = {
       since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     }
 
+    // Count unique users (userExternalId) who had at least one message in the period
+    // grouped by emotion level
     const results = await db
       .select({
         emotionLevel: conversationsSummary.customerEmotionLevel,
-        count: sql<number>`count(*)::int`,
+        count: sql<number>`count(DISTINCT ${conversations.userExternalId})::int`,
       })
-      .from(conversationsSummary)
-      .innerJoin(conversations, eq(conversationsSummary.conversationId, conversations.id))
+      .from(eventsStandard)
+      .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
+      .innerJoin(conversationsSummary, eq(conversations.id, conversationsSummary.conversationId))
       .where(
         and(
           isNotNull(conversationsSummary.customerEmotionLevel),
-          gte(conversations.updatedAt, since)
+          isNotNull(conversations.userExternalId),
+          gte(eventsStandard.occurredAt, since)
         )
       )
       .groupBy(conversationsSummary.customerEmotionLevel)
