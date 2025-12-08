@@ -101,6 +101,7 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
           text: sr.suggestedResponse,
           created_at: sr.createdAt?.toISOString(),
           last_event_id: sr.lastEventId,
+          status: sr.status,
         })),
       };
     })

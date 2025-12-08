@@ -110,6 +110,7 @@ export interface SuggestedResponse {
   text: string;
   created_at: string;
   last_event_id: number | null;
+  status: string | null;
 }
 
 export interface ConversationWithMessages {

@@ -102,7 +102,7 @@ async function shouldSendResponse(suggestion: typeof responsesSuggested.$inferSe
     return { shouldSend: false, reason: "no_message_found" };
   }
   
-  if (lastMessage.authorType !== "user") {
+  if (lastMessage.authorType !== "customer") {
     return { shouldSend: false, reason: `last_message_not_from_client (authorType: ${lastMessage.authorType})` };
   }
   

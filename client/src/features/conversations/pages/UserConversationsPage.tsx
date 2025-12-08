@@ -272,7 +272,11 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                   </div>
                   <ConversationChat
                     messages={selectedConversation?.messages || []}
-                    suggestedResponses={showSuggestions ? (selectedConversation?.suggested_responses || []) : []}
+                    suggestedResponses={
+                      showSuggestions 
+                        ? (selectedConversation?.suggested_responses || [])
+                        : (selectedConversation?.suggested_responses || []).filter(s => s.status === "sent")
+                    }
                     onImageClick={setExpandedImage}
                     formatDateTime={formatDateTimeShort}
                     chatEndRef={chatEndRef}
