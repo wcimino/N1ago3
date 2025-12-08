@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { CheckboxListItem, LoadingState } from "../../../shared/components/ui";
+import { CheckboxListItem, CollapsibleSection, LoadingState } from "../../../shared/components/ui";
 import { useOpenaiApiConfig } from "../../../shared/hooks";
 import { AUTHOR_TYPE_OPTIONS, MODEL_OPTIONS } from "../../../lib/constants";
 
@@ -131,12 +131,20 @@ export function OpenaiConfigForm({
             </div>
           )}
 
-          <div>
-            <h3 className="text-sm font-medium text-gray-900 mb-2">{eventTriggerLabel}</h3>
-            <p className="text-sm text-gray-500 mb-3">{eventTriggerDescription}</p>
-            
+          <CollapsibleSection
+            title={eventTriggerLabel}
+            description={eventTriggerDescription}
+            defaultOpen={false}
+            badge={
+              state.triggerEventTypes.length > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  {state.triggerEventTypes.length} selecionado{state.triggerEventTypes.length > 1 ? 's' : ''}
+                </span>
+              )
+            }
+          >
             {eventTypes?.mappings && eventTypes.mappings.length > 0 ? (
-              <div className="border rounded-lg divide-y max-h-60 overflow-auto">
+              <div className="divide-y max-h-60 overflow-auto">
                 {eventTypes.mappings.map((mapping) => {
                   const eventKey = `${mapping.source}:${mapping.event_type}`;
                   return (
@@ -151,15 +159,23 @@ export function OpenaiConfigForm({
                 })}
               </div>
             ) : (
-              <p className="text-sm text-gray-500 italic">Nenhum tipo de evento configurado ainda.</p>
+              <p className="text-sm text-gray-500 italic p-4">Nenhum tipo de evento configurado ainda.</p>
             )}
-          </div>
+          </CollapsibleSection>
 
-          <div>
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Filtrar por autor da mensagem</h3>
-            <p className="text-sm text-gray-500 mb-3">{authorFilterDescription}</p>
-            
-            <div className="border rounded-lg divide-y">
+          <CollapsibleSection
+            title="Filtrar por autor da mensagem"
+            description={authorFilterDescription}
+            defaultOpen={false}
+            badge={
+              state.triggerAuthorTypes.length > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  {state.triggerAuthorTypes.length} selecionado{state.triggerAuthorTypes.length > 1 ? 's' : ''}
+                </span>
+              )
+            }
+          >
+            <div className="divide-y">
               {AUTHOR_TYPE_OPTIONS.map(({ value, label }) => (
                 <CheckboxListItem
                   key={value}
@@ -170,7 +186,7 @@ export function OpenaiConfigForm({
                 />
               ))}
             </div>
-          </div>
+          </CollapsibleSection>
 
           <div>
             <div className="flex items-center justify-between mb-2">

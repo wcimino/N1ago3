@@ -1,6 +1,7 @@
 export { Badge } from "./Badge";
 export type { BadgeVariant, BadgeSize } from "./Badge";
 export { CheckboxListItem } from "./CheckboxListItem";
+export { CollapsibleSection } from "./CollapsibleSection";
 export { DataTable } from "./DataTable";
 export type { Column } from "./DataTable";
 export { Drawer } from "./Drawer";
