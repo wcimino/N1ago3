@@ -1,15 +1,11 @@
-import { useState } from "react";
 import { useLocation } from "wouter";
 import { 
-  Plus, Trash2, Loader2, AlertCircle, CheckCircle2, ArrowLeft, Pencil
+  Plus, Loader2, AlertCircle, CheckCircle2, ArrowLeft
 } from "lucide-react";
-import { 
-  ProductTreeNode, 
-  LEVEL_LABELS,
-  getNextLevels
-} from "../../../lib/productHierarchy";
+import { ProductTreeNode } from "../../../lib/productHierarchy";
 import { TreeView } from "../../../shared/components/ui";
 import { ProductAddForm, ProductEditForm } from "../components";
+import { ProductTreeActions } from "../components/ProductTreeActions";
 import { useProductCatalog } from "../hooks";
 
 export function ProductCatalogPage() {
@@ -35,70 +31,15 @@ export function ProductCatalogPage() {
     handleCancelEdit,
   } = useProductCatalog();
 
-  const renderNodeActions = (node: ProductTreeNode) => {
-    const [showAddMenu, setShowAddMenu] = useState(false);
-    const canAddChildren = node.level !== "categoria2";
-    const nextLevels = getNextLevels(node.level);
-
-    const handleAddClick = () => {
-      if (nextLevels.length === 1) {
-        handleAdd(node, nextLevels[0]);
-      } else {
-        setShowAddMenu(!showAddMenu);
-      }
-    };
-
-    return (
-      <>
-        {canAddChildren && nextLevels.length > 0 && (
-          <div className="relative">
-            <button
-              onClick={handleAddClick}
-              className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-              title="Adicionar"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-            {showAddMenu && nextLevels.length > 1 && (
-              <div className="absolute right-0 top-full mt-1 bg-white border rounded-lg shadow-lg py-1 z-10 min-w-[140px]">
-                {nextLevels.map((level) => (
-                  <button
-                    key={level}
-                    onClick={() => {
-                      handleAdd(node, level);
-                      setShowAddMenu(false);
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
-                  >
-                    {LEVEL_LABELS[level]}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-        {node.productId && (
-          <button
-            onClick={() => handleEdit(node)}
-            className="p-1 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
-            title="Editar"
-          >
-            <Pencil className="w-4 h-4" />
-          </button>
-        )}
-        {node.productId && (
-          <button
-            onClick={() => deleteMutation.mutate(node.productId!)}
-            disabled={deleteMutation.isPending}
-            className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
-            title="Excluir"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        )}
-      </>
-    );
-  };
+  const renderNodeActions = (node: ProductTreeNode) => (
+    <ProductTreeActions
+      node={node}
+      onAdd={handleAdd}
+      onEdit={handleEdit}
+      onDelete={(id) => deleteMutation.mutate(id)}
+      isDeleting={deleteMutation.isPending}
+    />
+  );
 
   return (
     <div className="space-y-6">

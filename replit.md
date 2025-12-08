@@ -68,6 +68,14 @@ The React frontend provides a real-time dashboard for events and conversations, 
     *   `callOpenAI` accepts `toolFlags` parameter for automatic tool construction
     *   Hybrid architecture: simple adapters use `toolFlags`, complex adapters (response, learning) use custom tools with tracking
     *   Each config has `useKnowledgeBaseTool` and `useProductCatalogTool` flags
+*   **Code Refactoring - Architecture Improvements (December 2025):**
+    *   **Shared Product Hierarchy Utilities:** Created `client/src/lib/productHierarchy.ts` with reusable tree-building functions, type definitions, and constants (LEVEL_LABELS, LEVEL_COLORS)
+    *   **Generic TreeView Component:** Created `client/src/shared/components/ui/TreeView.tsx` with expandable tree nodes and `useTreeExpansion` hook
+    *   **ProductCatalogPage Modularization:** Reduced from 705 to 120 lines by extracting:
+        *   `useProductCatalog` hook for all CRUD logic
+        *   `ProductAddForm` and `ProductEditForm` components
+        *   `ProductTreeActions` component for node actions
+    *   **KnowledgeBasePage Integration:** Updated to use shared LEVEL_LABELS and LEVEL_COLORS constants
 
 ## Deployment Configuration
 
