@@ -214,7 +214,7 @@ export function HomePage() {
           })()}
         </div>
 
-        <div className="bg-white rounded-lg shadow p-5">
+        <div className="bg-white rounded-lg shadow p-5 flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
               <MessageCircle className="w-4 h-4 text-blue-600" />
@@ -225,7 +225,7 @@ export function HomePage() {
               Ver <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
-          <div className="flex justify-center">
+          <div className="flex-1 flex items-center justify-center">
             <DonutChart
               authenticated={usersStats?.authenticated || 0}
               anonymous={usersStats?.anonymous || 0}
