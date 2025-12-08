@@ -42,11 +42,23 @@ function ProductsCard({ productStats }: { productStats: ProductStatsResponse | u
   return (
     <div>
       <StatsTableHeader colorScheme="orange" />
-      <div className="flex items-center justify-between py-2 border-b-2 border-orange-200 mb-2 bg-orange-50 -mx-5 px-5">
-        <span className="text-sm font-bold text-orange-800">TOTAL</span>
+      <div className="flex items-center justify-between py-1.5 border-b border-gray-50">
+        <span className="text-sm font-bold text-gray-800">TOTAL</span>
         <div className="flex items-center gap-3 shrink-0">
-          <span className="font-bold text-orange-700 text-sm min-w-[24px] text-center">{totalLastHour ? formatNumber(totalLastHour) : '-'}</span>
-          <span className="font-bold text-orange-700 text-sm min-w-[24px] text-center">{totalToday ? formatNumber(totalToday) : '-'}</span>
+          {totalLastHour ? (
+            <span className="font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
+              {formatNumber(totalLastHour)}
+            </span>
+          ) : (
+            <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
+          )}
+          {totalToday ? (
+            <span className="font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
+              {formatNumber(totalToday)}
+            </span>
+          ) : (
+            <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
+          )}
           <div className="w-4" />
         </div>
       </div>
@@ -87,11 +99,23 @@ function EmotionsCard({ emotionStats }: { emotionStats: EmotionStatsResponse | u
   return (
     <div>
       <StatsTableHeader colorScheme="pink" />
-      <div className="flex items-center justify-between py-2 border-b-2 border-pink-200 mb-2 bg-pink-50 -mx-5 px-5">
-        <span className="text-sm font-bold text-pink-800">TOTAL</span>
+      <div className="flex items-center justify-between py-1.5 border-b border-gray-50">
+        <span className="text-sm font-bold text-gray-800">TOTAL</span>
         <div className="flex items-center gap-3 shrink-0">
-          <span className="font-bold text-pink-700 text-sm min-w-[24px] text-center">{totalLastHour ? formatNumber(totalLastHour) : '-'}</span>
-          <span className="font-bold text-pink-700 text-sm min-w-[24px] text-center">{totalToday ? formatNumber(totalToday) : '-'}</span>
+          {totalLastHour ? (
+            <span className="font-bold text-pink-600 bg-pink-50 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
+              {formatNumber(totalLastHour)}
+            </span>
+          ) : (
+            <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
+          )}
+          {totalToday ? (
+            <span className="font-bold text-pink-600 bg-pink-50 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
+              {formatNumber(totalToday)}
+            </span>
+          ) : (
+            <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
+          )}
           <div className="w-4" />
         </div>
       </div>
