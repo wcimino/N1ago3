@@ -95,6 +95,13 @@ The React frontend provides a real-time dashboard for events and conversations, 
     *   Available variables: `{{RESUMO}}`, `{{RESUMO_ATUAL}}`, `{{MENSAGENS}}`, `{{ULTIMAS_20_MENSAGENS}}`, `{{ULTIMA_MENSAGEM}}`, `{{HANDLER}}`, `{{CLASSIFICACAO}}`
     *   Frontend `OpenaiConfigForm.tsx` shows simplified 2-field interface with variable documentation
     *   All adapters follow consistent architecture: short system prompt + full user prompt with variables substituted
+*   **Automatic Routing Rules (December 2025):**
+    *   Table `routing_rules` with fields: `rule_type`, `target`, `allocate_count`, `allocated_count`, `is_active`
+    *   Targets: `n1ago`, `human` (Agent Workspace), `bot` (Answer Bot)
+    *   `routingOrchestrator.ts` processes routing for new user messages via `eventDispatcher`
+    *   Atomic slot consumption via `tryConsumeRuleSlot()` prevents race conditions
+    *   When a rule is created (e.g., "allocate next 5 conversations to N1ago"), the system automatically requests control via Zendesk Switchboard API (`passControl`)
+    *   Rules auto-deactivate when allocation limit is reached
 
 ## Deployment Configuration
 
