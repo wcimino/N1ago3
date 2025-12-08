@@ -107,4 +107,62 @@ export const openaiLogsStorage = {
       .where(eq(responsesSuggested.conversationId, conversationId))
       .orderBy(responsesSuggested.createdAt);
   },
+
+  async getOpenaiApiStats(): Promise<{
+    last_hour: { total_calls: number; total_tokens: number; estimated_cost: number };
+    today: { total_calls: number; total_tokens: number; estimated_cost: number };
+  }> {
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const MODEL_PRICING: Record<string, { input: number; output: number }> = {
+      'gpt-4o': { input: 2.50 / 1_000_000, output: 10.00 / 1_000_000 },
+      'gpt-4o-mini': { input: 0.15 / 1_000_000, output: 0.60 / 1_000_000 },
+      'gpt-4-turbo': { input: 10.00 / 1_000_000, output: 30.00 / 1_000_000 },
+      'gpt-4': { input: 30.00 / 1_000_000, output: 60.00 / 1_000_000 },
+      'gpt-3.5-turbo': { input: 0.50 / 1_000_000, output: 1.50 / 1_000_000 },
+    };
+
+    const lastHourLogs = await db.select({
+      modelName: openaiApiLogs.modelName,
+      tokensPrompt: openaiApiLogs.tokensPrompt,
+      tokensCompletion: openaiApiLogs.tokensCompletion,
+    })
+      .from(openaiApiLogs)
+      .where(gte(openaiApiLogs.createdAt, oneHourAgo));
+
+    const todayLogs = await db.select({
+      modelName: openaiApiLogs.modelName,
+      tokensPrompt: openaiApiLogs.tokensPrompt,
+      tokensCompletion: openaiApiLogs.tokensCompletion,
+    })
+      .from(openaiApiLogs)
+      .where(gte(openaiApiLogs.createdAt, startOfDay));
+
+    function calculateStats(logs: { modelName: string; tokensPrompt: number | null; tokensCompletion: number | null }[]) {
+      let totalTokens = 0;
+      let estimatedCost = 0;
+
+      for (const log of logs) {
+        const prompt = log.tokensPrompt || 0;
+        const completion = log.tokensCompletion || 0;
+        totalTokens += prompt + completion;
+
+        const pricing = MODEL_PRICING[log.modelName] || MODEL_PRICING['gpt-4o-mini'];
+        estimatedCost += (prompt * pricing.input) + (completion * pricing.output);
+      }
+
+      return {
+        total_calls: logs.length,
+        total_tokens: totalTokens,
+        estimated_cost: Math.round(estimatedCost * 100) / 100,
+      };
+    }
+
+    return {
+      last_hour: calculateStats(lastHourLogs),
+      today: calculateStats(todayLogs),
+    };
+  },
 };

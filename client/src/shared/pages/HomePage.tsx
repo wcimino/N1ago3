@@ -1,9 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { MessageCircle, Activity, ChevronRight as ArrowRight, Package, Clock, Calendar, AlertCircle, Heart } from "lucide-react";
+import { MessageCircle, Activity, ChevronRight as ArrowRight, Package, Clock, Calendar, AlertCircle, Heart, Sparkles, Coins, Hash } from "lucide-react";
 import { fetchApi } from "../../lib/queryClient";
 import { DonutChart } from "../components";
 import type { UsersStatsResponse, StatsResponse, ProductStatsResponse, EmotionStatsResponse } from "../../types";
+
+interface OpenAIStatsResponse {
+  last_hour: { total_calls: number; total_tokens: number; estimated_cost: number };
+  today: { total_calls: number; total_tokens: number; estimated_cost: number };
+}
 
 const emotionConfig: Record<number, { label: string; color: string; bgColor: string; emoji: string }> = {
   0: { label: "Sem classificação", color: "text-gray-400", bgColor: "bg-gray-100", emoji: "❓" },
@@ -40,6 +45,12 @@ export function HomePage() {
   const { data: emotionStats } = useQuery<EmotionStatsResponse>({
     queryKey: ["emotions-stats"],
     queryFn: () => fetchApi<EmotionStatsResponse>("/api/emotions/stats"),
+    refetchInterval: 30000,
+  });
+
+  const { data: openaiStats } = useQuery<OpenAIStatsResponse>({
+    queryKey: ["openai-stats"],
+    queryFn: () => fetchApi<OpenAIStatsResponse>("/api/openai/stats"),
     refetchInterval: 30000,
   });
 
@@ -238,6 +249,77 @@ export function HomePage() {
             <AlertCircle className="w-4 h-4" />
             <span className="text-sm">{formatNumber(eventsStats?.by_status?.error || 0)} com erro</span>
           </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-5">
+          <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-3">
+            <Sparkles className="w-4 h-4 text-violet-600" />
+            OpenAI API
+          </h2>
+          {(() => {
+            const lastHour = openaiStats?.last_hour;
+            const today = openaiStats?.today;
+            
+            if (!lastHour && !today) {
+              return <p className="text-sm text-gray-400 italic">Nenhum dado ainda</p>;
+            }
+            
+            return (
+              <div>
+                <div className="flex items-center justify-between py-1 border-b border-gray-100 mb-1">
+                  <div className="flex-1" />
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span title="Última hora" className="min-w-[50px] flex justify-center"><Clock className="w-3 h-3 text-violet-500" /></span>
+                    <span title="Hoje" className="min-w-[50px] flex justify-center"><Calendar className="w-3 h-3 text-violet-500" /></span>
+                  </div>
+                </div>
+                <div className="space-y-2 mt-3">
+                  <div className="flex items-center justify-between py-1.5">
+                    <div className="flex items-center gap-2">
+                      <Hash className="w-3.5 h-3.5 text-violet-500" />
+                      <span className="text-sm text-gray-700">Chamadas</span>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs min-w-[50px] text-center">
+                        {formatNumber(lastHour?.total_calls || 0)}
+                      </span>
+                      <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs min-w-[50px] text-center">
+                        {formatNumber(today?.total_calls || 0)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-violet-500 text-xs font-bold">TK</span>
+                      <span className="text-sm text-gray-700">Tokens</span>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs min-w-[50px] text-center">
+                        {formatNumber(lastHour?.total_tokens || 0)}
+                      </span>
+                      <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs min-w-[50px] text-center">
+                        {formatNumber(today?.total_tokens || 0)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5">
+                    <div className="flex items-center gap-2">
+                      <Coins className="w-3.5 h-3.5 text-violet-500" />
+                      <span className="text-sm text-gray-700">Custo (USD)</span>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs min-w-[50px] text-center">
+                        ${(lastHour?.estimated_cost || 0).toFixed(2)}
+                      </span>
+                      <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs min-w-[50px] text-center">
+                        ${(today?.estimated_cost || 0).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>
