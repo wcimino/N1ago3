@@ -377,6 +377,26 @@ export const knowledgeSuggestions = pgTable("knowledge_suggestions", {
   createdAtIdx: index("idx_knowledge_suggestions_created_at").on(table.createdAt),
 }));
 
+export const learningAttempts = pgTable("learning_attempts", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull(),
+  externalConversationId: text("external_conversation_id"),
+  
+  result: text("result").notNull(),
+  resultReason: text("result_reason"),
+  
+  suggestionId: integer("suggestion_id"),
+  
+  messageCount: integer("message_count"),
+  openaiLogId: integer("openai_log_id"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  conversationIdx: index("idx_learning_attempts_conversation").on(table.conversationId),
+  resultIdx: index("idx_learning_attempts_result").on(table.result),
+  createdAtIdx: index("idx_learning_attempts_created_at").on(table.createdAt),
+}));
+
 // Types
 export type AuthUser = typeof authUsers.$inferSelect;
 export type UpsertAuthUser = typeof authUsers.$inferInsert;
@@ -434,3 +454,8 @@ export type InsertKnowledgeSuggestion = Omit<typeof knowledgeSuggestions.$inferI
 
 export type IfoodProduct = typeof ifoodProducts.$inferSelect;
 export type InsertIfoodProduct = Omit<typeof ifoodProducts.$inferInsert, "id" | "createdAt" | "updatedAt">;
+
+export type LearningAttempt = typeof learningAttempts.$inferSelect;
+export type InsertLearningAttempt = Omit<typeof learningAttempts.$inferInsert, "id" | "createdAt">;
+
+export type LearningAttemptResult = "suggestion_created" | "insufficient_messages" | "skipped_by_agent" | "processing_error";
