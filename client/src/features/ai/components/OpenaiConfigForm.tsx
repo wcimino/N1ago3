@@ -17,6 +17,8 @@ export interface OpenaiConfigFormProps {
   recommendedModel?: string;
   showKnowledgeBaseTool?: boolean;
   showProductCatalogTool?: boolean;
+  showPromptSystem?: boolean;
+  showResponseFormat?: boolean;
 }
 
 export function OpenaiConfigForm({
@@ -33,6 +35,8 @@ export function OpenaiConfigForm({
   recommendedModel = "gpt-4o-mini",
   showKnowledgeBaseTool = false,
   showProductCatalogTool = false,
+  showPromptSystem = true,
+  showResponseFormat = false,
 }: OpenaiConfigFormProps) {
   const { state, actions, eventTypes, isLoading, isSaving } = useOpenaiApiConfig(configType);
 
@@ -150,8 +154,24 @@ export function OpenaiConfigForm({
             </div>
           </div>
 
+          {showPromptSystem && (
+            <div>
+              <h3 className="text-sm font-medium text-gray-900 mb-2">Prompt System (Instruções do Assistente)</h3>
+              <p className="text-sm text-gray-500 mb-3">
+                Define o comportamento e persona do assistente. Este é o prompt de sistema enviado à IA.
+              </p>
+              <textarea
+                value={state.promptSystem}
+                onChange={(e) => actions.setPromptSystem(e.target.value)}
+                rows={6}
+                className="w-full px-3 py-2 border rounded-lg text-sm font-mono"
+                placeholder="Digite as instruções do assistente..."
+              />
+            </div>
+          )}
+
           <div>
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Template do Prompt</h3>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Template do Prompt (User)</h3>
             <p className="text-sm text-gray-500 mb-3">{promptVariables}</p>
             <textarea
               value={state.promptTemplate}
@@ -161,6 +181,22 @@ export function OpenaiConfigForm({
               placeholder="Digite o template do prompt..."
             />
           </div>
+
+          {showResponseFormat && (
+            <div>
+              <h3 className="text-sm font-medium text-gray-900 mb-2">Formato da Resposta (JSON esperado)</h3>
+              <p className="text-sm text-gray-500 mb-3">
+                Define o formato JSON esperado na resposta. Serve como referência para a estrutura de saída.
+              </p>
+              <textarea
+                value={state.responseFormat}
+                onChange={(e) => actions.setResponseFormat(e.target.value)}
+                rows={6}
+                className="w-full px-3 py-2 border rounded-lg text-sm font-mono"
+                placeholder='{"campo1": "descrição", "campo2": "descrição"}'
+              />
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-4 border-t">
             {state.hasChanges && (

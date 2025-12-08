@@ -55,7 +55,8 @@ export async function generateSummary(
   promptTemplate: string,
   modelName: string = "gpt-4o-mini",
   conversationId?: number,
-  externalConversationId?: string
+  externalConversationId?: string,
+  promptSystemFromConfig?: string | null
 ): Promise<SummaryResult> {
   const messagesContext = payload.last20Messages
     .map(m => `[${m.authorType}${m.authorName ? ` - ${m.authorName}` : ''}]: ${m.contentText || '(sem texto)'}`)
@@ -68,7 +69,7 @@ export async function generateSummary(
     .replace('{{ULTIMAS_20_MENSAGENS}}', messagesContext || 'Nenhuma mensagem anterior.')
     .replace('{{ULTIMA_MENSAGEM}}', lastMessageContext);
 
-  const promptSystem = "Você é um assistente especializado em gerar resumos de conversas de atendimento ao cliente. Gere resumos concisos e informativos.";
+  const promptSystem = promptSystemFromConfig || "Você é um assistente especializado em gerar resumos de conversas de atendimento ao cliente. Gere resumos concisos e informativos.";
 
   const result = await callOpenAI({
     requestType: "summary",
@@ -105,14 +106,16 @@ export async function generateAndSaveSummary(
   modelName: string,
   conversationId: number,
   externalConversationId: string | null,
-  lastEventId: number
+  lastEventId: number,
+  promptSystemFromConfig?: string | null
 ): Promise<SummaryResult> {
   const result = await generateSummary(
     payload,
     promptTemplate,
     modelName,
     conversationId,
-    externalConversationId || undefined
+    externalConversationId || undefined,
+    promptSystemFromConfig
   );
 
   if (result.success) {

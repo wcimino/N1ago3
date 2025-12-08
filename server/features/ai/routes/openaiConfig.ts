@@ -83,7 +83,9 @@ function formatConfigResponse(config: any) {
     enabled: config.enabled,
     trigger_event_types: config.triggerEventTypes,
     trigger_author_types: config.triggerAuthorTypes,
+    prompt_system: config.promptSystem ?? null,
     prompt_template: config.promptTemplate,
+    response_format: config.responseFormat ?? null,
     model_name: config.modelName,
     use_knowledge_base_tool: config.useKnowledgeBaseTool ?? false,
     use_product_catalog_tool: config.useProductCatalogTool ?? false,
@@ -92,12 +94,42 @@ function formatConfigResponse(config: any) {
   };
 }
 
+const DEFAULT_SYSTEM_PROMPTS: Record<string, string> = {
+  summary: "Você é um assistente especializado em gerar resumos de conversas de atendimento ao cliente. Gere resumos concisos e informativos.",
+  classification: "Você é um assistente especializado em classificar conversas de atendimento ao cliente.",
+  response: `Você é um assistente de atendimento ao cliente especializado em serviços financeiros do iFood Pago.
+Sua tarefa é gerar uma resposta profissional, empática e PRECISA para a última mensagem do cliente.
+
+## REGRAS IMPORTANTES:
+- A resposta deve ser clara, objetiva e resolver ou encaminhar a demanda
+- Use linguagem cordial e acessível
+- NÃO inclua saudações genéricas como "Olá" no início - vá direto ao ponto
+- NÃO invente procedimentos`,
+  learning: "Você é um assistente especializado em extrair conhecimento de conversas de atendimento para criar artigos de base de conhecimento.",
+};
+
+const DEFAULT_RESPONSE_FORMATS: Record<string, string> = {
+  summary: `{
+  "clientRequest": "Descrição do problema/solicitação do cliente",
+  "agentActions": "Ações tomadas pelo atendente",
+  "currentStatus": "Status atual (em aberto, aguardando, resolvido)",
+  "importantInfo": "Valores, datas, documentos mencionados"
+}`,
+  classification: `{
+  "product": "Nome do produto do catálogo",
+  "intent": "contratar ou suporte",
+  "confidence": 0-100
+}`,
+};
+
 function getDefaultConfig(configType: string) {
   return {
     enabled: false,
     trigger_event_types: [],
     trigger_author_types: [],
+    prompt_system: DEFAULT_SYSTEM_PROMPTS[configType] || null,
     prompt_template: DEFAULT_PROMPTS[configType] || "",
+    response_format: DEFAULT_RESPONSE_FORMATS[configType] || null,
     model_name: "gpt-4o-mini",
     use_knowledge_base_tool: false,
     use_product_catalog_tool: false,
@@ -130,17 +162,39 @@ router.put("/api/openai-config/:configType", isAuthenticated, requireAuthorizedU
     return res.status(400).json({ error: `Invalid config type. Must be one of: ${VALID_CONFIG_TYPES.join(", ")}` });
   }
 
-  const { enabled, trigger_event_types, trigger_author_types, prompt_template, model_name, use_knowledge_base_tool, use_product_catalog_tool } = req.body;
+  const { enabled, trigger_event_types, trigger_author_types, prompt_system, prompt_template, response_format, model_name, use_knowledge_base_tool, use_product_catalog_tool } = req.body;
 
   if (prompt_template !== undefined && !prompt_template.trim()) {
     return res.status(400).json({ error: "prompt_template cannot be empty" });
   }
 
+  const existingConfig = await storage.getOpenaiApiConfig(configType);
+  
+  let finalPromptSystem: string | null;
+  if (prompt_system !== undefined) {
+    finalPromptSystem = prompt_system;
+  } else if (existingConfig) {
+    finalPromptSystem = existingConfig.promptSystem;
+  } else {
+    finalPromptSystem = DEFAULT_SYSTEM_PROMPTS[configType] ?? null;
+  }
+
+  let finalResponseFormat: string | null;
+  if (response_format !== undefined) {
+    finalResponseFormat = response_format;
+  } else if (existingConfig) {
+    finalResponseFormat = existingConfig.responseFormat;
+  } else {
+    finalResponseFormat = DEFAULT_RESPONSE_FORMATS[configType] ?? null;
+  }
+  
   const config = await storage.upsertOpenaiApiConfig(configType, {
     enabled: enabled ?? false,
     triggerEventTypes: trigger_event_types || [],
     triggerAuthorTypes: trigger_author_types || [],
+    promptSystem: finalPromptSystem,
     promptTemplate: prompt_template || DEFAULT_PROMPTS[configType] || "",
+    responseFormat: finalResponseFormat,
     modelName: model_name || "gpt-4o-mini",
     useKnowledgeBaseTool: use_knowledge_base_tool ?? false,
     useProductCatalogTool: use_product_catalog_tool ?? false,
@@ -160,17 +214,39 @@ router.get("/api/openai-summary-config", isAuthenticated, requireAuthorizedUser,
 });
 
 router.put("/api/openai-summary-config", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  const { enabled, trigger_event_types, trigger_author_types, prompt_template, model_name } = req.body;
+  const { enabled, trigger_event_types, trigger_author_types, prompt_system, prompt_template, response_format, model_name } = req.body;
 
   if (prompt_template !== undefined && !prompt_template.trim()) {
     return res.status(400).json({ error: "prompt_template cannot be empty" });
+  }
+
+  const existingConfig = await storage.getOpenaiApiConfig("summary");
+
+  let finalPromptSystem: string | null;
+  if (prompt_system !== undefined) {
+    finalPromptSystem = prompt_system;
+  } else if (existingConfig) {
+    finalPromptSystem = existingConfig.promptSystem;
+  } else {
+    finalPromptSystem = DEFAULT_SYSTEM_PROMPTS.summary ?? null;
+  }
+
+  let finalResponseFormat: string | null;
+  if (response_format !== undefined) {
+    finalResponseFormat = response_format;
+  } else if (existingConfig) {
+    finalResponseFormat = existingConfig.responseFormat;
+  } else {
+    finalResponseFormat = DEFAULT_RESPONSE_FORMATS.summary ?? null;
   }
 
   const config = await storage.upsertOpenaiApiConfig("summary", {
     enabled: enabled ?? false,
     triggerEventTypes: trigger_event_types || [],
     triggerAuthorTypes: trigger_author_types || [],
+    promptSystem: finalPromptSystem,
     promptTemplate: prompt_template || DEFAULT_PROMPTS.summary,
+    responseFormat: finalResponseFormat,
     modelName: model_name || "gpt-4o-mini",
   });
 

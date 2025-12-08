@@ -21,6 +21,8 @@ export function ClassificationConfigPage() {
       recommendedModel="gpt-4o-mini"
       showKnowledgeBaseTool={true}
       showProductCatalogTool={true}
+      showPromptSystem={true}
+      showResponseFormat={true}
     />
   );
 }

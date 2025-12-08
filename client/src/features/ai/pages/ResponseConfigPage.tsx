@@ -28,6 +28,8 @@ export function ResponseConfigPage() {
       recommendedModel="gpt-4o-mini"
       showKnowledgeBaseTool={true}
       showProductCatalogTool={true}
+      showPromptSystem={true}
+      showResponseFormat={false}
     />
   );
 }

@@ -77,7 +77,8 @@ export async function generateConversationSummary(event: EventStandard): Promise
       config.modelName,
       event.conversationId,
       event.externalConversationId,
-      event.id
+      event.id,
+      config.promptSystem
     );
 
     if (result.success) {

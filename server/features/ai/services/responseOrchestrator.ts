@@ -89,7 +89,8 @@ export async function generateConversationResponse(event: EventStandard): Promis
       event.externalConversationId,
       event.id,
       useKnowledgeBaseTool,
-      useProductCatalogTool
+      useProductCatalogTool,
+      config.promptSystem
     );
 
     if (result.success) {

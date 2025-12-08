@@ -32,7 +32,7 @@ export interface ResponseResult {
   error?: string;
 }
 
-const RESPONSE_PROMPT_SYSTEM = `Você é um assistente de atendimento ao cliente especializado em serviços financeiros do iFood Pago.
+const DEFAULT_RESPONSE_PROMPT_SYSTEM = `Você é um assistente de atendimento ao cliente especializado em serviços financeiros do iFood Pago.
 Sua tarefa é gerar uma resposta profissional, empática e PRECISA para a última mensagem do cliente.
 
 ## REGRAS IMPORTANTES:
@@ -41,21 +41,15 @@ Sua tarefa é gerar uma resposta profissional, empática e PRECISA para a últim
 - NÃO inclua saudações genéricas como "Olá" no início - vá direto ao ponto
 - NÃO invente procedimentos`;
 
-const RESPONSE_PROMPT_SYSTEM_WITH_KB = `Você é um assistente de atendimento ao cliente especializado em serviços financeiros do iFood Pago.
-Sua tarefa é gerar uma resposta profissional, empática e PRECISA para a última mensagem do cliente.
+const KB_SUFFIX = `
 
-## PROCESSO OBRIGATÓRIO:
+## PROCESSO OBRIGATÓRIO QUANDO BASE DE CONHECIMENTO ATIVADA:
 1. Analise a conversa e identifique o tema/problema do cliente
 2. Use a ferramenta search_knowledge_base para buscar procedimentos na base de conhecimento
 3. Use as informações encontradas para gerar uma resposta precisa
-
-## REGRAS IMPORTANTES:
 - SEMPRE busque na base de conhecimento antes de responder
 - Se encontrar artigos relevantes, USE as informações para responder
 - Se não encontrar, responda com base no contexto da conversa
-- A resposta deve ser clara, objetiva e resolver ou encaminhar a demanda
-- Use linguagem cordial e acessível
-- NÃO inclua saudações genéricas como "Olá" no início - vá direto ao ponto
 - NÃO invente procedimentos - use apenas informações da base de conhecimento ou contexto
 
 Após consultar a base de conhecimento (se aplicável), responda APENAS com a mensagem sugerida para o atendente.`;
@@ -131,7 +125,8 @@ export async function generateResponse(
   conversationId?: number,
   externalConversationId?: string,
   useKnowledgeBaseTool: boolean = false,
-  useProductCatalogTool: boolean = false
+  useProductCatalogTool: boolean = false,
+  promptSystemFromConfig?: string | null
 ): Promise<ResponseResult> {
   const tools: ToolDefinition[] = [];
   let articlesFound = 0;
@@ -152,7 +147,8 @@ export async function generateResponse(
   }
 
   const promptUser = buildUserPrompt(payload, promptTemplate);
-  const promptSystem = useKnowledgeBaseTool ? RESPONSE_PROMPT_SYSTEM_WITH_KB : RESPONSE_PROMPT_SYSTEM;
+  const basePromptSystem = promptSystemFromConfig || DEFAULT_RESPONSE_PROMPT_SYSTEM;
+  const promptSystem = useKnowledgeBaseTool ? basePromptSystem + KB_SUFFIX : basePromptSystem;
 
   const result = await callOpenAI({
     requestType: "response",
@@ -194,7 +190,8 @@ export async function generateAndSaveResponse(
   externalConversationId: string | null,
   lastEventId: number,
   useKnowledgeBaseTool: boolean = false,
-  useProductCatalogTool: boolean = false
+  useProductCatalogTool: boolean = false,
+  promptSystemFromConfig?: string | null
 ): Promise<ResponseResult> {
   const result = await generateResponse(
     payload,
@@ -203,7 +200,8 @@ export async function generateAndSaveResponse(
     conversationId,
     externalConversationId || undefined,
     useKnowledgeBaseTool,
-    useProductCatalogTool
+    useProductCatalogTool,
+    promptSystemFromConfig
   );
 
   if (result.success && result.suggestedResponse) {

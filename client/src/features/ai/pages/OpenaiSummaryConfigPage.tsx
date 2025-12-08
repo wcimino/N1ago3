@@ -22,6 +22,8 @@ export function OpenaiSummaryConfigPage() {
       recommendedModel="gpt-5"
       showKnowledgeBaseTool={true}
       showProductCatalogTool={true}
+      showPromptSystem={true}
+      showResponseFormat={true}
     />
   );
 }

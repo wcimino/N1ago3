@@ -9,7 +9,9 @@ export interface OpenaiApiConfigResponse {
   enabled: boolean;
   trigger_event_types: string[];
   trigger_author_types: string[];
+  prompt_system: string | null;
   prompt_template: string;
+  response_format: string | null;
   model_name: string;
   use_knowledge_base_tool: boolean;
   use_product_catalog_tool: boolean;
@@ -21,7 +23,9 @@ export interface OpenaiApiConfigState {
   enabled: boolean;
   triggerEventTypes: string[];
   triggerAuthorTypes: string[];
+  promptSystem: string;
   promptTemplate: string;
+  responseFormat: string;
   modelName: string;
   useKnowledgeBaseTool: boolean;
   useProductCatalogTool: boolean;
@@ -30,7 +34,9 @@ export interface OpenaiApiConfigState {
 
 export interface OpenaiApiConfigActions {
   setEnabled: (enabled: boolean) => void;
+  setPromptSystem: (template: string) => void;
   setPromptTemplate: (template: string) => void;
+  setResponseFormat: (format: string) => void;
   setModelName: (model: string) => void;
   toggleEventType: (eventKey: string) => void;
   toggleAuthorType: (authorType: string) => void;
@@ -53,7 +59,9 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
   const [enabled, setEnabledState] = useState(false);
   const [triggerEventTypes, setTriggerEventTypes] = useState<string[]>([]);
   const [triggerAuthorTypes, setTriggerAuthorTypes] = useState<string[]>([]);
+  const [promptSystem, setPromptSystemState] = useState("");
   const [promptTemplate, setPromptTemplateState] = useState("");
+  const [responseFormat, setResponseFormatState] = useState("");
   const [modelName, setModelNameState] = useState("gpt-4o-mini");
   const [useKnowledgeBaseTool, setUseKnowledgeBaseToolState] = useState(false);
   const [useProductCatalogTool, setUseProductCatalogToolState] = useState(false);
@@ -74,7 +82,9 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       setEnabledState(config.enabled);
       setTriggerEventTypes(config.trigger_event_types || []);
       setTriggerAuthorTypes(config.trigger_author_types || []);
+      setPromptSystemState(config.prompt_system || "");
       setPromptTemplateState(config.prompt_template);
+      setResponseFormatState(config.response_format || "");
       setModelNameState(config.model_name);
       setUseKnowledgeBaseToolState(config.use_knowledge_base_tool ?? false);
       setUseProductCatalogToolState(config.use_product_catalog_tool ?? false);
@@ -88,7 +98,9 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
         enabled,
         trigger_event_types: triggerEventTypes,
         trigger_author_types: triggerAuthorTypes,
+        prompt_system: promptSystem || null,
         prompt_template: promptTemplate,
+        response_format: responseFormat || null,
         model_name: modelName,
         use_knowledge_base_tool: useKnowledgeBaseTool,
         use_product_catalog_tool: useProductCatalogTool,
@@ -107,8 +119,18 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
     markChanged();
   }, [markChanged]);
 
+  const setPromptSystem = useCallback((value: string) => {
+    setPromptSystemState(value);
+    markChanged();
+  }, [markChanged]);
+
   const setPromptTemplate = useCallback((value: string) => {
     setPromptTemplateState(value);
+    markChanged();
+  }, [markChanged]);
+
+  const setResponseFormat = useCallback((value: string) => {
+    setResponseFormatState(value);
     markChanged();
   }, [markChanged]);
 
@@ -154,7 +176,9 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       enabled,
       triggerEventTypes,
       triggerAuthorTypes,
+      promptSystem,
       promptTemplate,
+      responseFormat,
       modelName,
       useKnowledgeBaseTool,
       useProductCatalogTool,
@@ -162,7 +186,9 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
     },
     actions: {
       setEnabled,
+      setPromptSystem,
       setPromptTemplate,
+      setResponseFormat,
       setModelName,
       toggleEventType,
       toggleAuthorType,
