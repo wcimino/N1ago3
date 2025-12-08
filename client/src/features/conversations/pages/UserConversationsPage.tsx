@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { XCircle, MessageCircle, ChevronLeft, FileText } from "lucide-react";
+import { XCircle, MessageCircle, ChevronLeft, FileText, Eye, EyeOff } from "lucide-react";
 import type { UserConversationsMessagesResponse, ImagePayload } from "../../../types";
 import { ImageLightbox, LoadingState, SegmentedTabs } from "../../../shared/components/ui";
 import { ConversationSelector, ConversationSummary, ConversationChat } from "../components";
@@ -22,6 +22,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
   const [expandedImage, setExpandedImage] = useState<ImagePayload | null>(null);
   const [selectedConversationIndex, setSelectedConversationIndex] = useState(0);
   const [contentTab, setContentTab] = useState<ContentTab>("resumo");
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const hasInitializedSelection = useRef(false);
   
@@ -199,13 +200,22 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                   className="flex-1 flex flex-col overflow-hidden bg-gray-50"
                   style={{ width: `${100 - leftPanelWidth}%` }}
                 >
-                  <div className="px-4 py-2 bg-white border-b border-gray-200 flex items-center gap-2">
-                    <MessageCircle className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm font-medium text-gray-700">Chat</span>
+                  <div className="px-4 py-2 bg-white border-b border-gray-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MessageCircle className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium text-gray-700">Chat</span>
+                    </div>
+                    <button
+                      onClick={() => setShowSuggestions(!showSuggestions)}
+                      className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                    >
+                      {showSuggestions ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      <span>{showSuggestions ? "Ocultar" : "Exibir"} Sugestões</span>
+                    </button>
                   </div>
                   <ConversationChat
                     messages={selectedConversation?.messages || []}
-                    suggestedResponses={selectedConversation?.suggested_responses || []}
+                    suggestedResponses={showSuggestions ? (selectedConversation?.suggested_responses || []) : []}
                     onImageClick={setExpandedImage}
                     formatDateTime={formatDateTimeShort}
                     chatEndRef={chatEndRef}
