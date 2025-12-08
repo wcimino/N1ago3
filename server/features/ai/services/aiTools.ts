@@ -1,5 +1,6 @@
 import { knowledgeBaseStorage } from "../storage/knowledgeBaseStorage.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
+import { ZendeskArticlesStorage } from "../../zendesk-articles/storage/zendeskArticlesStorage.js";
 import type { ToolDefinition } from "./openaiApiService.js";
 
 export function createKnowledgeBaseTool(): ToolDefinition {
@@ -109,9 +110,57 @@ export function createProductCatalogTool(): ToolDefinition {
   };
 }
 
+export function createZendeskKnowledgeBaseTool(): ToolDefinition {
+  return {
+    name: "search_knowledge_base_zendesk",
+    description: "Busca artigos na base de conhecimento do Zendesk (Help Center). Use para encontrar artigos de ajuda, FAQs e documentação pública.",
+    parameters: {
+      type: "object",
+      properties: {
+        keywords: {
+          type: "string",
+          description: "Palavras-chave para buscar no título e conteúdo dos artigos"
+        },
+        section: {
+          type: "string",
+          description: "ID da seção para filtrar artigos (opcional)"
+        }
+      },
+      required: []
+    },
+    handler: async (args: { keywords?: string; section?: string }) => {
+      const articles = await ZendeskArticlesStorage.getAllArticles({
+        search: args.keywords,
+        sectionId: args.section,
+        limit: 5
+      });
+      
+      if (articles.length === 0) {
+        return JSON.stringify({ 
+          message: "Nenhum artigo encontrado na base de conhecimento do Zendesk",
+          articles: [] 
+        });
+      }
+      
+      const articleList = articles.map(a => ({
+        title: a.title,
+        section: a.sectionName,
+        body: a.body ? a.body.substring(0, 500) + (a.body.length > 500 ? "..." : "") : null,
+        url: a.htmlUrl
+      }));
+      
+      return JSON.stringify({
+        message: `Encontrados ${articles.length} artigos do Zendesk`,
+        articles: articleList
+      });
+    }
+  };
+}
+
 export interface ToolFlags {
   useKnowledgeBaseTool?: boolean;
   useProductCatalogTool?: boolean;
+  useZendeskKnowledgeBaseTool?: boolean;
 }
 
 export function buildToolsFromFlags(flags: ToolFlags): ToolDefinition[] {
@@ -123,6 +172,10 @@ export function buildToolsFromFlags(flags: ToolFlags): ToolDefinition[] {
   
   if (flags.useProductCatalogTool) {
     tools.push(createProductCatalogTool());
+  }
+  
+  if (flags.useZendeskKnowledgeBaseTool) {
+    tools.push(createZendeskKnowledgeBaseTool());
   }
   
   return tools;
