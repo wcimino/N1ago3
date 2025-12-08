@@ -18,6 +18,7 @@ import openaiConfigRoutes from "../features/ai/routes/openaiConfig.js";
 import openaiLogsRoutes from "../features/ai/routes/openaiLogs.js";
 import knowledgeBaseRoutes from "../features/ai/routes/knowledgeBase.js";
 import knowledgeSuggestionsRoutes from "../features/ai/routes/knowledgeSuggestions.js";
+import learningAttemptsRoutes from "../features/ai/routes/learningAttempts.js";
 
 import maintenanceRoutes from "../features/maintenance/routes/maintenance.js";
 
@@ -37,4 +38,5 @@ export function registerRoutes(app: Express) {
   app.use(exportRoutes);
   app.use(knowledgeBaseRoutes);
   app.use(knowledgeSuggestionsRoutes);
+  app.use(learningAttemptsRoutes);
 }
