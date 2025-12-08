@@ -9,7 +9,16 @@ interface SummaryData {
   agent_actions?: string | null;
   current_status?: string | null;
   important_info?: string | null;
+  customer_emotion_level?: number | null;
 }
+
+const emotionConfig: Record<number, { label: string; color: string; emoji: string }> = {
+  1: { label: "Muito positivo", color: "bg-green-100 text-green-700", emoji: "😊" },
+  2: { label: "Positivo", color: "bg-emerald-100 text-emerald-700", emoji: "🙂" },
+  3: { label: "Neutro", color: "bg-gray-100 text-gray-600", emoji: "😐" },
+  4: { label: "Irritado", color: "bg-orange-100 text-orange-700", emoji: "😤" },
+  5: { label: "Muito irritado", color: "bg-red-100 text-red-700", emoji: "😠" },
+};
 
 interface ConversationSummaryProps {
   summary?: SummaryData | null;
@@ -55,6 +64,15 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
             </div>
             
             <div className="flex flex-wrap gap-2 mb-4">
+              {summary.customer_emotion_level && emotionConfig[summary.customer_emotion_level] && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">Sentimento:</span>
+                  <span className={`px-2 py-0.5 rounded-full text-sm font-medium ${emotionConfig[summary.customer_emotion_level].color}`}>
+                    {emotionConfig[summary.customer_emotion_level].emoji} {emotionConfig[summary.customer_emotion_level].label}
+                  </span>
+                </div>
+              )}
+              
               {summary.product && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-500">Produto:</span>
@@ -84,7 +102,7 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
             </div>
 
             {hasStructuredData ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-3">
                 {summary.client_request && (
                   <SummaryCardItem
                     icon={<User className="w-4 h-4" />}
