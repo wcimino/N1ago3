@@ -47,10 +47,10 @@ export async function dispatchEvent(event: EventStandard): Promise<void> {
   }
 }
 
-export async function saveAndDispatchEvent(eventData: StandardEventInput): Promise<EventStandard> {
-  const savedEvent = await eventStorage.saveStandardEvent(eventData);
+export async function saveAndDispatchEvent(eventData: StandardEventInput): Promise<{ event: EventStandard; isNew: boolean }> {
+  const result = await eventStorage.saveStandardEvent(eventData);
   
-  await dispatchEvent(savedEvent);
+  await dispatchEvent(result.event);
   
-  return savedEvent;
+  return result;
 }

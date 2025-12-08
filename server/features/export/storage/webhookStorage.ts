@@ -151,9 +151,9 @@ export const webhookStorage = {
       .where(
         and(
           eq(zendeskConversationsWebhookRaw.processingStatus, "processing"),
-          sql`${zendeskConversationsWebhookRaw.processedAt} < NOW() - INTERVAL '${sql.raw(String(stuckMinutes))} minutes'`,
+          sql`${zendeskConversationsWebhookRaw.receivedAt} < NOW() - INTERVAL '${sql.raw(String(stuckMinutes))} minutes'`,
           sql`${zendeskConversationsWebhookRaw.retryCount} < 5`,
-          eq(zendeskConversationsWebhookRaw.eventsCreatedCount, 0)
+          sql`COALESCE(${zendeskConversationsWebhookRaw.eventsCreatedCount}, 0) = 0`
         )
       )
       .orderBy(zendeskConversationsWebhookRaw.receivedAt)

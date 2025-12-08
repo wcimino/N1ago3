@@ -5,8 +5,8 @@ import type { InsertEventStandard, EventStandard, EventTypeMapping, InsertEventT
 import type { StandardEvent } from "../../../adapters/types.js";
 
 export const eventStorage = {
-  async saveStandardEvent(event: StandardEvent & { sourceRawId?: number; conversationId?: number; userId?: number }): Promise<EventStandard> {
-    const [saved] = await db.insert(eventsStandard).values({
+  async saveStandardEvent(event: StandardEvent & { sourceRawId?: number; conversationId?: number; userId?: number }): Promise<{ event: EventStandard; isNew: boolean }> {
+    const eventData = {
       eventType: event.eventType,
       eventSubtype: event.eventSubtype,
       source: event.source,
@@ -25,11 +25,34 @@ export const eventStorage = {
       metadata: event.metadata,
       channelType: event.channelType,
       processingStatus: "processed",
-    }).returning();
-    
+    };
+
+    if (event.sourceEventId) {
+      try {
+        const [saved] = await db.insert(eventsStandard).values(eventData).returning();
+        await this.ensureEventTypeMapping(event.source, event.eventType);
+        return { event: saved, isNew: true };
+      } catch (error: any) {
+        if (error.code === '23505') {
+          const [existing] = await db.select()
+            .from(eventsStandard)
+            .where(and(
+              eq(eventsStandard.source, event.source),
+              eq(eventsStandard.sourceEventId, event.sourceEventId)
+            ));
+          
+          if (existing) {
+            console.log(`Event ${event.sourceEventId} already exists (id: ${existing.id}), skipping dispatch`);
+            return { event: existing, isNew: false };
+          }
+        }
+        throw error;
+      }
+    }
+
+    const [saved] = await db.insert(eventsStandard).values(eventData).returning();
     await this.ensureEventTypeMapping(event.source, event.eventType);
-    
-    return saved;
+    return { event: saved, isNew: true };
   },
 
   async getStandardEvents(limit = 50, offset = 0, filters?: { source?: string; eventType?: string; conversationId?: number }) {

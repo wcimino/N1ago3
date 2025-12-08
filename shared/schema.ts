@@ -106,8 +106,7 @@ export const eventsStandard = pgTable("events_standard", {
   conversationEventIdx: index("idx_events_standard_conversation_event").on(table.conversationId, table.eventType),
   sourceIdx: index("idx_events_standard_source").on(table.source),
   eventTypeIdx: index("idx_events_standard_event_type").on(table.eventType),
-  // TEMPORARIAMENTE REMOVIDO - Ainda existem duplicados
-  // sourceEventIdUnique: uniqueIndex("idx_events_standard_source_event_id_unique").on(table.source, table.sourceEventId),
+  sourceEventIdUnique: uniqueIndex("idx_events_standard_source_event_id_unique").on(table.source, table.sourceEventId),
 }));
 
 export const conversations = pgTable("conversations", {

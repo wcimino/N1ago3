@@ -23,9 +23,10 @@ export async function processRawEvent(rawId: number, source: string, skipStatusC
     return;
   }
 
-  if ((raw as any).eventsCreatedCount > 0) {
-    console.log(`Raw event ${rawId} already created ${(raw as any).eventsCreatedCount} events, marking as success`);
-    await storage.updateWebhookRawStatus(rawId, source, "success");
+  const eventsCreatedCount = (raw as any).eventsCreatedCount || 0;
+  if (eventsCreatedCount > 0) {
+    console.log(`Raw event ${rawId} already created ${eventsCreatedCount} events, marking as success`);
+    await storage.updateWebhookRawStatusWithEventsCount(rawId, source, "success", eventsCreatedCount);
     return;
   }
 
@@ -84,15 +85,20 @@ export async function processRawEvent(rawId: number, source: string, skipStatusC
 
     const standardEvents = adapter.normalize(payload);
 
+    let newEventsCount = 0;
     for (const event of standardEvents) {
-      const savedEvent = await saveAndDispatchEvent({
+      const { event: savedEvent, isNew } = await saveAndDispatchEvent({
         ...event,
         sourceRawId: rawId,
         conversationId,
         userId,
       });
 
-      if (event.eventType === "switchboard:passControl" && event.externalConversationId) {
+      if (isNew) {
+        newEventsCount++;
+      }
+
+      if (isNew && event.eventType === "switchboard:passControl" && event.externalConversationId) {
         try {
           const metadata = event.metadata as Record<string, unknown> | null;
           let activeSwitchboard = metadata?.activeSwitchboardIntegration as Record<string, unknown> | undefined;
@@ -118,10 +124,10 @@ export async function processRawEvent(rawId: number, source: string, skipStatusC
       }
     }
 
-    await storage.updateWebhookRawStatusWithEventsCount(rawId, source, "success", standardEvents.length);
-    await eventBus.emit(EVENTS.RAW_PROCESSED, { rawId, source, eventsCount: standardEvents.length });
+    await storage.updateWebhookRawStatusWithEventsCount(rawId, source, "success", newEventsCount);
+    await eventBus.emit(EVENTS.RAW_PROCESSED, { rawId, source, eventsCount: newEventsCount });
 
-    console.log(`Processed raw event ${rawId}: ${standardEvents.length} events created`);
+    console.log(`Processed raw event ${rawId}: ${newEventsCount} new events created (${standardEvents.length - newEventsCount} duplicates skipped)`);
   } catch (error: any) {
     const errorMsg = error.message || String(error);
     await storage.updateWebhookRawStatus(rawId, source, "error", errorMsg);
