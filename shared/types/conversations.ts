@@ -63,6 +63,7 @@ export interface UserConversation {
   intent: string | null;
   current_handler: string | null;
   current_handler_name: string | null;
+  message_count: number;
 }
 
 export interface UserGroup {

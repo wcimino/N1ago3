@@ -116,9 +116,14 @@ export function UserGroupCard({
                   conv.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"
                 }`}
               >
-                #{idx + 1} - {formatDateTime(conv.created_at)}
+                #{idx + 1} - {conv.message_count} msgs - {formatDateTime(conv.created_at)}
               </span>
             ))}
+          </div>
+        )}
+        {group.conversations.length === 1 && group.conversations[0].message_count > 0 && (
+          <div className="text-xs text-gray-500">
+            {group.conversations[0].message_count} mensagens na conversa
           </div>
         )}
       </div>
