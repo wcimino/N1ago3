@@ -98,7 +98,7 @@ The React frontend provides a real-time dashboard for events and conversations, 
 *   **Automatic Routing Rules (December 2025):**
     *   Table `routing_rules` with fields: `rule_type`, `target`, `allocate_count`, `allocated_count`, `is_active`
     *   Targets: `n1ago`, `human` (Agent Workspace), `bot` (Answer Bot)
-    *   `routingOrchestrator.ts` processes routing for new user messages via `eventDispatcher`
+    *   `routingOrchestrator.ts` processes routing for NEW conversations only (event: `zendesk:conversation:create`)
     *   Atomic slot consumption via `tryConsumeRuleSlot()` prevents race conditions
     *   When a rule is created (e.g., "allocate next 5 conversations to N1ago"), the system automatically requests control via Zendesk Switchboard API (`passControl`)
     *   Rules auto-deactivate when allocation limit is reached
