@@ -47,6 +47,11 @@ The React frontend provides a real-time dashboard for events and conversations, 
 *   **Storage Modularization:** Split large storage files for better maintainability:
     *   `conversationStorage.ts` → `conversationCrud.ts` + `conversationStats.ts`
     *   `configStorage.ts` → `summaryStorage.ts` + `classificationStorage.ts` + `openaiLogsStorage.ts`
+*   **iFood Products Catalog (December 2025):** 
+    *   New `ifood_products` table with hierarchical structure: Produto > Subproduto (opcional) > Categoria 1 > Categoria 2 (opcional)
+    *   CRUD API endpoints at `/api/ifood-products` and `/api/ifood-products/fullnames`
+    *   New "Produtos iFood Pago" section in General Settings for product registration
+    *   Product Standardization page now uses dropdown instead of free text, selecting from registered iFood products
 
 ## Deployment Configuration
 
