@@ -10,9 +10,9 @@ import { useKnowledgeBase } from "../hooks/useKnowledgeBase";
 
 const tabs = [
   { id: "articles", label: "Artigos", icon: <BookOpen className="w-4 h-4" /> },
-  { id: "zendesk", label: "Base Zendesk", icon: <Cloud className="w-4 h-4" /> },
   { id: "suggestions", label: "Sugestões", icon: <Lightbulb className="w-4 h-4" /> },
   { id: "processing", label: "Processamento", icon: <BarChart3 className="w-4 h-4" /> },
+  { id: "zendesk", label: "Base Zendesk", icon: <Cloud className="w-4 h-4" /> },
 ];
 
 export function KnowledgeBasePage() {
