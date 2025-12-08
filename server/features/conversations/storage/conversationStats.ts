@@ -102,7 +102,8 @@ export const conversationStats = {
         SELECT DISTINCT ON (c.user_id)
           c.user_id,
           COALESCE(cs.product_standard, cs.product) as last_product_standard,
-          cs.intent as last_intent
+          cs.intent as last_intent,
+          cs.customer_emotion_level as last_customer_emotion_level
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
         LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
@@ -116,7 +117,8 @@ export const conversationStats = {
         TO_CHAR(us.first_activity, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as first_activity,
         us.conversations,
         lc.last_product_standard,
-        lc.last_intent
+        lc.last_intent,
+        lc.last_customer_emotion_level
       FROM user_stats us
       LEFT JOIN last_conv lc ON lc.user_id = us.user_id
     `);

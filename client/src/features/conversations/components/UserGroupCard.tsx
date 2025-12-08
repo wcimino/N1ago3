@@ -4,6 +4,14 @@ import { HandlerBadge, getHandlerInfo } from "../../../shared/components/badges/
 import { getUserDisplayName, getActiveConversationsCount, getUserFromGroup } from "../../../lib/userUtils";
 import type { User as UserType, UserGroup } from "../../../types";
 
+const emotionConfig: Record<number, { label: string; color: string; emoji: string }> = {
+  1: { label: "Muito positivo", color: "bg-green-100 text-green-700", emoji: "😊" },
+  2: { label: "Positivo", color: "bg-emerald-100 text-emerald-700", emoji: "🙂" },
+  3: { label: "Neutro", color: "bg-gray-100 text-gray-600", emoji: "😐" },
+  4: { label: "Irritado", color: "bg-orange-100 text-orange-700", emoji: "😤" },
+  5: { label: "Muito irritado", color: "bg-red-100 text-red-700", emoji: "😠" },
+};
+
 interface UserGroupCardProps {
   group: UserGroup;
   onViewUser: (user: UserType) => void;
@@ -41,8 +49,13 @@ export function UserGroupCard({
               <Users className="w-5 h-5 text-blue-600" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-medium text-gray-900 truncate">{getUserDisplayName(group)}</h3>
+                {group.last_customer_emotion_level && emotionConfig[group.last_customer_emotion_level] && (
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${emotionConfig[group.last_customer_emotion_level].color}`}>
+                    {emotionConfig[group.last_customer_emotion_level].emoji} {emotionConfig[group.last_customer_emotion_level].label}
+                  </span>
+                )}
                 {group.user_info?.authenticated && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                     <UserCheck className="w-3 h-3" />

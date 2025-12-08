@@ -74,6 +74,7 @@ export interface UserGroup {
   conversations: UserConversation[];
   last_product_standard: string | null;
   last_intent: string | null;
+  last_customer_emotion_level: number | null;
   user_info: {
     id: number;
     external_id: string | null;
