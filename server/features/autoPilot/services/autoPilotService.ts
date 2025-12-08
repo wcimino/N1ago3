@@ -110,14 +110,22 @@ async function shouldSendResponse(suggestion: typeof responsesSuggested.$inferSe
     return { shouldSend: false, reason: "suggestion_has_no_in_response_to" };
   }
   
-  const normalize = (text: string | null | undefined): string => 
-    (text || "").trim().toLowerCase().replace(/\s+/g, " ");
+  const inResponseToEventId = parseInt(suggestion.inResponseTo, 10);
   
-  const clientMessageText = normalize(lastMessage.contentText);
-  const inResponseToText = normalize(suggestion.inResponseTo);
-  
-  if (clientMessageText !== inResponseToText) {
-    return { shouldSend: false, reason: `in_response_to_mismatch` };
+  if (!isNaN(inResponseToEventId)) {
+    if (lastMessage.id !== inResponseToEventId) {
+      return { shouldSend: false, reason: `in_response_to_id_mismatch (expected: ${inResponseToEventId}, got: ${lastMessage.id})` };
+    }
+  } else {
+    const normalize = (text: string | null | undefined): string => 
+      (text || "").trim().toLowerCase().replace(/\s+/g, " ");
+    
+    const clientMessageText = normalize(lastMessage.contentText);
+    const inResponseToText = normalize(suggestion.inResponseTo);
+    
+    if (clientMessageText !== inResponseToText) {
+      return { shouldSend: false, reason: `in_response_to_text_mismatch (legacy)` };
+    }
   }
   
   return { shouldSend: true, reason: "all_conditions_met" };

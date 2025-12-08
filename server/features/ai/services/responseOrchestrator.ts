@@ -93,7 +93,7 @@ export async function generateConversationResponse(event: EventStandard): Promis
       useKnowledgeBaseTool,
       useProductCatalogTool,
       useZendeskKnowledgeBaseTool,
-      event.contentText || null
+      String(event.id)
     );
 
     if (result.success) {
