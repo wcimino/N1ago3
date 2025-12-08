@@ -34,7 +34,15 @@ export const conversationStats = {
     }
 
     const userConversations = await db.execute(sql`
-      WITH last_message_per_conv AS (
+      WITH message_count_per_conv AS (
+        SELECT 
+          conversation_id,
+          COUNT(*) as message_count
+        FROM events_standard
+        WHERE event_type = 'message'
+        GROUP BY conversation_id
+      ),
+      last_message_per_conv AS (
         SELECT 
           conversation_id,
           MAX(occurred_at) as last_message_at
@@ -76,12 +84,14 @@ export const conversationStats = {
               'product_standard', COALESCE(cs.product_standard, cs.product),
               'intent', cs.intent,
               'current_handler', c.current_handler,
-              'current_handler_name', c.current_handler_name
+              'current_handler_name', c.current_handler_name,
+              'message_count', COALESCE(mc.message_count, 0)
             ) ORDER BY c.created_at ASC
           ) as conversations
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
         LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
+        LEFT JOIN message_count_per_conv mc ON mc.conversation_id = c.id
         WHERE c.user_id IS NOT NULL
           AND c.user_id IN (SELECT user_id FROM filtered_users)
         GROUP BY c.user_id
