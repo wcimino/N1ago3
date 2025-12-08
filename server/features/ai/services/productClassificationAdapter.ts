@@ -1,5 +1,6 @@
 import { callOpenAI } from "./openaiApiService.js";
 import { storage } from "../../../storage/index.js";
+import { replacePromptVariables, formatMessagesContext } from "./promptUtils.js";
 
 export interface ClassificationPayload {
   last20Messages: Array<{
@@ -20,30 +21,60 @@ export interface ClassificationResult {
   error?: string;
 }
 
+const DEFAULT_CLASSIFICATION_PROMPT = `Você é um assistente especializado em classificar conversas de atendimento ao cliente de serviços financeiros.
+
+## Contexto da Conversa
+
+### Resumo
+{{RESUMO}}
+
+### Mensagens
+{{MENSAGENS}}
+
+## Sua Tarefa
+Classifique a conversa identificando:
+1. **Produto**: O produto financeiro mencionado (Antecipação, Repasse, Conta Digital, Cartão, Pix, Empréstimo, Maquinona, etc)
+2. **Intenção**: O que o cliente quer (Dúvida, Solicitação, Reclamação, Cancelamento, Suporte técnico, etc)
+3. **Confiança**: Seu nível de certeza na classificação (0-100)
+
+Use APENAS os produtos que existem no catálogo. Se não identificar claramente, use "Outros".`;
+
+const DEFAULT_CLASSIFICATION_RESPONSE_FORMAT = `Responda em JSON válido:
+{
+  "product": "Nome do produto",
+  "intent": "Intenção do cliente",
+  "confidence": 85
+}`;
+
 export async function classifyConversation(
   payload: ClassificationPayload,
-  promptTemplate: string,
+  promptSystem: string | null,
+  responseFormat: string | null,
   modelName: string = "gpt-4o-mini",
   conversationId?: number,
   externalConversationId?: string,
   useKnowledgeBaseTool: boolean = false,
   useProductCatalogTool: boolean = false
 ): Promise<ClassificationResult> {
-  const messagesContext = payload.last20Messages
-    .map(m => `[${m.authorType}${m.authorName ? ` - ${m.authorName}` : ''}]: ${m.contentText || '(sem texto)'}`)
-    .join('\n');
+  const messagesContext = formatMessagesContext(payload.last20Messages);
 
-  const promptUser = promptTemplate
-    .replace('{{MENSAGENS}}', messagesContext || 'Nenhuma mensagem disponível.')
-    .replace('{{RESUMO}}', payload.currentSummary || 'Nenhum resumo disponível.');
+  const variables = {
+    resumo: payload.currentSummary,
+    mensagens: messagesContext,
+    ultimas20Mensagens: messagesContext,
+  };
 
-  const promptSystem = "Você é um assistente especializado em classificar conversas de atendimento ao cliente de serviços financeiros. Responda sempre em JSON válido.";
+  const basePrompt = promptSystem || DEFAULT_CLASSIFICATION_PROMPT;
+  const format = responseFormat || DEFAULT_CLASSIFICATION_RESPONSE_FORMAT;
+  
+  const promptWithVars = replacePromptVariables(basePrompt, variables);
+  const fullPrompt = `${promptWithVars}\n\n## Formato da Resposta\n${format}`;
 
   const result = await callOpenAI({
     requestType: "classification",
     modelName,
-    promptSystem,
-    promptUser,
+    promptSystem: "Você é um classificador especializado. Responda sempre em JSON válido.",
+    promptUser: fullPrompt,
     maxTokens: 512,
     contextType: "conversation",
     contextId: externalConversationId || (conversationId ? String(conversationId) : undefined),
@@ -99,7 +130,8 @@ export async function classifyConversation(
 
 export async function classifyAndSave(
   payload: ClassificationPayload,
-  promptTemplate: string,
+  promptSystem: string | null,
+  responseFormat: string | null,
   modelName: string,
   conversationId: number,
   externalConversationId: string | null,
@@ -108,7 +140,8 @@ export async function classifyAndSave(
 ): Promise<ClassificationResult> {
   const result = await classifyConversation(
     payload,
-    promptTemplate,
+    promptSystem,
+    responseFormat,
     modelName,
     conversationId,
     externalConversationId || undefined,

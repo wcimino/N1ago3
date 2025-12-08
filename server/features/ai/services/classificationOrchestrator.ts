@@ -66,7 +66,8 @@ export async function classifyConversationProduct(event: EventStandard): Promise
 
     const result = await classifyAndSave(
       payload,
-      config.promptTemplate,
+      config.promptSystem,
+      config.responseFormat,
       config.modelName,
       event.conversationId,
       event.externalConversationId,

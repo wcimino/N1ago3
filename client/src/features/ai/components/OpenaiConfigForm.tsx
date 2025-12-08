@@ -3,6 +3,16 @@ import { CheckboxListItem, LoadingState } from "../../../shared/components/ui";
 import { useOpenaiApiConfig } from "../../../shared/hooks";
 import { AUTHOR_TYPE_OPTIONS, MODEL_OPTIONS } from "../../../lib/constants";
 
+const AVAILABLE_VARIABLES = [
+  { name: '{{RESUMO}}', description: 'Resumo da conversa atual' },
+  { name: '{{RESUMO_ATUAL}}', description: 'Resumo anterior (para atualização)' },
+  { name: '{{CLASSIFICACAO}}', description: 'Produto, Intenção e Confiança' },
+  { name: '{{ULTIMAS_20_MENSAGENS}}', description: 'Histórico das últimas 20 mensagens' },
+  { name: '{{ULTIMA_MENSAGEM}}', description: 'A mensagem mais recente' },
+  { name: '{{MENSAGENS}}', description: 'Alias para {{ULTIMAS_20_MENSAGENS}}' },
+  { name: '{{HANDLER}}', description: 'Quem está atendendo (bot/humano)' },
+];
+
 export interface OpenaiConfigFormProps {
   configType: string;
   title: string;
@@ -12,14 +22,13 @@ export interface OpenaiConfigFormProps {
   eventTriggerLabel: string;
   eventTriggerDescription: string;
   authorFilterDescription: string;
-  promptVariables: ReactNode;
   promptRows?: number;
+  responseFormatRows?: number;
   recommendedModel?: string;
   showKnowledgeBaseTool?: boolean;
   showProductCatalogTool?: boolean;
   showZendeskKnowledgeBaseTool?: boolean;
-  showPromptSystem?: boolean;
-  showResponseFormat?: boolean;
+  children?: ReactNode;
 }
 
 export function OpenaiConfigForm({
@@ -31,14 +40,13 @@ export function OpenaiConfigForm({
   eventTriggerLabel,
   eventTriggerDescription,
   authorFilterDescription,
-  promptVariables,
-  promptRows = 12,
+  promptRows = 16,
+  responseFormatRows = 8,
   recommendedModel = "gpt-4o-mini",
   showKnowledgeBaseTool = false,
   showProductCatalogTool = false,
   showZendeskKnowledgeBaseTool = false,
-  showPromptSystem = true,
-  showResponseFormat = false,
+  children,
 }: OpenaiConfigFormProps) {
   const { state, actions, eventTypes, isLoading, isSaving } = useOpenaiApiConfig(configType);
 
@@ -164,49 +172,69 @@ export function OpenaiConfigForm({
             </div>
           </div>
 
-          {showPromptSystem && (
-            <div>
-              <h3 className="text-sm font-medium text-gray-900 mb-2">Prompt System (Instruções do Assistente)</h3>
-              <p className="text-sm text-gray-500 mb-3">
-                Define o comportamento e persona do assistente. Este é o prompt de sistema enviado à IA.
-              </p>
-              <textarea
-                value={state.promptSystem}
-                onChange={(e) => actions.setPromptSystem(e.target.value)}
-                rows={6}
-                className="w-full px-3 py-2 border rounded-lg text-sm font-mono"
-                placeholder="Digite as instruções do assistente..."
-              />
-            </div>
-          )}
-
           <div>
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Template do Prompt (User)</h3>
-            <p className="text-sm text-gray-500 mb-3">{promptVariables}</p>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-gray-900">Orientações para o Agente</h3>
+              <button
+                type="button"
+                className="text-xs text-blue-600 hover:text-blue-800"
+                onClick={() => {
+                  const variablesText = AVAILABLE_VARIABLES.map(v => `${v.name} - ${v.description}`).join('\n');
+                  alert(`Variáveis disponíveis:\n\n${variablesText}`);
+                }}
+              >
+                Ver variáveis disponíveis
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mb-3">
+              Instruções completas para o agente. Use variáveis como {'{{'} RESUMO {'}}'}, {'{{'} ULTIMAS_20_MENSAGENS {'}}'}, etc.
+            </p>
             <textarea
-              value={state.promptTemplate}
-              onChange={(e) => actions.setPromptTemplate(e.target.value)}
+              value={state.promptSystem}
+              onChange={(e) => actions.setPromptSystem(e.target.value)}
               rows={promptRows}
               className="w-full px-3 py-2 border rounded-lg text-sm font-mono"
-              placeholder="Digite o template do prompt..."
+              placeholder="Digite as orientações completas para o agente..."
+            />
+            <div className="mt-2 flex flex-wrap gap-1">
+              {AVAILABLE_VARIABLES.map((v) => (
+                <button
+                  key={v.name}
+                  type="button"
+                  className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-xs rounded text-gray-600 font-mono"
+                  onClick={() => {
+                    const textarea = document.querySelector('textarea');
+                    if (textarea) {
+                      const start = textarea.selectionStart;
+                      const end = textarea.selectionEnd;
+                      const text = state.promptSystem;
+                      const newText = text.substring(0, start) + v.name + text.substring(end);
+                      actions.setPromptSystem(newText);
+                    }
+                  }}
+                  title={v.description}
+                >
+                  {v.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Formato da Resposta</h3>
+            <p className="text-sm text-gray-500 mb-3">
+              Especifique como o agente deve formatar a resposta (ex: JSON, texto estruturado, etc.)
+            </p>
+            <textarea
+              value={state.responseFormat}
+              onChange={(e) => actions.setResponseFormat(e.target.value)}
+              rows={responseFormatRows}
+              className="w-full px-3 py-2 border rounded-lg text-sm font-mono"
+              placeholder='Exemplo: Responda em JSON com os campos: {"campo1": "valor", "campo2": "valor"}'
             />
           </div>
 
-          {showResponseFormat && (
-            <div>
-              <h3 className="text-sm font-medium text-gray-900 mb-2">Formato da Resposta (JSON esperado)</h3>
-              <p className="text-sm text-gray-500 mb-3">
-                Define o formato JSON esperado na resposta. Serve como referência para a estrutura de saída.
-              </p>
-              <textarea
-                value={state.responseFormat}
-                onChange={(e) => actions.setResponseFormat(e.target.value)}
-                rows={6}
-                className="w-full px-3 py-2 border rounded-lg text-sm font-mono"
-                placeholder='{"campo1": "descrição", "campo2": "descrição"}'
-              />
-            </div>
-          )}
+          {children}
 
           <div className="flex justify-end gap-3 pt-4 border-t">
             {state.hasChanges && (

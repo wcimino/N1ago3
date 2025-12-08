@@ -73,12 +73,12 @@ export async function generateConversationSummary(event: EventStandard): Promise
 
     const result = await generateAndSaveSummary(
       payload,
-      config.promptTemplate,
+      config.promptSystem,
+      config.responseFormat,
       config.modelName,
       event.conversationId,
       event.externalConversationId,
-      event.id,
-      config.promptSystem
+      event.id
     );
 
     if (result.success) {

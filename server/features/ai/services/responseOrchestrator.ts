@@ -84,14 +84,14 @@ export async function generateConversationResponse(event: EventStandard): Promis
 
     const result = await generateAndSaveResponse(
       payload,
-      config.promptTemplate,
+      config.promptSystem,
+      config.responseFormat,
       config.modelName,
       event.conversationId,
       event.externalConversationId,
       event.id,
       useKnowledgeBaseTool,
       useProductCatalogTool,
-      config.promptSystem,
       useZendeskKnowledgeBaseTool
     );
 

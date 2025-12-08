@@ -11,19 +11,9 @@ export function OpenaiSummaryConfigPage() {
       eventTriggerLabel="Eventos que disparam a geração de resumo"
       eventTriggerDescription="Selecione os tipos de eventos que devem disparar a geração de um novo resumo"
       authorFilterDescription="Selecione quais tipos de autor devem disparar a geração de resumo. Se nenhum for selecionado, todos os autores serão considerados."
-      promptVariables={
-        <>
-          Use as variáveis: <code className="bg-gray-100 px-1 rounded">{"{{RESUMO_ATUAL}}"}</code>, 
-          <code className="bg-gray-100 px-1 rounded ml-1">{"{{ULTIMAS_20_MENSAGENS}}"}</code>, 
-          <code className="bg-gray-100 px-1 rounded ml-1">{"{{ULTIMA_MENSAGEM}}"}</code>
-        </>
-      }
-      promptRows={12}
-      recommendedModel="gpt-5"
-      showKnowledgeBaseTool={true}
-      showProductCatalogTool={true}
-      showPromptSystem={true}
-      showResponseFormat={true}
+      promptRows={16}
+      responseFormatRows={10}
+      recommendedModel="gpt-4o-mini"
     />
   );
 }

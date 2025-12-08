@@ -2,6 +2,7 @@ import { callOpenAI, ToolDefinition } from "./openaiApiService.js";
 import { storage } from "../../../storage/index.js";
 import { knowledgeBaseService } from "./knowledgeBaseService.js";
 import { createZendeskKnowledgeBaseTool } from "./aiTools.js";
+import { replacePromptVariables, formatMessagesContext, formatLastMessage, formatClassification } from "./promptUtils.js";
 
 export interface ResponsePayload {
   currentSummary: string | null;
@@ -33,14 +34,31 @@ export interface ResponseResult {
   error?: string;
 }
 
-const DEFAULT_RESPONSE_PROMPT_SYSTEM = `Você é um assistente de atendimento ao cliente especializado em serviços financeiros do iFood Pago.
+const DEFAULT_RESPONSE_PROMPT = `Você é um assistente de atendimento ao cliente especializado em serviços financeiros do iFood Pago.
 Sua tarefa é gerar uma resposta profissional, empática e PRECISA para a última mensagem do cliente.
 
 ## REGRAS IMPORTANTES:
 - A resposta deve ser clara, objetiva e resolver ou encaminhar a demanda
 - Use linguagem cordial e acessível
 - NÃO inclua saudações genéricas como "Olá" no início - vá direto ao ponto
-- NÃO invente procedimentos`;
+- NÃO invente procedimentos
+
+## Contexto da Conversa
+
+### Resumo
+{{RESUMO}}
+
+### Classificação
+{{CLASSIFICACAO}}
+
+### Histórico de Mensagens
+{{ULTIMAS_20_MENSAGENS}}
+
+### Última Mensagem (a ser respondida)
+{{ULTIMA_MENSAGEM}}`;
+
+const DEFAULT_RESPONSE_FORMAT = `Responda APENAS com a mensagem sugerida para o atendente enviar ao cliente.
+Não inclua explicações, comentários ou formatação adicional.`;
 
 const KB_SUFFIX = `
 
@@ -51,9 +69,7 @@ const KB_SUFFIX = `
 - SEMPRE busque na base de conhecimento antes de responder
 - Se encontrar artigos relevantes, USE as informações para responder
 - Se não encontrar, responda com base no contexto da conversa
-- NÃO invente procedimentos - use apenas informações da base de conhecimento ou contexto
-
-Após consultar a base de conhecimento (se aplicável), responda APENAS com a mensagem sugerida para o atendente.`;
+- NÃO invente procedimentos - use apenas informações da base de conhecimento ou contexto`;
 
 function buildKnowledgeBaseTool(): ToolDefinition {
   return {
@@ -101,33 +117,15 @@ ${r.article.observations ? `- **Observações:** ${r.article.observations}` : ''
   };
 }
 
-function buildUserPrompt(payload: ResponsePayload, promptTemplate: string): string {
-  const messagesContext = payload.last20Messages
-    .map(m => `[${m.authorType}${m.authorName ? ` - ${m.authorName}` : ''}]: ${m.contentText || '(sem texto)'}`)
-    .join('\n');
-
-  const lastMessageContext = `[${payload.lastMessage.authorType}${payload.lastMessage.authorName ? ` - ${payload.lastMessage.authorName}` : ''}]: ${payload.lastMessage.contentText || '(sem texto)'}`;
-
-  const classificationContext = payload.classification
-    ? `Produto: ${payload.classification.product || 'Não identificado'}\nIntenção: ${payload.classification.intent || 'Não identificada'}\nConfiança: ${payload.classification.confidence !== null ? `${payload.classification.confidence}%` : 'N/A'}`
-    : 'Classificação não disponível';
-
-  return promptTemplate
-    .replace('{{RESUMO}}', payload.currentSummary || 'Nenhum resumo disponível.')
-    .replace('{{CLASSIFICACAO}}', classificationContext)
-    .replace('{{ULTIMAS_20_MENSAGENS}}', messagesContext || 'Nenhuma mensagem anterior.')
-    .replace('{{ULTIMA_MENSAGEM}}', lastMessageContext);
-}
-
 export async function generateResponse(
   payload: ResponsePayload,
-  promptTemplate: string,
+  promptSystem: string | null,
+  responseFormat: string | null,
   modelName: string = "gpt-4o-mini",
   conversationId?: number,
   externalConversationId?: string,
   useKnowledgeBaseTool: boolean = false,
   useProductCatalogTool: boolean = false,
-  promptSystemFromConfig?: string | null,
   useZendeskKnowledgeBaseTool: boolean = false
 ): Promise<ResponseResult> {
   const tools: ToolDefinition[] = [];
@@ -160,15 +158,32 @@ export async function generateResponse(
     tools.push(zendeskTool);
   }
 
-  const promptUser = buildUserPrompt(payload, promptTemplate);
-  const basePromptSystem = promptSystemFromConfig || DEFAULT_RESPONSE_PROMPT_SYSTEM;
-  const promptSystem = (useKnowledgeBaseTool || useZendeskKnowledgeBaseTool) ? basePromptSystem + KB_SUFFIX : basePromptSystem;
+  const messagesContext = formatMessagesContext(payload.last20Messages);
+  const lastMessageContext = formatLastMessage(payload.lastMessage);
+  const classificationContext = formatClassification(payload.classification);
+
+  const variables = {
+    resumo: payload.currentSummary,
+    classificacao: classificationContext,
+    ultimas20Mensagens: messagesContext,
+    ultimaMensagem: lastMessageContext,
+    mensagens: messagesContext,
+  };
+
+  let basePrompt = promptSystem || DEFAULT_RESPONSE_PROMPT;
+  if (useKnowledgeBaseTool || useZendeskKnowledgeBaseTool) {
+    basePrompt += KB_SUFFIX;
+  }
+  
+  const format = responseFormat || DEFAULT_RESPONSE_FORMAT;
+  const promptWithVars = replacePromptVariables(basePrompt, variables);
+  const fullPrompt = `${promptWithVars}\n\n## Formato da Resposta\n${format}`;
 
   const result = await callOpenAI({
     requestType: "response",
     modelName,
-    promptSystem,
-    promptUser,
+    promptSystem: "Você é um assistente de atendimento especializado.",
+    promptUser: fullPrompt,
     maxTokens: 1024,
     contextType: "conversation",
     contextId: externalConversationId || (conversationId ? String(conversationId) : undefined),
@@ -198,25 +213,25 @@ export async function generateResponse(
 
 export async function generateAndSaveResponse(
   payload: ResponsePayload,
-  promptTemplate: string,
+  promptSystem: string | null,
+  responseFormat: string | null,
   modelName: string,
   conversationId: number,
   externalConversationId: string | null,
   lastEventId: number,
   useKnowledgeBaseTool: boolean = false,
   useProductCatalogTool: boolean = false,
-  promptSystemFromConfig?: string | null,
   useZendeskKnowledgeBaseTool: boolean = false
 ): Promise<ResponseResult> {
   const result = await generateResponse(
     payload,
-    promptTemplate,
+    promptSystem,
+    responseFormat,
     modelName,
     conversationId,
     externalConversationId || undefined,
     useKnowledgeBaseTool,
     useProductCatalogTool,
-    promptSystemFromConfig,
     useZendeskKnowledgeBaseTool
   );
 

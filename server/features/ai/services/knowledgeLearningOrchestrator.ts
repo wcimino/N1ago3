@@ -111,7 +111,8 @@ export async function extractConversationKnowledge(event: EventStandard): Promis
     const result = await extractKnowledgeWithAgent(
       payload,
       config.modelName,
-      config.promptTemplate,
+      config.promptSystem,
+      config.responseFormat,
       event.conversationId,
       event.externalConversationId,
       useKnowledgeBaseTool,

@@ -3,6 +3,7 @@ import { knowledgeBaseService } from "./knowledgeBaseService.js";
 import { callOpenAI, ToolDefinition } from "./openaiApiService.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 import { createZendeskKnowledgeBaseTool } from "./aiTools.js";
+import { replacePromptVariables, formatMessagesContext } from "./promptUtils.js";
 
 export interface AgentLearningPayload {
   messages: Array<{
@@ -266,38 +267,41 @@ function buildCreateSuggestionTool(): ToolDefinition {
   };
 }
 
-function buildUserPrompt(payload: AgentLearningPayload): string {
-  const messagesContext = payload.messages
-    .map(m => `[${m.authorType}${m.authorName ? ` - ${m.authorName}` : ''}]: ${m.contentText || '(sem texto)'}`)
-    .join('\n');
+function buildUserPrompt(payload: AgentLearningPayload, promptSystem: string | null, responseFormat: string | null): string {
+  const messagesContext = formatMessagesContext(payload.messages);
 
-  return `## Conversa de Atendimento
+  const variables = {
+    resumo: payload.currentSummary,
+    resumoAtual: payload.currentSummary,
+    mensagens: messagesContext,
+    ultimas20Mensagens: messagesContext,
+    handler: payload.conversationHandler,
+  };
 
-${messagesContext}
-
-## Resumo da Conversa
-${payload.currentSummary || 'Nenhum resumo disponível.'}
-
-## Instruções
-1. Identifique o tema principal da conversa (produto, problema)
-2. Use search_product_catalog para classificar corretamente o produto
-3. Use search_knowledge_base para buscar artigos existentes
-4. Analise se algum artigo existente cobre o tema
-5. Use create_knowledge_suggestion para registrar sua decisão`;
+  const basePrompt = promptSystem || DEFAULT_AGENT_SYSTEM_PROMPT;
+  const promptWithVars = replacePromptVariables(basePrompt, variables);
+  
+  let fullPrompt = promptWithVars;
+  if (responseFormat) {
+    fullPrompt += `\n\n## Formato da Resposta\n${responseFormat}`;
+  }
+  
+  return fullPrompt;
 }
 
 export async function extractKnowledgeWithAgent(
   payload: AgentLearningPayload,
   modelName: string,
-  promptTemplate: string | null,
+  promptSystem: string | null,
+  responseFormat: string | null,
   conversationId: number,
   externalConversationId: string | null,
   useKnowledgeBaseTool: boolean = false,
   useProductCatalogTool: boolean = false,
   useZendeskKnowledgeBaseTool: boolean = false
 ): Promise<AgentLearningResult> {
-  const systemPrompt = promptTemplate || (useProductCatalogTool ? AGENT_SYSTEM_PROMPT_WITH_CATALOG : DEFAULT_AGENT_SYSTEM_PROMPT);
-  const userPrompt = buildUserPrompt(payload);
+  const defaultPrompt = useProductCatalogTool ? AGENT_SYSTEM_PROMPT_WITH_CATALOG : DEFAULT_AGENT_SYSTEM_PROMPT;
+  const userPrompt = buildUserPrompt(payload, promptSystem || defaultPrompt, responseFormat);
 
   const tools: ToolDefinition[] = [
     buildSearchKnowledgeBaseTool(),
@@ -330,7 +334,7 @@ export async function extractKnowledgeWithAgent(
   const result = await callOpenAI({
     requestType: "learning_agent",
     modelName,
-    promptSystem: systemPrompt,
+    promptSystem: "Você é um especialista em gestão de base de conhecimento para atendimento ao cliente.",
     promptUser: userPrompt,
     tools,
     maxTokens: 2048,

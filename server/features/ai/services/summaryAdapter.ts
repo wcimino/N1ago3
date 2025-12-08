@@ -1,5 +1,6 @@
 import { callOpenAI, type OpenAICallResult } from "./openaiApiService.js";
 import { storage } from "../../../storage/index.js";
+import { replacePromptVariables, formatMessagesContext, formatLastMessage } from "./promptUtils.js";
 
 export interface SummaryPayload {
   currentSummary: string | null;
@@ -32,6 +33,36 @@ export interface SummaryResult {
   error?: string;
 }
 
+const DEFAULT_SUMMARY_PROMPT = `Você é um assistente especializado em gerar resumos de conversas de atendimento ao cliente.
+
+## Contexto da Conversa
+
+### Resumo Anterior
+{{RESUMO_ATUAL}}
+
+### Últimas Mensagens
+{{ULTIMAS_20_MENSAGENS}}
+
+### Última Mensagem
+{{ULTIMA_MENSAGEM}}
+
+## Sua Tarefa
+Gere um resumo atualizado e conciso da conversa, incorporando as novas mensagens ao resumo anterior (se existir).
+
+O resumo deve:
+- Identificar o problema ou solicitação do cliente
+- Registrar as ações do atendente
+- Indicar o status atual do atendimento
+- Destacar informações importantes`;
+
+const DEFAULT_SUMMARY_RESPONSE_FORMAT = `Responda em JSON com a seguinte estrutura:
+{
+  "clientRequest": "O que o cliente solicitou ou qual problema relatou",
+  "agentActions": "O que o atendente fez para resolver",
+  "currentStatus": "Status atual: Resolvido, Em andamento, Aguardando cliente, etc",
+  "importantInfo": "Informações relevantes como prazos, valores, documentos pendentes"
+}`;
+
 function parseStructuredSummary(responseContent: string): StructuredSummary | null {
   try {
     const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
@@ -52,30 +83,34 @@ function parseStructuredSummary(responseContent: string): StructuredSummary | nu
 
 export async function generateSummary(
   payload: SummaryPayload,
-  promptTemplate: string,
+  promptSystem: string | null,
+  responseFormat: string | null,
   modelName: string = "gpt-4o-mini",
   conversationId?: number,
-  externalConversationId?: string,
-  promptSystemFromConfig?: string | null
+  externalConversationId?: string
 ): Promise<SummaryResult> {
-  const messagesContext = payload.last20Messages
-    .map(m => `[${m.authorType}${m.authorName ? ` - ${m.authorName}` : ''}]: ${m.contentText || '(sem texto)'}`)
-    .join('\n');
+  const messagesContext = formatMessagesContext(payload.last20Messages);
+  const lastMessageContext = formatLastMessage(payload.lastMessage);
 
-  const lastMessageContext = `[${payload.lastMessage.authorType}${payload.lastMessage.authorName ? ` - ${payload.lastMessage.authorName}` : ''}]: ${payload.lastMessage.contentText || '(sem texto)'}`;
+  const variables = {
+    resumo: payload.currentSummary,
+    resumoAtual: payload.currentSummary,
+    ultimas20Mensagens: messagesContext,
+    ultimaMensagem: lastMessageContext,
+    mensagens: messagesContext,
+  };
 
-  const promptUser = promptTemplate
-    .replace('{{RESUMO_ATUAL}}', payload.currentSummary || 'Nenhum resumo anterior disponível.')
-    .replace('{{ULTIMAS_20_MENSAGENS}}', messagesContext || 'Nenhuma mensagem anterior.')
-    .replace('{{ULTIMA_MENSAGEM}}', lastMessageContext);
-
-  const promptSystem = promptSystemFromConfig || "Você é um assistente especializado em gerar resumos de conversas de atendimento ao cliente. Gere resumos concisos e informativos.";
+  const basePrompt = promptSystem || DEFAULT_SUMMARY_PROMPT;
+  const format = responseFormat || DEFAULT_SUMMARY_RESPONSE_FORMAT;
+  
+  const promptWithVars = replacePromptVariables(basePrompt, variables);
+  const fullPrompt = `${promptWithVars}\n\n## Formato da Resposta\n${format}`;
 
   const result = await callOpenAI({
     requestType: "summary",
     modelName,
-    promptSystem,
-    promptUser,
+    promptSystem: "Você é um assistente especializado em análise de conversas de atendimento.",
+    promptUser: fullPrompt,
     maxTokens: 1024,
     contextType: "conversation",
     contextId: externalConversationId || (conversationId ? String(conversationId) : undefined),
@@ -102,20 +137,20 @@ export async function generateSummary(
 
 export async function generateAndSaveSummary(
   payload: SummaryPayload,
-  promptTemplate: string,
+  promptSystem: string | null,
+  responseFormat: string | null,
   modelName: string,
   conversationId: number,
   externalConversationId: string | null,
-  lastEventId: number,
-  promptSystemFromConfig?: string | null
+  lastEventId: number
 ): Promise<SummaryResult> {
   const result = await generateSummary(
     payload,
-    promptTemplate,
+    promptSystem,
+    responseFormat,
     modelName,
     conversationId,
-    externalConversationId || undefined,
-    promptSystemFromConfig
+    externalConversationId || undefined
   );
 
   if (result.success) {

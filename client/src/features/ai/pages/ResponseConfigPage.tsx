@@ -11,26 +11,12 @@ export function ResponseConfigPage() {
       eventTriggerLabel="Eventos que disparam a sugestão"
       eventTriggerDescription="Selecione os tipos de eventos que devem disparar uma nova sugestão de resposta"
       authorFilterDescription="Selecione quais tipos de autor devem disparar a sugestão. Normalmente, você vai querer gerar sugestões quando o cliente envia uma mensagem."
-      promptVariables={
-        <>
-          Variáveis disponíveis:
-          <br />
-          <code className="bg-gray-100 px-1 rounded">{"{{RESUMO}}"}</code> - Resumo atual da conversa
-          <br />
-          <code className="bg-gray-100 px-1 rounded">{"{{CLASSIFICACAO}}"}</code> - Produto e intenção identificados
-          <br />
-          <code className="bg-gray-100 px-1 rounded">{"{{ULTIMAS_20_MENSAGENS}}"}</code> - Histórico recente
-          <br />
-          <code className="bg-gray-100 px-1 rounded">{"{{ULTIMA_MENSAGEM}}"}</code> - Mensagem a ser respondida
-        </>
-      }
       promptRows={20}
+      responseFormatRows={4}
       recommendedModel="gpt-4o-mini"
       showKnowledgeBaseTool={true}
       showProductCatalogTool={true}
       showZendeskKnowledgeBaseTool={true}
-      showPromptSystem={true}
-      showResponseFormat={false}
     />
   );
 }
