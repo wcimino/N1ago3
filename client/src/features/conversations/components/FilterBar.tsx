@@ -1,12 +1,22 @@
 import { Filter, X } from "lucide-react";
 
+const EMOTION_OPTIONS = [
+  { value: "1", label: "😊 Muito positivo" },
+  { value: "2", label: "🙂 Positivo" },
+  { value: "3", label: "😐 Neutro" },
+  { value: "4", label: "😤 Irritado" },
+  { value: "5", label: "😠 Muito irritado" },
+];
+
 interface FilterBarProps {
   productStandards: string[];
   intents: string[];
   productStandardFilter: string;
   intentFilter: string;
+  emotionLevelFilter: string;
   onProductStandardChange: (value: string) => void;
   onIntentChange: (value: string) => void;
+  onEmotionLevelChange: (value: string) => void;
   onClear: () => void;
 }
 
@@ -15,11 +25,13 @@ export function FilterBar({
   intents,
   productStandardFilter,
   intentFilter,
+  emotionLevelFilter,
   onProductStandardChange,
   onIntentChange,
+  onEmotionLevelChange,
   onClear,
 }: FilterBarProps) {
-  const hasFilters = productStandardFilter || intentFilter;
+  const hasFilters = productStandardFilter || intentFilter || emotionLevelFilter;
 
   return (
     <div className="px-4 py-3 border-b bg-gray-50 flex flex-wrap items-center gap-3">
@@ -46,6 +58,18 @@ export function FilterBar({
           {intents.map((intent) => (
             <option key={intent} value={intent}>
               {intent}
+            </option>
+          ))}
+        </select>
+        <select
+          value={emotionLevelFilter}
+          onChange={(e) => onEmotionLevelChange(e.target.value)}
+          className="text-sm border border-gray-300 rounded-md px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+        >
+          <option value="">Todas as emoções</option>
+          {EMOTION_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
             </option>
           ))}
         </select>

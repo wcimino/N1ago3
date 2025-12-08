@@ -20,9 +20,10 @@ export const conversationStats = {
     };
   },
 
-  async getConversationsGroupedByUser(limit = 50, offset = 0, productStandardFilter?: string, intentFilter?: string, handlerFilter?: string) {
+  async getConversationsGroupedByUser(limit = 50, offset = 0, productStandardFilter?: string, intentFilter?: string, handlerFilter?: string, emotionLevelFilter?: number) {
     const productCondition = productStandardFilter ? sql`AND lc_filter.last_product_standard = ${productStandardFilter}` : sql``;
     const intentCondition = intentFilter ? sql`AND lc_filter.last_intent = ${intentFilter}` : sql``;
+    const emotionCondition = emotionLevelFilter ? sql`AND lc_filter.last_customer_emotion_level = ${emotionLevelFilter}` : sql``;
     
     let handlerCondition = sql``;
     if (handlerFilter === 'bot') {
@@ -55,7 +56,8 @@ export const conversationStats = {
           c.user_id,
           COALESCE(cs.product_standard, cs.product) as last_product_standard,
           cs.intent as last_intent,
-          c.current_handler_name
+          c.current_handler_name,
+          cs.customer_emotion_level as last_customer_emotion_level
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
         LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
@@ -64,7 +66,7 @@ export const conversationStats = {
       ),
       filtered_users AS (
         SELECT user_id FROM last_conv_filter lc_filter
-        WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition}
+        WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition} ${emotionCondition}
       ),
       user_stats AS (
         SELECT 
@@ -140,7 +142,8 @@ export const conversationStats = {
           c.user_id,
           COALESCE(cs.product_standard, cs.product) as last_product_standard,
           cs.intent as last_intent,
-          c.current_handler_name
+          c.current_handler_name,
+          cs.customer_emotion_level as last_customer_emotion_level
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
         LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
@@ -148,7 +151,7 @@ export const conversationStats = {
         ORDER BY c.user_id, COALESCE(lm.last_message_at, c.created_at) DESC
       )
       SELECT COUNT(*) as count FROM last_conv_filter lc_filter
-      WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition}
+      WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition} ${emotionCondition}
     `);
 
     return { 

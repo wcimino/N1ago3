@@ -29,17 +29,21 @@ export function AtendimentosPage() {
   const urlParams = new URLSearchParams(search);
   const initialProductStandard = urlParams.get("productStandard") || "";
   const initialIntent = urlParams.get("intent") || "";
+  const initialEmotionLevel = urlParams.get("emotionLevel") || "";
 
   const [productStandardFilter, setProductStandardFilter] = useState<string>(initialProductStandard);
   const [intentFilter, setIntentFilter] = useState<string>(initialIntent);
+  const [emotionLevelFilter, setEmotionLevelFilter] = useState<string>(initialEmotionLevel);
   const [handlerFilter, setHandlerFilter] = useState<string>("all");
 
   useEffect(() => {
     const params = new URLSearchParams(search);
     const productStandard = params.get("productStandard") || "";
     const intent = params.get("intent") || "";
+    const emotionLevel = params.get("emotionLevel") || "";
     setProductStandardFilter(productStandard);
     setIntentFilter(intent);
+    setEmotionLevelFilter(emotionLevel);
   }, [search]);
 
   const { formatShortDateTime } = useDateFormatters();
@@ -54,9 +58,10 @@ export function AtendimentosPage() {
     if (productStandardFilter) params.set("productStandard", productStandardFilter);
     if (intentFilter) params.set("intent", intentFilter);
     if (handlerFilter && handlerFilter !== "all") params.set("handler", handlerFilter);
+    if (emotionLevelFilter) params.set("emotionLevel", emotionLevelFilter);
     const queryString = params.toString();
     return queryString ? `/api/conversations/grouped?${queryString}` : "/api/conversations/grouped";
-  }, [productStandardFilter, intentFilter, handlerFilter]);
+  }, [productStandardFilter, intentFilter, handlerFilter, emotionLevelFilter]);
 
   const {
     data: userGroups,
@@ -71,17 +76,18 @@ export function AtendimentosPage() {
     showingFrom,
     showingTo,
   } = usePaginatedQuery<UserGroup>({
-    queryKey: `conversations-grouped-${productStandardFilter}-${intentFilter}-${handlerFilter}`,
+    queryKey: `conversations-grouped-${productStandardFilter}-${intentFilter}-${handlerFilter}-${emotionLevelFilter}`,
     endpoint,
     limit: 20,
     dataKey: "user_groups",
   });
 
-  const hasFilters = productStandardFilter || intentFilter;
+  const hasFilters = productStandardFilter || intentFilter || emotionLevelFilter;
 
   const clearFilters = () => {
     setProductStandardFilter("");
     setIntentFilter("");
+    setEmotionLevelFilter("");
   };
 
   return (
@@ -106,8 +112,10 @@ export function AtendimentosPage() {
         intents={filters?.intents || []}
         productStandardFilter={productStandardFilter}
         intentFilter={intentFilter}
+        emotionLevelFilter={emotionLevelFilter}
         onProductStandardChange={setProductStandardFilter}
         onIntentChange={setIntentFilter}
+        onEmotionLevelChange={setEmotionLevelFilter}
         onClear={clearFilters}
       />
 
