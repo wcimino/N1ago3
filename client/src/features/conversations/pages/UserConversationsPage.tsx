@@ -211,6 +211,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                     onImageClick={setExpandedImage}
                     formatDateTime={formatDateTimeShort}
                     chatEndRef={chatEndRef}
+                    currentHandlerName={selectedConversation?.conversation.current_handler_name}
                   />
                 )}
               </div>
@@ -275,11 +276,12 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                     suggestedResponses={
                       showSuggestions 
                         ? (selectedConversation?.suggested_responses || [])
-                        : (selectedConversation?.suggested_responses || []).filter(s => s.status === "sent")
+                        : []
                     }
                     onImageClick={setExpandedImage}
                     formatDateTime={formatDateTimeShort}
                     chatEndRef={chatEndRef}
+                    currentHandlerName={selectedConversation?.conversation.current_handler_name}
                   />
                 </div>
               </div>

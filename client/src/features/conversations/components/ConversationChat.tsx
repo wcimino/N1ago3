@@ -19,6 +19,7 @@ interface ConversationChatProps {
   onImageClick: (image: ImagePayload) => void;
   formatDateTime: (date: string) => string;
   chatEndRef?: RefObject<HTMLDivElement>;
+  currentHandlerName?: string | null;
 }
 
 export function ConversationChat({
@@ -27,6 +28,7 @@ export function ConversationChat({
   onImageClick,
   formatDateTime,
   chatEndRef,
+  currentHandlerName,
 }: ConversationChatProps) {
   const sortedItems = useMemo(() => {
     const items: ChatItem[] = [];
@@ -66,6 +68,7 @@ export function ConversationChat({
                   key={`msg-${item.data.id}`} 
                   message={item.data} 
                   onImageClick={onImageClick}
+                  currentHandlerName={currentHandlerName}
                 />
               );
             } else {

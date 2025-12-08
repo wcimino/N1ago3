@@ -23,6 +23,7 @@ interface FormResponsePayload {
 interface MessageBubbleProps {
   message: Message;
   onImageClick?: (payload: ImagePayload) => void;
+  currentHandlerName?: string | null;
 }
 
 function safeParsePayload<T>(payload: unknown): T | null {
@@ -110,13 +111,18 @@ function FormResponseContent({ payload }: { payload: FormResponsePayload }) {
   );
 }
 
-export function MessageBubble({ message, onImageClick }: MessageBubbleProps) {
+export function MessageBubble({ message, onImageClick, currentHandlerName }: MessageBubbleProps) {
   const { formatDateTimeShort } = useDateFormatters();
   const isCustomer = isCustomerMessage(message.author_type);
-  const isN1ago = message.author_name?.toLowerCase().startsWith("n1ago");
+  const isN1agoByName = message.author_name?.toLowerCase().includes("n1ago");
+  const isN1agoByHandler = currentHandlerName?.toLowerCase().includes("n1ago") && 
+    (message.author_type === "business" || message.author_type === "agent");
+  const isN1ago = isN1agoByName || isN1agoByHandler;
   const hasImage = message.content_type === "image" && message.content_payload && "mediaUrl" in message.content_payload;
   
   const timestamp = message.zendesk_timestamp || message.received_at;
+  
+  const displayName = isN1ago && !isN1agoByName ? "N1ago" : (message.author_name || message.author_type);
 
   const renderContent = () => {
     if (hasImage) {
@@ -175,7 +181,7 @@ export function MessageBubble({ message, onImageClick }: MessageBubbleProps) {
         <div className="flex items-center gap-2 mb-1">
           <span className={`w-2 h-2 rounded-full ${isN1ago ? "bg-purple-500" : getAuthorColor(message.author_type)}`} />
           <span className={`text-xs font-medium ${isN1ago ? "text-purple-700" : "text-gray-700"}`}>
-            {message.author_name || message.author_type}
+            {displayName}
           </span>
         </div>
 
