@@ -81,7 +81,7 @@ router.post("/api/ifood-products", isAuthenticated, requireAuthorizedUser, async
     const product = await ifoodProductsStorage.create({
       produto: produto.trim(),
       subproduto: subproduto?.trim() || null,
-      categoria1: categoria1.trim(),
+      categoria1: categoria1?.trim() || null,
       categoria2: categoria2?.trim() || null,
       fullName,
     });
@@ -118,7 +118,7 @@ router.put("/api/ifood-products/:id", isAuthenticated, requireAuthorizedUser, as
     const product = await ifoodProductsStorage.update(id, {
       produto: produto.trim(),
       subproduto: subproduto?.trim() || null,
-      categoria1: categoria1.trim(),
+      categoria1: categoria1?.trim() || null,
       categoria2: categoria2?.trim() || null,
       fullName,
     });
