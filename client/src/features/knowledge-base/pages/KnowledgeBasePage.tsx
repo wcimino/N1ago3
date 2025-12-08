@@ -257,20 +257,20 @@ function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDel
               style={{ marginLeft: `${(depth + 1) * 20}px` }}
             >
               <div className="w-5" />
-              
-              <span className={`px-2 py-0.5 text-xs rounded border ${
-                article.intent === "contratar" 
-                  ? "bg-green-100 text-green-700 border-green-200" 
-                  : "bg-gray-100 text-gray-700 border-gray-200"
-              }`}>
-                {article.intent}
-              </span>
 
               <div className="flex-1 min-w-0">
                 <span className="text-sm text-gray-900 truncate block">
                   {article.name || article.description.substring(0, 60)}
                 </span>
               </div>
+
+              <span className={`px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide rounded ${
+                article.intent === "contratar" 
+                  ? "bg-emerald-500 text-white" 
+                  : "bg-slate-500 text-white"
+              }`}>
+                {article.intent}
+              </span>
 
               <span className="text-xs text-gray-400 whitespace-nowrap hidden sm:block">
                 {formatDistanceToNow(new Date(article.updatedAt), { addSuffix: true, locale: ptBR })}
