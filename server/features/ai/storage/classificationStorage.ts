@@ -119,4 +119,35 @@ export const classificationStorage = {
     
     return result.rowCount ?? 0;
   },
+
+  async getEmotionStatsByPeriod(
+    period: "lastHour" | "last24Hours"
+  ): Promise<{ emotionLevel: number; count: number }[]> {
+    const now = new Date();
+    let since: Date;
+
+    if (period === "lastHour") {
+      since = new Date(now.getTime() - 60 * 60 * 1000);
+    } else {
+      since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    }
+
+    const results = await db
+      .select({
+        emotionLevel: conversationsSummary.customerEmotionLevel,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(conversationsSummary)
+      .innerJoin(conversations, eq(conversationsSummary.conversationId, conversations.id))
+      .where(
+        and(
+          isNotNull(conversationsSummary.customerEmotionLevel),
+          gte(conversations.updatedAt, since)
+        )
+      )
+      .groupBy(conversationsSummary.customerEmotionLevel)
+      .orderBy(conversationsSummary.customerEmotionLevel);
+
+    return results.filter(r => r.emotionLevel !== null) as { emotionLevel: number; count: number }[];
+  },
 };
