@@ -22,22 +22,22 @@ Por favor, gere um resumo atualizado e conciso desta conversa, destacando:
 - O status atual da conversa
 - Informações importantes mencionadas`,
 
-  classification: `Analise a conversa de atendimento ao cliente abaixo e identifique:
+  classification: `Analise a conversa de atendimento ao cliente abaixo e classifique conforme as instruções.
 
-1. **Produto**: Qual produto ou serviço o cliente está buscando ajuda? Exemplos: Antecipação, Cartão, Conta Digital, Empréstimo/Crédito, Maquinona, Repasse.
-
-2. **Intenção**: Qual é a intenção do cliente? Use APENAS uma das duas opções:
-   - "contratar" - cliente quer adquirir, ativar, simular ou contratar um produto/serviço novo
-   - "suporte" - cliente já tem o produto e precisa de ajuda, tem dúvidas, quer cancelar, reclamar ou qualquer outro tipo de atendimento
-
-3. **Confiança**: De 0 a 100, qual a sua confiança na classificação?
+**INSTRUÇÕES:**
+1. Use a ferramenta search_product_catalog para buscar os produtos válidos no catálogo
+2. Identifique qual produto do catálogo melhor corresponde ao assunto da conversa
+3. O campo "product" deve ser exatamente um dos valores retornados pelo catálogo (use o fullName)
+4. A intenção deve ser APENAS "contratar" ou "suporte":
+   - "contratar" - cliente quer adquirir, ativar, simular ou contratar produto/serviço novo
+   - "suporte" - qualquer outro atendimento (dúvidas, problemas, cancelamentos, reclamações)
 
 **Mensagens da conversa:**
 {{MENSAGENS}}
 
-**Responda APENAS no formato JSON abaixo, sem texto adicional:**
+**Após buscar no catálogo, responda no formato JSON:**
 {
-  "product": "nome do produto",
+  "product": "fullName exato do catálogo",
   "intent": "contratar ou suporte",
   "confidence": número de 0 a 100
 }`,

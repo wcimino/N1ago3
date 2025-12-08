@@ -69,7 +69,8 @@ export async function classifyConversationProduct(event: EventStandard): Promise
       config.promptTemplate,
       config.modelName,
       event.conversationId,
-      event.externalConversationId
+      event.externalConversationId,
+      config.useProductCatalogTool ?? false
     );
 
     if (result.success) {
