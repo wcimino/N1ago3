@@ -1,4 +1,4 @@
-import { callOpenAI, type ToolDefinition } from "./openaiApiService.js";
+import { callOpenAI } from "./openaiApiService.js";
 import { storage } from "../../../storage/index.js";
 
 export interface ClassificationPayload {
@@ -20,52 +20,13 @@ export interface ClassificationResult {
   error?: string;
 }
 
-function createProductCatalogTool(): ToolDefinition {
-  return {
-    name: "search_product_catalog",
-    description: "Busca produtos no catálogo hierárquico. Use para encontrar os produtos válidos antes de classificar a conversa. Retorna lista de produtos com seus fullNames que devem ser usados na classificação.",
-    parameters: {
-      type: "object",
-      properties: {
-        query: {
-          type: "string",
-          description: "Termo de busca para filtrar produtos (ex: 'cartão', 'empréstimo', 'antecipação'). Deixe vazio para listar todos."
-        }
-      },
-      required: []
-    },
-    handler: async (args: { query?: string }) => {
-      const products = await storage.getIfoodProducts(args.query || "");
-      
-      if (products.length === 0) {
-        return JSON.stringify({ 
-          message: "Nenhum produto encontrado no catálogo",
-          products: [] 
-        });
-      }
-      
-      const productList = products.map(p => ({
-        fullName: p.fullName,
-        produto: p.produto,
-        subproduto: p.subproduto,
-        categoria1: p.categoria1,
-        categoria2: p.categoria2
-      }));
-      
-      return JSON.stringify({
-        message: `Encontrados ${products.length} produtos no catálogo`,
-        products: productList
-      });
-    }
-  };
-}
-
 export async function classifyConversation(
   payload: ClassificationPayload,
   promptTemplate: string,
   modelName: string = "gpt-4o-mini",
   conversationId?: number,
   externalConversationId?: string,
+  useKnowledgeBaseTool: boolean = false,
   useProductCatalogTool: boolean = false
 ): Promise<ClassificationResult> {
   const messagesContext = payload.last20Messages
@@ -78,11 +39,6 @@ export async function classifyConversation(
 
   const promptSystem = "Você é um assistente especializado em classificar conversas de atendimento ao cliente de serviços financeiros. Responda sempre em JSON válido.";
 
-  const tools: ToolDefinition[] = [];
-  if (useProductCatalogTool) {
-    tools.push(createProductCatalogTool());
-  }
-
   const result = await callOpenAI({
     requestType: "classification",
     modelName,
@@ -91,7 +47,10 @@ export async function classifyConversation(
     maxTokens: 512,
     contextType: "conversation",
     contextId: externalConversationId || (conversationId ? String(conversationId) : undefined),
-    tools: tools.length > 0 ? tools : undefined,
+    toolFlags: {
+      useKnowledgeBaseTool,
+      useProductCatalogTool,
+    },
     maxIterations: 3,
   });
 
@@ -144,6 +103,7 @@ export async function classifyAndSave(
   modelName: string,
   conversationId: number,
   externalConversationId: string | null,
+  useKnowledgeBaseTool: boolean = false,
   useProductCatalogTool: boolean = false
 ): Promise<ClassificationResult> {
   const result = await classifyConversation(
@@ -152,6 +112,7 @@ export async function classifyAndSave(
     modelName,
     conversationId,
     externalConversationId || undefined,
+    useKnowledgeBaseTool,
     useProductCatalogTool
   );
 

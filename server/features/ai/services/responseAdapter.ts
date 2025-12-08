@@ -130,7 +130,8 @@ export async function generateResponse(
   modelName: string = "gpt-4o-mini",
   conversationId?: number,
   externalConversationId?: string,
-  useKnowledgeBaseTool: boolean = false
+  useKnowledgeBaseTool: boolean = false,
+  useProductCatalogTool: boolean = false
 ): Promise<ResponseResult> {
   const tools: ToolDefinition[] = [];
   let articlesFound = 0;
@@ -192,7 +193,8 @@ export async function generateAndSaveResponse(
   conversationId: number,
   externalConversationId: string | null,
   lastEventId: number,
-  useKnowledgeBaseTool: boolean = false
+  useKnowledgeBaseTool: boolean = false,
+  useProductCatalogTool: boolean = false
 ): Promise<ResponseResult> {
   const result = await generateResponse(
     payload,
@@ -200,7 +202,8 @@ export async function generateAndSaveResponse(
     modelName,
     conversationId,
     externalConversationId || undefined,
-    useKnowledgeBaseTool
+    useKnowledgeBaseTool,
+    useProductCatalogTool
   );
 
   if (result.success && result.suggestedResponse) {

@@ -70,6 +70,7 @@ export async function classifyConversationProduct(event: EventStandard): Promise
       config.modelName,
       event.conversationId,
       event.externalConversationId,
+      config.useKnowledgeBaseTool ?? false,
       config.useProductCatalogTool ?? false
     );
 

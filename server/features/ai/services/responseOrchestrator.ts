@@ -77,8 +77,9 @@ export async function generateConversationResponse(event: EventStandard): Promis
     };
 
     const useKnowledgeBaseTool = config.useKnowledgeBaseTool ?? false;
+    const useProductCatalogTool = config.useProductCatalogTool ?? false;
 
-    console.log(`[Response Orchestrator] Generating response for conversation ${event.conversationId} with ${reversedMessages.length} messages, useKB=${useKnowledgeBaseTool}`);
+    console.log(`[Response Orchestrator] Generating response for conversation ${event.conversationId} with ${reversedMessages.length} messages, useKB=${useKnowledgeBaseTool}, useCatalog=${useProductCatalogTool}`);
 
     const result = await generateAndSaveResponse(
       payload,
@@ -87,7 +88,8 @@ export async function generateConversationResponse(event: EventStandard): Promis
       event.conversationId,
       event.externalConversationId,
       event.id,
-      useKnowledgeBaseTool
+      useKnowledgeBaseTool,
+      useProductCatalogTool
     );
 
     if (result.success) {

@@ -291,6 +291,7 @@ export async function extractKnowledgeWithAgent(
   promptTemplate: string | null,
   conversationId: number,
   externalConversationId: string | null,
+  useKnowledgeBaseTool: boolean = false,
   useProductCatalogTool: boolean = false
 ): Promise<AgentLearningResult> {
   const systemPrompt = promptTemplate || (useProductCatalogTool ? AGENT_SYSTEM_PROMPT_WITH_CATALOG : DEFAULT_AGENT_SYSTEM_PROMPT);

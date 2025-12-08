@@ -102,9 +102,10 @@ export async function extractConversationKnowledge(event: EventStandard): Promis
       conversationHandler: null,
     };
 
+    const useKnowledgeBaseTool = config.useKnowledgeBaseTool ?? false;
     const useProductCatalogTool = config.useProductCatalogTool ?? false;
 
-    console.log(`[Learning Orchestrator] Extracting knowledge with agent from conversation ${event.conversationId} with ${reversedMessages.length} messages, useCatalog=${useProductCatalogTool}`);
+    console.log(`[Learning Orchestrator] Extracting knowledge with agent from conversation ${event.conversationId} with ${reversedMessages.length} messages, useKB=${useKnowledgeBaseTool}, useCatalog=${useProductCatalogTool}`);
 
     const result = await extractKnowledgeWithAgent(
       payload,
@@ -112,6 +113,7 @@ export async function extractConversationKnowledge(event: EventStandard): Promis
       config.promptTemplate,
       event.conversationId,
       event.externalConversationId,
+      useKnowledgeBaseTool,
       useProductCatalogTool
     );
 

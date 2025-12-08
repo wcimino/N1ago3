@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { storage } from "../../../storage/index.js";
 import type { OpenaiApiLog } from "../../../../shared/schema.js";
+import { buildToolsFromFlags, type ToolFlags } from "./aiTools.js";
 
 let openaiClient: OpenAI | null = null;
 
@@ -30,6 +31,7 @@ export interface OpenAICallParams {
   contextType?: string;
   contextId?: string;
   tools?: ToolDefinition[];
+  toolFlags?: ToolFlags;
   maxIterations?: number;
   finalToolName?: string;
 }
@@ -50,8 +52,14 @@ export interface OpenAICallResult {
 export async function callOpenAI(params: OpenAICallParams): Promise<OpenAICallResult> {
   const startTime = Date.now();
   
-  if (params.tools && params.tools.length > 0) {
-    return callOpenAIWithToolsInternal(params, startTime);
+  let tools = params.tools || [];
+  if (params.toolFlags) {
+    const flagTools = buildToolsFromFlags(params.toolFlags);
+    tools = [...tools, ...flagTools];
+  }
+  
+  if (tools.length > 0) {
+    return callOpenAIWithToolsInternal({ ...params, tools }, startTime);
   }
   
   return callOpenAISimple(params, startTime);
