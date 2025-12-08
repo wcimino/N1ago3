@@ -24,15 +24,11 @@ Por favor, gere um resumo atualizado e conciso desta conversa, destacando:
 
   classification: `Analise a conversa de atendimento ao cliente abaixo e identifique:
 
-1. **Produto**: Qual produto ou serviço o cliente está buscando ajuda? Exemplos: Conta Digital, Pix, Crédito, Cartão, Empréstimo, Investimentos, Seguros, etc.
+1. **Produto**: Qual produto ou serviço o cliente está buscando ajuda? Exemplos: Antecipação, Cartão, Conta Digital, Empréstimo/Crédito, Maquinona, Repasse.
 
-2. **Intenção**: Qual é a intenção do cliente? Use uma das opções:
-   - "contratar" - cliente quer adquirir/ativar um produto novo
-   - "suporte" - cliente já tem o produto e precisa de ajuda
-   - "cancelar" - cliente quer cancelar/encerrar um produto
-   - "duvida" - cliente está tirando dúvidas antes de decidir
-   - "reclamacao" - cliente está reclamando de algo
-   - "outros" - outras situações
+2. **Intenção**: Qual é a intenção do cliente? Use APENAS uma das duas opções:
+   - "contratar" - cliente quer adquirir, ativar, simular ou contratar um produto/serviço novo
+   - "suporte" - cliente já tem o produto e precisa de ajuda, tem dúvidas, quer cancelar, reclamar ou qualquer outro tipo de atendimento
 
 3. **Confiança**: De 0 a 100, qual a sua confiança na classificação?
 
@@ -42,7 +38,7 @@ Por favor, gere um resumo atualizado e conciso desta conversa, destacando:
 **Responda APENAS no formato JSON abaixo, sem texto adicional:**
 {
   "product": "nome do produto",
-  "intent": "tipo da intenção",
+  "intent": "contratar ou suporte",
   "confidence": número de 0 a 100
 }`,
 
