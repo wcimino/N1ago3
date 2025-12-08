@@ -5,3 +5,4 @@ export * from "./charts";
 export * from "./layout";
 export * from "./icons";
 export * from "./detail";
+export * from "./dashboard";
