@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Package, Save, Loader2, CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react";
+import { Package, Save, Loader2, CheckCircle2, AlertCircle, ArrowLeft, ChevronDown } from "lucide-react";
 import { fetchApi, apiRequest } from "../../../lib/queryClient";
 
 interface ProductStandard {
@@ -19,6 +19,11 @@ export function ProductStandardsPage() {
   const { data: products, isLoading, error } = useQuery<ProductStandard[]>({
     queryKey: ["product-standards"],
     queryFn: () => fetchApi<ProductStandard[]>("/api/product-standards"),
+  });
+
+  const { data: ifoodProductNames } = useQuery<string[]>({
+    queryKey: ["ifood-products-fullnames"],
+    queryFn: () => fetchApi<string[]>("/api/ifood-products/fullnames"),
   });
 
   useEffect(() => {
@@ -98,6 +103,31 @@ export function ProductStandardsPage() {
     );
   };
 
+  const renderProductSelect = (p: ProductStandard, isMobile: boolean = false) => {
+    const hasOptions = ifoodProductNames && ifoodProductNames.length > 0;
+    
+    return (
+      <div className="relative">
+        <select
+          value={editedValues[p.product] || ""}
+          onChange={(e) => handleInputChange(p.product, e.target.value)}
+          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm appearance-none bg-white pr-10 ${!hasOptions ? 'text-gray-400' : 'text-gray-900'}`}
+          disabled={!hasOptions}
+        >
+          <option value="">
+            {hasOptions ? "Selecione um produto padronizado..." : "Nenhum produto cadastrado"}
+          </option>
+          {ifoodProductNames?.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+      </div>
+    );
+  };
+
   const renderMobileCard = (p: ProductStandard) => (
     <div key={p.product} className="p-4 bg-white border-b last:border-b-0">
       <div className="flex items-center gap-2 mb-3">
@@ -105,13 +135,7 @@ export function ProductStandardsPage() {
         <span className="text-sm text-gray-900 font-medium">{p.product}</span>
       </div>
       <div className="space-y-3">
-        <input
-          type="text"
-          value={editedValues[p.product] || ""}
-          onChange={(e) => handleInputChange(p.product, e.target.value)}
-          placeholder="Digite o nome padronizado..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-        />
+        {renderProductSelect(p, true)}
         <div className="flex justify-end">
           {renderSaveButton(p)}
         </div>
@@ -154,8 +178,8 @@ export function ProductStandardsPage() {
           <div className="space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                <strong>Instruções:</strong> Para cada produto classificado pela IA, defina um nome padronizado. 
-                Este valor será usado nos relatórios e exports para facilitar a análise.
+                <strong>Instruções:</strong> Para cada produto classificado pela IA, selecione um nome padronizado da lista. 
+                Os produtos disponíveis são cadastrados em <strong>Configurações Gerais → Produtos iFood Pago</strong>.
               </p>
             </div>
 
@@ -184,13 +208,7 @@ export function ProductStandardsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <input
-                          type="text"
-                          value={editedValues[p.product] || ""}
-                          onChange={(e) => handleInputChange(p.product, e.target.value)}
-                          placeholder="Digite o nome padronizado..."
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                        />
+                        {renderProductSelect(p)}
                       </td>
                       <td className="px-4 py-3 text-right">
                         {renderSaveButton(p)}

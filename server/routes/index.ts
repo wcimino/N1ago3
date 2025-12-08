@@ -3,6 +3,7 @@ import type { Express } from "express";
 import authRoutes from "../features/auth/routes/auth.js";
 import { conversationsRoutes } from "../features/conversations/routes/index.js";
 import productsRoutes from "../features/products/routes/products.js";
+import ifoodProductsRoutes from "../features/products/routes/ifoodProducts.js";
 
 import webhooksRoutes from "../features/export/routes/webhooks.js";
 import webhookLogsRoutes from "../features/export/routes/webhookLogs.js";
@@ -29,6 +30,7 @@ export function registerRoutes(app: Express) {
   app.use(openaiConfigRoutes);
   app.use(openaiLogsRoutes);
   app.use(productsRoutes);
+  app.use(ifoodProductsRoutes);
   app.use("/api/users-standard", usersStandardRoutes);
   app.use("/api/organizations-standard", organizationsStandardRoutes);
   app.use(maintenanceRoutes);

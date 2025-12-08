@@ -1,5 +1,6 @@
 import { Globe } from "lucide-react";
 import { useTimezone, TIMEZONE_OPTIONS, type TimezoneValue } from "../../../contexts/TimezoneContext";
+import { IfoodProductsSection } from "./IfoodProductsSection";
 
 export function GeneralSettingsTab() {
   const { timezone, setTimezone } = useTimezone();
@@ -31,6 +32,8 @@ export function GeneralSettingsTab() {
           Configuração salva automaticamente. Os horários em toda a aplicação serão ajustados.
         </p>
       </div>
+
+      <IfoodProductsSection />
     </div>
   );
 }

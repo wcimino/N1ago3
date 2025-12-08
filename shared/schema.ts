@@ -322,6 +322,20 @@ export const knowledgeBase = pgTable("knowledge_base", {
   category1Idx: index("idx_knowledge_base_category1").on(table.category1),
 }));
 
+export const ifoodProducts = pgTable("ifood_products", {
+  id: serial("id").primaryKey(),
+  produto: text("produto").notNull(),
+  subproduto: text("subproduto"),
+  categoria1: text("categoria1").notNull(),
+  categoria2: text("categoria2"),
+  fullName: text("full_name").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  produtoIdx: index("idx_ifood_products_produto").on(table.produto),
+  fullNameIdx: uniqueIndex("idx_ifood_products_full_name").on(table.fullName),
+}));
+
 export const knowledgeSuggestions = pgTable("knowledge_suggestions", {
   id: serial("id").primaryKey(),
   conversationId: integer("conversation_id"),
@@ -417,3 +431,6 @@ export type InsertKnowledgeBaseArticle = Omit<typeof knowledgeBase.$inferInsert,
 
 export type KnowledgeSuggestion = typeof knowledgeSuggestions.$inferSelect;
 export type InsertKnowledgeSuggestion = Omit<typeof knowledgeSuggestions.$inferInsert, "id" | "createdAt" | "updatedAt">;
+
+export type IfoodProduct = typeof ifoodProducts.$inferSelect;
+export type InsertIfoodProduct = Omit<typeof ifoodProducts.$inferInsert, "id" | "createdAt" | "updatedAt">;
