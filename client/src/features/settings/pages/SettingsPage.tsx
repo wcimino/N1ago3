@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Users, Settings, Wrench } from "lucide-react";
+import { Users, Settings, Wrench, FolderOpen } from "lucide-react";
 import { AccessControlTab } from "../components/AccessControlTab";
 import { GeneralSettingsTab } from "../components/GeneralSettingsTab";
 import { MaintenanceTab } from "../components/MaintenanceTab";
+import { CatalogTab } from "../components/CatalogTab";
 
-type TabId = "access-control" | "general" | "maintenance";
+type TabId = "access-control" | "general" | "catalog" | "maintenance";
 
 interface Tab {
   id: TabId;
@@ -15,6 +16,7 @@ interface Tab {
 const tabs: Tab[] = [
   { id: "access-control", label: "Controle de Acessos", icon: <Users className="w-4 h-4" /> },
   { id: "general", label: "Configurações Gerais", icon: <Settings className="w-4 h-4" /> },
+  { id: "catalog", label: "Cadastro", icon: <FolderOpen className="w-4 h-4" /> },
   { id: "maintenance", label: "Manutenção", icon: <Wrench className="w-4 h-4" /> },
 ];
 
@@ -43,6 +45,7 @@ export function SettingsPage() {
                 <span className="sm:hidden">
                   {tab.id === "access-control" && "Acessos"}
                   {tab.id === "general" && "Geral"}
+                  {tab.id === "catalog" && "Cadastro"}
                   {tab.id === "maintenance" && "Manutenção"}
                 </span>
               </button>
@@ -53,6 +56,7 @@ export function SettingsPage() {
         <div className="p-6">
           {activeTab === "access-control" && <AccessControlTab />}
           {activeTab === "general" && <GeneralSettingsTab />}
+          {activeTab === "catalog" && <CatalogTab />}
           {activeTab === "maintenance" && <MaintenanceTab />}
         </div>
       </div>
