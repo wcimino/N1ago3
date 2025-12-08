@@ -344,6 +344,7 @@ export const knowledgeSuggestions = pgTable("knowledge_suggestions", {
   
   suggestionType: text("suggestion_type").default("create").notNull(),
   
+  name: text("name"),
   productStandard: text("product_standard"),
   subproductStandard: text("subproduct_standard"),
   category1: text("category1"),

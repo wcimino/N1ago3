@@ -114,6 +114,10 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
             type: "string",
             description: "Motivo da atualização (obrigatório se action=update). Ex: 'Adicionar passo sobre verificação de saldo', 'Corrigir prazo de processamento'"
           },
+          name: {
+            type: "string",
+            description: "Nome curto e descritivo do artigo (ex: 'Consulta de Saldo da Antecipação', 'Cancelamento do Cartão iFood')"
+          },
           productStandard: {
             type: "string",
             description: "Produto principal padronizado"
@@ -259,6 +263,7 @@ export async function extractKnowledgeWithAgent(
     conversationId,
     externalConversationId,
     suggestionType: suggestionResult.action,
+    name: suggestionResult.name,
     productStandard: suggestionResult.productStandard,
     subproductStandard: suggestionResult.subproductStandard,
     category1: suggestionResult.category1,
