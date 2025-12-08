@@ -6,6 +6,7 @@ import { DonutChart } from "../components";
 import type { UsersStatsResponse, StatsResponse, ProductStatsResponse, EmotionStatsResponse } from "../../types";
 
 const emotionConfig: Record<number, { label: string; color: string; bgColor: string; emoji: string }> = {
+  0: { label: "Sem classificação", color: "text-gray-400", bgColor: "bg-gray-100", emoji: "❓" },
   1: { label: "Muito positivo", color: "text-green-600", bgColor: "bg-green-50", emoji: "😊" },
   2: { label: "Positivo", color: "text-emerald-600", bgColor: "bg-emerald-50", emoji: "🙂" },
   3: { label: "Neutro", color: "text-gray-600", bgColor: "bg-gray-50", emoji: "😐" },
@@ -116,7 +117,7 @@ export function HomePage() {
           {(() => {
             const lastHourMap = new Map(emotionStats?.last_hour?.map(e => [e.emotionLevel, e.count]) || []);
             const todayMap = new Map(emotionStats?.today?.map(e => [e.emotionLevel, e.count]) || []);
-            const emotionLevels = [1, 2, 3, 4, 5];
+            const emotionLevels = [1, 2, 3, 4, 5, 0];
             
             const hasData = emotionLevels.some(level => lastHourMap.has(level) || todayMap.has(level));
             

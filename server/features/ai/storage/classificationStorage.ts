@@ -51,27 +51,21 @@ export const classificationStorage = {
       since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     }
 
-    // Count unique users (userExternalId) who had at least one message in the period
-    // grouped by product
+    // Count distinct conversations that had at least one message in the period
+    // grouped by product (including conversations without product classification)
     const results = await db
       .select({
-        product: conversationsSummary.productStandard,
-        count: sql<number>`count(DISTINCT ${conversations.userExternalId})::int`,
+        product: sql<string>`COALESCE(${conversationsSummary.productStandard}, 'Sem classificação')`,
+        count: sql<number>`count(DISTINCT ${eventsStandard.conversationId})::int`,
       })
       .from(eventsStandard)
       .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
-      .innerJoin(conversationsSummary, eq(conversations.id, conversationsSummary.conversationId))
-      .where(
-        and(
-          isNotNull(conversationsSummary.productStandard),
-          isNotNull(conversations.userExternalId),
-          gte(eventsStandard.occurredAt, since)
-        )
-      )
-      .groupBy(conversationsSummary.productStandard)
-      .orderBy(sql`count(DISTINCT ${conversations.userExternalId}) desc`);
+      .leftJoin(conversationsSummary, eq(conversations.id, conversationsSummary.conversationId))
+      .where(gte(eventsStandard.occurredAt, since))
+      .groupBy(sql`COALESCE(${conversationsSummary.productStandard}, 'Sem classificação')`)
+      .orderBy(sql`count(DISTINCT ${eventsStandard.conversationId}) desc`);
 
-    return results.filter(r => r.product !== null) as { product: string; count: number }[];
+    return results as { product: string; count: number }[];
   },
 
   async getUniqueProductsAndIntents(): Promise<{ products: string[]; productStandards: string[]; intents: string[] }> {
@@ -135,26 +129,20 @@ export const classificationStorage = {
       since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     }
 
-    // Count unique users (userExternalId) who had at least one message in the period
-    // grouped by emotion level
+    // Count distinct conversations that had at least one message in the period
+    // grouped by emotion level (0 = without classification)
     const results = await db
       .select({
-        emotionLevel: conversationsSummary.customerEmotionLevel,
-        count: sql<number>`count(DISTINCT ${conversations.userExternalId})::int`,
+        emotionLevel: sql<number>`COALESCE(${conversationsSummary.customerEmotionLevel}, 0)`,
+        count: sql<number>`count(DISTINCT ${eventsStandard.conversationId})::int`,
       })
       .from(eventsStandard)
       .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
-      .innerJoin(conversationsSummary, eq(conversations.id, conversationsSummary.conversationId))
-      .where(
-        and(
-          isNotNull(conversationsSummary.customerEmotionLevel),
-          isNotNull(conversations.userExternalId),
-          gte(eventsStandard.occurredAt, since)
-        )
-      )
-      .groupBy(conversationsSummary.customerEmotionLevel)
-      .orderBy(conversationsSummary.customerEmotionLevel);
+      .leftJoin(conversationsSummary, eq(conversations.id, conversationsSummary.conversationId))
+      .where(gte(eventsStandard.occurredAt, since))
+      .groupBy(sql`COALESCE(${conversationsSummary.customerEmotionLevel}, 0)`)
+      .orderBy(sql`COALESCE(${conversationsSummary.customerEmotionLevel}, 0)`);
 
-    return results.filter(r => r.emotionLevel !== null) as { emotionLevel: number; count: number }[];
+    return results as { emotionLevel: number; count: number }[];
   },
 };
