@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { reprocessingService, type ReprocessingType } from "../../sync/services/reprocessingService.js";
 import { autoCloseService } from "../../conversations/services/autoCloseService.js";
+import { duplicatesService } from "../services/duplicatesService.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
 
 const router = Router();
 
@@ -94,6 +96,42 @@ router.post("/api/maintenance/auto-close/close-inactive", async (req, res) => {
       closedCount: closed.length,
       closedConversations: closed.map(c => ({ id: c.id, externalId: c.externalConversationId })),
       status 
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get("/api/maintenance/duplicates/stats", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+  try {
+    const stats = await duplicatesService.getStats();
+    res.json(stats);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get("/api/maintenance/duplicates/list", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 100;
+    const duplicates = await duplicatesService.findDuplicates(limit);
+    res.json(duplicates);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/api/maintenance/duplicates/cleanup", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+  try {
+    const dryRun = req.query.dryRun !== "false";
+    const batchSize = parseInt(req.query.batchSize as string) || 1000;
+    const result = await duplicatesService.deleteDuplicates(dryRun, batchSize);
+    res.json({
+      message: dryRun 
+        ? `Simulação: ${result.deletedCount} duplicados seriam removidos de ${result.groups} grupos`
+        : `${result.deletedCount} duplicados removidos de ${result.groups} grupos`,
+      dryRun,
+      ...result,
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });

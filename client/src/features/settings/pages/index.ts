@@ -4,3 +4,4 @@ export { ReprocessingPage } from "./ReprocessingPage";
 export { AuthorizedUsersPage } from "./AuthorizedUsersPage";
 export { AutoClosePage } from "./AutoClosePage";
 export { ProductCatalogPage } from "./ProductCatalogPage";
+export { DuplicatesPage } from "./DuplicatesPage";
