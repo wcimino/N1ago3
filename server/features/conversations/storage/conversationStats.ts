@@ -72,6 +72,7 @@ export const conversationStats = {
           COUNT(*) as conversation_count,
           MAX(COALESCE(lm.last_message_at, c.created_at)) as last_activity,
           MIN(c.created_at) as first_activity,
+          MAX(c.created_at) as latest_conversation_start,
           ARRAY_AGG(
             JSON_BUILD_OBJECT(
               'id', c.id,
@@ -95,7 +96,7 @@ export const conversationStats = {
         WHERE c.user_id IS NOT NULL
           AND c.user_id IN (SELECT user_id FROM filtered_users)
         GROUP BY c.user_id
-        ORDER BY last_activity DESC
+        ORDER BY latest_conversation_start DESC
         LIMIT ${limit} OFFSET ${offset}
       ),
       last_conv AS (
