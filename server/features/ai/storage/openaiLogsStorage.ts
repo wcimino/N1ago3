@@ -81,6 +81,7 @@ export const openaiLogsStorage = {
         openaiLogId: data.openaiLogId,
         externalConversationId: data.externalConversationId || null,
         inResponseTo: data.inResponseTo || null,
+        status: "created",
       })
       .returning();
     return response;

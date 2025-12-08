@@ -212,6 +212,7 @@ export const responsesSuggested = pgTable("responses_suggested", {
   lastEventId: integer("last_event_id"),
   openaiLogId: integer("openai_log_id"),
   inResponseTo: text("in_response_to"),
+  status: text("status").default("created").notNull(),
   usedAt: timestamp("used_at"),
   dismissed: boolean("dismissed").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

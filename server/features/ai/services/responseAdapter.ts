@@ -3,6 +3,7 @@ import { storage } from "../../../storage/index.js";
 import { knowledgeBaseService } from "./knowledgeBaseService.js";
 import { createZendeskKnowledgeBaseTool } from "./aiTools.js";
 import { replacePromptVariables, formatMessagesContext, formatLastMessage, formatClassification } from "./promptUtils.js";
+import { AutoPilotService } from "../../autoPilot/services/autoPilotService.js";
 
 export interface ResponsePayload {
   currentSummary: string | null;
@@ -237,7 +238,7 @@ export async function generateAndSaveResponse(
   );
 
   if (result.success && result.suggestedResponse) {
-    await storage.saveSuggestedResponse(conversationId, {
+    const savedSuggestion = await storage.saveSuggestedResponse(conversationId, {
       suggestedResponse: result.suggestedResponse,
       lastEventId,
       openaiLogId: result.logId,
@@ -259,10 +260,14 @@ export async function generateAndSaveResponse(
         triggerEventId: lastEventId,
         usedKnowledgeBase: result.usedKnowledgeBase,
         articlesFound: result.articlesFound,
+        suggestionId: savedSuggestion.id,
       },
     });
 
     console.log(`[Response Adapter] Suggested response saved for conversation ${conversationId}, logId: ${result.logId}, usedKB: ${result.usedKnowledgeBase}, articles: ${result.articlesFound}`);
+
+    const autoPilotResult = await AutoPilotService.processSuggestion(savedSuggestion.id);
+    console.log(`[Response Adapter] AutoPilot result: action=${autoPilotResult.action}, reason=${autoPilotResult.reason}`);
   }
 
   return result;
