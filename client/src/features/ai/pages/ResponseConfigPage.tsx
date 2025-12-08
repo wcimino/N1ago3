@@ -27,6 +27,7 @@ export function ResponseConfigPage() {
       promptRows={20}
       recommendedModel="gpt-4o-mini"
       showKnowledgeBaseTool={true}
+      showProductCatalogTool={true}
     />
   );
 }

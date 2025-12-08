@@ -19,6 +19,8 @@ export function ClassificationConfigPage() {
       }
       promptRows={16}
       recommendedModel="gpt-4o-mini"
+      showKnowledgeBaseTool={true}
+      showProductCatalogTool={true}
     />
   );
 }

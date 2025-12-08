@@ -20,6 +20,8 @@ export function OpenaiSummaryConfigPage() {
       }
       promptRows={12}
       recommendedModel="gpt-5"
+      showKnowledgeBaseTool={true}
+      showProductCatalogTool={true}
     />
   );
 }
