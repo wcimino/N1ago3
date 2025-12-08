@@ -16,11 +16,20 @@ RESUMO ATUAL:
 ÚLTIMA MENSAGEM RECEBIDA:
 {{ULTIMA_MENSAGEM}}
 
-Por favor, gere um resumo atualizado e conciso desta conversa, destacando:
-- O problema ou solicitação principal do cliente
-- As ações tomadas pelo atendente
-- O status atual da conversa
-- Informações importantes mencionadas`,
+Analise a conversa e gere um resumo estruturado em formato JSON com exatamente estes 4 campos:
+
+{
+  "clientRequest": "Descrição clara e concisa do problema ou solicitação principal do cliente",
+  "agentActions": "Ações tomadas pelo atendente para resolver a demanda",
+  "currentStatus": "Status atual da conversa (em aberto, aguardando cliente, resolvido, etc)",
+  "importantInfo": "Informações importantes mencionadas (valores, datas, documentos, etc)"
+}
+
+**REGRAS:**
+- Responda APENAS com o JSON, sem texto adicional
+- Cada campo deve ter no máximo 2-3 frases
+- Se alguma informação não estiver disponível, use "Não informado"
+- Seja objetivo e direto`,
 
   classification: `Analise a conversa de atendimento ao cliente abaixo e classifique conforme as instruções.
 
