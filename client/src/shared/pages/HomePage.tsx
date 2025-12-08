@@ -252,7 +252,7 @@ export function HomePage() {
         </div>
 
         <div className="bg-white rounded-lg shadow p-5">
-          <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-3">
+          <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-4">
             <Sparkles className="w-4 h-4 text-violet-600" />
             OpenAI API
           </h2>
@@ -265,59 +265,79 @@ export function HomePage() {
             }
             
             return (
-              <div>
-                <div className="flex items-center justify-between py-1 border-b border-gray-100 mb-1">
-                  <div className="flex-1" />
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span title="Última hora" className="min-w-[50px] flex justify-center"><Clock className="w-3 h-3 text-violet-500" /></span>
-                    <span title="Hoje" className="min-w-[50px] flex justify-center"><Calendar className="w-3 h-3 text-violet-500" /></span>
-                  </div>
-                </div>
-                <div className="space-y-2 mt-3">
-                  <div className="flex items-center justify-between py-1.5">
-                    <div className="flex items-center gap-2">
-                      <Hash className="w-3.5 h-3.5 text-violet-500" />
-                      <span className="text-sm text-gray-700">Chamadas</span>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs min-w-[50px] text-center">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="text-left pb-2"></th>
+                    <th className="text-right pb-2 w-24">
+                      <span title="Última hora" className="inline-flex justify-center w-full">
+                        <Clock className="w-3 h-3 text-violet-500" />
+                      </span>
+                    </th>
+                    <th className="text-right pb-2 w-24">
+                      <span title="Hoje" className="inline-flex justify-center w-full">
+                        <Calendar className="w-3 h-3 text-violet-500" />
+                      </span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="py-2">
+                      <div className="flex items-center gap-2">
+                        <Hash className="w-3.5 h-3.5 text-violet-500" />
+                        <span className="text-sm text-gray-700">Chamadas</span>
+                      </div>
+                    </td>
+                    <td className="py-2 text-right">
+                      <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs">
                         {formatNumber(lastHour?.total_calls || 0)}
                       </span>
-                      <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs min-w-[50px] text-center">
+                    </td>
+                    <td className="py-2 text-right">
+                      <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs">
                         {formatNumber(today?.total_calls || 0)}
                       </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between py-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-violet-500 text-xs font-bold">TK</span>
-                      <span className="text-sm text-gray-700">Tokens</span>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs min-w-[50px] text-center">
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-violet-500 text-xs font-bold w-3.5 text-center">TK</span>
+                        <span className="text-sm text-gray-700">Tokens</span>
+                      </div>
+                    </td>
+                    <td className="py-2 text-right">
+                      <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs">
                         {formatNumber(lastHour?.total_tokens || 0)}
                       </span>
-                      <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs min-w-[50px] text-center">
+                    </td>
+                    <td className="py-2 text-right">
+                      <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs">
                         {formatNumber(today?.total_tokens || 0)}
                       </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between py-1.5">
-                    <div className="flex items-center gap-2">
-                      <Coins className="w-3.5 h-3.5 text-violet-500" />
-                      <span className="text-sm text-gray-700">Custo (USD)</span>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs min-w-[50px] text-center">
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2">
+                      <div className="flex items-center gap-2">
+                        <Coins className="w-3.5 h-3.5 text-violet-500" />
+                        <span className="text-sm text-gray-700">Custo (USD)</span>
+                      </div>
+                    </td>
+                    <td className="py-2 text-right">
+                      <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs">
                         ${(lastHour?.estimated_cost || 0).toFixed(2)}
                       </span>
-                      <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs min-w-[50px] text-center">
+                    </td>
+                    <td className="py-2 text-right">
+                      <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs">
                         ${(today?.estimated_cost || 0).toFixed(2)}
                       </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             );
           })()}
         </div>
