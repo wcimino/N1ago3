@@ -28,6 +28,7 @@ export function LearningConfigPage() {
       recommendedModel="gpt-4o-mini"
       showKnowledgeBaseTool={true}
       showProductCatalogTool={true}
+      showZendeskKnowledgeBaseTool={true}
     />
   );
 }

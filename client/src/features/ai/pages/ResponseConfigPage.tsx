@@ -28,6 +28,7 @@ export function ResponseConfigPage() {
       recommendedModel="gpt-4o-mini"
       showKnowledgeBaseTool={true}
       showProductCatalogTool={true}
+      showZendeskKnowledgeBaseTool={true}
       showPromptSystem={true}
       showResponseFormat={false}
     />

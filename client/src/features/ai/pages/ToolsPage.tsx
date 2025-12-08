@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { KnowledgeBaseSearchTool } from "../components/KnowledgeBaseSearchTool";
 import { ProductCatalogSearchTool } from "../components/ProductCatalogSearchTool";
+import { ZendeskKnowledgeBaseSearchTool } from "../components/ZendeskKnowledgeBaseSearchTool";
 
 export function ToolsPage() {
   const [expandedTool, setExpandedTool] = useState<string | null>(null);
@@ -27,6 +28,11 @@ export function ToolsPage() {
       <ProductCatalogSearchTool
         isExpanded={expandedTool === "product_catalog"}
         onToggle={() => toggleTool("product_catalog")}
+      />
+
+      <ZendeskKnowledgeBaseSearchTool
+        isExpanded={expandedTool === "zendesk_knowledge_base"}
+        onToggle={() => toggleTool("zendesk_knowledge_base")}
       />
     </div>
   );

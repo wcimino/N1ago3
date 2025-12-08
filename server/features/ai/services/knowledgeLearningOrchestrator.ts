@@ -104,8 +104,9 @@ export async function extractConversationKnowledge(event: EventStandard): Promis
 
     const useKnowledgeBaseTool = config.useKnowledgeBaseTool ?? false;
     const useProductCatalogTool = config.useProductCatalogTool ?? false;
+    const useZendeskKnowledgeBaseTool = config.useZendeskKnowledgeBaseTool ?? false;
 
-    console.log(`[Learning Orchestrator] Extracting knowledge with agent from conversation ${event.conversationId} with ${reversedMessages.length} messages, useKB=${useKnowledgeBaseTool}, useCatalog=${useProductCatalogTool}`);
+    console.log(`[Learning Orchestrator] Extracting knowledge with agent from conversation ${event.conversationId} with ${reversedMessages.length} messages, useKB=${useKnowledgeBaseTool}, useCatalog=${useProductCatalogTool}, useZendeskKB=${useZendeskKnowledgeBaseTool}`);
 
     const result = await extractKnowledgeWithAgent(
       payload,
@@ -114,7 +115,8 @@ export async function extractConversationKnowledge(event: EventStandard): Promis
       event.conversationId,
       event.externalConversationId,
       useKnowledgeBaseTool,
-      useProductCatalogTool
+      useProductCatalogTool,
+      useZendeskKnowledgeBaseTool
     );
 
     if (result.success) {

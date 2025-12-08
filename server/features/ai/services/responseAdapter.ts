@@ -1,6 +1,7 @@
 import { callOpenAI, ToolDefinition } from "./openaiApiService.js";
 import { storage } from "../../../storage/index.js";
 import { knowledgeBaseService } from "./knowledgeBaseService.js";
+import { createZendeskKnowledgeBaseTool } from "./aiTools.js";
 
 export interface ResponsePayload {
   currentSummary: string | null;
@@ -126,7 +127,8 @@ export async function generateResponse(
   externalConversationId?: string,
   useKnowledgeBaseTool: boolean = false,
   useProductCatalogTool: boolean = false,
-  promptSystemFromConfig?: string | null
+  promptSystemFromConfig?: string | null,
+  useZendeskKnowledgeBaseTool: boolean = false
 ): Promise<ResponseResult> {
   const tools: ToolDefinition[] = [];
   let articlesFound = 0;
@@ -146,9 +148,21 @@ export async function generateResponse(
     tools.push(kbTool);
   }
 
+  if (useZendeskKnowledgeBaseTool) {
+    const zendeskTool = createZendeskKnowledgeBaseTool();
+    const originalHandler = zendeskTool.handler;
+    zendeskTool.handler = async (args) => {
+      usedKnowledgeBase = true;
+      const result = await originalHandler(args);
+      console.log(`[Response Adapter] Zendesk KB search: keywords=${args.keywords}`);
+      return result;
+    };
+    tools.push(zendeskTool);
+  }
+
   const promptUser = buildUserPrompt(payload, promptTemplate);
   const basePromptSystem = promptSystemFromConfig || DEFAULT_RESPONSE_PROMPT_SYSTEM;
-  const promptSystem = useKnowledgeBaseTool ? basePromptSystem + KB_SUFFIX : basePromptSystem;
+  const promptSystem = (useKnowledgeBaseTool || useZendeskKnowledgeBaseTool) ? basePromptSystem + KB_SUFFIX : basePromptSystem;
 
   const result = await callOpenAI({
     requestType: "response",
@@ -191,7 +205,8 @@ export async function generateAndSaveResponse(
   lastEventId: number,
   useKnowledgeBaseTool: boolean = false,
   useProductCatalogTool: boolean = false,
-  promptSystemFromConfig?: string | null
+  promptSystemFromConfig?: string | null,
+  useZendeskKnowledgeBaseTool: boolean = false
 ): Promise<ResponseResult> {
   const result = await generateResponse(
     payload,
@@ -201,7 +216,8 @@ export async function generateAndSaveResponse(
     externalConversationId || undefined,
     useKnowledgeBaseTool,
     useProductCatalogTool,
-    promptSystemFromConfig
+    promptSystemFromConfig,
+    useZendeskKnowledgeBaseTool
   );
 
   if (result.success && result.suggestedResponse) {

@@ -17,6 +17,7 @@ export interface OpenaiConfigFormProps {
   recommendedModel?: string;
   showKnowledgeBaseTool?: boolean;
   showProductCatalogTool?: boolean;
+  showZendeskKnowledgeBaseTool?: boolean;
   showPromptSystem?: boolean;
   showResponseFormat?: boolean;
 }
@@ -35,6 +36,7 @@ export function OpenaiConfigForm({
   recommendedModel = "gpt-4o-mini",
   showKnowledgeBaseTool = false,
   showProductCatalogTool = false,
+  showZendeskKnowledgeBaseTool = false,
   showPromptSystem = true,
   showResponseFormat = false,
 }: OpenaiConfigFormProps) {
@@ -85,7 +87,7 @@ export function OpenaiConfigForm({
             </select>
           </div>
 
-          {(showKnowledgeBaseTool || showProductCatalogTool) && (
+          {(showKnowledgeBaseTool || showProductCatalogTool || showZendeskKnowledgeBaseTool) && (
             <div>
               <h3 className="text-sm font-medium text-gray-900 mb-2">Ferramentas de IA</h3>
               <p className="text-sm text-gray-500 mb-3">
@@ -107,6 +109,14 @@ export function OpenaiConfigForm({
                     sublabel="Permite buscar classificações no catálogo de produtos"
                     checked={state.useProductCatalogTool}
                     onChange={() => actions.setUseProductCatalogTool(!state.useProductCatalogTool)}
+                  />
+                )}
+                {showZendeskKnowledgeBaseTool && (
+                  <CheckboxListItem
+                    label="Usar Base de Conhecimento Zendesk"
+                    sublabel="Permite buscar artigos do Help Center do Zendesk"
+                    checked={state.useZendeskKnowledgeBaseTool}
+                    onChange={() => actions.setUseZendeskKnowledgeBaseTool(!state.useZendeskKnowledgeBaseTool)}
                   />
                 )}
               </div>

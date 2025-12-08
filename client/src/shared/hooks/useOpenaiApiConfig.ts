@@ -15,6 +15,7 @@ export interface OpenaiApiConfigResponse {
   model_name: string;
   use_knowledge_base_tool: boolean;
   use_product_catalog_tool: boolean;
+  use_zendesk_knowledge_base_tool: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -29,6 +30,7 @@ export interface OpenaiApiConfigState {
   modelName: string;
   useKnowledgeBaseTool: boolean;
   useProductCatalogTool: boolean;
+  useZendeskKnowledgeBaseTool: boolean;
   hasChanges: boolean;
 }
 
@@ -42,6 +44,7 @@ export interface OpenaiApiConfigActions {
   toggleAuthorType: (authorType: string) => void;
   setUseKnowledgeBaseTool: (value: boolean) => void;
   setUseProductCatalogTool: (value: boolean) => void;
+  setUseZendeskKnowledgeBaseTool: (value: boolean) => void;
   save: () => void;
 }
 
@@ -65,6 +68,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
   const [modelName, setModelNameState] = useState("gpt-4o-mini");
   const [useKnowledgeBaseTool, setUseKnowledgeBaseToolState] = useState(false);
   const [useProductCatalogTool, setUseProductCatalogToolState] = useState(false);
+  const [useZendeskKnowledgeBaseTool, setUseZendeskKnowledgeBaseToolState] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
   const { data: config, isLoading: isLoadingConfig } = useQuery<OpenaiApiConfigResponse>({
@@ -88,6 +92,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       setModelNameState(config.model_name);
       setUseKnowledgeBaseToolState(config.use_knowledge_base_tool ?? false);
       setUseProductCatalogToolState(config.use_product_catalog_tool ?? false);
+      setUseZendeskKnowledgeBaseToolState(config.use_zendesk_knowledge_base_tool ?? false);
       setHasChanges(false);
     }
   }, [config]);
@@ -104,6 +109,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
         model_name: modelName,
         use_knowledge_base_tool: useKnowledgeBaseTool,
         use_product_catalog_tool: useProductCatalogTool,
+        use_zendesk_knowledge_base_tool: useZendeskKnowledgeBaseTool,
       });
     },
     onSuccess: () => {
@@ -167,6 +173,11 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
     markChanged();
   }, [markChanged]);
 
+  const setUseZendeskKnowledgeBaseTool = useCallback((value: boolean) => {
+    setUseZendeskKnowledgeBaseToolState(value);
+    markChanged();
+  }, [markChanged]);
+
   const save = useCallback(() => {
     saveMutation.mutate();
   }, [saveMutation]);
@@ -182,6 +193,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       modelName,
       useKnowledgeBaseTool,
       useProductCatalogTool,
+      useZendeskKnowledgeBaseTool,
       hasChanges,
     },
     actions: {
@@ -194,6 +206,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       toggleAuthorType,
       setUseKnowledgeBaseTool,
       setUseProductCatalogTool,
+      setUseZendeskKnowledgeBaseTool,
       save,
     },
     eventTypes,

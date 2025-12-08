@@ -176,6 +176,7 @@ export const openaiApiConfig = pgTable("openai_api_config", {
   modelName: text("model_name").default("gpt-4o-mini").notNull(),
   useKnowledgeBaseTool: boolean("use_knowledge_base_tool").default(false).notNull(),
   useProductCatalogTool: boolean("use_product_catalog_tool").default(false).notNull(),
+  useZendeskKnowledgeBaseTool: boolean("use_zendesk_knowledge_base_tool").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({

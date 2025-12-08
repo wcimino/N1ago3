@@ -78,8 +78,9 @@ export async function generateConversationResponse(event: EventStandard): Promis
 
     const useKnowledgeBaseTool = config.useKnowledgeBaseTool ?? false;
     const useProductCatalogTool = config.useProductCatalogTool ?? false;
+    const useZendeskKnowledgeBaseTool = config.useZendeskKnowledgeBaseTool ?? false;
 
-    console.log(`[Response Orchestrator] Generating response for conversation ${event.conversationId} with ${reversedMessages.length} messages, useKB=${useKnowledgeBaseTool}, useCatalog=${useProductCatalogTool}`);
+    console.log(`[Response Orchestrator] Generating response for conversation ${event.conversationId} with ${reversedMessages.length} messages, useKB=${useKnowledgeBaseTool}, useCatalog=${useProductCatalogTool}, useZendeskKB=${useZendeskKnowledgeBaseTool}`);
 
     const result = await generateAndSaveResponse(
       payload,
@@ -90,7 +91,8 @@ export async function generateConversationResponse(event: EventStandard): Promis
       event.id,
       useKnowledgeBaseTool,
       useProductCatalogTool,
-      config.promptSystem
+      config.promptSystem,
+      useZendeskKnowledgeBaseTool
     );
 
     if (result.success) {

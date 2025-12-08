@@ -2,6 +2,7 @@ import { knowledgeSuggestionsStorage } from "../storage/knowledgeSuggestionsStor
 import { knowledgeBaseService } from "./knowledgeBaseService.js";
 import { callOpenAI, ToolDefinition } from "./openaiApiService.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
+import { createZendeskKnowledgeBaseTool } from "./aiTools.js";
 
 export interface AgentLearningPayload {
   messages: Array<{
@@ -292,7 +293,8 @@ export async function extractKnowledgeWithAgent(
   conversationId: number,
   externalConversationId: string | null,
   useKnowledgeBaseTool: boolean = false,
-  useProductCatalogTool: boolean = false
+  useProductCatalogTool: boolean = false,
+  useZendeskKnowledgeBaseTool: boolean = false
 ): Promise<AgentLearningResult> {
   const systemPrompt = promptTemplate || (useProductCatalogTool ? AGENT_SYSTEM_PROMPT_WITH_CATALOG : DEFAULT_AGENT_SYSTEM_PROMPT);
   const userPrompt = buildUserPrompt(payload);
@@ -313,6 +315,16 @@ export async function extractKnowledgeWithAgent(
       return originalHandler(args);
     };
     tools.unshift(catalogTool);
+  }
+
+  if (useZendeskKnowledgeBaseTool) {
+    const zendeskTool = createZendeskKnowledgeBaseTool();
+    const originalHandler = zendeskTool.handler;
+    zendeskTool.handler = async (args) => {
+      console.log(`[Learning Agent] Zendesk KB search: keywords=${args.keywords}`);
+      return originalHandler(args);
+    };
+    tools.push(zendeskTool);
   }
 
   const result = await callOpenAI({
