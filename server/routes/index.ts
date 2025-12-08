@@ -22,6 +22,8 @@ import learningAttemptsRoutes from "../features/ai/routes/learningAttempts.js";
 
 import maintenanceRoutes from "../features/maintenance/routes/maintenance.js";
 import { zendeskArticlesRouter } from "../features/zendesk-articles/index.js";
+import routingRulesRoutes from "../features/routing/routes/routing.js";
+import transferRoutes from "../features/routing/routes/transfer.js";
 
 export function registerRoutes(app: Express) {
   app.use(webhooksRoutes);
@@ -41,4 +43,6 @@ export function registerRoutes(app: Express) {
   app.use(knowledgeSuggestionsRoutes);
   app.use(learningAttemptsRoutes);
   app.use("/api/zendesk-articles", zendeskArticlesRouter);
+  app.use(routingRulesRoutes);
+  app.use(transferRoutes);
 }

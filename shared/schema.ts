@@ -504,3 +504,22 @@ export type LearningAttemptResult = "suggestion_created" | "insufficient_message
 
 export type ZendeskArticle = typeof zendeskArticles.$inferSelect;
 export type InsertZendeskArticle = Omit<typeof zendeskArticles.$inferInsert, "id" | "createdAt" | "updatedAt" | "syncedAt">;
+
+export const routingRules = pgTable("routing_rules", {
+  id: serial("id").primaryKey(),
+  ruleType: text("rule_type").notNull(),
+  target: text("target").notNull(),
+  allocateCount: integer("allocate_count"),
+  allocatedCount: integer("allocated_count").default(0).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdBy: varchar("created_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"),
+}, (table) => ({
+  ruleTypeIdx: index("idx_routing_rules_rule_type").on(table.ruleType),
+  isActiveIdx: index("idx_routing_rules_is_active").on(table.isActive),
+}));
+
+export type RoutingRule = typeof routingRules.$inferSelect;
+export type InsertRoutingRule = Omit<typeof routingRules.$inferInsert, "id" | "createdAt" | "updatedAt" | "allocatedCount">;

@@ -1,0 +1,104 @@
+import { Router, type Request, type Response } from "express";
+import { db } from "../../../db.js";
+import { conversations } from "../../../../shared/schema.js";
+import { eq } from "drizzle-orm";
+import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
+import { ZendeskApiService } from "../../../services/zendeskApiService.js";
+
+const router = Router();
+
+const TARGET_INTEGRATIONS: Record<string, () => string> = {
+  n1ago: ZendeskApiService.getN1agoIntegrationId,
+  human: ZendeskApiService.getAgentWorkspaceIntegrationId,
+  bot: () => "64d65d81a40bc6cf30ebfbb1",
+};
+
+router.post("/api/conversations/:conversationId/transfer", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  try {
+    const { conversationId } = req.params;
+    const { target, reason } = req.body;
+
+    if (!target || !TARGET_INTEGRATIONS[target]) {
+      return res.status(400).json({ 
+        error: "Invalid target. Must be one of: n1ago, human, bot" 
+      });
+    }
+
+    const [conversation] = await db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.id, parseInt(conversationId)));
+
+    if (!conversation) {
+      return res.status(404).json({ error: "Conversation not found" });
+    }
+
+    const externalConversationId = conversation.externalConversationId;
+    const targetIntegrationId = TARGET_INTEGRATIONS[target]();
+
+    const result = await ZendeskApiService.passControl(
+      externalConversationId,
+      targetIntegrationId,
+      { reason: reason || `transfer_to_${target}` },
+      "manual_transfer",
+      `conversation:${conversationId}`
+    );
+
+    if (!result.success) {
+      return res.status(500).json({ 
+        error: "Failed to transfer conversation",
+        details: result.error 
+      });
+    }
+
+    const handlerNameMap: Record<string, string> = {
+      n1ago: "n1ago",
+      human: "zd-agentWorkspace",
+      bot: "zd-answerBot",
+    };
+
+    await db
+      .update(conversations)
+      .set({ 
+        currentHandler: targetIntegrationId,
+        currentHandlerName: handlerNameMap[target],
+        updatedAt: new Date() 
+      })
+      .where(eq(conversations.id, parseInt(conversationId)));
+
+    res.json({ 
+      success: true, 
+      message: `Conversation transferred to ${target}`,
+      newHandler: handlerNameMap[target]
+    });
+  } catch (error) {
+    console.error("[TransferRoutes] Error transferring conversation:", error);
+    res.status(500).json({ error: "Failed to transfer conversation" });
+  }
+});
+
+router.get("/api/conversations/:conversationId/handler", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  try {
+    const { conversationId } = req.params;
+
+    const [conversation] = await db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.id, parseInt(conversationId)));
+
+    if (!conversation) {
+      return res.status(404).json({ error: "Conversation not found" });
+    }
+
+    res.json({
+      conversationId: conversation.id,
+      handlerId: conversation.currentHandler,
+      handlerName: conversation.currentHandlerName,
+    });
+  } catch (error) {
+    console.error("[TransferRoutes] Error fetching handler:", error);
+    res.status(500).json({ error: "Failed to fetch conversation handler" });
+  }
+});
+
+export default router;
