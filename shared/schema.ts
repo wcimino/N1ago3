@@ -322,7 +322,7 @@ export const knowledgeBase = pgTable("knowledge_base", {
   category1Idx: index("idx_knowledge_base_category1").on(table.category1),
 }));
 
-export const ifoodProducts = pgTable("ifood_products", {
+export const ifoodProducts = pgTable("products_catalog", {
   id: serial("id").primaryKey(),
   produto: text("produto").notNull(),
   subproduto: text("subproduto"),

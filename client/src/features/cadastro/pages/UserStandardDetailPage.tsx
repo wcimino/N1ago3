@@ -94,7 +94,7 @@ export function UserStandardDetailPage({ params }: UserStandardDetailPageProps) 
         />
         <div className="text-center mt-4">
           <button
-            onClick={() => navigate("/cadastro")}
+            onClick={() => navigate("/settings/catalog/users")}
             className="text-blue-600 hover:text-blue-800"
           >
             Voltar para lista
@@ -110,7 +110,7 @@ export function UserStandardDetailPage({ params }: UserStandardDetailPageProps) 
         <DetailPageHeader
           title="Detalhes do Usuário"
           subtitle={user.email}
-          onBack={() => navigate("/cadastro")}
+          onBack={() => navigate("/settings/catalog/users")}
         />
 
         <div className="p-6">
@@ -156,7 +156,7 @@ export function UserStandardDetailPage({ params }: UserStandardDetailPageProps) 
         isLoading={orgsLoading}
         emptyMessage="Nenhuma organização associada"
         keyExtractor={(org) => org.id}
-        onItemClick={(org) => navigate(`/cadastro/organizations/${encodeURIComponent(org.cnpjRoot)}`)}
+        onItemClick={(org) => navigate(`/settings/catalog/organizations/${encodeURIComponent(org.cnpjRoot)}`)}
         renderItem={(org) => (
           <div className="flex items-center gap-3">
             <Building2 className="w-5 h-5 text-gray-400" />

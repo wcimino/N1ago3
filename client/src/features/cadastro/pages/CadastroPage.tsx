@@ -17,9 +17,9 @@ export function CadastroPage({ activeTab = "usuarios" }: CadastroPageProps) {
 
   const handleTabChange = (tabId: string) => {
     if (tabId === "usuarios") {
-      navigate("/cadastro");
+      navigate("/settings/catalog/users");
     } else {
-      navigate("/cadastro/organizacoes");
+      navigate("/settings/catalog/organizations");
     }
   };
 

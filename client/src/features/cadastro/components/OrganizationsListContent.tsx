@@ -78,7 +78,7 @@ export function OrganizationsListContent() {
               <tr 
                 key={org.id} 
                 className="hover:bg-gray-50 cursor-pointer"
-                onClick={() => navigate(`/cadastro/organizations/${encodeURIComponent(org.cnpjRoot)}`)}
+                onClick={() => navigate(`/settings/catalog/organizations/${encodeURIComponent(org.cnpjRoot)}`)}
               >
                 <td className="px-4 py-3 text-sm text-gray-900">{org.name || "-"}</td>
                 <td className="px-4 py-3 text-sm font-medium text-blue-600 hover:text-blue-800">
@@ -102,7 +102,7 @@ export function OrganizationsListContent() {
           <div 
             key={org.id} 
             className="p-4 hover:bg-gray-50 cursor-pointer"
-            onClick={() => navigate(`/cadastro/organizations/${encodeURIComponent(org.cnpjRoot)}`)}
+            onClick={() => navigate(`/settings/catalog/organizations/${encodeURIComponent(org.cnpjRoot)}`)}
           >
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">

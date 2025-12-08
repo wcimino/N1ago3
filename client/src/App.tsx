@@ -1,5 +1,5 @@
 import { Route, Switch, Link } from "wouter";
-import { Home, Users, Sparkles, Settings, LogOut, MessageCircle, Download, BookOpen } from "lucide-react";
+import { Home, Sparkles, Settings, LogOut, MessageCircle, Download, BookOpen } from "lucide-react";
 import { useAuth } from "./shared/hooks";
 import { NavLink, EnvironmentBadge, N1agoLogo } from "./shared/components";
 import { TimezoneProvider } from "./contexts/TimezoneContext";
@@ -55,10 +55,6 @@ function AuthenticatedApp() {
               <Home className="w-4 h-4" />
               <span className="hidden sm:inline">Home</span>
             </NavLink>
-            <NavLink href="/cadastro">
-              <Users className="w-4 h-4" />
-              <span className="hidden sm:inline">Cadastro</span>
-            </NavLink>
             <NavLink href="/atendimentos">
               <MessageCircle className="w-4 h-4" />
               <span className="hidden sm:inline">Atendimentos</span>
@@ -86,10 +82,6 @@ function AuthenticatedApp() {
           <Route path="/ai/settings/:rest*" component={AIPage} />
           <Route path="/settings/events" component={EventsLayout} />
           <Route path="/settings/events/:rest*" component={EventsLayout} />
-          <Route path="/cadastro">{() => <CadastroPage activeTab="usuarios" />}</Route>
-          <Route path="/cadastro/organizacoes">{() => <CadastroPage activeTab="organizacoes" />}</Route>
-          <Route path="/cadastro/users/:email">{(params) => <UserStandardDetailPage params={params} />}</Route>
-          <Route path="/cadastro/organizations/:cnpjRoot">{(params) => <OrganizationStandardDetailPage params={params} />}</Route>
           <Route path="/atendimentos" component={AtendimentosPage} />
           <Route path="/atendimentos/:userId">{(params) => <UserConversationsPage params={params} />}</Route>
           <Route path="/export" component={ExportPage} />
@@ -99,7 +91,11 @@ function AuthenticatedApp() {
           <Route path="/settings/product-standards" component={ProductStandardsPage} />
           <Route path="/settings/reprocessing" component={ReprocessingPage} />
           <Route path="/settings/auto-close" component={AutoClosePage} />
-          <Route path="/settings/ifood-products" component={IfoodProductsPage} />
+          <Route path="/settings/catalog/users">{() => <CadastroPage activeTab="usuarios" />}</Route>
+          <Route path="/settings/catalog/users/:email">{(params) => <UserStandardDetailPage params={params} />}</Route>
+          <Route path="/settings/catalog/organizations">{() => <CadastroPage activeTab="organizacoes" />}</Route>
+          <Route path="/settings/catalog/organizations/:cnpjRoot">{(params) => <OrganizationStandardDetailPage params={params} />}</Route>
+          <Route path="/settings/catalog/products" component={IfoodProductsPage} />
         </Switch>
       </main>
     </div>

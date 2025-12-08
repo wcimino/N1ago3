@@ -84,7 +84,7 @@ export function OrganizationStandardDetailPage({ params }: OrganizationStandardD
         />
         <div className="text-center mt-4">
           <button
-            onClick={() => navigate("/cadastro/organizacoes")}
+            onClick={() => navigate("/settings/catalog/organizations")}
             className="text-blue-600 hover:text-blue-800"
           >
             Voltar para lista
@@ -100,7 +100,7 @@ export function OrganizationStandardDetailPage({ params }: OrganizationStandardD
         <DetailPageHeader
           title="Detalhes da Organização"
           subtitle={formatCnpjRoot(organization.cnpjRoot)}
-          onBack={() => navigate("/cadastro/organizacoes")}
+          onBack={() => navigate("/settings/catalog/organizations")}
         />
 
         <div className="p-6">
@@ -151,7 +151,7 @@ export function OrganizationStandardDetailPage({ params }: OrganizationStandardD
         isLoading={usersLoading}
         emptyMessage="Nenhum usuário associado"
         keyExtractor={(user) => user.id}
-        onItemClick={(user) => navigate(`/cadastro/users/${encodeURIComponent(user.email)}`)}
+        onItemClick={(user) => navigate(`/settings/catalog/users/${encodeURIComponent(user.email)}`)}
         renderItem={(user) => (
           <div className="flex items-center gap-3">
             <Users className="w-5 h-5 text-gray-400" />

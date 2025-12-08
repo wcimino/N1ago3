@@ -76,7 +76,7 @@ export function UsersListContent() {
               <tr 
                 key={user.id} 
                 className="hover:bg-gray-50 cursor-pointer"
-                onClick={() => navigate(`/cadastro/users/${encodeURIComponent(user.email)}`)}
+                onClick={() => navigate(`/settings/catalog/users/${encodeURIComponent(user.email)}`)}
               >
                 <td className="px-4 py-3 text-sm text-gray-900">{user.name || "-"}</td>
                 <td className="px-4 py-3 text-sm font-medium text-blue-600 hover:text-blue-800">{user.email}</td>
@@ -98,7 +98,7 @@ export function UsersListContent() {
           <div 
             key={user.id} 
             className="p-4 hover:bg-gray-50 cursor-pointer"
-            onClick={() => navigate(`/cadastro/users/${encodeURIComponent(user.email)}`)}
+            onClick={() => navigate(`/settings/catalog/users/${encodeURIComponent(user.email)}`)}
           >
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
