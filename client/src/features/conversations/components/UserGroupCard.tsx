@@ -105,6 +105,21 @@ export function UserGroupCard({
           </div>
         </div>
 
+        {group.conversations.length > 1 && (
+          <div className="flex flex-wrap gap-2">
+            {group.conversations.map((conv, idx) => (
+              <span
+                key={conv.id}
+                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${
+                  conv.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                #{idx + 1} - {conv.message_count} msgs - {formatDateTime(conv.created_at)}
+              </span>
+            ))}
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
           {group.last_product_standard && (
             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -131,21 +146,6 @@ export function UserGroupCard({
             </span>
           )}
         </div>
-
-        {group.conversations.length > 1 && (
-          <div className="flex flex-wrap gap-2">
-            {group.conversations.map((conv, idx) => (
-              <span
-                key={conv.id}
-                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${
-                  conv.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"
-                }`}
-              >
-                #{idx + 1} - {conv.message_count} msgs - {formatDateTime(conv.created_at)}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
