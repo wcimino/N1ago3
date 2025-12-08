@@ -56,6 +56,12 @@ The React frontend provides a real-time dashboard for events and conversations, 
     *   "Cadastro" (Usuários/Organizações) moved to Settings > Cadastro tab at `/settings/catalog/*`
     *   "Exportações" moved to Settings > Manutenção tab at `/settings/maintenance/export`
     *   Simplified main navigation: Home, Atendimentos, AI, Base de Conhecimento
+*   **Learning Attempts Tracking (December 2025):**
+    *   Table `learning_attempts` tracks every knowledge extraction attempt with results
+    *   Results: `suggestion_created`, `insufficient_messages`, `skipped_by_agent`, `processing_error`
+    *   API endpoints at `/api/learning-attempts` and `/api/learning-attempts/stats`
+    *   New "Processamento" tab in Knowledge Base page with stats and filtered list
+    *   Stats use SQL aggregation for scalability (COUNT with FILTER)
 
 ## Deployment Configuration
 
