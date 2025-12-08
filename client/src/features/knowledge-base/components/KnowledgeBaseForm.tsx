@@ -180,46 +180,54 @@ export function KnowledgeBaseForm({
         />
       </div>
 
-      <div className="grid grid-cols-5 gap-2">
-        <div>
-          <label className={labelClass}>Produto *</label>
-          <div className="relative">
-            <select name="productStandard" value={formData.productStandard} onChange={handleChange} className={selectClass} required>
-              <option value="">Selecione</option>
-              {produtos.map((p) => (<option key={p} value={p}>{p}</option>))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+      <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <div>
+            <label className={labelClass}>Produto *</label>
+            <div className="relative">
+              <select name="productStandard" value={formData.productStandard} onChange={handleChange} className={selectClass} required>
+                <option value="">Selecione</option>
+                {produtos.map((p) => (<option key={p} value={p}>{p}</option>))}
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+            </div>
           </div>
+          {formData.productStandard && subprodutos.length > 0 && (
+            <div>
+              <label className={labelClass}>Subproduto</label>
+              <div className="relative">
+                <select name="subproductStandard" value={formData.subproductStandard} onChange={handleChange} className={selectClass}>
+                  <option value="">Selecione</option>
+                  {subprodutos.map((s) => (<option key={s} value={s}>{s}</option>))}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+          )}
         </div>
-        <div>
-          <label className={labelClass}>Subproduto</label>
-          <div className="relative">
-            <select name="subproductStandard" value={formData.subproductStandard} onChange={handleChange} className={selectClass} disabled={!formData.productStandard || subprodutos.length === 0}>
-              <option value="">{subprodutos.length === 0 ? '-' : 'Selecione'}</option>
-              {subprodutos.map((s) => (<option key={s} value={s}>{s}</option>))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+        <div className="space-y-2">
+          <div>
+            <label className={labelClass}>Categoria 1</label>
+            <div className="relative">
+              <select name="category1" value={formData.category1} onChange={handleChange} className={selectClass} disabled={!formData.productStandard || categorias1.length === 0}>
+                <option value="">{categorias1.length === 0 ? '-' : 'Selecione'}</option>
+                {categorias1.map((c) => (<option key={c} value={c}>{c}</option>))}
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+            </div>
           </div>
-        </div>
-        <div>
-          <label className={labelClass}>Categoria 1</label>
-          <div className="relative">
-            <select name="category1" value={formData.category1} onChange={handleChange} className={selectClass} disabled={!formData.productStandard || categorias1.length === 0}>
-              <option value="">{categorias1.length === 0 ? '-' : 'Selecione'}</option>
-              {categorias1.map((c) => (<option key={c} value={c}>{c}</option>))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-          </div>
-        </div>
-        <div>
-          <label className={labelClass}>Categoria 2</label>
-          <div className="relative">
-            <select name="category2" value={formData.category2} onChange={handleChange} className={selectClass} disabled={!formData.productStandard || categorias2.length === 0}>
-              <option value="">{categorias2.length === 0 ? '-' : 'Selecione'}</option>
-              {categorias2.map((c) => (<option key={c} value={c}>{c}</option>))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-          </div>
+          {formData.category1 && categorias2.length > 0 && (
+            <div>
+              <label className={labelClass}>Categoria 2</label>
+              <div className="relative">
+                <select name="category2" value={formData.category2} onChange={handleChange} className={selectClass}>
+                  <option value="">Selecione</option>
+                  {categorias2.map((c) => (<option key={c} value={c}>{c}</option>))}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+          )}
         </div>
         <div>
           <label className={labelClass}>Intenção *</label>
