@@ -22,8 +22,8 @@ export function ProductStandardsPage() {
   });
 
   const { data: ifoodProductNames } = useQuery<string[]>({
-    queryKey: ["ifood-products-fullnames"],
-    queryFn: () => fetchApi<string[]>("/api/ifood-products/fullnames"),
+    queryKey: ["ifood-products-distinct-produtos"],
+    queryFn: () => fetchApi<string[]>("/api/ifood-products/distinct/produtos"),
   });
 
   useEffect(() => {
