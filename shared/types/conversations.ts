@@ -71,6 +71,7 @@ export interface UserGroup {
   conversation_count: number;
   last_activity: string;
   first_activity: string;
+  latest_conversation_start?: string;
   conversations: UserConversation[];
   last_product_standard: string | null;
   last_intent: string | null;

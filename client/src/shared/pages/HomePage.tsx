@@ -225,11 +225,13 @@ export function HomePage() {
               Ver <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
-          <DonutChart
-            authenticated={usersStats?.authenticated || 0}
-            anonymous={usersStats?.anonymous || 0}
-            total={usersStats?.total || 0}
-          />
+          <div className="flex justify-center">
+            <DonutChart
+              authenticated={usersStats?.authenticated || 0}
+              anonymous={usersStats?.anonymous || 0}
+              total={usersStats?.total || 0}
+            />
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-5">
