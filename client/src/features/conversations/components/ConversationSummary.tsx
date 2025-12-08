@@ -64,15 +64,6 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
             </div>
             
             <div className="flex flex-wrap gap-2 mb-4">
-              {summary.customer_emotion_level && emotionConfig[summary.customer_emotion_level] && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">Sentimento:</span>
-                  <span className={`px-2 py-0.5 rounded-full text-sm font-medium ${emotionConfig[summary.customer_emotion_level].color}`}>
-                    {emotionConfig[summary.customer_emotion_level].emoji} {emotionConfig[summary.customer_emotion_level].label}
-                  </span>
-                </div>
-              )}
-              
               {summary.product && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-500">Produto:</span>
@@ -88,14 +79,19 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
                   <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-sm font-medium">
                     {summary.intent}
                   </span>
+                  {summary.confidence !== null && summary.confidence !== undefined && (
+                    <span className="text-sm text-gray-500">
+                      {summary.confidence}%
+                    </span>
+                  )}
                 </div>
               )}
               
-              {summary.confidence !== null && summary.confidence !== undefined && (
+              {summary.customer_emotion_level && emotionConfig[summary.customer_emotion_level] && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">Confiança:</span>
-                  <span className="text-sm font-medium text-gray-700">
-                    {summary.confidence}%
+                  <span className="text-sm text-gray-500">Sentimento:</span>
+                  <span className={`px-2 py-0.5 rounded-full text-sm font-medium ${emotionConfig[summary.customer_emotion_level].color}`}>
+                    {emotionConfig[summary.customer_emotion_level].emoji} {emotionConfig[summary.customer_emotion_level].label}
                   </span>
                 </div>
               )}
