@@ -67,9 +67,10 @@ export function UserGroupCard({
                 <span className="inline-flex items-center gap-1 text-xs text-gray-500">
                   <MessageCircle className="w-3 h-3" />
                   {group.conversation_count} {group.conversation_count === 1 ? "conversa" : "conversas"}
-                  {group.conversations.length === 1 && group.conversations[0].message_count > 0 && (
-                    <>, {group.conversations[0].message_count} mensagens</>
-                  )}
+                  {(() => {
+                    const totalMessages = group.conversations.reduce((sum, conv) => sum + (conv.message_count || 0), 0);
+                    return totalMessages > 0 ? <>, {totalMessages} mensagens</> : null;
+                  })()}
                 </span>
               </div>
             </div>
