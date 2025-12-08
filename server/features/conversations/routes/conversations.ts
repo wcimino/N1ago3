@@ -63,9 +63,9 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
 
   const conversationsWithSummary = await Promise.all(
     result.map(async (item) => {
-      const [summary, suggestedResponse] = await Promise.all([
+      const [summary, suggestedResponses] = await Promise.all([
         storage.getConversationSummary(item.conversation.id),
-        storage.getSuggestedResponse(item.conversation.id),
+        storage.getAllSuggestedResponses(item.conversation.id),
       ]);
       return {
         conversation: {
@@ -89,11 +89,11 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
           current_status: summary.currentStatus,
           important_info: summary.importantInfo,
         } : null,
-        suggested_response: suggestedResponse ? {
-          text: suggestedResponse.suggestedResponse,
-          created_at: suggestedResponse.createdAt?.toISOString(),
-          last_event_id: suggestedResponse.lastEventId,
-        } : null,
+        suggested_responses: suggestedResponses.map(sr => ({
+          text: sr.suggestedResponse,
+          created_at: sr.createdAt?.toISOString(),
+          last_event_id: sr.lastEventId,
+        })),
       };
     })
   );

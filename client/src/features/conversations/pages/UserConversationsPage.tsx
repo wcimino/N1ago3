@@ -149,7 +149,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                 {contentTab === "chat" && (
                   <ConversationChat
                     messages={selectedConversation?.messages || []}
-                    suggestedResponse={selectedConversation?.suggested_response}
+                    suggestedResponses={selectedConversation?.suggested_responses || []}
                     onImageClick={setExpandedImage}
                     formatDateTime={formatDateTimeShort}
                     chatEndRef={chatEndRef}
@@ -205,7 +205,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                   </div>
                   <ConversationChat
                     messages={selectedConversation?.messages || []}
-                    suggestedResponse={selectedConversation?.suggested_response}
+                    suggestedResponses={selectedConversation?.suggested_responses || []}
                     onImageClick={setExpandedImage}
                     formatDateTime={formatDateTimeShort}
                     chatEndRef={chatEndRef}

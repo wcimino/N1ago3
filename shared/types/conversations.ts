@@ -121,7 +121,7 @@ export interface ConversationWithMessages {
   };
   messages: Message[];
   summary: ConversationSummary | null;
-  suggested_response: SuggestedResponse | null;
+  suggested_responses: SuggestedResponse[];
 }
 
 export interface UserConversationsMessagesResponse {

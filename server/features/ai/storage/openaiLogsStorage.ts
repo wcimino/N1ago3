@@ -97,4 +97,11 @@ export const openaiLogsStorage = {
       .orderBy(desc(responsesSuggested.createdAt))
       .limit(limit);
   },
+
+  async getAllSuggestedResponses(conversationId: number): Promise<SuggestedResponse[]> {
+    return db.select()
+      .from(responsesSuggested)
+      .where(eq(responsesSuggested.conversationId, conversationId))
+      .orderBy(responsesSuggested.createdAt);
+  },
 };
