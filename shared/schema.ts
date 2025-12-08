@@ -401,6 +401,36 @@ export const learningAttempts = pgTable("learning_attempts", {
   createdAtIdx: index("idx_learning_attempts_created_at").on(table.createdAt),
 }));
 
+export const zendeskArticles = pgTable("zendesk_articles", {
+  id: serial("id").primaryKey(),
+  zendeskId: text("zendesk_id").notNull().unique(),
+  title: text("title").notNull(),
+  body: text("body"),
+  sectionId: text("section_id"),
+  sectionName: text("section_name"),
+  categoryId: text("category_id"),
+  categoryName: text("category_name"),
+  authorId: text("author_id"),
+  locale: text("locale"),
+  htmlUrl: text("html_url"),
+  draft: boolean("draft").default(false).notNull(),
+  promoted: boolean("promoted").default(false).notNull(),
+  position: integer("position"),
+  voteSum: integer("vote_sum"),
+  voteCount: integer("vote_count"),
+  labelNames: json("label_names").$type<string[]>(),
+  zendeskCreatedAt: timestamp("zendesk_created_at"),
+  zendeskUpdatedAt: timestamp("zendesk_updated_at"),
+  syncedAt: timestamp("synced_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  zendeskIdIdx: uniqueIndex("idx_zendesk_articles_zendesk_id").on(table.zendeskId),
+  sectionIdIdx: index("idx_zendesk_articles_section_id").on(table.sectionId),
+  localeIdx: index("idx_zendesk_articles_locale").on(table.locale),
+  titleIdx: index("idx_zendesk_articles_title").on(table.title),
+}));
+
 // Types
 export type AuthUser = typeof authUsers.$inferSelect;
 export type UpsertAuthUser = typeof authUsers.$inferInsert;
@@ -463,3 +493,6 @@ export type LearningAttempt = typeof learningAttempts.$inferSelect;
 export type InsertLearningAttempt = Omit<typeof learningAttempts.$inferInsert, "id" | "createdAt">;
 
 export type LearningAttemptResult = "suggestion_created" | "insufficient_messages" | "skipped_by_agent" | "processing_error";
+
+export type ZendeskArticle = typeof zendeskArticles.$inferSelect;
+export type InsertZendeskArticle = Omit<typeof zendeskArticles.$inferInsert, "id" | "createdAt" | "updatedAt" | "syncedAt">;
