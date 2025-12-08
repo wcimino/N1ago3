@@ -62,6 +62,12 @@ The React frontend provides a real-time dashboard for events and conversations, 
     *   API endpoints at `/api/learning-attempts` and `/api/learning-attempts/stats`
     *   New "Processamento" tab in Knowledge Base page with stats and filtered list
     *   Stats use SQL aggregation for scalability (COUNT with FILTER)
+*   **AI Tools Architecture (December 2025):**
+    *   Centralized tool definitions in `server/features/ai/services/aiTools.ts`
+    *   Tools: `search_knowledge_base`, `search_product_catalog`
+    *   `callOpenAI` accepts `toolFlags` parameter for automatic tool construction
+    *   Hybrid architecture: simple adapters use `toolFlags`, complex adapters (response, learning) use custom tools with tracking
+    *   Each config has `useKnowledgeBaseTool` and `useProductCatalogTool` flags
 
 ## Deployment Configuration
 
