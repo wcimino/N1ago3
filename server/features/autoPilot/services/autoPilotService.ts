@@ -80,8 +80,10 @@ async function shouldSendResponse(suggestion: typeof responsesSuggested.$inferSe
   }
   
   const n1agoIntegrationId = ZendeskApiService.getN1agoIntegrationId();
+  const isN1agoHandler = conversation.currentHandler === n1agoIntegrationId || 
+    conversation.currentHandlerName?.startsWith("n1ago");
   
-  if (conversation.currentHandler !== n1agoIntegrationId && conversation.currentHandlerName !== "n1ago") {
+  if (!isN1agoHandler) {
     return { shouldSend: false, reason: `handler_not_n1ago (handler: ${conversation.currentHandler}, name: ${conversation.currentHandlerName})` };
   }
   

@@ -118,7 +118,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
               size="sm" 
               showLabel 
             />
-            {selectedConversation.conversation.current_handler_name === "n1ago" && (
+            {selectedConversation.conversation.current_handler_name?.startsWith("n1ago") && (
               <button
                 onClick={() => toggleAutopilotMutation.mutate({
                   conversationId: selectedConversation.conversation.id,
