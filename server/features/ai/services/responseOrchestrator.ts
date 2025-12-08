@@ -1,5 +1,5 @@
 import { storage } from "../../../storage/index.js";
-import { generateAndSaveResponse, type ResponsePayload } from "./responseAdapter.js";
+import { generateAndSaveResponseWithAgent, type ResponseAgentPayload } from "./responseAgentAdapter.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 
 export async function shouldGenerateResponse(event: EventStandard): Promise<boolean> {
@@ -59,10 +59,10 @@ export async function generateConversationResponse(event: EventStandard): Promis
       confidence: existingSummary.confidence,
     } : null;
 
-    const payload: ResponsePayload = {
+    const payload: ResponseAgentPayload = {
       currentSummary: existingSummary?.summary || null,
       classification,
-      last20Messages: reversedMessages.map(m => ({
+      messages: reversedMessages.map(m => ({
         authorType: m.authorType,
         authorName: m.authorName,
         contentText: m.contentText,
@@ -76,19 +76,19 @@ export async function generateConversationResponse(event: EventStandard): Promis
       }
     };
 
-    console.log(`[Response Orchestrator] Generating response for conversation ${event.conversationId} with ${reversedMessages.length} messages`);
+    console.log(`[Response Orchestrator] Generating response with agent for conversation ${event.conversationId} with ${reversedMessages.length} messages`);
 
-    const result = await generateAndSaveResponse(
+    const result = await generateAndSaveResponseWithAgent(
       payload,
-      config.promptTemplate,
       config.modelName,
+      config.promptTemplate,
       event.conversationId,
       event.externalConversationId,
       event.id
     );
 
     if (result.success) {
-      console.log(`[Response Orchestrator] Response generated successfully for conversation ${event.conversationId}, logId: ${result.logId}`);
+      console.log(`[Response Orchestrator] Response generated successfully for conversation ${event.conversationId}, usedKB=${result.usedKnowledgeBase}, articles=${result.articlesFound}, logId: ${result.logId}`);
     } else {
       console.error(`[Response Orchestrator] Failed to generate response: ${result.error}`);
     }
