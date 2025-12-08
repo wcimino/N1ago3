@@ -16,3 +16,4 @@ export { Pagination } from "./Pagination";
 export { SegmentedTabs } from "./SegmentedTabs";
 export { ToggleSwitch } from "./ToggleSwitch";
 export { TreeView, TreeNodeItem, useTreeExpansion } from "./TreeView";
+export { ModernSelect } from "./ModernSelect";

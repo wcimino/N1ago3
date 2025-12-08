@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Save, X } from "lucide-react";
-import { ModernSelect } from "@/components/ui/modern-select";
+import { ModernSelect } from "@/shared/components/ui";
 
 interface KnowledgeBaseArticle {
   id: number;
