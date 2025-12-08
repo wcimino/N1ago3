@@ -41,24 +41,23 @@ export function UserGroupCard({
               <Users className="w-5 h-5 text-blue-600" />
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="font-medium text-gray-900 truncate">{getUserDisplayName(group)}</h3>
-              <div className="flex flex-wrap items-center gap-2 mt-1">
+              <div className="flex items-center gap-2">
+                <h3 className="font-medium text-gray-900 truncate">{getUserDisplayName(group)}</h3>
                 {group.user_info?.authenticated && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                     <UserCheck className="w-3 h-3" />
                     Autenticado
                   </span>
                 )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2 mt-1">
                 <span className="inline-flex items-center gap-1 text-xs text-gray-500">
                   <MessageCircle className="w-3 h-3" />
                   {group.conversation_count} {group.conversation_count === 1 ? "conversa" : "conversas"}
+                  {group.conversations.length === 1 && group.conversations[0].message_count > 0 && (
+                    <>, {group.conversations[0].message_count} mensagens</>
+                  )}
                 </span>
-                {activeCount > 0 && (
-                  <span className="inline-flex items-center gap-1 text-xs text-green-600">
-                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                    {activeCount} ativa{activeCount > 1 ? "s" : ""}
-                  </span>
-                )}
               </div>
             </div>
           </div>
@@ -105,6 +104,12 @@ export function UserGroupCard({
             </span>
           )}
           <span className="text-xs text-gray-500">{formatDateTime(group.last_activity)}</span>
+          {activeCount > 0 && (
+            <span className="inline-flex items-center gap-1 text-xs text-green-600">
+              <span className="w-2 h-2 rounded-full bg-green-500"></span>
+              {activeCount} ativa{activeCount > 1 ? "s" : ""}
+            </span>
+          )}
         </div>
 
         {group.conversations.length > 1 && (
@@ -119,11 +124,6 @@ export function UserGroupCard({
                 #{idx + 1} - {conv.message_count} msgs - {formatDateTime(conv.created_at)}
               </span>
             ))}
-          </div>
-        )}
-        {group.conversations.length === 1 && group.conversations[0].message_count > 0 && (
-          <div className="text-xs text-gray-500">
-            {group.conversations[0].message_count} mensagens na conversa
           </div>
         )}
       </div>
