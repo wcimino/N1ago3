@@ -34,7 +34,15 @@ export const conversationStats = {
     }
 
     const userConversations = await db.execute(sql`
-      WITH last_conv_filter AS (
+      WITH last_message_per_conv AS (
+        SELECT 
+          conversation_id,
+          MAX(occurred_at) as last_message_at
+        FROM events_standard
+        WHERE event_type = 'message'
+        GROUP BY conversation_id
+      ),
+      last_conv_filter AS (
         SELECT DISTINCT ON (c.user_id)
           c.user_id,
           cs.product_standard as last_product_standard,
@@ -42,8 +50,9 @@ export const conversationStats = {
           c.current_handler_name
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
+        LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
         WHERE c.user_id IS NOT NULL
-        ORDER BY c.user_id, c.updated_at DESC
+        ORDER BY c.user_id, COALESCE(lm.last_message_at, c.created_at) DESC
       ),
       filtered_users AS (
         SELECT user_id FROM last_conv_filter lc_filter
@@ -53,7 +62,7 @@ export const conversationStats = {
         SELECT 
           c.user_id,
           COUNT(*) as conversation_count,
-          MAX(c.updated_at) as last_activity,
+          MAX(COALESCE(lm.last_message_at, c.created_at)) as last_activity,
           MIN(c.created_at) as first_activity,
           ARRAY_AGG(
             JSON_BUILD_OBJECT(
@@ -63,7 +72,7 @@ export const conversationStats = {
               'closed_at', TO_CHAR(c.closed_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
               'closed_reason', c.closed_reason,
               'created_at', TO_CHAR(c.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
-              'updated_at', TO_CHAR(c.updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+              'updated_at', TO_CHAR(COALESCE(lm.last_message_at, c.created_at), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
               'product_standard', cs.product_standard,
               'intent', cs.intent,
               'current_handler', c.current_handler,
@@ -72,6 +81,7 @@ export const conversationStats = {
           ) as conversations
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
+        LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
         WHERE c.user_id IS NOT NULL
           AND c.user_id IN (SELECT user_id FROM filtered_users)
         GROUP BY c.user_id
@@ -85,8 +95,9 @@ export const conversationStats = {
           cs.intent as last_intent
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
+        LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
         WHERE c.user_id IS NOT NULL
-        ORDER BY c.user_id, c.updated_at DESC
+        ORDER BY c.user_id, COALESCE(lm.last_message_at, c.created_at) DESC
       )
       SELECT 
         us.user_id,
@@ -101,7 +112,15 @@ export const conversationStats = {
     `);
 
     const countResult = await db.execute(sql`
-      WITH last_conv_filter AS (
+      WITH last_message_per_conv AS (
+        SELECT 
+          conversation_id,
+          MAX(occurred_at) as last_message_at
+        FROM events_standard
+        WHERE event_type = 'message'
+        GROUP BY conversation_id
+      ),
+      last_conv_filter AS (
         SELECT DISTINCT ON (c.user_id)
           c.user_id,
           cs.product_standard as last_product_standard,
@@ -109,8 +128,9 @@ export const conversationStats = {
           c.current_handler_name
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
+        LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
         WHERE c.user_id IS NOT NULL
-        ORDER BY c.user_id, c.updated_at DESC
+        ORDER BY c.user_id, COALESCE(lm.last_message_at, c.created_at) DESC
       )
       SELECT COUNT(*) as count FROM last_conv_filter lc_filter
       WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition}
