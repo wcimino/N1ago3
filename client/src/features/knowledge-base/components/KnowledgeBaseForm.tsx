@@ -3,6 +3,7 @@ import { Save, X } from "lucide-react";
 
 interface KnowledgeBaseArticle {
   id: number;
+  name: string | null;
   productStandard: string;
   subproductStandard: string | null;
   intent: string;
@@ -14,6 +15,7 @@ interface KnowledgeBaseArticle {
 }
 
 interface KnowledgeBaseFormData {
+  name: string | null;
   productStandard: string;
   subproductStandard: string | null;
   intent: string;
@@ -36,6 +38,7 @@ export function KnowledgeBaseForm({
   isLoading = false,
 }: KnowledgeBaseFormProps) {
   const [formData, setFormData] = useState({
+    name: "",
     productStandard: "",
     subproductStandard: "",
     intent: "",
@@ -47,6 +50,7 @@ export function KnowledgeBaseForm({
   useEffect(() => {
     if (initialData) {
       setFormData({
+        name: initialData.name || "",
         productStandard: initialData.productStandard,
         subproductStandard: initialData.subproductStandard || "",
         intent: initialData.intent,
@@ -67,6 +71,7 @@ export function KnowledgeBaseForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit({
+      name: formData.name || null,
       productStandard: formData.productStandard,
       subproductStandard: formData.subproductStandard || null,
       intent: formData.intent,
@@ -84,6 +89,20 @@ export function KnowledgeBaseForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Nome do Artigo
+        </label>
+        <input
+          type="text"
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Ex: Como contratar o Cartão de Crédito"
+        />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">

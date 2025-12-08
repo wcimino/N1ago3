@@ -10,6 +10,7 @@ import { SegmentedTabs } from "../../../shared/components/ui";
 
 interface KnowledgeBaseArticle {
   id: number;
+  name: string | null;
   productStandard: string;
   subproductStandard: string | null;
   intent: string;
@@ -21,6 +22,7 @@ interface KnowledgeBaseArticle {
 }
 
 interface KnowledgeBaseFormData {
+  name: string | null;
   productStandard: string;
   subproductStandard: string | null;
   intent: string;
@@ -76,7 +78,7 @@ function ArticleItem({ article, onEdit, onDelete, depth }: ArticleItemProps) {
 
       <div className="flex-1 min-w-0">
         <span className="text-sm font-medium text-gray-900 truncate block">
-          {article.subproductStandard || article.description.substring(0, 50)}
+          {article.name || article.subproductStandard || article.description.substring(0, 50)}
         </span>
       </div>
 

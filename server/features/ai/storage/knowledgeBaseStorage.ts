@@ -18,6 +18,7 @@ export const knowledgeBaseStorage = {
       const searchPattern = `%${filters.search}%`;
       conditions.push(
         or(
+          ilike(knowledgeBase.name, searchPattern),
           ilike(knowledgeBase.productStandard, searchPattern),
           ilike(knowledgeBase.subproductStandard, searchPattern),
           ilike(knowledgeBase.category1, searchPattern),

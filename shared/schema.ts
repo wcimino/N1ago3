@@ -306,6 +306,7 @@ export const zendeskApiLogs = pgTable("zendesk_api_logs", {
 
 export const knowledgeBase = pgTable("knowledge_base", {
   id: serial("id").primaryKey(),
+  name: text("name"),
   productStandard: text("product_standard").notNull(),
   subproductStandard: text("subproduct_standard"),
   category1: text("category1"),
