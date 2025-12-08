@@ -78,8 +78,8 @@ export function HomePage() {
                 <div className="flex items-center justify-between py-2 border-b-2 border-orange-200 mb-2 bg-orange-50 -mx-5 px-5">
                   <span className="text-sm font-bold text-orange-800">TOTAL</span>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className="font-bold text-orange-700 text-sm min-w-[24px] text-center">{totalLastHour || '-'}</span>
-                    <span className="font-bold text-orange-700 text-sm min-w-[24px] text-center">{totalToday || '-'}</span>
+                    <span className="font-bold text-orange-700 text-sm min-w-[24px] text-center">{totalLastHour ? formatNumber(totalLastHour) : '-'}</span>
+                    <span className="font-bold text-orange-700 text-sm min-w-[24px] text-center">{totalToday ? formatNumber(totalToday) : '-'}</span>
                     <div className="w-4" />
                   </div>
                 </div>
@@ -92,14 +92,14 @@ export function HomePage() {
                       <div className="flex items-center gap-3 shrink-0">
                         {lastHourMap.get(product) ? (
                           <span className="font-semibold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
-                            {lastHourMap.get(product)}
+                            {formatNumber(lastHourMap.get(product)!)}
                           </span>
                         ) : (
                           <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
                         )}
                         {todayMap.get(product) ? (
                           <span className="font-semibold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
-                            {todayMap.get(product)}
+                            {formatNumber(todayMap.get(product)!)}
                           </span>
                         ) : (
                           <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
@@ -152,8 +152,8 @@ export function HomePage() {
                 <div className="flex items-center justify-between py-2 border-b-2 border-pink-200 mb-2 bg-pink-50 -mx-5 px-5">
                   <span className="text-sm font-bold text-pink-800">TOTAL</span>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className="font-bold text-pink-700 text-sm min-w-[24px] text-center">{totalLastHour || '-'}</span>
-                    <span className="font-bold text-pink-700 text-sm min-w-[24px] text-center">{totalToday || '-'}</span>
+                    <span className="font-bold text-pink-700 text-sm min-w-[24px] text-center">{totalLastHour ? formatNumber(totalLastHour) : '-'}</span>
+                    <span className="font-bold text-pink-700 text-sm min-w-[24px] text-center">{totalToday ? formatNumber(totalToday) : '-'}</span>
                     <div className="w-4" />
                   </div>
                 </div>
@@ -170,14 +170,14 @@ export function HomePage() {
                         <div className="flex items-center gap-3 shrink-0">
                           {lastHourMap.get(level) ? (
                             <span className={`font-semibold ${config.color} ${config.bgColor} px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center`}>
-                              {lastHourMap.get(level)}
+                              {formatNumber(lastHourMap.get(level)!)}
                             </span>
                           ) : (
                             <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
                           )}
                           {todayMap.get(level) ? (
                             <span className={`font-semibold ${config.color} ${config.bgColor} px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center`}>
-                              {todayMap.get(level)}
+                              {formatNumber(todayMap.get(level)!)}
                             </span>
                           ) : (
                             <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
