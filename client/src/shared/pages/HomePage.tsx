@@ -46,17 +46,10 @@ export function HomePage() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg shadow p-5">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <Package className="w-4 h-4 text-orange-600" />
-              Produtos Mencionados
-            </h2>
-            <div className="flex items-center gap-3">
-              <span title="Última hora"><Clock className="w-3 h-3 text-orange-500" /></span>
-              <span title="Hoje"><Calendar className="w-3 h-3 text-orange-500" /></span>
-              <div className="w-4" />
-            </div>
-          </div>
+          <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-3">
+            <Package className="w-4 h-4 text-orange-600" />
+            Produtos Mencionados
+          </h2>
           {(() => {
             const lastHourMap = new Map(productStats?.last_hour?.map(p => [p.product, p.count]) || []);
             const todayMap = new Map(productStats?.today?.map(p => [p.product, p.count]) || []);
@@ -69,54 +62,57 @@ export function HomePage() {
             }
             
             return (
-              <div className="space-y-1">
-                {allProducts.map((product) => (
-                  <div key={product} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
-                    <div className="min-w-0 flex-1 mr-2">
-                      <span className="text-sm text-gray-800 truncate block">{product}</span>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      {lastHourMap.get(product) ? (
-                        <span className="font-semibold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
-                          {lastHourMap.get(product)}
-                        </span>
-                      ) : (
-                        <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
-                      )}
-                      {todayMap.get(product) ? (
-                        <span className="font-semibold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
-                          {todayMap.get(product)}
-                        </span>
-                      ) : (
-                        <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
-                      )}
-                      <Link
-                        href={`/atendimentos?productStandard=${encodeURIComponent(product)}`}
-                        className="text-gray-400 hover:text-blue-600 transition-colors"
-                        title={`Ver atendimentos de ${product}`}
-                      >
-                        <ArrowRight className="w-4 h-4" />
-                      </Link>
-                    </div>
+              <div>
+                <div className="flex items-center justify-between py-1 border-b border-gray-100 mb-1">
+                  <div className="flex-1" />
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span title="Última hora" className="min-w-[24px] flex justify-center"><Clock className="w-3 h-3 text-orange-500" /></span>
+                    <span title="Hoje" className="min-w-[24px] flex justify-center"><Calendar className="w-3 h-3 text-orange-500" /></span>
+                    <div className="w-4" />
                   </div>
-                ))}
+                </div>
+                <div className="space-y-1">
+                  {allProducts.map((product) => (
+                    <div key={product} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                      <div className="min-w-0 flex-1 mr-2">
+                        <span className="text-sm text-gray-800 truncate block">{product}</span>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        {lastHourMap.get(product) ? (
+                          <span className="font-semibold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
+                            {lastHourMap.get(product)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
+                        )}
+                        {todayMap.get(product) ? (
+                          <span className="font-semibold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
+                            {todayMap.get(product)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
+                        )}
+                        <Link
+                          href={`/atendimentos?productStandard=${encodeURIComponent(product)}`}
+                          className="text-gray-400 hover:text-blue-600 transition-colors"
+                          title={`Ver atendimentos de ${product}`}
+                        >
+                          <ArrowRight className="w-4 h-4" />
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             );
           })()}
         </div>
 
         <div className="bg-white rounded-lg shadow p-5">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <Heart className="w-4 h-4 text-pink-600" />
-              Sentimento Atual
-            </h2>
-            <div className="flex items-center gap-3">
-              <span title="Última hora"><Clock className="w-3 h-3 text-pink-500" /></span>
-              <span title="Hoje"><Calendar className="w-3 h-3 text-pink-500" /></span>
-              <div className="w-4" />
-            </div>
-          </div>
+          <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-3">
+            <Heart className="w-4 h-4 text-pink-600" />
+            Sentimento Atual
+          </h2>
           {(() => {
             const lastHourMap = new Map(emotionStats?.last_hour?.map(e => [e.emotionLevel, e.count]) || []);
             const todayMap = new Map(emotionStats?.today?.map(e => [e.emotionLevel, e.count]) || []);
@@ -129,42 +125,52 @@ export function HomePage() {
             }
             
             return (
-              <div className="space-y-1">
-                {emotionLevels.map((level) => {
-                  const config = emotionConfig[level];
-                  return (
-                    <div key={level} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
-                      <div className="min-w-0 flex-1 mr-2">
-                        <span className="text-sm text-gray-800 truncate block">
-                          {config.emoji} {config.label}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        {lastHourMap.get(level) ? (
-                          <span className={`font-semibold ${config.color} ${config.bgColor} px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center`}>
-                            {lastHourMap.get(level)}
+              <div>
+                <div className="flex items-center justify-between py-1 border-b border-gray-100 mb-1">
+                  <div className="flex-1" />
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span title="Última hora" className="min-w-[24px] flex justify-center"><Clock className="w-3 h-3 text-pink-500" /></span>
+                    <span title="Hoje" className="min-w-[24px] flex justify-center"><Calendar className="w-3 h-3 text-pink-500" /></span>
+                    <div className="w-4" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  {emotionLevels.map((level) => {
+                    const config = emotionConfig[level];
+                    return (
+                      <div key={level} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                        <div className="min-w-0 flex-1 mr-2">
+                          <span className="text-sm text-gray-800 truncate block">
+                            {config.emoji} {config.label}
                           </span>
-                        ) : (
-                          <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
-                        )}
-                        {todayMap.get(level) ? (
-                          <span className={`font-semibold ${config.color} ${config.bgColor} px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center`}>
-                            {todayMap.get(level)}
-                          </span>
-                        ) : (
-                          <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
-                        )}
-                        <Link
-                          href={`/atendimentos?emotionLevel=${level}`}
-                          className="text-gray-400 hover:text-blue-600 transition-colors"
-                          title={`Ver atendimentos com sentimento ${config.label}`}
-                        >
-                          <ArrowRight className="w-4 h-4" />
-                        </Link>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          {lastHourMap.get(level) ? (
+                            <span className={`font-semibold ${config.color} ${config.bgColor} px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center`}>
+                              {lastHourMap.get(level)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
+                          )}
+                          {todayMap.get(level) ? (
+                            <span className={`font-semibold ${config.color} ${config.bgColor} px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center`}>
+                              {todayMap.get(level)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
+                          )}
+                          <Link
+                            href={`/atendimentos?emotionLevel=${level}`}
+                            className="text-gray-400 hover:text-blue-600 transition-colors"
+                            title={`Ver atendimentos com sentimento ${config.label}`}
+                          >
+                            <ArrowRight className="w-4 h-4" />
+                          </Link>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             );
           })()}
