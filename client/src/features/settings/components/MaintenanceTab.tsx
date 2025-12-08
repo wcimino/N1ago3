@@ -21,7 +21,7 @@ export function MaintenanceTab() {
             onClick={() => navigate("/settings/product-standards")}
             className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shrink-0 w-full sm:w-auto"
           >
-            Começar
+            Acessar
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
@@ -42,7 +42,7 @@ export function MaintenanceTab() {
             onClick={() => navigate("/settings/reprocessing")}
             className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shrink-0 w-full sm:w-auto"
           >
-            Começar
+            Acessar
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
@@ -84,7 +84,7 @@ export function MaintenanceTab() {
             onClick={() => navigate("/settings/auto-close")}
             className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shrink-0 w-full sm:w-auto"
           >
-            Gerenciar
+            Acessar
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
