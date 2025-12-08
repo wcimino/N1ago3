@@ -18,11 +18,18 @@ export async function processRawEvent(rawId: number, source: string): Promise<vo
     return;
   }
 
+  if (raw.processingStatus === "processing") {
+    console.log(`Raw event ${rawId} already being processed, skipping`);
+    return;
+  }
+
   const adapter = getAdapter(source);
   if (!adapter) {
     await storage.updateWebhookRawStatus(rawId, source, "error", `No adapter for source: ${source}`);
     throw new Error(`No adapter for source: ${source}`);
   }
+
+  await storage.updateWebhookRawStatus(rawId, source, "processing");
 
   try {
     const payload = raw.payload as any;
@@ -119,6 +126,12 @@ export async function processPendingRaws(): Promise<number> {
   let processedCount = 0;
 
   for (const source of SUPPORTED_SOURCES) {
+    const stuckRaws = await storage.getStuckProcessingWebhookRaws(source, 5, 50);
+    for (const raw of stuckRaws) {
+      console.log(`Resetting stuck webhook ${raw.id} (was processing for too long)`);
+      await storage.resetStuckWebhook(raw.id, source);
+    }
+
     const pendingRaws = await storage.getPendingWebhookRaws(source);
 
     for (const raw of pendingRaws) {
