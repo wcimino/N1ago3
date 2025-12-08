@@ -133,7 +133,7 @@ export function UserGroupCard({
           )}
           <div className="flex items-center gap-1">
             <span className="text-gray-500">Início:</span>
-            <span className="text-xs text-gray-500">{formatDateTime(group.latest_conversation_start || group.first_activity)}</span>
+            <span className="text-xs text-gray-500">{formatDateTime(group.first_activity)}</span>
           </div>
           <div className="flex items-center gap-1">
             <span className="text-gray-500">Última:</span>

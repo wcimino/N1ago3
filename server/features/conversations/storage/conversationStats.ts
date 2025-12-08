@@ -96,7 +96,7 @@ export const conversationStats = {
         WHERE c.user_id IS NOT NULL
           AND c.user_id IN (SELECT user_id FROM filtered_users)
         GROUP BY c.user_id
-        ORDER BY latest_conversation_start DESC
+        ORDER BY first_activity DESC
         LIMIT ${limit} OFFSET ${offset}
       ),
       last_conv AS (
@@ -123,7 +123,7 @@ export const conversationStats = {
         lc.last_customer_emotion_level
       FROM user_stats us
       LEFT JOIN last_conv lc ON lc.user_id = us.user_id
-      ORDER BY us.latest_conversation_start DESC
+      ORDER BY us.first_activity DESC
     `);
 
     const countResult = await db.execute(sql`
