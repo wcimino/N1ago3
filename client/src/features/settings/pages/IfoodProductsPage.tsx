@@ -81,11 +81,6 @@ export function IfoodProductsPage() {
       setError("Produto é obrigatório");
       return;
     }
-    if (!formData.categoria1.trim()) {
-      setError("Categoria 1 é obrigatória");
-      return;
-    }
-
     createMutation.mutate(formData);
   };
 
@@ -119,7 +114,7 @@ export function IfoodProductsPage() {
       <div className="bg-white rounded-lg shadow p-4 sm:p-6">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <p className="text-sm text-blue-800">
-            <strong>Hierarquia:</strong> Produto → Subproduto (opcional) → Categoria 1 → Categoria 2 (opcional)
+            <strong>Hierarquia:</strong> Produto → Subproduto (opcional) → Categoria 1 (opcional) → Categoria 2 (opcional)
           </p>
         </div>
 
@@ -151,7 +146,7 @@ export function IfoodProductsPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Categoria 1 <span className="text-red-500">*</span>
+                Categoria 1 <span className="text-gray-400">(opcional)</span>
               </label>
               <input
                 type="text"

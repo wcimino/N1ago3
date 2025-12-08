@@ -51,7 +51,7 @@ export const ifoodProductsStorage = {
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(asc(ifoodProducts.categoria1));
     
-    return result.map(r => r.categoria1);
+    return result.map(r => r.categoria1).filter((c): c is string => c !== null);
   },
 
   async getDistinctCategorias2(produto?: string, subproduto?: string, categoria1?: string): Promise<string[]> {

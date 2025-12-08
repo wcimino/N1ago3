@@ -71,13 +71,10 @@ router.post("/api/ifood-products", isAuthenticated, requireAuthorizedUser, async
     if (!produto || typeof produto !== "string" || produto.trim() === "") {
       return res.status(400).json({ error: "Produto is required" });
     }
-    if (!categoria1 || typeof categoria1 !== "string" || categoria1.trim() === "") {
-      return res.status(400).json({ error: "Categoria 1 is required" });
-    }
 
     const parts = [produto.trim()];
     if (subproduto && subproduto.trim()) parts.push(subproduto.trim());
-    parts.push(categoria1.trim());
+    if (categoria1 && categoria1.trim()) parts.push(categoria1.trim());
     if (categoria2 && categoria2.trim()) parts.push(categoria2.trim());
     const fullName = parts.join(" > ");
 
@@ -111,13 +108,10 @@ router.put("/api/ifood-products/:id", isAuthenticated, requireAuthorizedUser, as
     if (!produto || typeof produto !== "string" || produto.trim() === "") {
       return res.status(400).json({ error: "Produto is required" });
     }
-    if (!categoria1 || typeof categoria1 !== "string" || categoria1.trim() === "") {
-      return res.status(400).json({ error: "Categoria 1 is required" });
-    }
 
     const parts = [produto.trim()];
     if (subproduto && subproduto.trim()) parts.push(subproduto.trim());
-    parts.push(categoria1.trim());
+    if (categoria1 && categoria1.trim()) parts.push(categoria1.trim());
     if (categoria2 && categoria2.trim()) parts.push(categoria2.trim());
     const fullName = parts.join(" > ");
 
