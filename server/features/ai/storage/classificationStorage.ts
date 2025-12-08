@@ -1,5 +1,5 @@
 import { db } from "../../../db.js";
-import { conversationsSummary } from "../../../../shared/schema.js";
+import { conversationsSummary, conversations } from "../../../../shared/schema.js";
 import { eq, sql, gte, and, isNotNull } from "drizzle-orm";
 
 export const classificationStorage = {
@@ -57,10 +57,11 @@ export const classificationStorage = {
         count: sql<number>`count(*)::int`,
       })
       .from(conversationsSummary)
+      .innerJoin(conversations, eq(conversationsSummary.conversationId, conversations.id))
       .where(
         and(
           isNotNull(conversationsSummary.productStandard),
-          gte(conversationsSummary.classifiedAt, since)
+          gte(conversations.updatedAt, since)
         )
       )
       .groupBy(conversationsSummary.productStandard)
