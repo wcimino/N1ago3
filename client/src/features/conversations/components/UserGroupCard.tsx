@@ -91,25 +91,31 @@ export function UserGroupCard({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-gray-500">Último atendimento:</span>
-          {group.last_product_standard && (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              {group.last_product_standard}
-            </span>
-          )}
-          {group.last_intent && (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-              {group.last_intent}
-            </span>
-          )}
-          <span className="text-xs text-gray-500">{formatDateTime(group.last_activity)}</span>
-          {activeCount > 0 && (
-            <span className="inline-flex items-center gap-1 text-xs text-green-600">
-              <span className="w-2 h-2 rounded-full bg-green-500"></span>
-              {activeCount} ativa{activeCount > 1 ? "s" : ""}
-            </span>
-          )}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Início:</span>
+            <span className="text-xs text-gray-500">{formatDateTime(group.first_activity)}</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-gray-500">Último:</span>
+            {group.last_product_standard && (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {group.last_product_standard}
+              </span>
+            )}
+            {group.last_intent && (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                {group.last_intent}
+              </span>
+            )}
+            <span className="text-xs text-gray-500">{formatDateTime(group.last_activity)}</span>
+            {activeCount > 0 && (
+              <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                {activeCount} ativa{activeCount > 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
         </div>
 
         {group.conversations.length > 1 && (
