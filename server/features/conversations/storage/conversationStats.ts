@@ -116,12 +116,14 @@ export const conversationStats = {
         us.conversation_count,
         TO_CHAR(us.last_activity, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as last_activity,
         TO_CHAR(us.first_activity, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as first_activity,
+        TO_CHAR(us.latest_conversation_start, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as latest_conversation_start,
         us.conversations,
         lc.last_product_standard,
         lc.last_intent,
         lc.last_customer_emotion_level
       FROM user_stats us
       LEFT JOIN last_conv lc ON lc.user_id = us.user_id
+      ORDER BY us.latest_conversation_start DESC
     `);
 
     const countResult = await db.execute(sql`
