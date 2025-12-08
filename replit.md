@@ -87,6 +87,14 @@ The React frontend provides a real-time dashboard for events and conversations, 
     *   Frontend displays summary in visual cards with color-coded sections (blue, green, amber, purple)
     *   Falls back to text display for legacy summaries without structured data
     *   Prompt must be updated in AI config to return JSON format with the 4 fields
+*   **Standardized AI Configuration (December 2025):**
+    *   All 4 AI agents (summary, classification, response, learning) use unified 2-field structure:
+        *   `promptSystem`: Agent Instructions with dynamic variable placeholders
+        *   `responseFormat`: Expected response format (JSON, text, tool usage)
+    *   Shared `promptUtils.ts` with `replacePromptVariables()` function for variable substitution
+    *   Available variables: `{{RESUMO}}`, `{{RESUMO_ATUAL}}`, `{{MENSAGENS}}`, `{{ULTIMAS_20_MENSAGENS}}`, `{{ULTIMA_MENSAGEM}}`, `{{HANDLER}}`, `{{CLASSIFICACAO}}`
+    *   Frontend `OpenaiConfigForm.tsx` shows simplified 2-field interface with variable documentation
+    *   All adapters follow consistent architecture: short system prompt + full user prompt with variables substituted
 
 ## Deployment Configuration
 

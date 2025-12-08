@@ -267,9 +267,10 @@ function buildCreateSuggestionTool(): ToolDefinition {
   };
 }
 
-function buildUserPrompt(payload: AgentLearningPayload, promptSystem: string | null, responseFormat: string | null): string {
+function buildUserPrompt(payload: AgentLearningPayload, promptSystem: string | null, responseFormat: string | null, useProductCatalogTool: boolean): string {
   const messagesContext = formatMessagesContext(payload.messages);
-
+  const defaultPrompt = useProductCatalogTool ? AGENT_SYSTEM_PROMPT_WITH_CATALOG : DEFAULT_AGENT_SYSTEM_PROMPT;
+  
   const variables = {
     resumo: payload.currentSummary,
     resumoAtual: payload.currentSummary,
@@ -277,8 +278,8 @@ function buildUserPrompt(payload: AgentLearningPayload, promptSystem: string | n
     ultimas20Mensagens: messagesContext,
     handler: payload.conversationHandler,
   };
-
-  const basePrompt = promptSystem || DEFAULT_AGENT_SYSTEM_PROMPT;
+  
+  const basePrompt = promptSystem || defaultPrompt;
   const promptWithVars = replacePromptVariables(basePrompt, variables);
   
   let fullPrompt = promptWithVars;
@@ -300,8 +301,7 @@ export async function extractKnowledgeWithAgent(
   useProductCatalogTool: boolean = false,
   useZendeskKnowledgeBaseTool: boolean = false
 ): Promise<AgentLearningResult> {
-  const defaultPrompt = useProductCatalogTool ? AGENT_SYSTEM_PROMPT_WITH_CATALOG : DEFAULT_AGENT_SYSTEM_PROMPT;
-  const userPrompt = buildUserPrompt(payload, promptSystem || defaultPrompt, responseFormat);
+  const userPrompt = buildUserPrompt(payload, promptSystem, responseFormat, useProductCatalogTool);
 
   const tools: ToolDefinition[] = [
     buildSearchKnowledgeBaseTool(),
