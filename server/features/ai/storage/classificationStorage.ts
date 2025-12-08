@@ -61,6 +61,7 @@ export const classificationStorage = {
       .where(
         and(
           isNotNull(conversationsSummary.productStandard),
+          isNotNull(conversationsSummary.customerEmotionLevel),
           gte(conversations.updatedAt, since)
         )
       )
@@ -142,6 +143,7 @@ export const classificationStorage = {
       .where(
         and(
           isNotNull(conversationsSummary.customerEmotionLevel),
+          isNotNull(conversationsSummary.productStandard),
           gte(conversations.updatedAt, since)
         )
       )
