@@ -233,27 +233,30 @@ export function KnowledgeBaseForm({
           <div>
             <label className={labelClass}>Intenção *</label>
             <div className="flex flex-col gap-2 mt-1">
-              {["Suporte", "Contratar", "Outros"].map((option) => (
-                <label
-                  key={option}
-                  className={`flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg cursor-pointer transition-all border ${
-                    formData.intent === option
-                      ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                      : "bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="intent"
-                    value={option}
-                    checked={formData.intent === option}
-                    onChange={handleChange}
-                    className="sr-only"
-                    required
-                  />
-                  {option}
-                </label>
-              ))}
+              {["Suporte", "Contratar", "Outros"].map((option) => {
+                const isSelected = formData.intent.toLowerCase() === option.toLowerCase();
+                return (
+                  <label
+                    key={option}
+                    className={`flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg cursor-pointer transition-all border ${
+                      isSelected
+                        ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                        : "bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="intent"
+                      value={option}
+                      checked={isSelected}
+                      onChange={handleChange}
+                      className="sr-only"
+                      required
+                    />
+                    {option}
+                  </label>
+                );
+              })}
             </div>
           </div>
         </div>
