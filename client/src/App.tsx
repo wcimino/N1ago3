@@ -1,5 +1,5 @@
 import { Route, Switch, Link } from "wouter";
-import { Home, Sparkles, Settings, LogOut, MessageCircle, Download, BookOpen } from "lucide-react";
+import { Home, Sparkles, Settings, LogOut, MessageCircle, BookOpen } from "lucide-react";
 import { useAuth } from "./shared/hooks";
 import { NavLink, EnvironmentBadge, N1agoLogo } from "./shared/components";
 import { TimezoneProvider } from "./contexts/TimezoneContext";
@@ -63,10 +63,6 @@ function AuthenticatedApp() {
               <Sparkles className="w-4 h-4" />
               <span className="hidden sm:inline">AI</span>
             </NavLink>
-            <NavLink href="/export">
-              <Download className="w-4 h-4" />
-              <span className="hidden sm:inline">Exportações</span>
-            </NavLink>
             <NavLink href="/knowledge-base">
               <BookOpen className="w-4 h-4" />
               <span className="hidden sm:inline">Base de Conhecimento</span>
@@ -84,8 +80,8 @@ function AuthenticatedApp() {
           <Route path="/settings/events/:rest*" component={EventsLayout} />
           <Route path="/atendimentos" component={AtendimentosPage} />
           <Route path="/atendimentos/:userId">{(params) => <UserConversationsPage params={params} />}</Route>
-          <Route path="/export" component={ExportPage} />
-          <Route path="/export/:rest*" component={ExportPage} />
+          <Route path="/settings/maintenance/export" component={ExportPage} />
+          <Route path="/settings/maintenance/export/:rest*" component={ExportPage} />
           <Route path="/knowledge-base" component={KnowledgeBasePage} />
           <Route path="/settings" component={SettingsPage} />
           <Route path="/settings/product-standards" component={ProductStandardsPage} />
