@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { 
   Package, Plus, Trash2, Loader2, AlertCircle, CheckCircle2, ArrowLeft,
-  ChevronRight, ChevronDown
+  ChevronRight, ChevronDown, Pencil
 } from "lucide-react";
 import { fetchApi, apiRequest } from "../../../lib/queryClient";
 
@@ -24,6 +24,7 @@ interface Ancestry {
   produto: string;
   subproduto: string | null;
   categoria1: string | null;
+  categoria2?: string | null;
 }
 
 interface TreeNode {
@@ -163,13 +164,14 @@ interface TreeItemProps {
   node: TreeNode;
   onDelete: (id: number) => void;
   onAdd: (node: TreeNode, level: LevelType) => void;
+  onEdit: (node: TreeNode) => void;
   isDeleting: boolean;
   expandedNodes: Set<string>;
   toggleNode: (key: string) => void;
   depth: number;
 }
 
-function TreeItem({ node, onDelete, onAdd, isDeleting, expandedNodes, toggleNode, depth }: TreeItemProps) {
+function TreeItem({ node, onDelete, onAdd, onEdit, isDeleting, expandedNodes, toggleNode, depth }: TreeItemProps) {
   const [showAddMenu, setShowAddMenu] = useState(false);
   const nodeKey = getNodeKey(node);
   const isExpanded = expandedNodes.has(nodeKey);
@@ -262,6 +264,15 @@ function TreeItem({ node, onDelete, onAdd, isDeleting, expandedNodes, toggleNode
           )}
           {node.productId && (
             <button
+              onClick={() => onEdit(node)}
+              className="p-1 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
+              title="Editar"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+          )}
+          {node.productId && (
+            <button
               onClick={() => onDelete(node.productId!)}
               disabled={isDeleting}
               className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
@@ -281,6 +292,7 @@ function TreeItem({ node, onDelete, onAdd, isDeleting, expandedNodes, toggleNode
               node={child}
               onDelete={onDelete}
               onAdd={onAdd}
+              onEdit={onEdit}
               isDeleting={isDeleting}
               expandedNodes={expandedNodes}
               toggleNode={toggleNode}
@@ -301,20 +313,20 @@ interface AddFormProps {
   isPending: boolean;
 }
 
+const levelLabels: Record<LevelType, string> = {
+  produto: "Produto",
+  subproduto: "Subproduto",
+  categoria1: "Categoria 1",
+  categoria2: "Categoria 2",
+};
+
 function AddForm({ parentNode, level, onSubmit, onCancel, isPending }: AddFormProps) {
   const [name, setName] = useState("");
-
-  const levelLabels: Record<LevelType, string> = {
-    produto: "Produto",
-    subproduto: "Subproduto",
-    categoria1: "Categoria 1",
-    categoria2: "Categoria 2",
-  };
 
   const getParentDisplayPath = (): string => {
     if (!parentNode) return "";
     if (parentNode.level === "produto") return parentNode.name;
-    return getDisplayPath(parentNode.ancestry, parentNode.level !== "produto" ? parentNode.name : undefined);
+    return getDisplayPath(parentNode.ancestry, parentNode.name);
   };
 
   const parentPath = getParentDisplayPath();
@@ -368,6 +380,61 @@ function AddForm({ parentNode, level, onSubmit, onCancel, isPending }: AddFormPr
   );
 }
 
+interface EditFormProps {
+  node: TreeNode;
+  onSubmit: (name: string) => void;
+  onCancel: () => void;
+  isPending: boolean;
+}
+
+function EditForm({ node, onSubmit, onCancel, isPending }: EditFormProps) {
+  const [name, setName] = useState(node.name);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (name.trim() && name.trim() !== node.name) {
+      onSubmit(name.trim());
+    }
+  };
+
+  return (
+    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Editar {levelLabels[node.level]}: <span className="text-yellow-700">{node.name}</span>
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={`Nome do ${levelLabels[node.level].toLowerCase()}`}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 text-sm"
+            autoFocus
+          />
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            disabled={isPending || !name.trim() || name.trim() === node.name}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+          >
+            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Pencil className="w-4 h-4" />}
+            Salvar
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export function IfoodProductsPage() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
@@ -375,6 +442,7 @@ export function IfoodProductsPage() {
   const [error, setError] = useState<string | null>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [addingTo, setAddingTo] = useState<{ parentNode: TreeNode | null; level: LevelType } | null>(null);
+  const [editingNode, setEditingNode] = useState<TreeNode | null>(null);
 
   const { data: products, isLoading } = useQuery<IfoodProduct[]>({
     queryKey: ["ifood-products"],
@@ -407,6 +475,23 @@ export function IfoodProductsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ifood-products"] });
       queryClient.invalidateQueries({ queryKey: ["ifood-products-fullnames"] });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, ...data }: { id: number; produto: string; subproduto: string | null; categoria1: string | null; categoria2: string | null }) => {
+      return apiRequest("PUT", `/api/ifood-products/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ifood-products"] });
+      queryClient.invalidateQueries({ queryKey: ["ifood-products-fullnames"] });
+      setEditingNode(null);
+      setError(null);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    },
+    onError: (err: any) => {
+      setError(err.message || "Erro ao atualizar produto");
     },
   });
 
@@ -472,6 +557,50 @@ export function IfoodProductsPage() {
     setAddingTo({ parentNode: null, level: "produto" });
   };
 
+  const handleEdit = (node: TreeNode) => {
+    setEditingNode(node);
+    setAddingTo(null);
+  };
+
+  const handleEditSubmit = (newName: string) => {
+    if (!editingNode || !editingNode.productId) return;
+
+    const level = editingNode.level;
+    let data: { produto: string; subproduto: string | null; categoria1: string | null; categoria2: string | null };
+
+    if (level === "produto") {
+      data = { 
+        produto: newName, 
+        subproduto: null, 
+        categoria1: null, 
+        categoria2: null 
+      };
+    } else if (level === "subproduto") {
+      data = { 
+        produto: editingNode.ancestry.produto, 
+        subproduto: newName, 
+        categoria1: null, 
+        categoria2: null 
+      };
+    } else if (level === "categoria1") {
+      data = { 
+        produto: editingNode.ancestry.produto, 
+        subproduto: editingNode.ancestry.subproduto,
+        categoria1: newName, 
+        categoria2: null 
+      };
+    } else {
+      data = { 
+        produto: editingNode.ancestry.produto, 
+        subproduto: editingNode.ancestry.subproduto,
+        categoria1: editingNode.ancestry.categoria1, 
+        categoria2: newName 
+      };
+    }
+
+    updateMutation.mutate({ id: editingNode.productId, ...data });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -521,6 +650,15 @@ export function IfoodProductsPage() {
           />
         )}
 
+        {editingNode && (
+          <EditForm
+            node={editingNode}
+            onSubmit={handleEditSubmit}
+            onCancel={() => setEditingNode(null)}
+            isPending={updateMutation.isPending}
+          />
+        )}
+
         <div className="flex justify-between items-center mb-4">
           <h4 className="text-sm font-medium text-gray-700">Catálogo de Produtos</h4>
           {!addingTo && (
@@ -552,6 +690,7 @@ export function IfoodProductsPage() {
                 node={node}
                 onDelete={(id) => deleteMutation.mutate(id)}
                 onAdd={handleAdd}
+                onEdit={handleEdit}
                 isDeleting={deleteMutation.isPending}
                 expandedNodes={expandedNodes}
                 toggleNode={toggleNode}
