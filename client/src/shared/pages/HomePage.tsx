@@ -42,18 +42,18 @@ function ProductsCard({ productStats }: { productStats: ProductStatsResponse | u
   return (
     <div>
       <StatsTableHeader colorScheme="orange" />
-      <div className="flex items-center justify-between py-1.5 border-b border-gray-50">
+      <div className="flex items-center justify-between py-1.5 border-b border-gray-100 bg-gray-50 -mx-5 px-5 rounded-t">
         <span className="text-sm font-bold text-gray-800">TOTAL</span>
         <div className="flex items-center gap-3 shrink-0">
           {totalLastHour ? (
-            <span className="font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
+            <span className="font-bold text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
               {formatNumber(totalLastHour)}
             </span>
           ) : (
             <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
           )}
           {totalToday ? (
-            <span className="font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
+            <span className="font-bold text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
               {formatNumber(totalToday)}
             </span>
           ) : (
@@ -99,18 +99,18 @@ function EmotionsCard({ emotionStats }: { emotionStats: EmotionStatsResponse | u
   return (
     <div>
       <StatsTableHeader colorScheme="pink" />
-      <div className="flex items-center justify-between py-1.5 border-b border-gray-50">
+      <div className="flex items-center justify-between py-1.5 border-b border-gray-100 bg-gray-50 -mx-5 px-5 rounded-t">
         <span className="text-sm font-bold text-gray-800">TOTAL</span>
         <div className="flex items-center gap-3 shrink-0">
           {totalLastHour ? (
-            <span className="font-bold text-pink-600 bg-pink-50 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
+            <span className="font-bold text-pink-600 bg-pink-100 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
               {formatNumber(totalLastHour)}
             </span>
           ) : (
             <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
           )}
           {totalToday ? (
-            <span className="font-bold text-pink-600 bg-pink-50 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
+            <span className="font-bold text-pink-600 bg-pink-100 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
               {formatNumber(totalToday)}
             </span>
           ) : (
