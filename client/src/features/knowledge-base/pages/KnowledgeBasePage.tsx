@@ -130,8 +130,9 @@ export function KnowledgeBasePage() {
                 className="px-2 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-w-[100px]"
               >
                 <option value="">Intenção</option>
-                <option value="suporte">suporte</option>
-                <option value="contratar">contratar</option>
+                <option value="Suporte">Suporte</option>
+                <option value="Contratar">Contratar</option>
+                <option value="Outros">Outros</option>
               </select>
             </div>
           </div>

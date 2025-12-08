@@ -225,7 +225,15 @@ export function KnowledgeBaseForm({
 
       <div>
         <label className={labelClass}>Intenção *</label>
-        <input type="text" name="intent" value={formData.intent} onChange={handleChange} className={inputClass} placeholder="Ex: Dúvida, Solicitação, Reclamação..." required />
+        <div className="relative">
+          <select name="intent" value={formData.intent} onChange={handleChange} className={selectClass} required>
+            <option value="">Selecione</option>
+            <option value="Suporte">Suporte</option>
+            <option value="Contratar">Contratar</option>
+            <option value="Outros">Outros</option>
+          </select>
+          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+        </div>
       </div>
 
       <div>
