@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Users, Settings, Wrench, FolderOpen } from "lucide-react";
+import { Users, Settings, Wrench, FileEdit } from "lucide-react";
 import { AccessControlTab } from "../components/AccessControlTab";
 import { GeneralSettingsTab } from "../components/GeneralSettingsTab";
 import { MaintenanceTab } from "../components/MaintenanceTab";
@@ -18,7 +18,7 @@ interface Tab {
 const tabs: Tab[] = [
   { id: "access", label: "Controle de Acessos", shortLabel: "Acessos", icon: <Users className="w-4 h-4" />, path: "/settings/access" },
   { id: "general", label: "Configurações Gerais", shortLabel: "Geral", icon: <Settings className="w-4 h-4" />, path: "/settings/general" },
-  { id: "catalog", label: "Cadastro", shortLabel: "Cadastro", icon: <FolderOpen className="w-4 h-4" />, path: "/settings/catalog" },
+  { id: "catalog", label: "Cadastro", shortLabel: "Cadastro", icon: <FileEdit className="w-4 h-4" />, path: "/settings/catalog" },
   { id: "maintenance", label: "Manutenção", shortLabel: "Manutenção", icon: <Wrench className="w-4 h-4" />, path: "/settings/maintenance" },
 ];
 
