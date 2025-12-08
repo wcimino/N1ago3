@@ -81,6 +81,19 @@ The React frontend provides a real-time dashboard for events and conversations, 
     *   **ToolsPage Modularization:** Reduced from 411 to 33 lines by extracting:
         *   `KnowledgeBaseSearchTool` component for knowledge base search
         *   `ProductCatalogSearchTool` component for product catalog search
+    *   **AI Prompts Centralization (December 2025):**
+        *   Extracted prompts from `openaiConfig.ts` to `server/features/ai/constants/defaultPrompts.ts`
+        *   Extracted prompts from `knowledgeLearningAgentAdapter.ts` to `server/features/ai/constants/learningAgentPrompts.ts`
+        *   Reduced `openaiConfig.ts` from 260 to 163 lines
+        *   Reduced `knowledgeLearningAgentAdapter.ts` from 399 to 319 lines
+    *   **Dashboard Components (December 2025):**
+        *   Created reusable stats components in `client/src/shared/components/dashboard/`
+        *   Components: `StatsCard`, `StatsTableHeader`, `StatsTotalRow`, `StatsRow`
+        *   Uses static `colorScheme` prop mapped to Tailwind classes (avoids JIT compilation issues)
+        *   Reduced `HomePage.tsx` from 349 to 293 lines
+    *   **Tailwind JIT Best Practice:**
+        *   Replaced dynamic class interpolation (`text-${color}-500`) with static color mappings
+        *   All color-based components use `colorScheme` prop with predefined class objects
 *   **Structured Conversation Summary (December 2025):**
     *   Added 4 structured columns to `conversations_summary`: `client_request`, `agent_actions`, `current_status`, `important_info`
     *   Backend parses AI response as JSON and extracts structured fields via `parseStructuredSummary()`
