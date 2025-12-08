@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, BookOpen, X, Lightbulb, BarChart3 } from "lucide-react";
+import { Plus, Search, BookOpen, X, Lightbulb, BarChart3, ChevronRight, ChevronDown, Pencil, Trash2 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { KnowledgeBaseForm } from "../components/KnowledgeBaseForm";
-import { KnowledgeBaseCard } from "../components/KnowledgeBaseCard";
 import { SuggestionsPage } from "./SuggestionsPage";
 import { LearningAttemptsPage } from "./LearningAttemptsPage";
 import { SegmentedTabs } from "../../../shared/components/ui";
@@ -33,6 +34,127 @@ interface Filters {
   intents: string[];
 }
 
+interface ProductGroup {
+  product: string;
+  articles: KnowledgeBaseArticle[];
+}
+
+function buildProductGroups(articles: KnowledgeBaseArticle[]): ProductGroup[] {
+  const groupMap = new Map<string, KnowledgeBaseArticle[]>();
+  
+  for (const article of articles) {
+    const product = article.productStandard;
+    if (!groupMap.has(product)) {
+      groupMap.set(product, []);
+    }
+    groupMap.get(product)!.push(article);
+  }
+  
+  return Array.from(groupMap.entries())
+    .map(([product, articles]) => ({ product, articles }))
+    .sort((a, b) => a.product.localeCompare(b.product));
+}
+
+interface ArticleItemProps {
+  article: KnowledgeBaseArticle;
+  onEdit: () => void;
+  onDelete: () => void;
+  depth: number;
+}
+
+function ArticleItem({ article, onEdit, onDelete, depth }: ArticleItemProps) {
+  return (
+    <div 
+      className="flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-gray-50 group"
+      style={{ marginLeft: `${depth * 24}px` }}
+    >
+      <div className="w-4" />
+      
+      <span className="px-2 py-0.5 text-xs rounded border bg-purple-100 text-purple-800 border-purple-200">
+        {article.intent}
+      </span>
+
+      <div className="flex-1 min-w-0">
+        <span className="text-sm font-medium text-gray-900 truncate block">
+          {article.subproductStandard || article.description.substring(0, 50)}
+        </span>
+      </div>
+
+      <span className="text-xs text-gray-400 whitespace-nowrap">
+        {formatDistanceToNow(new Date(article.updatedAt), { addSuffix: true, locale: ptBR })}
+      </span>
+
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={onEdit}
+          className="p-1 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
+          title="Editar"
+        >
+          <Pencil className="w-4 h-4" />
+        </button>
+        <button
+          onClick={onDelete}
+          className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
+          title="Excluir"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface ProductGroupItemProps {
+  group: ProductGroup;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onEdit: (article: KnowledgeBaseArticle) => void;
+  onDelete: (id: number) => void;
+}
+
+function ProductGroupItem({ group, isExpanded, onToggle, onEdit, onDelete }: ProductGroupItemProps) {
+  return (
+    <div className="space-y-1">
+      <div 
+        className="flex items-center gap-2 py-2.5 px-3 rounded-lg hover:bg-gray-50 cursor-pointer"
+        onClick={onToggle}
+      >
+        <button className="p-0.5 rounded hover:bg-gray-200">
+          {isExpanded ? (
+            <ChevronDown className="w-4 h-4 text-gray-500" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-gray-500" />
+          )}
+        </button>
+
+        <span className="px-2 py-0.5 text-xs rounded border bg-blue-100 text-blue-800 border-blue-200">
+          Produto
+        </span>
+
+        <span className="flex-1 text-sm font-medium text-gray-900">{group.product}</span>
+
+        <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
+          {group.articles.length}
+        </span>
+      </div>
+
+      {isExpanded && (
+        <div>
+          {group.articles.map((article) => (
+            <ArticleItem
+              key={article.id}
+              article={article}
+              onEdit={() => onEdit(article)}
+              onDelete={() => onDelete(article.id)}
+              depth={1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const tabs = [
   { id: "articles", label: "Artigos", icon: <BookOpen className="w-4 h-4" /> },
   { id: "suggestions", label: "Sugestões", icon: <Lightbulb className="w-4 h-4" /> },
@@ -46,6 +168,7 @@ export function KnowledgeBasePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProduct, setSelectedProduct] = useState("");
   const [selectedIntent, setSelectedIntent] = useState("");
+  const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
   const { data: articles = [], isLoading } = useQuery<KnowledgeBaseArticle[]>({
@@ -71,6 +194,8 @@ export function KnowledgeBasePage() {
     },
     enabled: activeTab === "articles",
   });
+
+  const productGroups = useMemo(() => buildProductGroups(articles), [articles]);
 
   const createMutation = useMutation({
     mutationFn: async (data: KnowledgeBaseFormData) => {
@@ -101,6 +226,7 @@ export function KnowledgeBasePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/knowledge-base"] });
       setEditingArticle(null);
+      setShowForm(false);
     },
   });
 
@@ -136,6 +262,18 @@ export function KnowledgeBasePage() {
   const handleCancel = () => {
     setShowForm(false);
     setEditingArticle(null);
+  };
+
+  const toggleProduct = (product: string) => {
+    setExpandedProducts(prev => {
+      const next = new Set(prev);
+      if (next.has(product)) {
+        next.delete(product);
+      } else {
+        next.add(product);
+      }
+      return next;
+    });
   };
 
   return (
@@ -241,20 +379,22 @@ export function KnowledgeBasePage() {
           <div className="p-4">
             {isLoading ? (
               <div className="text-center py-8 text-gray-500">Carregando...</div>
-            ) : articles.length === 0 ? (
+            ) : productGroups.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <BookOpen className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                 <p>Nenhum artigo encontrado</p>
                 <p className="text-sm mt-1">Clique em "Novo Artigo" para adicionar</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {articles.map((article) => (
-                  <KnowledgeBaseCard
-                    key={article.id}
-                    article={article}
-                    onEdit={() => handleEdit(article)}
-                    onDelete={() => handleDelete(article.id)}
+              <div className="space-y-1 border rounded-lg p-3 max-h-[500px] overflow-y-auto">
+                {productGroups.map((group) => (
+                  <ProductGroupItem
+                    key={group.product}
+                    group={group}
+                    isExpanded={expandedProducts.has(group.product)}
+                    onToggle={() => toggleProduct(group.product)}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
                   />
                 ))}
               </div>
