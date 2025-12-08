@@ -1,27 +1,33 @@
-import { useState } from "react";
+import { useLocation } from "wouter";
 import { Users, Settings, Wrench, FolderOpen } from "lucide-react";
 import { AccessControlTab } from "../components/AccessControlTab";
 import { GeneralSettingsTab } from "../components/GeneralSettingsTab";
 import { MaintenanceTab } from "../components/MaintenanceTab";
 import { CatalogTab } from "../components/CatalogTab";
 
-type TabId = "access-control" | "general" | "catalog" | "maintenance";
+type TabId = "access" | "general" | "catalog" | "maintenance";
 
 interface Tab {
   id: TabId;
   label: string;
+  shortLabel: string;
   icon: React.ReactNode;
+  path: string;
 }
 
 const tabs: Tab[] = [
-  { id: "access-control", label: "Controle de Acessos", icon: <Users className="w-4 h-4" /> },
-  { id: "general", label: "Configurações Gerais", icon: <Settings className="w-4 h-4" /> },
-  { id: "catalog", label: "Cadastro", icon: <FolderOpen className="w-4 h-4" /> },
-  { id: "maintenance", label: "Manutenção", icon: <Wrench className="w-4 h-4" /> },
+  { id: "access", label: "Controle de Acessos", shortLabel: "Acessos", icon: <Users className="w-4 h-4" />, path: "/settings/access" },
+  { id: "general", label: "Configurações Gerais", shortLabel: "Geral", icon: <Settings className="w-4 h-4" />, path: "/settings/general" },
+  { id: "catalog", label: "Cadastro", shortLabel: "Cadastro", icon: <FolderOpen className="w-4 h-4" />, path: "/settings/catalog" },
+  { id: "maintenance", label: "Manutenção", shortLabel: "Manutenção", icon: <Wrench className="w-4 h-4" />, path: "/settings/maintenance" },
 ];
 
-export function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<TabId>("access-control");
+interface SettingsPageProps {
+  activeTab?: TabId;
+}
+
+export function SettingsPage({ activeTab = "access" }: SettingsPageProps) {
+  const [, navigate] = useLocation();
 
   return (
     <div className="space-y-6">
@@ -31,7 +37,7 @@ export function SettingsPage() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => navigate(tab.path)}
                 className={`
                   flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap
                   ${activeTab === tab.id
@@ -42,19 +48,14 @@ export function SettingsPage() {
               >
                 {tab.icon}
                 <span className="hidden sm:inline">{tab.label}</span>
-                <span className="sm:hidden">
-                  {tab.id === "access-control" && "Acessos"}
-                  {tab.id === "general" && "Geral"}
-                  {tab.id === "catalog" && "Cadastro"}
-                  {tab.id === "maintenance" && "Manutenção"}
-                </span>
+                <span className="sm:hidden">{tab.shortLabel}</span>
               </button>
             ))}
           </nav>
         </div>
 
         <div className="p-6">
-          {activeTab === "access-control" && <AccessControlTab />}
+          {activeTab === "access" && <AccessControlTab />}
           {activeTab === "general" && <GeneralSettingsTab />}
           {activeTab === "catalog" && <CatalogTab />}
           {activeTab === "maintenance" && <MaintenanceTab />}

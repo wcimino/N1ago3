@@ -1,4 +1,4 @@
-import { Route, Switch, Link } from "wouter";
+import { Route, Switch, Link, Redirect } from "wouter";
 import { Home, Sparkles, Settings, LogOut, MessageCircle, BookOpen } from "lucide-react";
 import { useAuth } from "./shared/hooks";
 import { NavLink, EnvironmentBadge, N1agoLogo } from "./shared/components";
@@ -83,7 +83,11 @@ function AuthenticatedApp() {
           <Route path="/settings/maintenance/export" component={ExportPage} />
           <Route path="/settings/maintenance/export/:rest*" component={ExportPage} />
           <Route path="/knowledge-base" component={KnowledgeBasePage} />
-          <Route path="/settings" component={SettingsPage} />
+          <Route path="/settings">{() => <Redirect to="/settings/access" />}</Route>
+          <Route path="/settings/access">{() => <SettingsPage activeTab="access" />}</Route>
+          <Route path="/settings/general">{() => <SettingsPage activeTab="general" />}</Route>
+          <Route path="/settings/catalog">{() => <SettingsPage activeTab="catalog" />}</Route>
+          <Route path="/settings/maintenance">{() => <SettingsPage activeTab="maintenance" />}</Route>
           <Route path="/settings/product-standards" component={ProductStandardsPage} />
           <Route path="/settings/reprocessing" component={ReprocessingPage} />
           <Route path="/settings/auto-close" component={AutoClosePage} />
