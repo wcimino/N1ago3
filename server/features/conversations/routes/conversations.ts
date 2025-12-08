@@ -34,6 +34,7 @@ router.get("/api/conversations/grouped", isAuthenticated, requireAuthorizedUser,
         conversations: group.conversations,
         last_product_standard: group.last_product_standard || null,
         last_intent: group.last_intent || null,
+        last_customer_emotion_level: group.last_customer_emotion_level || null,
         user_info: user ? {
           id: user.id,
           external_id: user.externalId,
