@@ -23,7 +23,6 @@ export function ConversationChat({
   formatDateTime,
   chatEndRef,
 }: ConversationChatProps) {
-  console.log('[ConversationChat] suggestedResponse:', suggestedResponse);
   return (
     <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
       <div className="space-y-3 max-w-2xl mx-auto">

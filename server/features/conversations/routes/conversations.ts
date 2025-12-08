@@ -67,7 +67,6 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
         storage.getConversationSummary(item.conversation.id),
         storage.getSuggestedResponse(item.conversation.id),
       ]);
-      console.log(`[DEBUG] Conversation ${item.conversation.id} suggestedResponse:`, suggestedResponse);
       return {
         conversation: {
           id: item.conversation.id,
