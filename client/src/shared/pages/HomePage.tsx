@@ -62,6 +62,9 @@ export function HomePage() {
               return <p className="text-sm text-gray-400 italic">Nenhum produto ainda</p>;
             }
             
+            const totalLastHour = [...lastHourMap.values()].reduce((sum, v) => sum + v, 0);
+            const totalToday = [...todayMap.values()].reduce((sum, v) => sum + v, 0);
+            
             return (
               <div>
                 <div className="flex items-center justify-between py-1 border-b border-gray-100 mb-1">
@@ -69,6 +72,14 @@ export function HomePage() {
                   <div className="flex items-center gap-3 shrink-0">
                     <span title="Última hora" className="min-w-[24px] flex justify-center"><Clock className="w-3 h-3 text-orange-500" /></span>
                     <span title="Hoje" className="min-w-[24px] flex justify-center"><Calendar className="w-3 h-3 text-orange-500" /></span>
+                    <div className="w-4" />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b-2 border-orange-200 mb-2 bg-orange-50 -mx-5 px-5">
+                  <span className="text-sm font-bold text-orange-800">TOTAL</span>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="font-bold text-orange-700 text-sm min-w-[24px] text-center">{totalLastHour || '-'}</span>
+                    <span className="font-bold text-orange-700 text-sm min-w-[24px] text-center">{totalToday || '-'}</span>
                     <div className="w-4" />
                   </div>
                 </div>
@@ -125,6 +136,9 @@ export function HomePage() {
               return <p className="text-sm text-gray-400 italic">Nenhum dado ainda</p>;
             }
             
+            const totalLastHour = [...lastHourMap.values()].reduce((sum, v) => sum + v, 0);
+            const totalToday = [...todayMap.values()].reduce((sum, v) => sum + v, 0);
+            
             return (
               <div>
                 <div className="flex items-center justify-between py-1 border-b border-gray-100 mb-1">
@@ -132,6 +146,14 @@ export function HomePage() {
                   <div className="flex items-center gap-3 shrink-0">
                     <span title="Última hora" className="min-w-[24px] flex justify-center"><Clock className="w-3 h-3 text-pink-500" /></span>
                     <span title="Hoje" className="min-w-[24px] flex justify-center"><Calendar className="w-3 h-3 text-pink-500" /></span>
+                    <div className="w-4" />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b-2 border-pink-200 mb-2 bg-pink-50 -mx-5 px-5">
+                  <span className="text-sm font-bold text-pink-800">TOTAL</span>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="font-bold text-pink-700 text-sm min-w-[24px] text-center">{totalLastHour || '-'}</span>
+                    <span className="font-bold text-pink-700 text-sm min-w-[24px] text-center">{totalToday || '-'}</span>
                     <div className="w-4" />
                   </div>
                 </div>
