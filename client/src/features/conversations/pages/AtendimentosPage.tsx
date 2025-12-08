@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
-import { useLocation, useSearch } from "wouter";
+import { useLocation, useSearch, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Users, MessageCircle, Bot, Brain, UserCircle } from "lucide-react";
+import { Users, MessageCircle, Bot, Brain, UserCircle, Settings2 } from "lucide-react";
 import { UserDetailModal } from "../../../shared/components";
 import { LoadingState, EmptyState, Pagination, PageCard, SegmentedTabs } from "../../../shared/components/ui";
 import { useDateFormatters, usePaginatedQuery } from "../../../shared/hooks";
@@ -85,7 +85,18 @@ export function AtendimentosPage() {
   };
 
   return (
-    <PageCard title="Atendimentos" description="Lista de atendimentos agrupados por usuário">
+    <PageCard 
+      title="Atendimentos" 
+      description="Lista de atendimentos agrupados por usuário"
+      headerRight={
+        <Link href="/routing-rules">
+          <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">
+            <Settings2 className="w-4 h-4" />
+            Regras de Roteamento
+          </button>
+        </Link>
+      }
+    >
       <div className="px-4 py-3 border-b">
         <SegmentedTabs tabs={HANDLER_TABS} activeTab={handlerFilter} onChange={setHandlerFilter} />
       </div>
