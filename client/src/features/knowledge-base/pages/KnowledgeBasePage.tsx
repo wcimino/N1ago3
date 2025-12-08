@@ -7,6 +7,11 @@ import { KnowledgeBaseForm } from "../components/KnowledgeBaseForm";
 import { SuggestionsPage } from "./SuggestionsPage";
 import { LearningAttemptsPage } from "./LearningAttemptsPage";
 import { SegmentedTabs } from "../../../shared/components/ui";
+import { 
+  ProductLevelType,
+  LEVEL_LABELS, 
+  LEVEL_COLORS 
+} from "../../../lib/productHierarchy";
 
 interface KnowledgeBaseArticle {
   id: number;
@@ -49,7 +54,7 @@ interface CatalogProduct {
 
 interface HierarchyNode {
   name: string;
-  level: "produto" | "subproduto" | "categoria1" | "categoria2";
+  level: ProductLevelType;
   fullPath: string;
   children: HierarchyNode[];
   articles: KnowledgeBaseArticle[];
@@ -180,25 +185,11 @@ interface HierarchyNodeItemProps {
   onDelete: (id: number) => void;
 }
 
-const levelColors = {
-  produto: { bg: "bg-blue-100", text: "text-blue-800", border: "border-blue-200" },
-  subproduto: { bg: "bg-green-100", text: "text-green-700", border: "border-green-200" },
-  categoria1: { bg: "bg-purple-100", text: "text-purple-700", border: "border-purple-200" },
-  categoria2: { bg: "bg-orange-100", text: "text-orange-700", border: "border-orange-200" },
-};
-
-const levelLabels = {
-  produto: "Produto",
-  subproduto: "Subproduto",
-  categoria1: "Categoria 1",
-  categoria2: "Categoria 2",
-};
-
 function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete }: HierarchyNodeItemProps) {
   const isExpanded = expandedPaths.has(node.fullPath);
   const hasChildren = node.children.length > 0 || node.articles.length > 0;
   const articleCount = countArticles(node);
-  const colors = levelColors[node.level];
+  const colors = LEVEL_COLORS[node.level];
   
   return (
     <div>
@@ -220,7 +211,7 @@ function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDel
         )}
 
         <span className={`px-2 py-0.5 text-xs rounded border ${colors.bg} ${colors.text} ${colors.border}`}>
-          {levelLabels[node.level]}
+          {LEVEL_LABELS[node.level]}
         </span>
 
         <span className="flex-1 text-sm font-medium text-gray-900">{node.name}</span>

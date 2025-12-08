@@ -14,3 +14,4 @@ export type { PageCardProps } from "./PageCard";
 export { Pagination } from "./Pagination";
 export { SegmentedTabs } from "./SegmentedTabs";
 export { ToggleSwitch } from "./ToggleSwitch";
+export { TreeView, TreeNodeItem, useTreeExpansion } from "./TreeView";
