@@ -96,6 +96,10 @@ export interface ConversationSummary {
   intent: string | null;
   confidence: number | null;
   classified_at: string | null;
+  client_request: string | null;
+  agent_actions: string | null;
+  current_status: string | null;
+  important_info: string | null;
 }
 
 export interface SuggestedResponse {

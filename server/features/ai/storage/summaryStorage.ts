@@ -29,6 +29,10 @@ export const summaryStorage = {
         target: conversationsSummary.conversationId,
         set: {
           summary: data.summary,
+          clientRequest: data.clientRequest,
+          agentActions: data.agentActions,
+          currentStatus: data.currentStatus,
+          importantInfo: data.importantInfo,
           lastEventId: data.lastEventId,
           externalConversationId: data.externalConversationId,
           product: data.product,
@@ -56,6 +60,10 @@ export const summaryStorage = {
     productStandard: string | null;
     intent: string | null;
     summary: string;
+    clientRequest: string | null;
+    agentActions: string | null;
+    currentStatus: string | null;
+    importantInfo: string | null;
   }>> {
     const conditions: SQL<unknown>[] = [];
 
@@ -85,6 +93,10 @@ export const summaryStorage = {
         productStandard: conversationsSummary.productStandard,
         intent: conversationsSummary.intent,
         summary: conversationsSummary.summary,
+        clientRequest: conversationsSummary.clientRequest,
+        agentActions: conversationsSummary.agentActions,
+        currentStatus: conversationsSummary.currentStatus,
+        importantInfo: conversationsSummary.importantInfo,
       })
       .from(conversationsSummary)
       .where(whereClause)

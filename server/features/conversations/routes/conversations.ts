@@ -84,6 +84,10 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
           intent: summary.intent,
           confidence: summary.confidence,
           classified_at: summary.classifiedAt?.toISOString(),
+          client_request: summary.clientRequest,
+          agent_actions: summary.agentActions,
+          current_status: summary.currentStatus,
+          important_info: summary.importantInfo,
         } : null,
         suggested_response: suggestedResponse ? {
           text: suggestedResponse.suggestedResponse,
@@ -125,6 +129,13 @@ router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedU
     last_event_id: summary.lastEventId,
     generated_at: summary.generatedAt?.toISOString(),
     updated_at: summary.updatedAt?.toISOString(),
+    product: summary.product,
+    intent: summary.intent,
+    confidence: summary.confidence,
+    client_request: summary.clientRequest,
+    agent_actions: summary.agentActions,
+    current_status: summary.currentStatus,
+    important_info: summary.importantInfo,
   });
 });
 
