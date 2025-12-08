@@ -36,6 +36,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
     queryFn: () => fetchApi<UserConversationsMessagesResponse>(
       `/api/conversations/user/${encodeURIComponent(userId)}/messages`
     ),
+    refetchInterval: 10000,
   });
 
   const sortedConversations = data?.conversations
