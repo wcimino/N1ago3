@@ -61,13 +61,11 @@ export const classificationStorage = {
       .where(
         and(
           isNotNull(conversationsSummary.productStandard),
-          isNotNull(conversationsSummary.customerEmotionLevel),
           gte(conversations.updatedAt, since)
         )
       )
       .groupBy(conversationsSummary.productStandard)
-      .orderBy(sql`count(*) desc`)
-      .limit(limit);
+      .orderBy(sql`count(*) desc`);
 
     return results.filter(r => r.product !== null) as { product: string; count: number }[];
   },
@@ -143,7 +141,6 @@ export const classificationStorage = {
       .where(
         and(
           isNotNull(conversationsSummary.customerEmotionLevel),
-          isNotNull(conversationsSummary.productStandard),
           gte(conversations.updatedAt, since)
         )
       )
