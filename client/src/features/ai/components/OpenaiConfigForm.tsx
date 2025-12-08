@@ -105,13 +105,19 @@ export function OpenaiConfigForm({
           </div>
 
           {(showKnowledgeBaseTool || showProductCatalogTool || showZendeskKnowledgeBaseTool) && (
-            <div>
-              <h3 className="text-sm font-medium text-gray-900 mb-2">Ferramentas de IA</h3>
-              <p className="text-sm text-gray-500 mb-3">
-                Habilite ferramentas que o modelo pode usar para buscar informações
-              </p>
-              
-              <div className="border rounded-lg divide-y">
+            <CollapsibleSection
+              title="Ferramentas de IA"
+              description="Habilite ferramentas que o modelo pode usar para buscar informações"
+              defaultOpen={false}
+              badge={
+                (state.useKnowledgeBaseTool || state.useProductCatalogTool || state.useZendeskKnowledgeBaseTool) && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    {[state.useKnowledgeBaseTool, state.useProductCatalogTool, state.useZendeskKnowledgeBaseTool].filter(Boolean).length} ativa{[state.useKnowledgeBaseTool, state.useProductCatalogTool, state.useZendeskKnowledgeBaseTool].filter(Boolean).length > 1 ? 's' : ''}
+                  </span>
+                )
+              }
+            >
+              <div className="divide-y">
                 {showKnowledgeBaseTool && (
                   <CheckboxListItem
                     label="Usar Base de Conhecimento"
@@ -137,7 +143,7 @@ export function OpenaiConfigForm({
                   />
                 )}
               </div>
-            </div>
+            </CollapsibleSection>
           )}
 
           <CollapsibleSection
@@ -197,65 +203,83 @@ export function OpenaiConfigForm({
             </div>
           </CollapsibleSection>
 
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-900">Orientações para o Agente</h3>
-              <button
-                type="button"
-                className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800"
-                onClick={() => setShowVariablesModal(true)}
-              >
-                <Info className="h-3.5 w-3.5" />
-                Ver variáveis disponíveis
-              </button>
-            </div>
-            <p className="text-sm text-gray-500 mb-3">
-              Instruções completas para o agente. Use variáveis como {'{{'} RESUMO {'}}'}, {'{{'} ULTIMAS_20_MENSAGENS {'}}'}, etc.
-            </p>
-            <textarea
-              value={state.promptSystem}
-              onChange={(e) => actions.setPromptSystem(e.target.value)}
-              rows={promptRows}
-              className="w-full px-3 py-2 border rounded-lg text-sm font-mono"
-              placeholder="Digite as orientações completas para o agente..."
-            />
-            <div className="mt-2 flex flex-wrap gap-1">
-              {AVAILABLE_VARIABLES.map((v) => (
+          <CollapsibleSection
+            title="Orientações para o Agente"
+            description="Instruções completas para o agente de IA"
+            defaultOpen={false}
+            badge={
+              state.promptSystem && state.promptSystem.trim().length > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Configurado
+                </span>
+              )
+            }
+          >
+            <div className="p-4 space-y-3">
+              <div className="flex items-center justify-end">
                 <button
-                  key={v.name}
                   type="button"
-                  className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-xs rounded text-gray-600 font-mono"
-                  onClick={() => {
-                    const textarea = document.querySelector('textarea');
-                    if (textarea) {
-                      const start = textarea.selectionStart;
-                      const end = textarea.selectionEnd;
-                      const text = state.promptSystem;
-                      const newText = text.substring(0, start) + v.name + text.substring(end);
-                      actions.setPromptSystem(newText);
-                    }
-                  }}
-                  title={v.description}
+                  className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800"
+                  onClick={() => setShowVariablesModal(true)}
                 >
-                  {v.name}
+                  <Info className="h-3.5 w-3.5" />
+                  Ver variáveis disponíveis
                 </button>
-              ))}
+              </div>
+              <textarea
+                value={state.promptSystem}
+                onChange={(e) => actions.setPromptSystem(e.target.value)}
+                rows={promptRows}
+                className="w-full px-3 py-2 border rounded-lg text-sm font-mono"
+                placeholder="Digite as orientações completas para o agente..."
+              />
+              <div className="flex flex-wrap gap-1">
+                {AVAILABLE_VARIABLES.map((v) => (
+                  <button
+                    key={v.name}
+                    type="button"
+                    className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-xs rounded text-gray-600 font-mono"
+                    onClick={() => {
+                      const textarea = document.querySelector('textarea');
+                      if (textarea) {
+                        const start = textarea.selectionStart;
+                        const end = textarea.selectionEnd;
+                        const text = state.promptSystem;
+                        const newText = text.substring(0, start) + v.name + text.substring(end);
+                        actions.setPromptSystem(newText);
+                      }
+                    }}
+                    title={v.description}
+                  >
+                    {v.name}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          </CollapsibleSection>
 
-          <div>
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Formato da Resposta</h3>
-            <p className="text-sm text-gray-500 mb-3">
-              Especifique como o agente deve formatar a resposta (ex: JSON, texto estruturado, etc.)
-            </p>
-            <textarea
-              value={state.responseFormat}
-              onChange={(e) => actions.setResponseFormat(e.target.value)}
-              rows={responseFormatRows}
-              className="w-full px-3 py-2 border rounded-lg text-sm font-mono"
-              placeholder='Exemplo: Responda em JSON com os campos: {"campo1": "valor", "campo2": "valor"}'
-            />
-          </div>
+          <CollapsibleSection
+            title="Formato da Resposta"
+            description="Especifique como o agente deve formatar a resposta"
+            defaultOpen={false}
+            badge={
+              state.responseFormat && state.responseFormat.trim().length > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Configurado
+                </span>
+              )
+            }
+          >
+            <div className="p-4">
+              <textarea
+                value={state.responseFormat}
+                onChange={(e) => actions.setResponseFormat(e.target.value)}
+                rows={responseFormatRows}
+                className="w-full px-3 py-2 border rounded-lg text-sm font-mono"
+                placeholder='Exemplo: Responda em JSON com os campos: {"campo1": "valor", "campo2": "valor"}'
+              />
+            </div>
+          </CollapsibleSection>
 
           {children}
 
