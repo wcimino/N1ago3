@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, BookOpen, X, Lightbulb, BarChart3, ChevronRight, ChevronDown, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, BookOpen, X, Lightbulb, BarChart3, ChevronRight, ChevronDown, Pencil, Trash2, AlertCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { KnowledgeBaseForm } from "../components/KnowledgeBaseForm";
@@ -13,6 +13,8 @@ interface KnowledgeBaseArticle {
   name: string | null;
   productStandard: string;
   subproductStandard: string | null;
+  category1: string | null;
+  category2: string | null;
   intent: string;
   description: string;
   resolution: string;
@@ -36,120 +38,261 @@ interface Filters {
   intents: string[];
 }
 
-interface ProductGroup {
-  product: string;
+interface CatalogProduct {
+  id: number;
+  produto: string;
+  subproduto: string | null;
+  categoria1: string | null;
+  categoria2: string | null;
+  fullName: string;
+}
+
+interface HierarchyNode {
+  name: string;
+  level: "produto" | "subproduto" | "categoria1" | "categoria2";
+  fullPath: string;
+  children: HierarchyNode[];
   articles: KnowledgeBaseArticle[];
 }
 
-function buildProductGroups(articles: KnowledgeBaseArticle[]): ProductGroup[] {
-  const groupMap = new Map<string, KnowledgeBaseArticle[]>();
+function buildHierarchy(products: CatalogProduct[], articles: KnowledgeBaseArticle[]): HierarchyNode[] {
+  const productNodes = new Map<string, HierarchyNode>();
   
-  for (const article of articles) {
-    const product = article.productStandard;
-    if (!groupMap.has(product)) {
-      groupMap.set(product, []);
+  for (const product of products) {
+    if (!productNodes.has(product.produto)) {
+      productNodes.set(product.produto, {
+        name: product.produto,
+        level: "produto",
+        fullPath: product.produto,
+        children: [],
+        articles: [],
+      });
     }
-    groupMap.get(product)!.push(article);
+    
+    const prodNode = productNodes.get(product.produto)!;
+    
+    if (product.subproduto) {
+      let subNode = prodNode.children.find(c => c.name === product.subproduto);
+      if (!subNode) {
+        subNode = {
+          name: product.subproduto,
+          level: "subproduto",
+          fullPath: `${product.produto} > ${product.subproduto}`,
+          children: [],
+          articles: [],
+        };
+        prodNode.children.push(subNode);
+      }
+      
+      if (product.categoria1) {
+        let cat1Node = subNode.children.find(c => c.name === product.categoria1);
+        if (!cat1Node) {
+          cat1Node = {
+            name: product.categoria1,
+            level: "categoria1",
+            fullPath: `${product.produto} > ${product.subproduto} > ${product.categoria1}`,
+            children: [],
+            articles: [],
+          };
+          subNode.children.push(cat1Node);
+        }
+        
+        if (product.categoria2) {
+          let cat2Node = cat1Node.children.find(c => c.name === product.categoria2);
+          if (!cat2Node) {
+            cat2Node = {
+              name: product.categoria2,
+              level: "categoria2",
+              fullPath: `${product.produto} > ${product.subproduto} > ${product.categoria1} > ${product.categoria2}`,
+              children: [],
+              articles: [],
+            };
+            cat1Node.children.push(cat2Node);
+          }
+        }
+      }
+    }
   }
   
-  return Array.from(groupMap.entries())
-    .map(([product, articles]) => ({ product, articles }))
-    .sort((a, b) => a.product.localeCompare(b.product));
+  for (const article of articles) {
+    const prodNode = productNodes.get(article.productStandard);
+    if (!prodNode) {
+      if (!productNodes.has(article.productStandard)) {
+        productNodes.set(article.productStandard, {
+          name: article.productStandard,
+          level: "produto",
+          fullPath: article.productStandard,
+          children: [],
+          articles: [],
+        });
+      }
+      productNodes.get(article.productStandard)!.articles.push(article);
+      continue;
+    }
+    
+    if (article.subproductStandard) {
+      const subNode = prodNode.children.find(c => c.name === article.subproductStandard);
+      if (subNode) {
+        if (article.category1) {
+          const cat1Node = subNode.children.find(c => c.name === article.category1);
+          if (cat1Node) {
+            if (article.category2) {
+              const cat2Node = cat1Node.children.find(c => c.name === article.category2);
+              if (cat2Node) {
+                cat2Node.articles.push(article);
+              } else {
+                cat1Node.articles.push(article);
+              }
+            } else {
+              cat1Node.articles.push(article);
+            }
+          } else {
+            subNode.articles.push(article);
+          }
+        } else {
+          subNode.articles.push(article);
+        }
+      } else {
+        prodNode.articles.push(article);
+      }
+    } else {
+      prodNode.articles.push(article);
+    }
+  }
+  
+  return Array.from(productNodes.values()).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-interface ArticleItemProps {
-  article: KnowledgeBaseArticle;
-  onEdit: () => void;
-  onDelete: () => void;
+function countArticles(node: HierarchyNode): number {
+  let count = node.articles.length;
+  for (const child of node.children) {
+    count += countArticles(child);
+  }
+  return count;
+}
+
+interface HierarchyNodeItemProps {
+  node: HierarchyNode;
   depth: number;
-}
-
-function ArticleItem({ article, onEdit, onDelete, depth }: ArticleItemProps) {
-  return (
-    <div 
-      className="flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-gray-50 group"
-      style={{ marginLeft: `${depth * 24}px` }}
-    >
-      <div className="w-4" />
-      
-      <span className="px-2 py-0.5 text-xs rounded border bg-purple-100 text-purple-800 border-purple-200">
-        {article.intent}
-      </span>
-
-      <div className="flex-1 min-w-0">
-        <span className="text-sm font-medium text-gray-900 truncate block">
-          {article.name || article.subproductStandard || article.description.substring(0, 50)}
-        </span>
-      </div>
-
-      <span className="text-xs text-gray-400 whitespace-nowrap">
-        {formatDistanceToNow(new Date(article.updatedAt), { addSuffix: true, locale: ptBR })}
-      </span>
-
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={onEdit}
-          className="p-1 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
-          title="Editar"
-        >
-          <Pencil className="w-4 h-4" />
-        </button>
-        <button
-          onClick={onDelete}
-          className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
-          title="Excluir"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-interface ProductGroupItemProps {
-  group: ProductGroup;
-  isExpanded: boolean;
-  onToggle: () => void;
+  expandedPaths: Set<string>;
+  onToggle: (path: string) => void;
   onEdit: (article: KnowledgeBaseArticle) => void;
   onDelete: (id: number) => void;
 }
 
-function ProductGroupItem({ group, isExpanded, onToggle, onEdit, onDelete }: ProductGroupItemProps) {
+const levelColors = {
+  produto: { bg: "bg-blue-100", text: "text-blue-800", border: "border-blue-200" },
+  subproduto: { bg: "bg-green-100", text: "text-green-700", border: "border-green-200" },
+  categoria1: { bg: "bg-purple-100", text: "text-purple-700", border: "border-purple-200" },
+  categoria2: { bg: "bg-orange-100", text: "text-orange-700", border: "border-orange-200" },
+};
+
+const levelLabels = {
+  produto: "Produto",
+  subproduto: "Subproduto",
+  categoria1: "Categoria 1",
+  categoria2: "Categoria 2",
+};
+
+function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete }: HierarchyNodeItemProps) {
+  const isExpanded = expandedPaths.has(node.fullPath);
+  const hasChildren = node.children.length > 0 || node.articles.length > 0;
+  const articleCount = countArticles(node);
+  const colors = levelColors[node.level];
+  
   return (
-    <div className="space-y-1">
+    <div>
       <div 
-        className="flex items-center gap-2 py-2.5 px-3 rounded-lg hover:bg-gray-50 cursor-pointer"
-        onClick={onToggle}
+        className={`flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-gray-50 ${hasChildren ? "cursor-pointer" : ""}`}
+        style={{ marginLeft: `${depth * 20}px` }}
+        onClick={() => hasChildren && onToggle(node.fullPath)}
       >
-        <button className="p-0.5 rounded hover:bg-gray-200">
-          {isExpanded ? (
-            <ChevronDown className="w-4 h-4 text-gray-500" />
-          ) : (
-            <ChevronRight className="w-4 h-4 text-gray-500" />
-          )}
-        </button>
+        {hasChildren ? (
+          <button className="p-0.5 rounded hover:bg-gray-200">
+            {isExpanded ? (
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-gray-500" />
+            )}
+          </button>
+        ) : (
+          <div className="w-5" />
+        )}
 
-        <span className="px-2 py-0.5 text-xs rounded border bg-blue-100 text-blue-800 border-blue-200">
-          Produto
+        <span className={`px-2 py-0.5 text-xs rounded border ${colors.bg} ${colors.text} ${colors.border}`}>
+          {levelLabels[node.level]}
         </span>
 
-        <span className="flex-1 text-sm font-medium text-gray-900">{group.product}</span>
+        <span className="flex-1 text-sm font-medium text-gray-900">{node.name}</span>
 
-        <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
-          {group.articles.length}
-        </span>
+        {articleCount === 0 ? (
+          <span className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-700">
+            <AlertCircle className="w-3 h-3" />
+            Sem artigos
+          </span>
+        ) : (
+          <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
+            {articleCount}
+          </span>
+        )}
       </div>
 
       {isExpanded && (
         <div>
-          {group.articles.map((article) => (
-            <ArticleItem
-              key={article.id}
-              article={article}
-              onEdit={() => onEdit(article)}
-              onDelete={() => onDelete(article.id)}
-              depth={1}
+          {node.children.map((child) => (
+            <HierarchyNodeItem
+              key={child.fullPath}
+              node={child}
+              depth={depth + 1}
+              expandedPaths={expandedPaths}
+              onToggle={onToggle}
+              onEdit={onEdit}
+              onDelete={onDelete}
             />
+          ))}
+          {node.articles.map((article) => (
+            <div 
+              key={article.id}
+              className="flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-gray-50 group"
+              style={{ marginLeft: `${(depth + 1) * 20}px` }}
+            >
+              <div className="w-5" />
+              
+              <span className={`px-2 py-0.5 text-xs rounded border ${
+                article.intent === "contratar" 
+                  ? "bg-green-100 text-green-700 border-green-200" 
+                  : "bg-gray-100 text-gray-700 border-gray-200"
+              }`}>
+                {article.intent}
+              </span>
+
+              <div className="flex-1 min-w-0">
+                <span className="text-sm text-gray-900 truncate block">
+                  {article.name || article.description.substring(0, 60)}
+                </span>
+              </div>
+
+              <span className="text-xs text-gray-400 whitespace-nowrap hidden sm:block">
+                {formatDistanceToNow(new Date(article.updatedAt), { addSuffix: true, locale: ptBR })}
+              </span>
+
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onEdit(article); }}
+                  className="p-1 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
+                  title="Editar"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete(article.id); }}
+                  className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
+                  title="Excluir"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -170,7 +313,7 @@ export function KnowledgeBasePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProduct, setSelectedProduct] = useState("");
   const [selectedIntent, setSelectedIntent] = useState("");
-  const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
   const { data: articles = [], isLoading } = useQuery<KnowledgeBaseArticle[]>({
@@ -187,6 +330,16 @@ export function KnowledgeBasePage() {
     enabled: activeTab === "articles",
   });
 
+  const { data: catalogProducts = [] } = useQuery<CatalogProduct[]>({
+    queryKey: ["/api/ifood-products"],
+    queryFn: async () => {
+      const res = await fetch("/api/ifood-products");
+      if (!res.ok) throw new Error("Failed to fetch catalog");
+      return res.json();
+    },
+    enabled: activeTab === "articles",
+  });
+
   const { data: filters } = useQuery<Filters>({
     queryKey: ["/api/knowledge-base/filters"],
     queryFn: async () => {
@@ -197,7 +350,7 @@ export function KnowledgeBasePage() {
     enabled: activeTab === "articles",
   });
 
-  const productGroups = useMemo(() => buildProductGroups(articles), [articles]);
+  const hierarchy = useMemo(() => buildHierarchy(catalogProducts, articles), [catalogProducts, articles]);
 
   const createMutation = useMutation({
     mutationFn: async (data: KnowledgeBaseFormData) => {
@@ -266,13 +419,13 @@ export function KnowledgeBasePage() {
     setEditingArticle(null);
   };
 
-  const toggleProduct = (product: string) => {
-    setExpandedProducts(prev => {
+  const togglePath = (path: string) => {
+    setExpandedPaths(prev => {
       const next = new Set(prev);
-      if (next.has(product)) {
-        next.delete(product);
+      if (next.has(path)) {
+        next.delete(path);
       } else {
-        next.add(product);
+        next.add(path);
       }
       return next;
     });
@@ -368,12 +521,9 @@ export function KnowledgeBasePage() {
                 onChange={(e) => setSelectedIntent(e.target.value)}
                 className="px-2 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-w-[100px]"
               >
-                <option value="">Intent</option>
-                {filters?.intents.map((intent) => (
-                  <option key={intent} value={intent}>
-                    {intent}
-                  </option>
-                ))}
+                <option value="">Intenção</option>
+                <option value="suporte">suporte</option>
+                <option value="contratar">contratar</option>
               </select>
             </div>
           </div>
@@ -381,20 +531,21 @@ export function KnowledgeBasePage() {
           <div className="p-4">
             {isLoading ? (
               <div className="text-center py-8 text-gray-500">Carregando...</div>
-            ) : productGroups.length === 0 ? (
+            ) : hierarchy.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <BookOpen className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p>Nenhum artigo encontrado</p>
-                <p className="text-sm mt-1">Clique em "Novo Artigo" para adicionar</p>
+                <p>Nenhum produto cadastrado</p>
+                <p className="text-sm mt-1">Cadastre produtos em Configurações &gt; Cadastro &gt; Produtos</p>
               </div>
             ) : (
               <div className="space-y-1 border rounded-lg p-3 max-h-[500px] overflow-y-auto">
-                {productGroups.map((group) => (
-                  <ProductGroupItem
-                    key={group.product}
-                    group={group}
-                    isExpanded={expandedProducts.has(group.product)}
-                    onToggle={() => toggleProduct(group.product)}
+                {hierarchy.map((node) => (
+                  <HierarchyNodeItem
+                    key={node.fullPath}
+                    node={node}
+                    depth={0}
+                    expandedPaths={expandedPaths}
+                    onToggle={togglePath}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                   />
