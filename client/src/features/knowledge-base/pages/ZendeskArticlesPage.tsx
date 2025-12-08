@@ -178,10 +178,14 @@ export function ZendeskArticlesPage() {
     },
   });
   
-  const syncMutation = useMutation<SyncResult>({
+  const syncMutation = useMutation<SyncResult, Error>({
     mutationFn: async () => {
       const res = await fetch("/api/zendesk-articles/sync", { method: "POST" });
-      return res.json();
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Falha ao sincronizar artigos");
+      }
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/zendesk-articles"] });
@@ -233,8 +237,14 @@ export function ZendeskArticlesPage() {
       )}
       
       {syncMutation.isError && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-          Erro ao sincronizar artigos. Verifique as credenciais do Zendesk.
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm">
+          <div className="flex items-center gap-2 text-red-700 font-medium">
+            <AlertCircle className="w-4 h-4" />
+            Erro ao sincronizar artigos
+          </div>
+          <div className="mt-1 text-red-600">
+            {syncMutation.error?.message || "Verifique as credenciais do Zendesk."}
+          </div>
         </div>
       )}
       

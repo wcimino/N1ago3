@@ -53,13 +53,10 @@ interface PassControlResponse {
 }
 
 function getApiKey(): string {
-  const isDev = process.env.NODE_ENV !== "production";
-  const key = isDev 
-    ? process.env.ZENDESK_APP_API_KEY 
-    : process.env.ZENDESK_APP_API_KEY_PROD;
+  const key = process.env.ZENDESK_APP_API_KEY;
   
   if (!key) {
-    throw new Error(`Missing ZENDESK_APP_API_KEY${isDev ? "" : "_PROD"} environment variable`);
+    throw new Error("Missing ZENDESK_APP_API_KEY environment variable");
   }
   
   return key;

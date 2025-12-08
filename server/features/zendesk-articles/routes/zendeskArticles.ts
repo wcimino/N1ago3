@@ -50,7 +50,12 @@ router.post("/sync", async (_req, res) => {
     res.json(result);
   } catch (error) {
     console.error("[ZendeskArticles] Error syncing articles:", error);
-    res.status(500).json({ error: "Failed to sync articles" });
+    const errorMessage = error instanceof Error ? error.message : "Failed to sync articles";
+    const isConfigError = errorMessage.includes("ZENDESK_APP_API_KEY");
+    res.status(isConfigError ? 503 : 500).json({ 
+      error: errorMessage,
+      type: isConfigError ? "configuration" : "sync_error"
+    });
   }
 });
 
