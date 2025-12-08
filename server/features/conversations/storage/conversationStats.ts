@@ -45,7 +45,7 @@ export const conversationStats = {
       last_conv_filter AS (
         SELECT DISTINCT ON (c.user_id)
           c.user_id,
-          cs.product_standard as last_product_standard,
+          COALESCE(cs.product_standard, cs.product) as last_product_standard,
           cs.intent as last_intent,
           c.current_handler_name
         FROM conversations c
@@ -73,7 +73,7 @@ export const conversationStats = {
               'closed_reason', c.closed_reason,
               'created_at', TO_CHAR(c.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
               'updated_at', TO_CHAR(COALESCE(lm.last_message_at, c.created_at), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
-              'product_standard', cs.product_standard,
+              'product_standard', COALESCE(cs.product_standard, cs.product),
               'intent', cs.intent,
               'current_handler', c.current_handler,
               'current_handler_name', c.current_handler_name
@@ -91,7 +91,7 @@ export const conversationStats = {
       last_conv AS (
         SELECT DISTINCT ON (c.user_id)
           c.user_id,
-          cs.product_standard as last_product_standard,
+          COALESCE(cs.product_standard, cs.product) as last_product_standard,
           cs.intent as last_intent
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
@@ -123,7 +123,7 @@ export const conversationStats = {
       last_conv_filter AS (
         SELECT DISTINCT ON (c.user_id)
           c.user_id,
-          cs.product_standard as last_product_standard,
+          COALESCE(cs.product_standard, cs.product) as last_product_standard,
           cs.intent as last_intent,
           c.current_handler_name
         FROM conversations c
