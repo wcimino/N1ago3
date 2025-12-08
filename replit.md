@@ -75,7 +75,12 @@ The React frontend provides a real-time dashboard for events and conversations, 
         *   `useProductCatalog` hook for all CRUD logic
         *   `ProductAddForm` and `ProductEditForm` components
         *   `ProductTreeActions` component for node actions
-    *   **KnowledgeBasePage Integration:** Updated to use shared LEVEL_LABELS and LEVEL_COLORS constants
+    *   **KnowledgeBasePage Modularization:** Reduced from 551 to 168 lines by extracting:
+        *   `useKnowledgeBase` hook for all queries, mutations, and state logic
+        *   `HierarchyNodeItem` component for tree node rendering
+    *   **ToolsPage Modularization:** Reduced from 411 to 33 lines by extracting:
+        *   `KnowledgeBaseSearchTool` component for knowledge base search
+        *   `ProductCatalogSearchTool` component for product catalog search
 
 ## Deployment Configuration
 
