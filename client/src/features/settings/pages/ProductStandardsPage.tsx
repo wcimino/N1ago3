@@ -21,9 +21,9 @@ export function ProductStandardsPage() {
     queryFn: () => fetchApi<ProductStandard[]>("/api/product-standards"),
   });
 
-  const { data: ifoodProductNames } = useQuery<string[]>({
-    queryKey: ["ifood-products-distinct-produtos"],
-    queryFn: () => fetchApi<string[]>("/api/ifood-products/distinct/produtos"),
+  const { data: catalogProductNames } = useQuery<string[]>({
+    queryKey: ["product-catalog-distinct-produtos"],
+    queryFn: () => fetchApi<string[]>("/api/product-catalog/distinct/produtos"),
   });
 
   useEffect(() => {
@@ -104,7 +104,7 @@ export function ProductStandardsPage() {
   };
 
   const renderProductSelect = (p: ProductStandard, isMobile: boolean = false) => {
-    const hasOptions = ifoodProductNames && ifoodProductNames.length > 0;
+    const hasOptions = catalogProductNames && catalogProductNames.length > 0;
     
     return (
       <div className="relative">
@@ -117,7 +117,7 @@ export function ProductStandardsPage() {
           <option value="">
             {hasOptions ? "Selecione um produto padronizado..." : "Nenhum produto cadastrado"}
           </option>
-          {ifoodProductNames?.map((name) => (
+          {catalogProductNames?.map((name) => (
             <option key={name} value={name}>
               {name}
             </option>

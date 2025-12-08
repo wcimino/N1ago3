@@ -1,99 +1,99 @@
 import { Router, type Request, type Response } from "express";
-import { ifoodProductsStorage } from "../storage/ifoodProductsStorage.js";
+import { productCatalogStorage } from "../storage/productCatalogStorage.js";
 import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
 
 const router = Router();
 
-router.get("/api/ifood-products", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+router.get("/api/product-catalog", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
-    const products = await ifoodProductsStorage.getAll();
+    const products = await productCatalogStorage.getAll();
     res.json(products);
   } catch (error: any) {
-    console.error("[iFood Products] Error fetching:", error.message);
+    console.error("[Product Catalog] Error fetching:", error.message);
     res.status(500).json({ error: "Failed to fetch iFood products" });
   }
 });
 
-router.get("/api/ifood-products/fullnames", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+router.get("/api/product-catalog/fullnames", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
-    const fullNames = await ifoodProductsStorage.getFullNames();
+    const fullNames = await productCatalogStorage.getFullNames();
     res.json(fullNames);
   } catch (error: any) {
-    console.error("[iFood Products] Error fetching fullnames:", error.message);
+    console.error("[Product Catalog] Error fetching fullnames:", error.message);
     res.status(500).json({ error: "Failed to fetch product names" });
   }
 });
 
-router.get("/api/ifood-products/distinct/produtos", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+router.get("/api/product-catalog/distinct/produtos", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
-    const produtos = await ifoodProductsStorage.getDistinctProdutos();
+    const produtos = await productCatalogStorage.getDistinctProdutos();
     res.json(produtos);
   } catch (error: any) {
-    console.error("[iFood Products] Error fetching distinct produtos:", error.message);
+    console.error("[Product Catalog] Error fetching distinct produtos:", error.message);
     res.status(500).json({ error: "Failed to fetch distinct produtos" });
   }
 });
 
-router.get("/api/ifood-products/distinct/subprodutos", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+router.get("/api/product-catalog/distinct/subprodutos", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
     const { produto } = req.query;
-    const subprodutos = await ifoodProductsStorage.getDistinctSubprodutos(produto as string);
+    const subprodutos = await productCatalogStorage.getDistinctSubprodutos(produto as string);
     res.json(subprodutos);
   } catch (error: any) {
-    console.error("[iFood Products] Error fetching distinct subprodutos:", error.message);
+    console.error("[Product Catalog] Error fetching distinct subprodutos:", error.message);
     res.status(500).json({ error: "Failed to fetch distinct subprodutos" });
   }
 });
 
-router.get("/api/ifood-products/distinct/categoria1", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+router.get("/api/product-catalog/distinct/categoria1", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
     const { produto, subproduto } = req.query;
-    const categorias = await ifoodProductsStorage.getDistinctCategorias1(
+    const categorias = await productCatalogStorage.getDistinctCategorias1(
       produto as string | undefined,
       subproduto as string | undefined
     );
     res.json(categorias);
   } catch (error: any) {
-    console.error("[iFood Products] Error fetching distinct categoria1:", error.message);
+    console.error("[Product Catalog] Error fetching distinct categoria1:", error.message);
     res.status(500).json({ error: "Failed to fetch distinct categoria1" });
   }
 });
 
-router.get("/api/ifood-products/distinct/categoria2", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+router.get("/api/product-catalog/distinct/categoria2", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
     const { produto, subproduto, categoria1 } = req.query;
-    const categorias = await ifoodProductsStorage.getDistinctCategorias2(
+    const categorias = await productCatalogStorage.getDistinctCategorias2(
       produto as string | undefined,
       subproduto as string | undefined,
       categoria1 as string | undefined
     );
     res.json(categorias);
   } catch (error: any) {
-    console.error("[iFood Products] Error fetching distinct categoria2:", error.message);
+    console.error("[Product Catalog] Error fetching distinct categoria2:", error.message);
     res.status(500).json({ error: "Failed to fetch distinct categoria2" });
   }
 });
 
-router.get("/api/ifood-products/:id", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+router.get("/api/product-catalog/:id", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
       return res.status(400).json({ error: "Invalid ID" });
     }
     
-    const product = await ifoodProductsStorage.getById(id);
+    const product = await productCatalogStorage.getById(id);
     if (!product) {
       return res.status(404).json({ error: "Product not found" });
     }
     
     res.json(product);
   } catch (error: any) {
-    console.error("[iFood Products] Error fetching by ID:", error.message);
+    console.error("[Product Catalog] Error fetching by ID:", error.message);
     res.status(500).json({ error: "Failed to fetch iFood product" });
   }
 });
 
-router.post("/api/ifood-products", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+router.post("/api/product-catalog", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
     const { produto, subproduto, categoria1, categoria2 } = req.body;
 
@@ -107,7 +107,7 @@ router.post("/api/ifood-products", isAuthenticated, requireAuthorizedUser, async
     if (categoria2 && categoria2.trim()) parts.push(categoria2.trim());
     const fullName = parts.join(" > ");
 
-    const product = await ifoodProductsStorage.create({
+    const product = await productCatalogStorage.create({
       produto: produto.trim(),
       subproduto: subproduto?.trim() || null,
       categoria1: categoria1?.trim() || null,
@@ -117,7 +117,7 @@ router.post("/api/ifood-products", isAuthenticated, requireAuthorizedUser, async
 
     res.status(201).json(product);
   } catch (error: any) {
-    console.error("[iFood Products] Error creating:", error.message);
+    console.error("[Product Catalog] Error creating:", error.message);
     if (error.message?.includes("unique constraint")) {
       return res.status(409).json({ error: "This product combination already exists" });
     }
@@ -125,7 +125,7 @@ router.post("/api/ifood-products", isAuthenticated, requireAuthorizedUser, async
   }
 });
 
-router.put("/api/ifood-products/:id", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+router.put("/api/product-catalog/:id", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
@@ -144,7 +144,7 @@ router.put("/api/ifood-products/:id", isAuthenticated, requireAuthorizedUser, as
     if (categoria2 && categoria2.trim()) parts.push(categoria2.trim());
     const fullName = parts.join(" > ");
 
-    const product = await ifoodProductsStorage.update(id, {
+    const product = await productCatalogStorage.update(id, {
       produto: produto.trim(),
       subproduto: subproduto?.trim() || null,
       categoria1: categoria1?.trim() || null,
@@ -158,7 +158,7 @@ router.put("/api/ifood-products/:id", isAuthenticated, requireAuthorizedUser, as
 
     res.json(product);
   } catch (error: any) {
-    console.error("[iFood Products] Error updating:", error.message);
+    console.error("[Product Catalog] Error updating:", error.message);
     if (error.message?.includes("unique constraint")) {
       return res.status(409).json({ error: "This product combination already exists" });
     }
@@ -166,21 +166,21 @@ router.put("/api/ifood-products/:id", isAuthenticated, requireAuthorizedUser, as
   }
 });
 
-router.delete("/api/ifood-products/:id", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+router.delete("/api/product-catalog/:id", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
       return res.status(400).json({ error: "Invalid ID" });
     }
 
-    const deleted = await ifoodProductsStorage.delete(id);
+    const deleted = await productCatalogStorage.delete(id);
     if (!deleted) {
       return res.status(404).json({ error: "Product not found" });
     }
 
     res.json({ success: true });
   } catch (error: any) {
-    console.error("[iFood Products] Error deleting:", error.message);
+    console.error("[Product Catalog] Error deleting:", error.message);
     res.status(500).json({ error: "Failed to delete iFood product" });
   }
 });

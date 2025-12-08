@@ -71,39 +71,39 @@ export function KnowledgeBaseForm({
   }, [initialData]);
 
   const { data: produtos = [] } = useQuery<string[]>({
-    queryKey: ["/api/ifood-products/distinct/produtos"],
+    queryKey: ["/api/product-catalog/distinct/produtos"],
   });
 
   const { data: subprodutos = [] } = useQuery<string[]>({
-    queryKey: ["/api/ifood-products/distinct/subprodutos", formData.productStandard],
+    queryKey: ["/api/product-catalog/distinct/subprodutos", formData.productStandard],
     queryFn: async () => {
       if (!formData.productStandard) return [];
-      const res = await fetch(`/api/ifood-products/distinct/subprodutos?produto=${encodeURIComponent(formData.productStandard)}`);
+      const res = await fetch(`/api/product-catalog/distinct/subprodutos?produto=${encodeURIComponent(formData.productStandard)}`);
       return res.json();
     },
     enabled: !!formData.productStandard,
   });
 
   const { data: categorias1 = [] } = useQuery<string[]>({
-    queryKey: ["/api/ifood-products/distinct/categoria1", formData.productStandard, formData.subproductStandard],
+    queryKey: ["/api/product-catalog/distinct/categoria1", formData.productStandard, formData.subproductStandard],
     queryFn: async () => {
       if (!formData.productStandard) return [];
       const params = new URLSearchParams({ produto: formData.productStandard });
       if (formData.subproductStandard) params.append("subproduto", formData.subproductStandard);
-      const res = await fetch(`/api/ifood-products/distinct/categoria1?${params}`);
+      const res = await fetch(`/api/product-catalog/distinct/categoria1?${params}`);
       return res.json();
     },
     enabled: !!formData.productStandard,
   });
 
   const { data: categorias2 = [] } = useQuery<string[]>({
-    queryKey: ["/api/ifood-products/distinct/categoria2", formData.productStandard, formData.subproductStandard, formData.category1],
+    queryKey: ["/api/product-catalog/distinct/categoria2", formData.productStandard, formData.subproductStandard, formData.category1],
     queryFn: async () => {
       if (!formData.productStandard) return [];
       const params = new URLSearchParams({ produto: formData.productStandard });
       if (formData.subproductStandard) params.append("subproduto", formData.subproductStandard);
       if (formData.category1) params.append("categoria1", formData.category1);
-      const res = await fetch(`/api/ifood-products/distinct/categoria2?${params}`);
+      const res = await fetch(`/api/product-catalog/distinct/categoria2?${params}`);
       return res.json();
     },
     enabled: !!formData.productStandard,

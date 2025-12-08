@@ -1,5 +1,5 @@
 import { knowledgeBaseStorage } from "../storage/knowledgeBaseStorage.js";
-import { ifoodProductsStorage } from "../../products/storage/ifoodProductsStorage.js";
+import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 import type { ToolDefinition } from "./openaiApiService.js";
 
 export function createKnowledgeBaseTool(): ToolDefinition {
@@ -72,7 +72,7 @@ export function createProductCatalogTool(): ToolDefinition {
       required: []
     },
     handler: async (args: { query?: string }) => {
-      const allProducts = await ifoodProductsStorage.getAll();
+      const allProducts = await productCatalogStorage.getAll();
       
       let products = allProducts;
       if (args.query) {

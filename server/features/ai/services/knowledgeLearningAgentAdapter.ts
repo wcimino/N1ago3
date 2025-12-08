@@ -1,7 +1,7 @@
 import { knowledgeSuggestionsStorage } from "../storage/knowledgeSuggestionsStorage.js";
 import { knowledgeBaseService } from "./knowledgeBaseService.js";
 import { callOpenAI, ToolDefinition } from "./openaiApiService.js";
-import { ifoodProductsStorage } from "../../products/storage/ifoodProductsStorage.js";
+import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 
 export interface AgentLearningPayload {
   messages: Array<{
@@ -167,7 +167,7 @@ function buildProductCatalogTool(): ToolDefinition {
       required: ["query"]
     },
     handler: async (args: { query: string }) => {
-      const products = await ifoodProductsStorage.getAll();
+      const products = await productCatalogStorage.getAll();
       
       const query = args.query.toLowerCase();
       const filtered = products.filter(p => 
@@ -179,7 +179,7 @@ function buildProductCatalogTool(): ToolDefinition {
       );
 
       if (filtered.length === 0) {
-        const allProducts = await ifoodProductsStorage.getDistinctProdutos();
+        const allProducts = await productCatalogStorage.getDistinctProdutos();
         return `Nenhum produto encontrado para "${args.query}". Produtos disponíveis: ${allProducts.join(', ')}`;
       }
 

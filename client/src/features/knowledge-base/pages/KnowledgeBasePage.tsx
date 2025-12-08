@@ -331,9 +331,9 @@ export function KnowledgeBasePage() {
   });
 
   const { data: catalogProducts = [] } = useQuery<CatalogProduct[]>({
-    queryKey: ["/api/ifood-products"],
+    queryKey: ["/api/product-catalog"],
     queryFn: async () => {
-      const res = await fetch("/api/ifood-products");
+      const res = await fetch("/api/product-catalog");
       if (!res.ok) throw new Error("Failed to fetch catalog");
       return res.json();
     },

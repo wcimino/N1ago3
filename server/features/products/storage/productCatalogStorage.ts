@@ -2,7 +2,7 @@ import { db } from "../../../db.js";
 import { ifoodProducts, type IfoodProduct, type InsertIfoodProduct } from "../../../../shared/schema.js";
 import { eq, asc, and, type SQL } from "drizzle-orm";
 
-export const ifoodProductsStorage = {
+export const productCatalogStorage = {
   async getAll(): Promise<IfoodProduct[]> {
     return db
       .select()

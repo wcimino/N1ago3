@@ -4,7 +4,7 @@ import { useAuth } from "./shared/hooks";
 import { NavLink, EnvironmentBadge, N1agoLogo } from "./shared/components";
 import { TimezoneProvider } from "./contexts/TimezoneContext";
 import { AIPage } from "./features/ai";
-import { SettingsPage, ProductStandardsPage, ReprocessingPage, AutoClosePage, IfoodProductsPage } from "./features/settings";
+import { SettingsPage, ProductStandardsPage, ReprocessingPage, AutoClosePage, ProductCatalogPage } from "./features/settings";
 import { EventsLayout } from "./features/events";
 import { AtendimentosPage, UserConversationsPage } from "./features/conversations";
 import { CadastroPage, UserStandardDetailPage, OrganizationStandardDetailPage } from "./features/cadastro";
@@ -96,7 +96,7 @@ function AuthenticatedApp() {
           <Route path="/settings/catalog/users/:email">{(params) => <UserStandardDetailPage params={params} />}</Route>
           <Route path="/settings/catalog/organizations">{() => <CadastroPage activeTab="organizacoes" />}</Route>
           <Route path="/settings/catalog/organizations/:cnpjRoot">{(params) => <OrganizationStandardDetailPage params={params} />}</Route>
-          <Route path="/settings/catalog/products" component={IfoodProductsPage} />
+          <Route path="/settings/catalog/products" component={ProductCatalogPage} />
         </Switch>
       </main>
     </div>

@@ -435,7 +435,7 @@ function EditForm({ node, onSubmit, onCancel, isPending }: EditFormProps) {
   );
 }
 
-export function IfoodProductsPage() {
+export function ProductCatalogPage() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const [showSuccess, setShowSuccess] = useState(false);
@@ -445,19 +445,19 @@ export function IfoodProductsPage() {
   const [editingNode, setEditingNode] = useState<TreeNode | null>(null);
 
   const { data: products, isLoading } = useQuery<IfoodProduct[]>({
-    queryKey: ["ifood-products"],
-    queryFn: () => fetchApi<IfoodProduct[]>("/api/ifood-products"),
+    queryKey: ["product-catalog"],
+    queryFn: () => fetchApi<IfoodProduct[]>("/api/product-catalog"),
   });
 
   const tree = useMemo(() => buildTree(products || []), [products]);
 
   const createMutation = useMutation({
     mutationFn: async (data: { produto: string; subproduto: string | null; categoria1: string | null; categoria2: string | null }) => {
-      return apiRequest("POST", "/api/ifood-products", data);
+      return apiRequest("POST", "/api/product-catalog", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ifood-products"] });
-      queryClient.invalidateQueries({ queryKey: ["ifood-products-fullnames"] });
+      queryClient.invalidateQueries({ queryKey: ["product-catalog"] });
+      queryClient.invalidateQueries({ queryKey: ["product-catalog-fullnames"] });
       setAddingTo(null);
       setError(null);
       setShowSuccess(true);
@@ -470,21 +470,21 @@ export function IfoodProductsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest("DELETE", `/api/ifood-products/${id}`);
+      return apiRequest("DELETE", `/api/product-catalog/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ifood-products"] });
-      queryClient.invalidateQueries({ queryKey: ["ifood-products-fullnames"] });
+      queryClient.invalidateQueries({ queryKey: ["product-catalog"] });
+      queryClient.invalidateQueries({ queryKey: ["product-catalog-fullnames"] });
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...data }: { id: number; produto: string; subproduto: string | null; categoria1: string | null; categoria2: string | null }) => {
-      return apiRequest("PUT", `/api/ifood-products/${id}`, data);
+      return apiRequest("PUT", `/api/product-catalog/${id}`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ifood-products"] });
-      queryClient.invalidateQueries({ queryKey: ["ifood-products-fullnames"] });
+      queryClient.invalidateQueries({ queryKey: ["product-catalog"] });
+      queryClient.invalidateQueries({ queryKey: ["product-catalog-fullnames"] });
       setEditingNode(null);
       setError(null);
       setShowSuccess(true);

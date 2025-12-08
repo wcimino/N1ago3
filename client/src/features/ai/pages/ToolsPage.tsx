@@ -81,7 +81,7 @@ export function ToolsPage() {
   const { data: productData, isLoading: productLoading, error: productError } = useQuery<ProductResult[]>({
     queryKey: ["product-catalog-search", productQuery, productSearchTrigger],
     queryFn: async () => {
-      const res = await fetch(`/api/ifood-products?q=${encodeURIComponent(productQuery)}`, {
+      const res = await fetch(`/api/product-catalog?q=${encodeURIComponent(productQuery)}`, {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Falha na busca");

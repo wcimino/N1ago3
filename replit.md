@@ -49,9 +49,9 @@ The React frontend provides a real-time dashboard for events and conversations, 
     *   `configStorage.ts` → `summaryStorage.ts` + `classificationStorage.ts` + `openaiLogsStorage.ts`
 *   **Products Catalog (December 2025):** 
     *   Table `products_catalog` with hierarchical structure: Produto > Subproduto (opcional) > Categoria 1 (opcional) > Categoria 2 (opcional)
-    *   CRUD API endpoints at `/api/ifood-products` and `/api/ifood-products/fullnames`
+    *   CRUD API endpoints at `/api/product-catalog` and `/api/product-catalog/fullnames`
     *   Hierarchical tree interface for product registration with expandable nodes
-    *   Product Standardization page uses dropdown selecting from registered products
+    *   Product Standardization page uses dropdown selecting only from Produto level (distinct/produtos)
 *   **Navigation Restructuring (December 2025):**
     *   "Cadastro" (Usuários/Organizações) moved to Settings > Cadastro tab at `/settings/catalog/*`
     *   "Exportações" moved to Settings > Manutenção tab at `/settings/maintenance/export`
