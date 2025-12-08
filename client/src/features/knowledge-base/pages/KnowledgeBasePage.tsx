@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, BookOpen, X, Lightbulb } from "lucide-react";
+import { Plus, Search, BookOpen, X, Lightbulb, BarChart3 } from "lucide-react";
 import { KnowledgeBaseForm } from "../components/KnowledgeBaseForm";
 import { KnowledgeBaseCard } from "../components/KnowledgeBaseCard";
 import { SuggestionsPage } from "./SuggestionsPage";
+import { LearningAttemptsPage } from "./LearningAttemptsPage";
 import { SegmentedTabs } from "../../../shared/components/ui";
 
 interface KnowledgeBaseArticle {
@@ -35,6 +36,7 @@ interface Filters {
 const tabs = [
   { id: "articles", label: "Artigos", icon: <BookOpen className="w-4 h-4" /> },
   { id: "suggestions", label: "Sugestões", icon: <Lightbulb className="w-4 h-4" /> },
+  { id: "processing", label: "Processamento", icon: <BarChart3 className="w-4 h-4" /> },
 ];
 
 export function KnowledgeBasePage() {
@@ -167,7 +169,11 @@ export function KnowledgeBasePage() {
         />
       </div>
 
-      {activeTab === "suggestions" ? (
+      {activeTab === "processing" ? (
+        <div className="p-4">
+          <LearningAttemptsPage />
+        </div>
+      ) : activeTab === "suggestions" ? (
         <div className="p-4">
           <SuggestionsPage />
         </div>

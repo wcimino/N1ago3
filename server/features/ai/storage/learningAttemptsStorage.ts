@@ -1,6 +1,6 @@
 import { db } from "../../../db.js";
 import { learningAttempts, type LearningAttempt, type InsertLearningAttempt, type LearningAttemptResult } from "../../../../shared/schema.js";
-import { eq, desc, and, gte, SQL } from "drizzle-orm";
+import { eq, desc, and, gte, sql, SQL } from "drizzle-orm";
 
 export const learningAttemptsStorage = {
   async create(data: InsertLearningAttempt): Promise<LearningAttempt> {
@@ -45,14 +45,35 @@ export const learningAttemptsStorage = {
     skippedByAgent: number;
     processingError: number;
   }> {
-    const results = await this.getAll({ since, limit: 10000 });
-    
+    const sinceCondition = since
+      ? sql`AND created_at >= ${since}`
+      : sql``;
+
+    const result = await db.execute(sql`
+      SELECT 
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE result = 'suggestion_created') as suggestion_created,
+        COUNT(*) FILTER (WHERE result = 'insufficient_messages') as insufficient_messages,
+        COUNT(*) FILTER (WHERE result = 'skipped_by_agent') as skipped_by_agent,
+        COUNT(*) FILTER (WHERE result = 'processing_error') as processing_error
+      FROM learning_attempts
+      WHERE 1=1 ${sinceCondition}
+    `);
+
+    const row = result.rows[0] as {
+      total: string;
+      suggestion_created: string;
+      insufficient_messages: string;
+      skipped_by_agent: string;
+      processing_error: string;
+    };
+
     return {
-      total: results.length,
-      suggestionCreated: results.filter(r => r.result === "suggestion_created").length,
-      insufficientMessages: results.filter(r => r.result === "insufficient_messages").length,
-      skippedByAgent: results.filter(r => r.result === "skipped_by_agent").length,
-      processingError: results.filter(r => r.result === "processing_error").length,
+      total: parseInt(row.total || "0", 10),
+      suggestionCreated: parseInt(row.suggestion_created || "0", 10),
+      insufficientMessages: parseInt(row.insufficient_messages || "0", 10),
+      skippedByAgent: parseInt(row.skipped_by_agent || "0", 10),
+      processingError: parseInt(row.processing_error || "0", 10),
     };
   },
 
