@@ -1,5 +1,14 @@
 import type { StandardEvent, AuthorType } from "../types.js";
 
+const N1AGO_INTEGRATION_IDS = [
+  "69357782256891c6fda71018",
+  "693577c73ef61062218d9705",
+];
+
+function isN1agoIntegration(appId: string | undefined): boolean {
+  return !!appId && N1AGO_INTEGRATION_IDS.includes(appId);
+}
+
 export function mapAuthorType(type: string | undefined): AuthorType {
   const mapping: Record<string, AuthorType> = {
     user: "customer",
@@ -22,6 +31,9 @@ export function mapMessageEvents(payload: any, root: any, source: string): Stand
     const content = message.content || {};
     const conversationData = payload.conversation || root.conversation || {};
     const userData = payload.user || root.user;
+    
+    const authorId = author.userId || author.appId;
+    const authorName = isN1agoIntegration(author.appId) ? "N1ago" : author.displayName;
 
     events.push({
       eventType: "message",
@@ -31,8 +43,8 @@ export function mapMessageEvents(payload: any, root: any, source: string): Stand
       externalConversationId: conversationData.id,
       externalUserId: userData?.id,
       authorType: mapAuthorType(author.type),
-      authorId: author.userId || author.appId,
-      authorName: author.displayName,
+      authorId,
+      authorName,
       contentText: content.text,
       contentPayload: content.type !== "text" ? content : null,
       occurredAt: message.received ? new Date(message.received) : new Date(),
