@@ -232,14 +232,21 @@ export function KnowledgeBaseForm({
           </div>
           <div>
             <label className={labelClass}>Intenção *</label>
-            <div className="relative">
-              <select name="intent" value={formData.intent} onChange={handleChange} className={selectClass} required>
-                <option value="">Selecione</option>
-                <option value="Suporte">Suporte</option>
-                <option value="Contratar">Contratar</option>
-                <option value="Outros">Outros</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <div className="flex flex-col gap-2 mt-1">
+              {["Suporte", "Contratar", "Outros"].map((option) => (
+                <label key={option} className="flex items-center gap-2 cursor-pointer group">
+                  <input
+                    type="radio"
+                    name="intent"
+                    value={option}
+                    checked={formData.intent === option}
+                    onChange={handleChange}
+                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 cursor-pointer"
+                    required
+                  />
+                  <span className="text-sm text-gray-700 group-hover:text-gray-900">{option}</span>
+                </label>
+              ))}
             </div>
           </div>
         </div>
