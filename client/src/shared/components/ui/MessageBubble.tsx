@@ -113,6 +113,7 @@ function FormResponseContent({ payload }: { payload: FormResponsePayload }) {
 export function MessageBubble({ message, onImageClick }: MessageBubbleProps) {
   const { formatDateTimeShort } = useDateFormatters();
   const isCustomer = isCustomerMessage(message.author_type);
+  const isN1ago = message.author_name?.toLowerCase().startsWith("n1ago");
   const hasImage = message.content_type === "image" && message.content_payload && "mediaUrl" in message.content_payload;
   
   const timestamp = message.zendesk_timestamp || message.received_at;
@@ -158,25 +159,29 @@ export function MessageBubble({ message, onImageClick }: MessageBubbleProps) {
     );
   };
 
+  const getBubbleStyle = () => {
+    if (isCustomer) {
+      return "bg-white rounded-tl-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl";
+    }
+    if (isN1ago) {
+      return "bg-purple-100 rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl";
+    }
+    return "bg-green-100 rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl";
+  };
+
   return (
     <div className={`flex ${isCustomer ? "justify-start" : "justify-end"}`}>
-      <div
-        className={`max-w-[75%] ${
-          isCustomer
-            ? "bg-white rounded-tl-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl"
-            : "bg-green-100 rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl"
-        } shadow-sm px-4 py-2`}
-      >
+      <div className={`max-w-[75%] ${getBubbleStyle()} shadow-sm px-4 py-2`}>
         <div className="flex items-center gap-2 mb-1">
-          <span className={`w-2 h-2 rounded-full ${getAuthorColor(message.author_type)}`} />
-          <span className="text-xs font-medium text-gray-700">
+          <span className={`w-2 h-2 rounded-full ${isN1ago ? "bg-purple-500" : getAuthorColor(message.author_type)}`} />
+          <span className={`text-xs font-medium ${isN1ago ? "text-purple-700" : "text-gray-700"}`}>
             {message.author_name || message.author_type}
           </span>
         </div>
 
         {renderContent()}
 
-        <p className="text-[10px] text-gray-400 mt-1 text-right">
+        <p className={`text-[10px] mt-1 text-right ${isN1ago ? "text-purple-400" : "text-gray-400"}`}>
           {timestamp ? formatDateTimeShort(timestamp) : "-"}
         </p>
       </div>
