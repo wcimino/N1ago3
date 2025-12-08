@@ -319,4 +319,16 @@ export const conversationCrud = {
     
     return result[0] || null;
   },
+
+  async updateConversationAutopilot(conversationId: number, enabled: boolean) {
+    const result = await db.update(conversations)
+      .set({
+        autopilotEnabled: enabled,
+        updatedAt: new Date(),
+      })
+      .where(eq(conversations.id, conversationId))
+      .returning();
+    
+    return result[0] || null;
+  },
 };

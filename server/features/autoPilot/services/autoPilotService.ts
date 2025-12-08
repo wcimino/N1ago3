@@ -75,6 +75,10 @@ async function shouldSendResponse(suggestion: typeof responsesSuggested.$inferSe
     return { shouldSend: false, reason: "conversation_not_found" };
   }
   
+  if (!conversation.autopilotEnabled) {
+    return { shouldSend: false, reason: "autopilot_disabled_for_conversation" };
+  }
+  
   const n1agoIntegrationId = ZendeskApiService.getN1agoIntegrationId();
   
   if (conversation.currentHandler !== n1agoIntegrationId && conversation.currentHandlerName !== "n1ago") {

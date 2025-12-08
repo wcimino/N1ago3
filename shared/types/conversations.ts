@@ -123,6 +123,7 @@ export interface ConversationWithMessages {
     closed_reason: string | null;
     created_at: string;
     updated_at: string;
+    autopilot_enabled: boolean;
   };
   messages: Message[];
   summary: ConversationSummary | null;

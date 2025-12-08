@@ -80,6 +80,7 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
           closed_reason: item.conversation.closedReason,
           created_at: item.conversation.createdAt,
           updated_at: item.conversation.updatedAt,
+          autopilot_enabled: item.conversation.autopilotEnabled,
         },
         messages: item.messages,
         summary: summary ? {
@@ -150,6 +151,32 @@ router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedU
 router.get("/api/users/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const stats = await storage.getUsersStats();
   res.json(stats);
+});
+
+router.patch("/api/conversations/:id/autopilot", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id);
+  
+  if (isNaN(id)) {
+    return res.status(400).json({ error: "Invalid conversation ID" });
+  }
+
+  const { enabled } = req.body;
+  
+  if (typeof enabled !== "boolean") {
+    return res.status(400).json({ error: "enabled must be a boolean" });
+  }
+
+  const result = await storage.updateConversationAutopilot(id, enabled);
+  
+  if (!result) {
+    return res.status(404).json({ error: "Conversation not found" });
+  }
+
+  res.json({ 
+    conversation_id: id, 
+    autopilot_enabled: enabled,
+    message: enabled ? "AutoPilot ativado" : "AutoPilot pausado"
+  });
 });
 
 export default router;

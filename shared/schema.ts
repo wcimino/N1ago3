@@ -120,6 +120,7 @@ export const conversations = pgTable("conversations", {
   closedReason: text("closed_reason"),
   currentHandler: text("current_handler"),
   currentHandlerName: text("current_handler_name"),
+  autopilotEnabled: boolean("autopilot_enabled").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   metadataJson: json("metadata_json"),

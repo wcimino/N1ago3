@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { XCircle, MessageCircle, ChevronLeft, FileText, Eye, EyeOff, ArrowRightLeft } from "lucide-react";
+import { XCircle, MessageCircle, ChevronLeft, FileText, Eye, EyeOff, ArrowRightLeft, Zap, ZapOff } from "lucide-react";
 import type { UserConversationsMessagesResponse, ImagePayload } from "../../../types";
 import { ImageLightbox, LoadingState, SegmentedTabs } from "../../../shared/components/ui";
 import { HandlerBadge } from "../../../shared/components/badges/HandlerBadge";
 import { ConversationSelector, ConversationSummary, ConversationChat, TransferConversationModal } from "../components";
 import { useResizablePanel, useDateFormatters } from "../../../shared/hooks";
-import { fetchApi } from "../../../lib/queryClient";
+import { fetchApi, apiRequest } from "../../../lib/queryClient";
 import { getUserDisplayNameFromProfile } from "../../../lib/userUtils";
 
 interface UserConversationsPageProps {
@@ -34,12 +34,23 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
     maxWidth: 50,
   });
 
+  const queryClient = useQueryClient();
+
   const { data, isLoading, error } = useQuery<UserConversationsMessagesResponse>({
     queryKey: ["user-conversations-messages", userId],
     queryFn: () => fetchApi<UserConversationsMessagesResponse>(
       `/api/conversations/user/${encodeURIComponent(userId)}/messages`
     ),
     refetchInterval: 10000,
+  });
+
+  const toggleAutopilotMutation = useMutation({
+    mutationFn: async ({ conversationId, enabled }: { conversationId: number; enabled: boolean }) => {
+      return apiRequest("PATCH", `/api/conversations/${conversationId}/autopilot`, { enabled });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-conversations-messages", userId] });
+    },
   });
 
   const sortedConversations = data?.conversations
@@ -107,6 +118,33 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
               size="sm" 
               showLabel 
             />
+            {selectedConversation.conversation.current_handler_name === "n1ago" && (
+              <button
+                onClick={() => toggleAutopilotMutation.mutate({
+                  conversationId: selectedConversation.conversation.id,
+                  enabled: !selectedConversation.conversation.autopilot_enabled,
+                })}
+                disabled={toggleAutopilotMutation.isPending}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-lg transition-colors ${
+                  selectedConversation.conversation.autopilot_enabled
+                    ? "text-amber-600 hover:text-amber-700 border-amber-200 hover:border-amber-300 hover:bg-amber-50"
+                    : "text-green-600 hover:text-green-700 border-green-200 hover:border-green-300 hover:bg-green-50"
+                }`}
+                title={selectedConversation.conversation.autopilot_enabled ? "Pausar AutoPilot" : "Ativar AutoPilot"}
+              >
+                {selectedConversation.conversation.autopilot_enabled ? (
+                  <>
+                    <ZapOff className="w-4 h-4" />
+                    <span className="hidden sm:inline">Pausar AutoPilot</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4" />
+                    <span className="hidden sm:inline">Ativar AutoPilot</span>
+                  </>
+                )}
+              </button>
+            )}
             <button
               onClick={() => setShowTransferModal(true)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-purple-600 hover:text-purple-700 border border-purple-200 hover:border-purple-300 rounded-lg hover:bg-purple-50 transition-colors"

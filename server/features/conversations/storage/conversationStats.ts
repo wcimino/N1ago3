@@ -176,6 +176,7 @@ export const conversationStats = {
         c.created_at as conv_created_at,
         c.updated_at as conv_updated_at,
         c.metadata_json,
+        c.autopilot_enabled,
         COALESCE(
           JSON_AGG(
             CASE WHEN e.id IS NOT NULL THEN
@@ -217,6 +218,7 @@ export const conversationStats = {
         createdAt: row.conv_created_at,
         updatedAt: row.conv_updated_at,
         metadataJson: row.metadata_json,
+        autopilotEnabled: row.autopilot_enabled,
       },
       messages: row.messages || [],
     }));
