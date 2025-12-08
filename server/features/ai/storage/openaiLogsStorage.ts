@@ -1,6 +1,6 @@
 import { db } from "../../../db.js";
 import { openaiApiConfig, openaiApiLogs, responsesSuggested } from "../../../../shared/schema.js";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, gte, sql, and } from "drizzle-orm";
 import type { OpenaiApiConfig, InsertOpenaiApiConfig, OpenaiApiLog, InsertOpenaiApiLog, SuggestedResponse } from "../../../../shared/schema.js";
 
 export const openaiLogsStorage = {
