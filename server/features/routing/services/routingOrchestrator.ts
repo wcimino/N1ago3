@@ -5,7 +5,7 @@ import type { EventStandard } from "../../../../shared/schema.js";
 const processedConversations = new Set<string>();
 
 export function shouldProcessRouting(event: EventStandard): boolean {
-  if (event.eventType !== "conversation:create" && event.eventType !== "zendesk:conversation:create") {
+  if (event.eventType !== "conversation_started") {
     return false;
   }
 
