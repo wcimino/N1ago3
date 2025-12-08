@@ -258,13 +258,11 @@ export function HomePage() {
           linkTo="/conversations"
           badge="24h"
         >
-          <div className="flex-1 flex items-center justify-center">
-            <DonutChart
-              authenticated={usersStats?.authenticated || 0}
-              anonymous={usersStats?.anonymous || 0}
-              total={usersStats?.total || 0}
-            />
-          </div>
+          <DonutChart
+            authenticated={usersStats?.authenticated || 0}
+            anonymous={usersStats?.anonymous || 0}
+            total={usersStats?.total || 0}
+          />
         </StatsCard>
 
         <StatsCard
