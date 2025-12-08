@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Search, FileText, Tag, Package } from "lucide-react";
+import { Search, FileText, Tag, Package, BookOpen, Database } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
-type SearchType = "combined" | "product" | "category" | "keywords";
+type ToolType = "knowledge_base" | "product_catalog";
+type KBSearchType = "combined" | "product" | "category" | "keywords";
 
-interface SearchResult {
+interface KBSearchResult {
   id: number;
   productStandard: string | null;
   subproductStandard: string | null;
@@ -14,238 +15,403 @@ interface SearchResult {
   score?: number;
 }
 
-interface SearchResponse {
-  results: SearchResult[];
+interface KBSearchResponse {
+  results: KBSearchResult[];
   total: number;
 }
 
-export function ToolsPage() {
-  const [searchType, setSearchType] = useState<SearchType>("combined");
-  const [product, setProduct] = useState("");
-  const [intent, setIntent] = useState("");
-  const [keywords, setKeywords] = useState("");
-  const [searchTrigger, setSearchTrigger] = useState(0);
+interface ProductResult {
+  id: number;
+  produto: string;
+  subproduto: string | null;
+  categoria1: string | null;
+  categoria2: string | null;
+  fullName: string;
+}
 
-  const buildSearchParams = () => {
+export function ToolsPage() {
+  const [activeTool, setActiveTool] = useState<ToolType>("knowledge_base");
+  
+  const [kbSearchType, setKbSearchType] = useState<KBSearchType>("combined");
+  const [kbProduct, setKbProduct] = useState("");
+  const [kbIntent, setKbIntent] = useState("");
+  const [kbKeywords, setKbKeywords] = useState("");
+  const [kbSearchTrigger, setKbSearchTrigger] = useState(0);
+
+  const [productQuery, setProductQuery] = useState("");
+  const [productSearchTrigger, setProductSearchTrigger] = useState(0);
+
+  const buildKBSearchParams = () => {
     const params = new URLSearchParams();
     params.set("limit", "10");
 
-    switch (searchType) {
+    switch (kbSearchType) {
       case "combined":
-        if (product) params.set("product", product);
-        if (intent) params.set("intent", intent);
-        if (keywords) params.set("keywords", keywords);
+        if (kbProduct) params.set("product", kbProduct);
+        if (kbIntent) params.set("intent", kbIntent);
+        if (kbKeywords) params.set("keywords", kbKeywords);
         return { endpoint: "/api/knowledge-base-search", params };
       case "product":
-        params.set("q", product);
+        params.set("q", kbProduct);
         return { endpoint: "/api/knowledge-base-search/product", params };
       case "category":
-        params.set("category1", intent);
+        params.set("category1", kbIntent);
         return { endpoint: "/api/knowledge-base-search/category", params };
       case "keywords":
-        params.set("q", keywords);
+        params.set("q", kbKeywords);
         return { endpoint: "/api/knowledge-base-search/keywords", params };
       default:
         return { endpoint: "/api/knowledge-base-search", params };
     }
   };
 
-  const { endpoint, params } = buildSearchParams();
+  const { endpoint: kbEndpoint, params: kbParams } = buildKBSearchParams();
 
-  const { data, isLoading, error, refetch } = useQuery<SearchResponse>({
-    queryKey: ["knowledge-search", searchType, product, intent, keywords, searchTrigger],
+  const { data: kbData, isLoading: kbLoading, error: kbError } = useQuery<KBSearchResponse>({
+    queryKey: ["knowledge-search", kbSearchType, kbProduct, kbIntent, kbKeywords, kbSearchTrigger],
     queryFn: async () => {
-      const res = await fetch(`${endpoint}?${params.toString()}`, {
+      const res = await fetch(`${kbEndpoint}?${kbParams.toString()}`, {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Falha na busca");
       return res.json();
     },
-    enabled: searchTrigger > 0,
+    enabled: kbSearchTrigger > 0 && activeTool === "knowledge_base",
   });
 
-  const handleSearch = () => {
-    setSearchTrigger(prev => prev + 1);
+  const { data: productData, isLoading: productLoading, error: productError } = useQuery<ProductResult[]>({
+    queryKey: ["product-catalog-search", productQuery, productSearchTrigger],
+    queryFn: async () => {
+      const res = await fetch(`/api/ifood-products?q=${encodeURIComponent(productQuery)}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Falha na busca");
+      return res.json();
+    },
+    enabled: productSearchTrigger > 0 && activeTool === "product_catalog",
+  });
+
+  const handleKBSearch = () => {
+    setKbSearchTrigger(prev => prev + 1);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleProductSearch = () => {
+    setProductSearchTrigger(prev => prev + 1);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent, searchFn: () => void) => {
     if (e.key === "Enter") {
-      handleSearch();
+      searchFn();
     }
   };
 
   return (
     <div className="space-y-6">
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-blue-800 mb-2">Ferramenta de Teste</h3>
+        <h3 className="text-sm font-medium text-blue-800 mb-2">Ferramentas de IA</h3>
         <p className="text-sm text-blue-700">
-          Use esta interface para testar as buscas na base de conhecimento. 
-          Essas mesmas funções serão usadas pelos agentes de IA para enriquecer contexto.
+          Use esta interface para testar as ferramentas disponíveis para os agentes de IA. 
+          Essas mesmas funções são usadas automaticamente quando habilitadas nas configurações de cada agente.
         </p>
       </div>
 
-      <div className="bg-white border rounded-lg p-4 space-y-4">
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setSearchType("combined")}
-            className={`px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 ${
-              searchType === "combined"
-                ? "bg-indigo-100 text-indigo-700 font-medium"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            <Search className="w-4 h-4" />
-            Busca Combinada
-          </button>
-          <button
-            onClick={() => setSearchType("product")}
-            className={`px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 ${
-              searchType === "product"
-                ? "bg-indigo-100 text-indigo-700 font-medium"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            <Package className="w-4 h-4" />
-            Por Produto
-          </button>
-          <button
-            onClick={() => setSearchType("category")}
-            className={`px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 ${
-              searchType === "category"
-                ? "bg-indigo-100 text-indigo-700 font-medium"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            <Tag className="w-4 h-4" />
-            Por Categoria
-          </button>
-          <button
-            onClick={() => setSearchType("keywords")}
-            className={`px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 ${
-              searchType === "keywords"
-                ? "bg-indigo-100 text-indigo-700 font-medium"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            Por Palavras-chave
-          </button>
-        </div>
-
-        <div className="grid gap-3">
-          {(searchType === "combined" || searchType === "product") && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Produto</label>
-              <input
-                type="text"
-                value={product}
-                onChange={(e) => setProduct(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ex: Conta Digital, Cartão de Crédito"
-                className="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-          )}
-
-          {(searchType === "combined" || searchType === "category") && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Intent</label>
-              <input
-                type="text"
-                value={intent}
-                onChange={(e) => setIntent(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ex: Aumento de Limite, Bloqueio de Cartão"
-                className="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-          )}
-
-          {(searchType === "combined" || searchType === "keywords") && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Palavras-chave {searchType === "combined" && "(separadas por vírgula)"}
-              </label>
-              <input
-                type="text"
-                value={keywords}
-                onChange={(e) => setKeywords(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ex: pix, transferência, limite"
-                className="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-          )}
-        </div>
-
+      <div className="flex gap-2 border-b pb-3">
         <button
-          onClick={handleSearch}
-          disabled={isLoading}
-          className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
+          onClick={() => setActiveTool("knowledge_base")}
+          className={`px-4 py-2 text-sm rounded-lg flex items-center gap-2 font-medium transition-colors ${
+            activeTool === "knowledge_base"
+              ? "bg-indigo-600 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
         >
-          <Search className="w-4 h-4" />
-          {isLoading ? "Buscando..." : "Buscar"}
+          <BookOpen className="w-4 h-4" />
+          search_knowledge_base
+        </button>
+        <button
+          onClick={() => setActiveTool("product_catalog")}
+          className={`px-4 py-2 text-sm rounded-lg flex items-center gap-2 font-medium transition-colors ${
+            activeTool === "product_catalog"
+              ? "bg-indigo-600 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          <Database className="w-4 h-4" />
+          search_product_catalog
         </button>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-sm text-red-700">Erro ao buscar: {(error as Error).message}</p>
-        </div>
-      )}
+      {activeTool === "knowledge_base" && (
+        <>
+          <div className="bg-white border rounded-lg p-4 space-y-4">
+            <div>
+              <p className="text-sm text-gray-600 mb-3">
+                Busca artigos na base de conhecimento por produto, intenção e palavras-chave.
+                Usada pelo agente de <strong>Resposta</strong> para enriquecer contexto.
+              </p>
+            </div>
 
-      {data && (
-        <div className="bg-white border rounded-lg overflow-hidden">
-          <div className="px-4 py-3 border-b bg-gray-50">
-            <h3 className="text-sm font-medium text-gray-900">
-              Resultados ({data.total} {data.total === 1 ? "artigo" : "artigos"})
-            </h3>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setKbSearchType("combined")}
+                className={`px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 ${
+                  kbSearchType === "combined"
+                    ? "bg-indigo-100 text-indigo-700 font-medium"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                <Search className="w-4 h-4" />
+                Busca Combinada
+              </button>
+              <button
+                onClick={() => setKbSearchType("product")}
+                className={`px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 ${
+                  kbSearchType === "product"
+                    ? "bg-indigo-100 text-indigo-700 font-medium"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                <Package className="w-4 h-4" />
+                Por Produto
+              </button>
+              <button
+                onClick={() => setKbSearchType("category")}
+                className={`px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 ${
+                  kbSearchType === "category"
+                    ? "bg-indigo-100 text-indigo-700 font-medium"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                <Tag className="w-4 h-4" />
+                Por Categoria
+              </button>
+              <button
+                onClick={() => setKbSearchType("keywords")}
+                className={`px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 ${
+                  kbSearchType === "keywords"
+                    ? "bg-indigo-100 text-indigo-700 font-medium"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                Por Palavras-chave
+              </button>
+            </div>
+
+            <div className="grid gap-3">
+              {(kbSearchType === "combined" || kbSearchType === "product") && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Produto</label>
+                  <input
+                    type="text"
+                    value={kbProduct}
+                    onChange={(e) => setKbProduct(e.target.value)}
+                    onKeyPress={(e) => handleKeyPress(e, handleKBSearch)}
+                    placeholder="Ex: Conta Digital, Cartão de Crédito"
+                    className="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+              )}
+
+              {(kbSearchType === "combined" || kbSearchType === "category") && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Intenção</label>
+                  <select
+                    value={kbIntent}
+                    onChange={(e) => setKbIntent(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">Todas</option>
+                    <option value="suporte">suporte</option>
+                    <option value="contratar">contratar</option>
+                  </select>
+                </div>
+              )}
+
+              {(kbSearchType === "combined" || kbSearchType === "keywords") && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Palavras-chave {kbSearchType === "combined" && "(separadas por vírgula)"}
+                  </label>
+                  <input
+                    type="text"
+                    value={kbKeywords}
+                    onChange={(e) => setKbKeywords(e.target.value)}
+                    onKeyPress={(e) => handleKeyPress(e, handleKBSearch)}
+                    placeholder="Ex: pix, transferência, limite"
+                    className="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={handleKBSearch}
+              disabled={kbLoading}
+              className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <Search className="w-4 h-4" />
+              {kbLoading ? "Buscando..." : "Buscar"}
+            </button>
           </div>
 
-          {data.results.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p>Nenhum artigo encontrado</p>
-            </div>
-          ) : (
-            <div className="divide-y">
-              {data.results.map((article) => (
-                <div key={article.id} className="p-4 hover:bg-gray-50">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
-                          {article.productStandard || "Sem produto"}
-                        </span>
-                        {article.intent && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                            {article.intent}
-                          </span>
-                        )}
-                        {article.score !== undefined && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                            Score: {article.score}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-900 mb-1">
-                        {article.description || "Sem descrição"}
-                      </p>
-                      {article.resolution && (
-                        <p className="text-sm text-gray-600">
-                          <span className="font-medium">Resolução:</span> {article.resolution}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      #{article.id}
-                    </div>
-                  </div>
-                </div>
-              ))}
+          {kbError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-700">Erro ao buscar: {(kbError as Error).message}</p>
             </div>
           )}
-        </div>
+
+          {kbData && (
+            <div className="bg-white border rounded-lg overflow-hidden">
+              <div className="px-4 py-3 border-b bg-gray-50">
+                <h3 className="text-sm font-medium text-gray-900">
+                  Resultados ({kbData.total} {kbData.total === 1 ? "artigo" : "artigos"})
+                </h3>
+              </div>
+
+              {kbData.results.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p>Nenhum artigo encontrado</p>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {kbData.results.map((article) => (
+                    <div key={article.id} className="p-4 hover:bg-gray-50">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                              {article.productStandard || "Sem produto"}
+                            </span>
+                            {article.intent && (
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                article.intent === "contratar" 
+                                  ? "bg-green-100 text-green-700" 
+                                  : "bg-gray-100 text-gray-700"
+                              }`}>
+                                {article.intent}
+                              </span>
+                            )}
+                            {article.score !== undefined && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                                Score: {article.score}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-900 mb-1">
+                            {article.description || "Sem descrição"}
+                          </p>
+                          {article.resolution && (
+                            <p className="text-sm text-gray-600">
+                              <span className="font-medium">Resolução:</span> {article.resolution}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          #{article.id}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTool === "product_catalog" && (
+        <>
+          <div className="bg-white border rounded-lg p-4 space-y-4">
+            <div>
+              <p className="text-sm text-gray-600 mb-3">
+                Busca produtos no catálogo hierárquico (Produto &gt; Subproduto &gt; Categoria 1 &gt; Categoria 2).
+                Usada pelo agente de <strong>Aprendizado</strong> para auto-categorização de artigos.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Buscar produto</label>
+              <input
+                type="text"
+                value={productQuery}
+                onChange={(e) => setProductQuery(e.target.value)}
+                onKeyPress={(e) => handleKeyPress(e, handleProductSearch)}
+                placeholder="Ex: Antecipação, Cartão, Conta Digital..."
+                className="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+
+            <button
+              onClick={handleProductSearch}
+              disabled={productLoading}
+              className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <Search className="w-4 h-4" />
+              {productLoading ? "Buscando..." : "Buscar"}
+            </button>
+          </div>
+
+          {productError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-700">Erro ao buscar: {(productError as Error).message}</p>
+            </div>
+          )}
+
+          {productData && (
+            <div className="bg-white border rounded-lg overflow-hidden">
+              <div className="px-4 py-3 border-b bg-gray-50">
+                <h3 className="text-sm font-medium text-gray-900">
+                  Resultados ({productData.length} {productData.length === 1 ? "produto" : "produtos"})
+                </h3>
+              </div>
+
+              {productData.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <Database className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p>Nenhum produto encontrado</p>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {productData.map((product) => (
+                    <div key={product.id} className="p-4 hover:bg-gray-50">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                              {product.produto}
+                            </span>
+                            {product.subproduto && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                                {product.subproduto}
+                              </span>
+                            )}
+                            {product.categoria1 && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                                {product.categoria1}
+                              </span>
+                            )}
+                            {product.categoria2 && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700">
+                                {product.categoria2}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600 font-mono">
+                            {product.fullName}
+                          </p>
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          #{product.id}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
