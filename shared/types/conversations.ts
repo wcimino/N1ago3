@@ -101,6 +101,7 @@ export interface ConversationSummary {
   agent_actions: string | null;
   current_status: string | null;
   important_info: string | null;
+  customer_emotion_level: number | null;
 }
 
 export interface SuggestedResponse {

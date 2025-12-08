@@ -1,4 +1,4 @@
-import { Sparkles, Clock, Package, Target } from "lucide-react";
+import { Sparkles, Clock, Package, Target, Heart } from "lucide-react";
 import { useDateFormatters } from "../../../shared/hooks";
 import type { ConversationSummary } from "../types/conversations";
 
@@ -22,6 +22,14 @@ const intentColors: Record<string, string> = {
   duvida: "bg-yellow-100 text-yellow-700",
   reclamacao: "bg-orange-100 text-orange-700",
   outros: "bg-gray-100 text-gray-700",
+};
+
+const emotionConfig: Record<number, { label: string; color: string; emoji: string }> = {
+  1: { label: "Muito positivo", color: "bg-green-100 text-green-700", emoji: "😊" },
+  2: { label: "Positivo", color: "bg-emerald-100 text-emerald-700", emoji: "🙂" },
+  3: { label: "Neutro", color: "bg-gray-100 text-gray-600", emoji: "😐" },
+  4: { label: "Irritado", color: "bg-orange-100 text-orange-700", emoji: "😤" },
+  5: { label: "Muito irritado", color: "bg-red-100 text-red-700", emoji: "😠" },
 };
 
 export function ConversationSummaryCard({ summary }: ConversationSummaryCardProps) {
@@ -62,8 +70,14 @@ export function ConversationSummaryCard({ summary }: ConversationSummaryCardProp
             )}
           </div>
 
-          {hasClassification && (
+          {(hasClassification || summary.customer_emotion_level) && (
             <div className="flex flex-wrap gap-2 mb-3">
+              {summary.customer_emotion_level && emotionConfig[summary.customer_emotion_level] && (
+                <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${emotionConfig[summary.customer_emotion_level].color}`}>
+                  <span>{emotionConfig[summary.customer_emotion_level].emoji}</span>
+                  {emotionConfig[summary.customer_emotion_level].label}
+                </div>
+              )}
               {summary.product && (
                 <div className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
                   <Package className="w-3 h-3" />

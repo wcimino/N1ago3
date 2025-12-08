@@ -88,6 +88,7 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
           agent_actions: summary.agentActions,
           current_status: summary.currentStatus,
           important_info: summary.importantInfo,
+          customer_emotion_level: summary.customerEmotionLevel,
         } : null,
         suggested_responses: suggestedResponses.map(sr => ({
           text: sr.suggestedResponse,
@@ -136,6 +137,7 @@ router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedU
     agent_actions: summary.agentActions,
     current_status: summary.currentStatus,
     important_info: summary.importantInfo,
+    customer_emotion_level: summary.customerEmotionLevel,
   });
 });
 

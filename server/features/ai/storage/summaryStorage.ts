@@ -33,6 +33,7 @@ export const summaryStorage = {
           agentActions: data.agentActions,
           currentStatus: data.currentStatus,
           importantInfo: data.importantInfo,
+          customerEmotionLevel: data.customerEmotionLevel,
           lastEventId: data.lastEventId,
           externalConversationId: data.externalConversationId,
           product: data.product,

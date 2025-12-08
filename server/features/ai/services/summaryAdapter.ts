@@ -23,6 +23,7 @@ export interface StructuredSummary {
   agentActions?: string;
   currentStatus?: string;
   importantInfo?: string;
+  customerEmotionLevel?: number;
 }
 
 export interface SummaryResult {
@@ -60,8 +61,18 @@ const DEFAULT_SUMMARY_RESPONSE_FORMAT = `Responda em JSON com a seguinte estrutu
   "clientRequest": "O que o cliente solicitou ou qual problema relatou",
   "agentActions": "O que o atendente fez para resolver",
   "currentStatus": "Status atual: Resolvido, Em andamento, Aguardando cliente, etc",
-  "importantInfo": "Informações relevantes como prazos, valores, documentos pendentes"
-}`;
+  "importantInfo": "Informações relevantes como prazos, valores, documentos pendentes",
+  "customerEmotionLevel": 3
+}
+
+## Escala de Emoção do Cliente (customerEmotionLevel):
+- 1: Muito feliz/positivo - Entusiasmado, cordial, elogiando, tom leve
+- 2: Levemente positivo - Educado, simpático, colaborativo
+- 3: Neutro - Direto, factual, sem emoção aparente
+- 4: Levemente irritado - Impaciente, seco, reclama, pressiona
+- 5: Muito irritado/crítico - Tom agressivo, tensão alta, perda de paciência
+
+Avalie o nível de emoção do cliente com base nas últimas mensagens da conversa.`;
 
 function parseStructuredSummary(responseContent: string): StructuredSummary | null {
   try {
@@ -70,11 +81,17 @@ function parseStructuredSummary(responseContent: string): StructuredSummary | nu
     
     const parsed = JSON.parse(jsonMatch[0]);
     
+    const emotionLevel = parsed.customerEmotionLevel || parsed.customer_emotion_level || parsed.nivelEmocaoCliente || parsed.nivel_emocao_cliente;
+    const validEmotionLevel = typeof emotionLevel === 'number' && emotionLevel >= 1 && emotionLevel <= 5 
+      ? emotionLevel 
+      : undefined;
+    
     return {
       clientRequest: parsed.clientRequest || parsed.solicitacaoCliente || parsed.solicitacao_cliente || undefined,
       agentActions: parsed.agentActions || parsed.acoesAtendente || parsed.acoes_atendente || undefined,
       currentStatus: parsed.currentStatus || parsed.statusAtual || parsed.status_atual || undefined,
       importantInfo: parsed.importantInfo || parsed.informacoesImportantes || parsed.informacoes_importantes || undefined,
+      customerEmotionLevel: validEmotionLevel,
     };
   } catch {
     return null;
@@ -162,6 +179,7 @@ export async function generateAndSaveSummary(
       agentActions: result.structured?.agentActions,
       currentStatus: result.structured?.currentStatus,
       importantInfo: result.structured?.importantInfo,
+      customerEmotionLevel: result.structured?.customerEmotionLevel,
       lastEventId,
     });
 

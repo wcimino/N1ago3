@@ -157,6 +157,7 @@ export const conversationsSummary = pgTable("conversations_summary", {
   intent: text("intent"),
   confidence: integer("confidence"),
   classifiedAt: timestamp("classified_at"),
+  customerEmotionLevel: integer("customer_emotion_level"),
   generatedAt: timestamp("generated_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
