@@ -234,17 +234,24 @@ export function KnowledgeBaseForm({
             <label className={labelClass}>Intenção *</label>
             <div className="flex flex-col gap-2 mt-1">
               {["Suporte", "Contratar", "Outros"].map((option) => (
-                <label key={option} className="flex items-center gap-2 cursor-pointer group">
+                <label
+                  key={option}
+                  className={`flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg cursor-pointer transition-all border ${
+                    formData.intent === option
+                      ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                      : "bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50"
+                  }`}
+                >
                   <input
                     type="radio"
                     name="intent"
                     value={option}
                     checked={formData.intent === option}
                     onChange={handleChange}
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 cursor-pointer"
+                    className="sr-only"
                     required
                   />
-                  <span className="text-sm text-gray-700 group-hover:text-gray-900">{option}</span>
+                  {option}
                 </label>
               ))}
             </div>
