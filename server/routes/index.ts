@@ -21,6 +21,7 @@ import knowledgeSuggestionsRoutes from "../features/ai/routes/knowledgeSuggestio
 import learningAttemptsRoutes from "../features/ai/routes/learningAttempts.js";
 
 import maintenanceRoutes from "../features/maintenance/routes/maintenance.js";
+import { zendeskArticlesRouter } from "../features/zendesk-articles/index.js";
 
 export function registerRoutes(app: Express) {
   app.use(webhooksRoutes);
@@ -39,4 +40,5 @@ export function registerRoutes(app: Express) {
   app.use(knowledgeBaseRoutes);
   app.use(knowledgeSuggestionsRoutes);
   app.use(learningAttemptsRoutes);
+  app.use("/api/zendesk-articles", zendeskArticlesRouter);
 }
