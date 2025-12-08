@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Save, X, ChevronDown } from "lucide-react";
+import { Save, X } from "lucide-react";
+import { ModernSelect } from "@/components/ui/modern-select";
 
 interface KnowledgeBaseArticle {
   id: number;
@@ -161,10 +162,29 @@ export function KnowledgeBaseForm({
     formData.description.trim() &&
     formData.resolution.trim();
 
-  const selectClass = "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white transition-colors hover:border-gray-300";
   const inputClass = "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors hover:border-gray-300";
   const textareaClass = "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors hover:border-gray-300";
   const labelClass = "block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide";
+
+  const handleSelectChange = (name: string) => (value: string) => {
+    if (name === "productStandard") {
+      setFormData((prev) => ({
+        ...prev,
+        productStandard: value,
+        subproductStandard: "",
+        category1: "",
+        category2: "",
+      }));
+    } else if (name === "category1") {
+      setFormData((prev) => ({
+        ...prev,
+        category1: value,
+        category2: "",
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -185,48 +205,45 @@ export function KnowledgeBaseForm({
           <div className="space-y-3">
             <div>
               <label className={labelClass}>Produto *</label>
-              <div className="relative">
-                <select name="productStandard" value={formData.productStandard} onChange={handleChange} className={selectClass} required>
-                  <option value="">Selecione</option>
-                  {produtos.map((p) => (<option key={p} value={p}>{p}</option>))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              </div>
+              <ModernSelect
+                value={formData.productStandard}
+                onValueChange={handleSelectChange("productStandard")}
+                options={produtos.map((p) => ({ value: p, label: p }))}
+                placeholder="Selecione"
+              />
             </div>
             {formData.productStandard && subprodutos.length > 0 && (
               <div>
                 <label className={labelClass}>Subproduto</label>
-                <div className="relative">
-                  <select name="subproductStandard" value={formData.subproductStandard} onChange={handleChange} className={selectClass}>
-                    <option value="">Selecione</option>
-                    {subprodutos.map((s) => (<option key={s} value={s}>{s}</option>))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                </div>
+                <ModernSelect
+                  value={formData.subproductStandard || ""}
+                  onValueChange={handleSelectChange("subproductStandard")}
+                  options={subprodutos.map((s) => ({ value: s, label: s }))}
+                  placeholder="Selecione"
+                />
               </div>
             )}
           </div>
           <div className="space-y-3">
             <div>
               <label className={labelClass}>Categoria 1</label>
-              <div className="relative">
-                <select name="category1" value={formData.category1} onChange={handleChange} className={selectClass} disabled={!formData.productStandard || categorias1.length === 0}>
-                  <option value="">{categorias1.length === 0 ? '-' : 'Selecione'}</option>
-                  {categorias1.map((c) => (<option key={c} value={c}>{c}</option>))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              </div>
+              <ModernSelect
+                value={formData.category1 || ""}
+                onValueChange={handleSelectChange("category1")}
+                options={categorias1.map((c) => ({ value: c, label: c }))}
+                placeholder={categorias1.length === 0 ? "-" : "Selecione"}
+                disabled={!formData.productStandard || categorias1.length === 0}
+              />
             </div>
             {formData.category1 && categorias2.length > 0 && (
               <div>
                 <label className={labelClass}>Categoria 2</label>
-                <div className="relative">
-                  <select name="category2" value={formData.category2} onChange={handleChange} className={selectClass}>
-                    <option value="">Selecione</option>
-                    {categorias2.map((c) => (<option key={c} value={c}>{c}</option>))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                </div>
+                <ModernSelect
+                  value={formData.category2 || ""}
+                  onValueChange={handleSelectChange("category2")}
+                  options={categorias2.map((c) => ({ value: c, label: c }))}
+                  placeholder="Selecione"
+                />
               </div>
             )}
           </div>
