@@ -161,13 +161,13 @@ export function KnowledgeBaseForm({
     formData.description.trim() &&
     formData.resolution.trim();
 
-  const selectClass = "w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white";
-  const inputClass = "w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500";
-  const textareaClass = "w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none";
-  const labelClass = "block text-xs font-medium text-gray-600 mb-1";
+  const selectClass = "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white transition-colors hover:border-gray-300";
+  const inputClass = "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors hover:border-gray-300";
+  const textareaClass = "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors hover:border-gray-300";
+  const labelClass = "block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div>
         <label className={labelClass}>Nome do Artigo</label>
         <input
@@ -180,65 +180,67 @@ export function KnowledgeBaseForm({
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <div className="space-y-2">
+      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+        <div className="grid grid-cols-3 gap-6">
+          <div className="space-y-3">
+            <div>
+              <label className={labelClass}>Produto *</label>
+              <div className="relative">
+                <select name="productStandard" value={formData.productStandard} onChange={handleChange} className={selectClass} required>
+                  <option value="">Selecione</option>
+                  {produtos.map((p) => (<option key={p} value={p}>{p}</option>))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+            {formData.productStandard && subprodutos.length > 0 && (
+              <div>
+                <label className={labelClass}>Subproduto</label>
+                <div className="relative">
+                  <select name="subproductStandard" value={formData.subproductStandard} onChange={handleChange} className={selectClass}>
+                    <option value="">Selecione</option>
+                    {subprodutos.map((s) => (<option key={s} value={s}>{s}</option>))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="space-y-3">
+            <div>
+              <label className={labelClass}>Categoria 1</label>
+              <div className="relative">
+                <select name="category1" value={formData.category1} onChange={handleChange} className={selectClass} disabled={!formData.productStandard || categorias1.length === 0}>
+                  <option value="">{categorias1.length === 0 ? '-' : 'Selecione'}</option>
+                  {categorias1.map((c) => (<option key={c} value={c}>{c}</option>))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+            {formData.category1 && categorias2.length > 0 && (
+              <div>
+                <label className={labelClass}>Categoria 2</label>
+                <div className="relative">
+                  <select name="category2" value={formData.category2} onChange={handleChange} className={selectClass}>
+                    <option value="">Selecione</option>
+                    {categorias2.map((c) => (<option key={c} value={c}>{c}</option>))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+            )}
+          </div>
           <div>
-            <label className={labelClass}>Produto *</label>
+            <label className={labelClass}>Intenção *</label>
             <div className="relative">
-              <select name="productStandard" value={formData.productStandard} onChange={handleChange} className={selectClass} required>
+              <select name="intent" value={formData.intent} onChange={handleChange} className={selectClass} required>
                 <option value="">Selecione</option>
-                {produtos.map((p) => (<option key={p} value={p}>{p}</option>))}
+                <option value="Suporte">Suporte</option>
+                <option value="Contratar">Contratar</option>
+                <option value="Outros">Outros</option>
               </select>
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
-          </div>
-          {formData.productStandard && subprodutos.length > 0 && (
-            <div>
-              <label className={labelClass}>Subproduto</label>
-              <div className="relative">
-                <select name="subproductStandard" value={formData.subproductStandard} onChange={handleChange} className={selectClass}>
-                  <option value="">Selecione</option>
-                  {subprodutos.map((s) => (<option key={s} value={s}>{s}</option>))}
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="space-y-2">
-          <div>
-            <label className={labelClass}>Categoria 1</label>
-            <div className="relative">
-              <select name="category1" value={formData.category1} onChange={handleChange} className={selectClass} disabled={!formData.productStandard || categorias1.length === 0}>
-                <option value="">{categorias1.length === 0 ? '-' : 'Selecione'}</option>
-                {categorias1.map((c) => (<option key={c} value={c}>{c}</option>))}
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-            </div>
-          </div>
-          {formData.category1 && categorias2.length > 0 && (
-            <div>
-              <label className={labelClass}>Categoria 2</label>
-              <div className="relative">
-                <select name="category2" value={formData.category2} onChange={handleChange} className={selectClass}>
-                  <option value="">Selecione</option>
-                  {categorias2.map((c) => (<option key={c} value={c}>{c}</option>))}
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-              </div>
-            </div>
-          )}
-        </div>
-        <div>
-          <label className={labelClass}>Intenção *</label>
-          <div className="relative">
-            <select name="intent" value={formData.intent} onChange={handleChange} className={selectClass} required>
-              <option value="">Selecione</option>
-              <option value="Suporte">Suporte</option>
-              <option value="Contratar">Contratar</option>
-              <option value="Outros">Outros</option>
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
           </div>
         </div>
       </div>
@@ -248,22 +250,22 @@ export function KnowledgeBaseForm({
         <textarea name="description" value={formData.description} onChange={handleChange} rows={2} className={textareaClass} placeholder="Descreva a situação ou problema..." required />
       </div>
 
-      <div className="bg-green-50 rounded p-2 border border-green-100">
-        <label className={labelClass}>Resolução *</label>
-        <textarea name="resolution" value={formData.resolution} onChange={handleChange} rows={3} className={`${textareaClass} bg-white`} placeholder="Descreva a solução..." required />
+      <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+        <label className={`${labelClass} text-green-700`}>Resolução *</label>
+        <textarea name="resolution" value={formData.resolution} onChange={handleChange} rows={3} className={`${textareaClass} bg-white border-green-200 focus:ring-green-500 focus:border-green-500`} placeholder="Descreva a solução..." required />
       </div>
 
       <div>
         <label className={`${labelClass} text-gray-400`}>Observações</label>
-        <textarea name="observations" value={formData.observations} onChange={handleChange} rows={1} className={`${textareaClass} bg-gray-50`} placeholder="Opcional..." />
+        <textarea name="observations" value={formData.observations} onChange={handleChange} rows={2} className={`${textareaClass} bg-gray-50 border-gray-100`} placeholder="Opcional..." />
       </div>
 
-      <div className="flex justify-end gap-2 pt-2 border-t">
-        <button type="button" onClick={onCancel} className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 bg-white border rounded hover:bg-gray-50">
-          <X className="w-3.5 h-3.5" /> Cancelar
+      <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+        <button type="button" onClick={onCancel} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors">
+          <X className="w-4 h-4" /> Cancelar
         </button>
-        <button type="submit" disabled={!isValid || isLoading} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
-          <Save className="w-3.5 h-3.5" /> {isLoading ? "Salvando..." : "Salvar"}
+        <button type="submit" disabled={!isValid || isLoading} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm">
+          <Save className="w-4 h-4" /> {isLoading ? "Salvando..." : "Salvar"}
         </button>
       </div>
     </form>
