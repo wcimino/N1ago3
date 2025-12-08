@@ -115,7 +115,14 @@ export function mapGenericEvent(event: any, root: any, source: string): Standard
 export function mapSwitchboardPassControl(root: any, source: string): StandardEvent {
   const conversationData = root.conversation || {};
   const appUser = root.appUser;
-  const activeSwitchboard = root.activeSwitchboardIntegration || {};
+  
+  // Extract activeSwitchboardIntegration from multiple possible locations
+  // New format: root.switchboardConversation.activeSwitchboardIntegration
+  // Legacy format: root.activeSwitchboardIntegration
+  const activeSwitchboard = 
+    root.switchboardConversation?.activeSwitchboardIntegration ||
+    root.activeSwitchboardIntegration ||
+    {};
   
   // Get event ID from the first event or generate from switchboard data
   const firstEvent = root.events?.[0];
