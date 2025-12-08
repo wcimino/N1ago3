@@ -81,6 +81,12 @@ The React frontend provides a real-time dashboard for events and conversations, 
     *   **ToolsPage Modularization:** Reduced from 411 to 33 lines by extracting:
         *   `KnowledgeBaseSearchTool` component for knowledge base search
         *   `ProductCatalogSearchTool` component for product catalog search
+*   **Structured Conversation Summary (December 2025):**
+    *   Added 4 structured columns to `conversations_summary`: `client_request`, `agent_actions`, `current_status`, `important_info`
+    *   Backend parses AI response as JSON and extracts structured fields via `parseStructuredSummary()`
+    *   Frontend displays summary in visual cards with color-coded sections (blue, green, amber, purple)
+    *   Falls back to text display for legacy summaries without structured data
+    *   Prompt must be updated in AI config to return JSON format with the 4 fields
 
 ## Deployment Configuration
 
