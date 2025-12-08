@@ -1,5 +1,5 @@
 import { Route, Switch, Link, Redirect } from "wouter";
-import { Home, Sparkles, Settings, LogOut, MessageCircle, BookOpen, Route as RouteIcon } from "lucide-react";
+import { Home, Sparkles, Settings, LogOut, MessageCircle, BookOpen } from "lucide-react";
 import { useAuth } from "./shared/hooks";
 import { NavLink, EnvironmentBadge, N1agoLogo } from "./shared/components";
 import { TimezoneProvider } from "./contexts/TimezoneContext";
@@ -62,10 +62,6 @@ function AuthenticatedApp() {
                 <BookOpen className="w-4 h-4" />
                 <span className="hidden sm:inline">Base de Conhecimento</span>
               </NavLink>
-              <NavLink href="/routing">
-                <RouteIcon className="w-4 h-4" />
-                <span className="hidden sm:inline">Roteamento</span>
-              </NavLink>
             </div>
             <div className="ml-auto">
               <NavLink href="/settings">
@@ -89,7 +85,7 @@ function AuthenticatedApp() {
           <Route path="/settings/maintenance/export" component={ExportPage} />
           <Route path="/settings/maintenance/export/:rest*" component={ExportPage} />
           <Route path="/knowledge-base" component={KnowledgeBasePage} />
-          <Route path="/routing" component={RoutingRulesPage} />
+          <Route path="/routing-rules" component={RoutingRulesPage} />
           <Route path="/settings">{() => <Redirect to="/settings/access" />}</Route>
           <Route path="/settings/access">{() => <SettingsPage activeTab="access" />}</Route>
           <Route path="/settings/general">{() => <SettingsPage activeTab="general" />}</Route>
