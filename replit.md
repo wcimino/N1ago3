@@ -102,6 +102,11 @@ The React frontend provides a real-time dashboard for events and conversations, 
     *   Atomic slot consumption via `tryConsumeRuleSlot()` prevents race conditions
     *   When a rule is created (e.g., "allocate next 5 conversations to N1ago"), the system automatically requests control via Zendesk Switchboard API (`passControl`)
     *   Rules auto-deactivate when allocation limit is reached
+*   **Webhook Race Condition Fix (December 2025):**
+    *   Added "processing" status to webhook logs to prevent concurrent event creation from immediate processing + polling worker
+    *   Added UNIQUE constraint on `(source, source_event_id)` in `events_standard` table as guardrail
+    *   Polling worker now skips webhooks with "processing" status and recovers stuck webhooks (>5 minutes)
+    *   Duplicate events cleanup tool at `/settings/maintenance/duplicates` with dry-run mode
 
 ## Deployment Configuration
 
