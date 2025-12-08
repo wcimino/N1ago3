@@ -11,6 +11,8 @@ export interface OpenaiApiConfigResponse {
   trigger_author_types: string[];
   prompt_template: string;
   model_name: string;
+  use_knowledge_base_tool: boolean;
+  use_product_catalog_tool: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -21,6 +23,8 @@ export interface OpenaiApiConfigState {
   triggerAuthorTypes: string[];
   promptTemplate: string;
   modelName: string;
+  useKnowledgeBaseTool: boolean;
+  useProductCatalogTool: boolean;
   hasChanges: boolean;
 }
 
@@ -30,6 +34,8 @@ export interface OpenaiApiConfigActions {
   setModelName: (model: string) => void;
   toggleEventType: (eventKey: string) => void;
   toggleAuthorType: (authorType: string) => void;
+  setUseKnowledgeBaseTool: (value: boolean) => void;
+  setUseProductCatalogTool: (value: boolean) => void;
   save: () => void;
 }
 
@@ -49,6 +55,8 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
   const [triggerAuthorTypes, setTriggerAuthorTypes] = useState<string[]>([]);
   const [promptTemplate, setPromptTemplateState] = useState("");
   const [modelName, setModelNameState] = useState("gpt-4o-mini");
+  const [useKnowledgeBaseTool, setUseKnowledgeBaseToolState] = useState(false);
+  const [useProductCatalogTool, setUseProductCatalogToolState] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
   const { data: config, isLoading: isLoadingConfig } = useQuery<OpenaiApiConfigResponse>({
@@ -68,6 +76,8 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       setTriggerAuthorTypes(config.trigger_author_types || []);
       setPromptTemplateState(config.prompt_template);
       setModelNameState(config.model_name);
+      setUseKnowledgeBaseToolState(config.use_knowledge_base_tool ?? false);
+      setUseProductCatalogToolState(config.use_product_catalog_tool ?? false);
       setHasChanges(false);
     }
   }, [config]);
@@ -80,6 +90,8 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
         trigger_author_types: triggerAuthorTypes,
         prompt_template: promptTemplate,
         model_name: modelName,
+        use_knowledge_base_tool: useKnowledgeBaseTool,
+        use_product_catalog_tool: useProductCatalogTool,
       });
     },
     onSuccess: () => {
@@ -123,6 +135,16 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
     markChanged();
   }, [markChanged]);
 
+  const setUseKnowledgeBaseTool = useCallback((value: boolean) => {
+    setUseKnowledgeBaseToolState(value);
+    markChanged();
+  }, [markChanged]);
+
+  const setUseProductCatalogTool = useCallback((value: boolean) => {
+    setUseProductCatalogToolState(value);
+    markChanged();
+  }, [markChanged]);
+
   const save = useCallback(() => {
     saveMutation.mutate();
   }, [saveMutation]);
@@ -134,6 +156,8 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       triggerAuthorTypes,
       promptTemplate,
       modelName,
+      useKnowledgeBaseTool,
+      useProductCatalogTool,
       hasChanges,
     },
     actions: {
@@ -142,6 +166,8 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       setModelName,
       toggleEventType,
       toggleAuthorType,
+      setUseKnowledgeBaseTool,
+      setUseProductCatalogTool,
       save,
     },
     eventTypes,

@@ -1,6 +1,7 @@
-import { callOpenAI } from "./openaiApiService.js";
+import { callOpenAI, ToolDefinition } from "./openaiApiService.js";
 import { knowledgeSuggestionsStorage } from "../storage/knowledgeSuggestionsStorage.js";
 import { knowledgeBaseService } from "./knowledgeBaseService.js";
+import { ifoodProductsStorage } from "../../products/storage/ifoodProductsStorage.js";
 
 export interface LearningPayload {
   messages: Array<{
@@ -38,17 +39,33 @@ export interface LearningResult {
   suggestionId?: number;
   similarArticleId?: number;
   similarityScore?: number;
+  usedProductCatalog?: boolean;
   error?: string;
 }
 
-const DEFAULT_PROMPT = `Você é um especialista em criar artigos de base de conhecimento a partir de conversas de atendimento ao cliente.
+const PROMPT_SYSTEM = `Você é um especialista em criar artigos de base de conhecimento a partir de conversas de atendimento ao cliente.
+Responda sempre em JSON válido.`;
 
-## REGRAS IMPORTANTES:
+const PROMPT_SYSTEM_WITH_CATALOG = `Você é um especialista em criar artigos de base de conhecimento a partir de conversas de atendimento ao cliente.
+
+## PROCESSO OBRIGATÓRIO:
+1. Analise a conversa e identifique o tema/problema
+2. Use a ferramenta search_product_catalog para encontrar a classificação correta de produto
+3. Retorne o artigo usando EXATAMENTE os valores do catálogo
+
+## REGRAS DE CLASSIFICAÇÃO:
+- Use APENAS valores que existem no catálogo de produtos
+- Se não encontrar correspondência exata, escolha o mais próximo
+- Se realmente não houver correspondência, use null
+
+Responda sempre em JSON válido.`;
+
+const DEFAULT_PROMPT = `## REGRAS IMPORTANTES:
 
 ### 1. UM ASSUNTO POR ARTIGO
 - Cada artigo deve tratar de APENAS UM tema/problema específico
-- Se a conversa menciona múltiplos assuntos (ex: "antecipação" e "repasse"), escolha o PRINCIPAL que foi resolvido
-- NÃO misture temas diferentes no mesmo artigo (ex: NÃO misture "valores não recebidos" com "plano de antecipação")
+- Se a conversa menciona múltiplos assuntos, escolha o PRINCIPAL que foi resolvido
+- NÃO misture temas diferentes no mesmo artigo
 
 ### 2. SOLUÇÃO COMO INSTRUÇÃO FUTURA (CRÍTICO!)
 A solução é uma INSTRUÇÃO para futuros atendimentos. NÃO é um relato do que aconteceu na conversa.
@@ -56,43 +73,18 @@ A solução é uma INSTRUÇÃO para futuros atendimentos. NÃO é um relato do q
 REGRA DE OURO: NUNCA use verbos no passado. SEMPRE use INFINITIVO ou IMPERATIVO.
 
 ❌ PROIBIDO (narrativa do passado):
-- "Cliente foi orientado a..." → ERRADO, é relato
-- "Foi explicado ao cliente que..." → ERRADO, é relato
-- "O atendente informou sobre..." → ERRADO, é relato
-- "Cliente foi orientada a acompanhar o banner" → ERRADO, é relato
+- "Cliente foi orientado a..." → ERRADO
+- "Foi explicado ao cliente que..." → ERRADO
 
 ✅ CORRETO (instrução para o futuro):
-- "Orientar o cliente a..." → CERTO, é instrução
-- "Explicar ao cliente que..." → CERTO, é instrução
-- "Informar sobre..." → CERTO, é instrução
-- "Direcionar o cliente para o banner de ofertas no app" → CERTO, é instrução
+- "Orientar o cliente a..." → CERTO
+- "Explicar ao cliente que..." → CERTO
 
-EXEMPLOS COMPLETOS DE SOLUÇÕES BOAS:
-- "Orientar o cliente a acessar o app, clicar no banner de ofertas na tela inicial. O cartão é gratuito e sem anuidade. Prazo de aprovação: até 7 dias úteis. Se não visualizar o banner, verificar se o app está atualizado."
-- "Solicitar envio de documentos: 1) CNH ou RG (frente e verso), 2) Comprovante de endereço (últimos 3 meses). Formatos aceitos: PDF ou JPG, máximo 5MB. Prazo de análise: até 48h."
-- "Verificar no sistema se há saldo bloqueado. Informar que a antecipação é creditada em D+1. Se o valor não aparecer, abrir chamado para equipe de análise."
-
-O QUE A SOLUÇÃO DEVE CONTER:
-- Verbos no INFINITIVO (Orientar, Verificar, Solicitar, Informar)
-- Passos específicos (menus, botões, telas)
-- Requisitos e prazos
-- O que fazer se não funcionar
-
-### 3. OBSERVAÇÕES PARA DETALHES ADICIONAIS
-- Use para exceções, casos especiais, ou contextos específicos
-- Exemplo: "Clientes PJ precisam enviar contrato social ao invés de RG"
-
-## IDENTIFICAÇÃO:
-1. Produto principal (ex: Antecipação, Repasse, Conta Digital, Cartão)
-2. Subproduto específico (ex: Receber Agora, Agenda de Recebíveis)
-3. Categoria do problema (ex: Solicitação, Consulta, Reclamação, Cancelamento)
-4. Subcategoria (ex: Valores, Prazo, Contratação)
-
-## QUALIDADE:
-- isComplete = false: se a solução for genérica ou não tiver passos claros
-- isUncertain = true: se não conseguir extrair detalhes específicos da conversa
+### 3. QUALIDADE:
+- isComplete = false: se a solução for genérica
+- isUncertain = true: se não conseguir extrair detalhes específicos
 - possibleError = true: se a orientação parecer incorreta
-- needsReview = true: se faltar informação importante ou precisar de mais detalhes
+- needsReview = true: se faltar informação importante
 
 Retorne APENAS um JSON válido:
 {
@@ -100,9 +92,9 @@ Retorne APENAS um JSON válido:
   "subproductStandard": "subproduto ou null",
   "category1": "categoria principal",
   "category2": "subcategoria ou null",
-  "description": "descrição do problema (aplicável a qualquer cliente)",
-  "resolution": "PASSO A PASSO DETALHADO com instruções específicas, menus, prazos, requisitos",
-  "observations": "exceções, casos especiais, ou detalhes adicionais",
+  "description": "descrição do problema",
+  "resolution": "PASSO A PASSO com instruções específicas",
+  "observations": "exceções ou detalhes adicionais",
   "confidenceScore": 0-100,
   "qualityFlags": {
     "isComplete": true/false,
@@ -121,12 +113,57 @@ RESUMO DA CONVERSA:
 ARTIGOS RELACIONADOS NA BASE DE CONHECIMENTO:
 {{ARTIGOS_RELACIONADOS}}`;
 
+function buildProductCatalogTool(): ToolDefinition {
+  return {
+    name: "search_product_catalog",
+    description: "Busca produtos no catálogo para classificar corretamente o artigo. Retorna a hierarquia completa: Produto > Subproduto > Categoria1 > Categoria2",
+    parameters: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "Termo de busca para encontrar o produto (ex: 'antecipação', 'cartão', 'repasse')"
+        }
+      },
+      required: ["query"]
+    },
+    handler: async (args: { query: string }) => {
+      const products = await ifoodProductsStorage.getAll();
+      
+      const query = args.query.toLowerCase();
+      const filtered = products.filter(p => 
+        p.fullName.toLowerCase().includes(query) ||
+        p.produto.toLowerCase().includes(query) ||
+        (p.subproduto && p.subproduto.toLowerCase().includes(query)) ||
+        (p.categoria1 && p.categoria1.toLowerCase().includes(query)) ||
+        (p.categoria2 && p.categoria2.toLowerCase().includes(query))
+      );
+
+      if (filtered.length === 0) {
+        const allProducts = await ifoodProductsStorage.getDistinctProdutos();
+        return `Nenhum produto encontrado para "${args.query}". Produtos disponíveis: ${allProducts.join(', ')}`;
+      }
+
+      const result = filtered.slice(0, 10).map(p => ({
+        produto: p.produto,
+        subproduto: p.subproduto,
+        categoria1: p.categoria1,
+        categoria2: p.categoria2,
+        fullName: p.fullName
+      }));
+
+      return `Produtos encontrados:\n${JSON.stringify(result, null, 2)}`;
+    }
+  };
+}
+
 export async function extractKnowledge(
   payload: LearningPayload,
   promptTemplate: string,
   modelName: string = "gpt-4o-mini",
   conversationId?: number,
-  externalConversationId?: string
+  externalConversationId?: string,
+  useProductCatalogTool: boolean = false
 ): Promise<LearningResult> {
   const messagesContext = payload.messages
     .map(m => `[${m.authorType}${m.authorName ? ` - ${m.authorName}` : ''}]: ${m.contentText || '(sem texto)'}`)
@@ -137,7 +174,21 @@ export async function extractKnowledge(
     .replace('{{RESUMO}}', payload.currentSummary || 'Nenhum resumo disponível.')
     .replace('{{ARTIGOS_RELACIONADOS}}', payload.relatedArticles || 'Nenhum artigo relacionado encontrado.');
 
-  const promptSystem = "Você é um especialista em extrair conhecimento de conversas de atendimento ao cliente. Responda sempre em JSON válido.";
+  const tools: ToolDefinition[] = [];
+  let usedProductCatalog = false;
+
+  if (useProductCatalogTool) {
+    const catalogTool = buildProductCatalogTool();
+    const originalHandler = catalogTool.handler;
+    catalogTool.handler = async (args) => {
+      usedProductCatalog = true;
+      console.log(`[Learning Adapter] Catalog search: query=${args.query}`);
+      return originalHandler(args);
+    };
+    tools.push(catalogTool);
+  }
+
+  const promptSystem = useProductCatalogTool ? PROMPT_SYSTEM_WITH_CATALOG : PROMPT_SYSTEM;
 
   const result = await callOpenAI({
     requestType: "learning",
@@ -147,6 +198,8 @@ export async function extractKnowledge(
     maxTokens: 2048,
     contextType: "conversation",
     contextId: externalConversationId || (conversationId ? String(conversationId) : undefined),
+    tools: tools.length > 0 ? tools : undefined,
+    maxIterations: 3,
   });
 
   if (!result.success || !result.responseContent) {
@@ -154,6 +207,7 @@ export async function extractKnowledge(
       success: false,
       extraction: null,
       logId: result.logId,
+      usedProductCatalog,
       error: result.error || "OpenAI returned empty response"
     };
   }
@@ -170,7 +224,8 @@ export async function extractKnowledge(
     return {
       success: true,
       extraction,
-      logId: result.logId
+      logId: result.logId,
+      usedProductCatalog
     };
   } catch (parseError) {
     console.error("[Learning Adapter] Failed to parse extraction response:", parseError);
@@ -178,6 +233,7 @@ export async function extractKnowledge(
       success: false,
       extraction: null,
       logId: result.logId,
+      usedProductCatalog,
       error: `Failed to parse response: ${parseError}`
     };
   }
@@ -212,14 +268,16 @@ export async function extractAndSaveKnowledge(
   promptTemplate: string,
   modelName: string,
   conversationId: number,
-  externalConversationId: string | null
+  externalConversationId: string | null,
+  useProductCatalogTool: boolean = false
 ): Promise<LearningResult> {
   const result = await extractKnowledge(
     payload,
     promptTemplate,
     modelName,
     conversationId,
-    externalConversationId || undefined
+    externalConversationId || undefined,
+    useProductCatalogTool
   );
 
   if (!result.success || !result.extraction) {
@@ -257,7 +315,7 @@ export async function extractAndSaveKnowledge(
     rawExtraction: result.extraction,
   });
 
-  console.log(`[Learning Adapter] Knowledge suggestion saved for conversation ${conversationId}, suggestionId: ${suggestion.id}, confidence: ${extraction.confidenceScore}`);
+  console.log(`[Learning Adapter] Knowledge suggestion saved for conversation ${conversationId}, suggestionId: ${suggestion.id}, confidence: ${extraction.confidenceScore}, usedCatalog: ${result.usedProductCatalog}`);
 
   return {
     ...result,

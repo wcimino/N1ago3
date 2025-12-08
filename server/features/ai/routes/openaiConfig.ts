@@ -80,6 +80,8 @@ function formatConfigResponse(config: any) {
     trigger_author_types: config.triggerAuthorTypes,
     prompt_template: config.promptTemplate,
     model_name: config.modelName,
+    use_knowledge_base_tool: config.useKnowledgeBaseTool ?? false,
+    use_product_catalog_tool: config.useProductCatalogTool ?? false,
     created_at: config.createdAt?.toISOString(),
     updated_at: config.updatedAt?.toISOString(),
   };
@@ -92,6 +94,8 @@ function getDefaultConfig(configType: string) {
     trigger_author_types: [],
     prompt_template: DEFAULT_PROMPTS[configType] || "",
     model_name: "gpt-4o-mini",
+    use_knowledge_base_tool: false,
+    use_product_catalog_tool: false,
     config_type: configType,
   };
 }
@@ -121,7 +125,7 @@ router.put("/api/openai-config/:configType", isAuthenticated, requireAuthorizedU
     return res.status(400).json({ error: `Invalid config type. Must be one of: ${VALID_CONFIG_TYPES.join(", ")}` });
   }
 
-  const { enabled, trigger_event_types, trigger_author_types, prompt_template, model_name } = req.body;
+  const { enabled, trigger_event_types, trigger_author_types, prompt_template, model_name, use_knowledge_base_tool, use_product_catalog_tool } = req.body;
 
   if (prompt_template !== undefined && !prompt_template.trim()) {
     return res.status(400).json({ error: "prompt_template cannot be empty" });
@@ -133,6 +137,8 @@ router.put("/api/openai-config/:configType", isAuthenticated, requireAuthorizedU
     triggerAuthorTypes: trigger_author_types || [],
     promptTemplate: prompt_template || DEFAULT_PROMPTS[configType] || "",
     modelName: model_name || "gpt-4o-mini",
+    useKnowledgeBaseTool: use_knowledge_base_tool ?? false,
+    useProductCatalogTool: use_product_catalog_tool ?? false,
   });
 
   res.json(formatConfigResponse(config));

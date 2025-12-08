@@ -26,6 +26,7 @@ export function LearningConfigPage() {
       }
       promptRows={24}
       recommendedModel="gpt-4o-mini"
+      showProductCatalogTool={true}
     />
   );
 }

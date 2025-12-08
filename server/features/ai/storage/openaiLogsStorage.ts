@@ -22,6 +22,8 @@ export const openaiLogsStorage = {
           triggerAuthorTypes: data.triggerAuthorTypes,
           promptTemplate: data.promptTemplate,
           modelName: data.modelName,
+          useKnowledgeBaseTool: data.useKnowledgeBaseTool ?? existing.useKnowledgeBaseTool,
+          useProductCatalogTool: data.useProductCatalogTool ?? existing.useProductCatalogTool,
           updatedAt: new Date(),
         })
         .where(eq(openaiApiConfig.id, existing.id))

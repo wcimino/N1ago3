@@ -14,6 +14,13 @@ function getOpenAIClient(): OpenAI {
   return openaiClient;
 }
 
+export interface ToolDefinition {
+  name: string;
+  description: string;
+  parameters: Record<string, any>;
+  handler: (args: any) => Promise<string>;
+}
+
 export interface OpenAICallParams {
   requestType: string;
   modelName: string;
@@ -22,6 +29,9 @@ export interface OpenAICallParams {
   maxTokens?: number;
   contextType?: string;
   contextId?: string;
+  tools?: ToolDefinition[];
+  maxIterations?: number;
+  finalToolName?: string;
 }
 
 export interface OpenAICallResult {
@@ -33,11 +43,21 @@ export interface OpenAICallResult {
   tokensTotal: number | null;
   durationMs: number;
   error?: string;
+  toolResult?: any;
+  iterations?: number;
 }
 
 export async function callOpenAI(params: OpenAICallParams): Promise<OpenAICallResult> {
   const startTime = Date.now();
   
+  if (params.tools && params.tools.length > 0) {
+    return callOpenAIWithToolsInternal(params, startTime);
+  }
+  
+  return callOpenAISimple(params, startTime);
+}
+
+async function callOpenAISimple(params: OpenAICallParams, startTime: number): Promise<OpenAICallResult> {
   try {
     const openai = getOpenAIClient();
     
@@ -130,43 +150,37 @@ export async function callOpenAI(params: OpenAICallParams): Promise<OpenAICallRe
   }
 }
 
-export interface OpenAIToolCallParams {
-  requestType: string;
-  modelName: string;
-  promptSystem: string;
-  promptUser: string;
-  tools: OpenAI.Chat.Completions.ChatCompletionTool[];
-  maxTokens?: number;
-  maxIterations?: number;
-  contextType?: string;
-  contextId?: string;
-  onToolCall: (name: string, args: any) => Promise<string>;
-}
-
-export interface OpenAIToolCallResult {
-  success: boolean;
-  logId: number;
-  finalResult: any;
-  totalTokens: number;
-  iterations: number;
-  durationMs: number;
-  error?: string;
-}
-
-export async function callOpenAIWithTools(params: OpenAIToolCallParams): Promise<OpenAIToolCallResult> {
-  const startTime = Date.now();
+async function callOpenAIWithToolsInternal(params: OpenAICallParams, startTime: number): Promise<OpenAICallResult> {
   const maxIterations = params.maxIterations || 5;
+  const tools = params.tools!;
   
-  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-    { role: "system", content: params.promptSystem },
-    { role: "user", content: params.promptUser }
-  ];
+  const openaiTools: OpenAI.Chat.Completions.ChatCompletionTool[] = tools.map(tool => ({
+    type: "function" as const,
+    function: {
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.parameters,
+    }
+  }));
+
+  const toolHandlers = new Map<string, (args: any) => Promise<string>>();
+  for (const tool of tools) {
+    toolHandlers.set(tool.name, tool.handler);
+  }
+
+  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
+  
+  if (params.promptSystem) {
+    messages.push({ role: "system", content: params.promptSystem });
+  }
+  messages.push({ role: "user", content: params.promptUser });
 
   let tokensPrompt = 0;
   let tokensCompletion = 0;
   let totalTokens = 0;
   let iterations = 0;
-  let finalResult: any = null;
+  let toolResult: any = null;
+  let finalResponseContent: string | null = null;
   const apiResponses: any[] = [];
 
   try {
@@ -178,7 +192,7 @@ export async function callOpenAIWithTools(params: OpenAIToolCallParams): Promise
       const response = await openai.chat.completions.create({
         model: params.modelName,
         messages,
-        tools: params.tools,
+        tools: openaiTools,
         tool_choice: "auto",
         max_tokens: params.maxTokens || 2048
       });
@@ -193,6 +207,7 @@ export async function callOpenAIWithTools(params: OpenAIToolCallParams): Promise
       const choice = response.choices[0];
 
       if (choice.finish_reason === "stop" || !choice.message.tool_calls) {
+        finalResponseContent = choice.message.content || null;
         break;
       }
 
@@ -201,21 +216,27 @@ export async function callOpenAIWithTools(params: OpenAIToolCallParams): Promise
       for (const toolCall of choice.message.tool_calls) {
         if (toolCall.type !== "function") continue;
 
-        const args = JSON.parse(toolCall.function.arguments);
-        const toolResult = await params.onToolCall(toolCall.function.name, args);
+        const handler = toolHandlers.get(toolCall.function.name);
+        if (!handler) {
+          console.error(`[OpenAI API] Unknown tool: ${toolCall.function.name}`);
+          continue;
+        }
 
-        if (toolCall.function.name === "create_knowledge_suggestion") {
-          finalResult = args;
+        const args = JSON.parse(toolCall.function.arguments);
+        const result = await handler(args);
+
+        if (params.finalToolName && toolCall.function.name === params.finalToolName) {
+          toolResult = args;
         }
 
         messages.push({
           role: "tool",
           tool_call_id: toolCall.id,
-          content: toolResult
+          content: result
         });
       }
 
-      if (finalResult) {
+      if (toolResult) {
         break;
       }
     }
@@ -227,13 +248,13 @@ export async function callOpenAIWithTools(params: OpenAIToolCallParams): Promise
       modelName: params.modelName,
       promptSystem: params.promptSystem,
       promptUser: params.promptUser,
-      responseRaw: { iterations, apiResponses, finalResult, messageHistory: messages },
-      responseContent: JSON.stringify(finalResult),
+      responseRaw: { iterations, apiResponses, toolResult, messageHistory: messages },
+      responseContent: toolResult ? JSON.stringify(toolResult) : finalResponseContent,
       tokensPrompt,
       tokensCompletion,
       tokensTotal: totalTokens,
       durationMs,
-      success: !!finalResult,
+      success: !!(toolResult || finalResponseContent),
       errorMessage: null,
       contextType: params.contextType || null,
       contextId: params.contextId || null,
@@ -242,12 +263,15 @@ export async function callOpenAIWithTools(params: OpenAIToolCallParams): Promise
     console.log(`[OpenAI API] ${params.requestType} - Model: ${params.modelName}, Tokens: ${totalTokens}, Iterations: ${iterations}, Duration: ${durationMs}ms`);
 
     return {
-      success: !!finalResult,
+      success: !!(toolResult || finalResponseContent),
       logId: log.id,
-      finalResult,
-      totalTokens,
-      iterations,
+      responseContent: finalResponseContent,
+      tokensPrompt,
+      tokensCompletion,
+      tokensTotal: totalTokens,
       durationMs,
+      toolResult,
+      iterations,
     };
 
   } catch (error: any) {
@@ -276,11 +300,13 @@ export async function callOpenAIWithTools(params: OpenAIToolCallParams): Promise
     return {
       success: false,
       logId: log.id,
-      finalResult: null,
-      totalTokens,
-      iterations,
+      responseContent: null,
+      tokensPrompt: null,
+      tokensCompletion: null,
+      tokensTotal: null,
       durationMs,
       error: errorMessage,
+      iterations,
     };
   }
 }

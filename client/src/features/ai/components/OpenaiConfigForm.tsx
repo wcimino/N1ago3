@@ -15,6 +15,8 @@ export interface OpenaiConfigFormProps {
   promptVariables: ReactNode;
   promptRows?: number;
   recommendedModel?: string;
+  showKnowledgeBaseTool?: boolean;
+  showProductCatalogTool?: boolean;
 }
 
 export function OpenaiConfigForm({
@@ -29,6 +31,8 @@ export function OpenaiConfigForm({
   promptVariables,
   promptRows = 12,
   recommendedModel = "gpt-4o-mini",
+  showKnowledgeBaseTool = false,
+  showProductCatalogTool = false,
 }: OpenaiConfigFormProps) {
   const { state, actions, eventTypes, isLoading, isSaving } = useOpenaiApiConfig(configType);
 
@@ -76,6 +80,34 @@ export function OpenaiConfigForm({
               ))}
             </select>
           </div>
+
+          {(showKnowledgeBaseTool || showProductCatalogTool) && (
+            <div>
+              <h3 className="text-sm font-medium text-gray-900 mb-2">Ferramentas de IA</h3>
+              <p className="text-sm text-gray-500 mb-3">
+                Habilite ferramentas que o modelo pode usar para buscar informações
+              </p>
+              
+              <div className="border rounded-lg divide-y">
+                {showKnowledgeBaseTool && (
+                  <CheckboxListItem
+                    label="Usar Base de Conhecimento"
+                    sublabel="Permite buscar artigos da base antes de gerar resposta"
+                    checked={state.useKnowledgeBaseTool}
+                    onChange={() => actions.setUseKnowledgeBaseTool(!state.useKnowledgeBaseTool)}
+                  />
+                )}
+                {showProductCatalogTool && (
+                  <CheckboxListItem
+                    label="Usar Catálogo de Produtos"
+                    sublabel="Permite buscar classificações no catálogo de produtos"
+                    checked={state.useProductCatalogTool}
+                    onChange={() => actions.setUseProductCatalogTool(!state.useProductCatalogTool)}
+                  />
+                )}
+              </div>
+            </div>
+          )}
 
           <div>
             <h3 className="text-sm font-medium text-gray-900 mb-2">{eventTriggerLabel}</h3>

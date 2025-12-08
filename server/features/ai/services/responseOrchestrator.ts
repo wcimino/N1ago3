@@ -1,5 +1,5 @@
 import { storage } from "../../../storage/index.js";
-import { generateAndSaveResponseWithAgent, type ResponseAgentPayload } from "./responseAgentAdapter.js";
+import { generateAndSaveResponse, type ResponsePayload } from "./responseAdapter.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 
 export async function shouldGenerateResponse(event: EventStandard): Promise<boolean> {
@@ -59,10 +59,10 @@ export async function generateConversationResponse(event: EventStandard): Promis
       confidence: existingSummary.confidence,
     } : null;
 
-    const payload: ResponseAgentPayload = {
+    const payload: ResponsePayload = {
       currentSummary: existingSummary?.summary || null,
       classification,
-      messages: reversedMessages.map(m => ({
+      last20Messages: reversedMessages.map(m => ({
         authorType: m.authorType,
         authorName: m.authorName,
         contentText: m.contentText,
@@ -76,15 +76,18 @@ export async function generateConversationResponse(event: EventStandard): Promis
       }
     };
 
-    console.log(`[Response Orchestrator] Generating response with agent for conversation ${event.conversationId} with ${reversedMessages.length} messages`);
+    const useKnowledgeBaseTool = config.useKnowledgeBaseTool ?? false;
 
-    const result = await generateAndSaveResponseWithAgent(
+    console.log(`[Response Orchestrator] Generating response for conversation ${event.conversationId} with ${reversedMessages.length} messages, useKB=${useKnowledgeBaseTool}`);
+
+    const result = await generateAndSaveResponse(
       payload,
-      config.modelName,
       config.promptTemplate,
+      config.modelName,
       event.conversationId,
       event.externalConversationId,
-      event.id
+      event.id,
+      useKnowledgeBaseTool
     );
 
     if (result.success) {

@@ -102,14 +102,17 @@ export async function extractConversationKnowledge(event: EventStandard): Promis
       conversationHandler: null,
     };
 
-    console.log(`[Learning Orchestrator] Extracting knowledge with agent from conversation ${event.conversationId} with ${reversedMessages.length} messages`);
+    const useProductCatalogTool = config.useProductCatalogTool ?? false;
+
+    console.log(`[Learning Orchestrator] Extracting knowledge with agent from conversation ${event.conversationId} with ${reversedMessages.length} messages, useCatalog=${useProductCatalogTool}`);
 
     const result = await extractKnowledgeWithAgent(
       payload,
       config.modelName,
       config.promptTemplate,
       event.conversationId,
-      event.externalConversationId
+      event.externalConversationId,
+      useProductCatalogTool
     );
 
     if (result.success) {
