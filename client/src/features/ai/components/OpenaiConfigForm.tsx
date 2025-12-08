@@ -1,7 +1,8 @@
-import type { ReactNode } from "react";
-import { CheckboxListItem, CollapsibleSection, LoadingState } from "../../../shared/components/ui";
+import { useState, type ReactNode } from "react";
+import { CheckboxListItem, CollapsibleSection, LoadingState, Modal } from "../../../shared/components/ui";
 import { useOpenaiApiConfig } from "../../../shared/hooks";
 import { AUTHOR_TYPE_OPTIONS, MODEL_OPTIONS } from "../../../lib/constants";
+import { Info, Copy, Check } from "lucide-react";
 
 const AVAILABLE_VARIABLES = [
   { name: '{{RESUMO}}', description: 'Resumo da conversa atual' },
@@ -49,6 +50,14 @@ export function OpenaiConfigForm({
   children,
 }: OpenaiConfigFormProps) {
   const { state, actions, eventTypes, isLoading, isSaving } = useOpenaiApiConfig(configType);
+  const [showVariablesModal, setShowVariablesModal] = useState(false);
+  const [copiedVariable, setCopiedVariable] = useState<string | null>(null);
+
+  const copyVariable = (name: string) => {
+    navigator.clipboard.writeText(name);
+    setCopiedVariable(name);
+    setTimeout(() => setCopiedVariable(null), 2000);
+  };
 
   if (isLoading) {
     return <LoadingState message="Carregando configurações..." />;
@@ -193,12 +202,10 @@ export function OpenaiConfigForm({
               <h3 className="text-sm font-medium text-gray-900">Orientações para o Agente</h3>
               <button
                 type="button"
-                className="text-xs text-blue-600 hover:text-blue-800"
-                onClick={() => {
-                  const variablesText = AVAILABLE_VARIABLES.map(v => `${v.name} - ${v.description}`).join('\n');
-                  alert(`Variáveis disponíveis:\n\n${variablesText}`);
-                }}
+                className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800"
+                onClick={() => setShowVariablesModal(true)}
               >
+                <Info className="h-3.5 w-3.5" />
                 Ver variáveis disponíveis
               </button>
             </div>
@@ -266,6 +273,45 @@ export function OpenaiConfigForm({
           </div>
         </div>
       </div>
+
+      {showVariablesModal && (
+        <Modal
+          onClose={() => setShowVariablesModal(false)}
+          title="Variáveis Disponíveis"
+          maxWidth="md"
+        >
+        <div className="space-y-1">
+          <p className="text-sm text-gray-500 mb-4">
+            Clique em uma variável para copiá-la. Você pode usar essas variáveis nas orientações para o agente.
+          </p>
+          <div className="divide-y border rounded-lg overflow-hidden">
+            {AVAILABLE_VARIABLES.map((v) => (
+              <button
+                key={v.name}
+                type="button"
+                onClick={() => copyVariable(v.name)}
+                className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="font-mono text-sm font-medium text-blue-600">{v.name}</div>
+                  <div className="text-sm text-gray-500 mt-0.5">{v.description}</div>
+                </div>
+                <div className="ml-3 shrink-0">
+                  {copiedVariable === v.name ? (
+                    <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                      <Check className="h-4 w-4" />
+                      Copiado!
+                    </span>
+                  ) : (
+                    <Copy className="h-4 w-4 text-gray-400" />
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+        </Modal>
+      )}
     </div>
   );
 }
