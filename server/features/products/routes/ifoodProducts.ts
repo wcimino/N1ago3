@@ -45,6 +45,35 @@ router.get("/api/ifood-products/distinct/subprodutos", isAuthenticated, requireA
   }
 });
 
+router.get("/api/ifood-products/distinct/categoria1", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  try {
+    const { produto, subproduto } = req.query;
+    const categorias = await ifoodProductsStorage.getDistinctCategorias1(
+      produto as string | undefined,
+      subproduto as string | undefined
+    );
+    res.json(categorias);
+  } catch (error: any) {
+    console.error("[iFood Products] Error fetching distinct categoria1:", error.message);
+    res.status(500).json({ error: "Failed to fetch distinct categoria1" });
+  }
+});
+
+router.get("/api/ifood-products/distinct/categoria2", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  try {
+    const { produto, subproduto, categoria1 } = req.query;
+    const categorias = await ifoodProductsStorage.getDistinctCategorias2(
+      produto as string | undefined,
+      subproduto as string | undefined,
+      categoria1 as string | undefined
+    );
+    res.json(categorias);
+  } catch (error: any) {
+    console.error("[iFood Products] Error fetching distinct categoria2:", error.message);
+    res.status(500).json({ error: "Failed to fetch distinct categoria2" });
+  }
+});
+
 router.get("/api/ifood-products/:id", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);

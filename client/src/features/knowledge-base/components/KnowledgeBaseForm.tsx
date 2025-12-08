@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
-import { Save, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Save, X, ChevronDown } from "lucide-react";
 
 interface KnowledgeBaseArticle {
   id: number;
   name: string | null;
   productStandard: string;
   subproductStandard: string | null;
+  category1: string | null;
+  category2: string | null;
   intent: string;
   description: string;
   resolution: string;
@@ -18,6 +21,8 @@ interface KnowledgeBaseFormData {
   name: string | null;
   productStandard: string;
   subproductStandard: string | null;
+  category1: string | null;
+  category2: string | null;
   intent: string;
   description: string;
   resolution: string;
@@ -41,6 +46,8 @@ export function KnowledgeBaseForm({
     name: "",
     productStandard: "",
     subproductStandard: "",
+    category1: "",
+    category2: "",
     intent: "",
     description: "",
     resolution: "",
@@ -53,6 +60,8 @@ export function KnowledgeBaseForm({
         name: initialData.name || "",
         productStandard: initialData.productStandard,
         subproductStandard: initialData.subproductStandard || "",
+        category1: initialData.category1 || "",
+        category2: initialData.category2 || "",
         intent: initialData.intent,
         description: initialData.description,
         resolution: initialData.resolution,
@@ -61,11 +70,74 @@ export function KnowledgeBaseForm({
     }
   }, [initialData]);
 
+  const { data: produtos = [] } = useQuery<string[]>({
+    queryKey: ["/api/ifood-products/distinct/produtos"],
+  });
+
+  const { data: subprodutos = [] } = useQuery<string[]>({
+    queryKey: ["/api/ifood-products/distinct/subprodutos", formData.productStandard],
+    queryFn: async () => {
+      if (!formData.productStandard) return [];
+      const res = await fetch(`/api/ifood-products/distinct/subprodutos?produto=${encodeURIComponent(formData.productStandard)}`);
+      return res.json();
+    },
+    enabled: !!formData.productStandard,
+  });
+
+  const { data: categorias1 = [] } = useQuery<string[]>({
+    queryKey: ["/api/ifood-products/distinct/categoria1", formData.productStandard, formData.subproductStandard],
+    queryFn: async () => {
+      if (!formData.productStandard) return [];
+      const params = new URLSearchParams({ produto: formData.productStandard });
+      if (formData.subproductStandard) params.append("subproduto", formData.subproductStandard);
+      const res = await fetch(`/api/ifood-products/distinct/categoria1?${params}`);
+      return res.json();
+    },
+    enabled: !!formData.productStandard,
+  });
+
+  const { data: categorias2 = [] } = useQuery<string[]>({
+    queryKey: ["/api/ifood-products/distinct/categoria2", formData.productStandard, formData.subproductStandard, formData.category1],
+    queryFn: async () => {
+      if (!formData.productStandard) return [];
+      const params = new URLSearchParams({ produto: formData.productStandard });
+      if (formData.subproductStandard) params.append("subproduto", formData.subproductStandard);
+      if (formData.category1) params.append("categoria1", formData.category1);
+      const res = await fetch(`/api/ifood-products/distinct/categoria2?${params}`);
+      return res.json();
+    },
+    enabled: !!formData.productStandard,
+  });
+
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    if (name === "productStandard") {
+      setFormData((prev) => ({
+        ...prev,
+        productStandard: value,
+        subproductStandard: "",
+        category1: "",
+        category2: "",
+      }));
+    } else if (name === "subproductStandard") {
+      setFormData((prev) => ({
+        ...prev,
+        subproductStandard: value,
+        category1: "",
+        category2: "",
+      }));
+    } else if (name === "category1") {
+      setFormData((prev) => ({
+        ...prev,
+        category1: value,
+        category2: "",
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -74,6 +146,8 @@ export function KnowledgeBaseForm({
       name: formData.name || null,
       productStandard: formData.productStandard,
       subproductStandard: formData.subproductStandard || null,
+      category1: formData.category1 || null,
+      category2: formData.category2 || null,
       intent: formData.intent,
       description: formData.description,
       resolution: formData.resolution,
@@ -86,6 +160,8 @@ export function KnowledgeBaseForm({
     formData.intent.trim() &&
     formData.description.trim() &&
     formData.resolution.trim();
+
+  const selectClass = "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -108,28 +184,84 @@ export function KnowledgeBaseForm({
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Produto *
           </label>
-          <input
-            type="text"
-            name="productStandard"
-            value={formData.productStandard}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Ex: Conta Digital"
-            required
-          />
+          <div className="relative">
+            <select
+              name="productStandard"
+              value={formData.productStandard}
+              onChange={handleChange}
+              className={selectClass}
+              required
+            >
+              <option value="">Selecione um produto</option>
+              {produtos.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Subproduto
           </label>
-          <input
-            type="text"
-            name="subproductStandard"
-            value={formData.subproductStandard}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Ex: Pix"
-          />
+          <div className="relative">
+            <select
+              name="subproductStandard"
+              value={formData.subproductStandard}
+              onChange={handleChange}
+              className={selectClass}
+              disabled={!formData.productStandard || subprodutos.length === 0}
+            >
+              <option value="">Selecione um subproduto</option>
+              {subprodutos.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Categoria 1
+          </label>
+          <div className="relative">
+            <select
+              name="category1"
+              value={formData.category1}
+              onChange={handleChange}
+              className={selectClass}
+              disabled={!formData.productStandard || categorias1.length === 0}
+            >
+              <option value="">Selecione uma categoria</option>
+              {categorias1.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Categoria 2
+          </label>
+          <div className="relative">
+            <select
+              name="category2"
+              value={formData.category2}
+              onChange={handleChange}
+              className={selectClass}
+              disabled={!formData.productStandard || categorias2.length === 0}
+            >
+              <option value="">Selecione uma subcategoria</option>
+              {categorias2.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          </div>
         </div>
       </div>
 
