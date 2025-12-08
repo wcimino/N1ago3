@@ -1,9 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { MessageCircle, Activity, ChevronRight as ArrowRight, Package, Clock, Calendar, AlertCircle } from "lucide-react";
+import { MessageCircle, Activity, ChevronRight as ArrowRight, Package, Clock, Calendar, AlertCircle, Heart } from "lucide-react";
 import { fetchApi } from "../../lib/queryClient";
 import { DonutChart } from "../components";
-import type { UsersStatsResponse, StatsResponse, ProductStatsResponse } from "../../types";
+import type { UsersStatsResponse, StatsResponse, ProductStatsResponse, EmotionStatsResponse } from "../../types";
+
+const emotionConfig: Record<number, { label: string; color: string; bgColor: string; emoji: string }> = {
+  1: { label: "Muito positivo", color: "text-green-600", bgColor: "bg-green-50", emoji: "😊" },
+  2: { label: "Positivo", color: "text-emerald-600", bgColor: "bg-emerald-50", emoji: "🙂" },
+  3: { label: "Neutro", color: "text-gray-600", bgColor: "bg-gray-50", emoji: "😐" },
+  4: { label: "Irritado", color: "text-orange-600", bgColor: "bg-orange-50", emoji: "😤" },
+  5: { label: "Muito irritado", color: "text-red-600", bgColor: "bg-red-50", emoji: "😠" },
+};
 
 function formatNumber(num: number): string {
   return num.toLocaleString("pt-BR");
@@ -28,9 +36,15 @@ export function HomePage() {
     refetchInterval: 30000,
   });
 
+  const { data: emotionStats } = useQuery<EmotionStatsResponse>({
+    queryKey: ["emotions-stats"],
+    queryFn: () => fetchApi<EmotionStatsResponse>("/api/emotions/stats"),
+    refetchInterval: 30000,
+  });
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="bg-white rounded-lg shadow p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
@@ -87,6 +101,65 @@ export function HomePage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            );
+          })()}
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+              <Heart className="w-4 h-4 text-pink-600" />
+              Sentimento Atual
+            </h2>
+          </div>
+          {(() => {
+            const lastHourMap = new Map(emotionStats?.last_hour?.map(e => [e.emotionLevel, e.count]) || []);
+            const todayMap = new Map(emotionStats?.today?.map(e => [e.emotionLevel, e.count]) || []);
+            const emotionLevels = [1, 2, 3, 4, 5];
+            
+            const hasData = emotionLevels.some(level => lastHourMap.has(level) || todayMap.has(level));
+            
+            if (!hasData) {
+              return <p className="text-sm text-gray-400 italic">Nenhum dado ainda</p>;
+            }
+            
+            return (
+              <div className="space-y-2">
+                {emotionLevels.map((level) => {
+                  const config = emotionConfig[level];
+                  return (
+                    <div key={level} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                      <div className="min-w-0 flex-1 mr-2">
+                        <span className="text-sm text-gray-800 truncate block">
+                          {config.emoji} {config.label}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1" title="Última hora">
+                          <Clock className="w-3 h-3 text-pink-500" />
+                          {lastHourMap.get(level) ? (
+                            <span className={`font-semibold ${config.color} ${config.bgColor} px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center`}>
+                              {lastHourMap.get(level)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1" title="Hoje">
+                          <Calendar className="w-3 h-3 text-pink-500" />
+                          {todayMap.get(level) ? (
+                            <span className={`font-semibold ${config.color} ${config.bgColor} px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center`}>
+                              {todayMap.get(level)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             );
           })()}
