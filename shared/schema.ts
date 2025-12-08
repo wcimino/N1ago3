@@ -63,6 +63,7 @@ export const zendeskConversationsWebhookRaw = pgTable("zendesk_conversations_web
   errorMessage: text("error_message"),
   processedAt: timestamp("processed_at"),
   retryCount: integer("retry_count").default(0).notNull(),
+  eventsCreatedCount: integer("events_created_count").default(0).notNull(),
 }, (table) => ({
   receivedAtIdx: index("idx_zendesk_webhook_received_at").on(table.receivedAt),
   processingStatusIdx: index("idx_zendesk_webhook_processing_status").on(table.processingStatus),
