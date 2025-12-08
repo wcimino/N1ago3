@@ -109,6 +109,21 @@ export const webhookStorage = {
     }
   },
 
+  async updateWebhookRawStatusWithEventsCount(id: number, source: string, status: string, eventsCount: number) {
+    if (source !== "zendesk") {
+      console.warn(`Unknown source: ${source}, only zendesk is supported`);
+      return;
+    }
+    await db.update(zendeskConversationsWebhookRaw)
+      .set({
+        processingStatus: status,
+        processedAt: new Date(),
+        errorMessage: null,
+        eventsCreatedCount: eventsCount,
+      })
+      .where(eq(zendeskConversationsWebhookRaw.id, id));
+  },
+
   async getPendingWebhookRaws(source: string, limit = 100): Promise<ZendeskConversationsWebhookRaw[]> {
     if (source !== "zendesk") {
       console.warn(`Unknown source: ${source}, only zendesk is supported`);
@@ -137,7 +152,8 @@ export const webhookStorage = {
         and(
           eq(zendeskConversationsWebhookRaw.processingStatus, "processing"),
           sql`${zendeskConversationsWebhookRaw.processedAt} < NOW() - INTERVAL '${sql.raw(String(stuckMinutes))} minutes'`,
-          sql`${zendeskConversationsWebhookRaw.retryCount} < 5`
+          sql`${zendeskConversationsWebhookRaw.retryCount} < 5`,
+          eq(zendeskConversationsWebhookRaw.eventsCreatedCount, 0)
         )
       )
       .orderBy(zendeskConversationsWebhookRaw.receivedAt)

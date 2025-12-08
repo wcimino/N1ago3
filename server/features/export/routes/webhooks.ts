@@ -49,12 +49,12 @@ router.post("/webhook/zendesk", async (req: Request, res: Response) => {
       headers: headersDict,
       payload: req.body,
       rawBody,
-      processingStatus: "pending",
+      processingStatus: "processing",
     });
 
     console.log(`Webhook received - Raw ID: ${rawEntry.id}, Source: ${source}`);
 
-    eventBus.emit(EVENTS.RAW_CREATED, { rawId: rawEntry.id, source });
+    eventBus.emit(EVENTS.RAW_CREATED, { rawId: rawEntry.id, source, skipStatusCheck: true });
 
     return res.json({
       status: "received",

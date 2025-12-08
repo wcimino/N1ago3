@@ -7,7 +7,7 @@ import { saveAndDispatchEvent } from "./eventDispatcher.js";
 const SUPPORTED_SOURCES = ["zendesk"] as const;
 type SupportedSource = typeof SUPPORTED_SOURCES[number];
 
-export async function processRawEvent(rawId: number, source: string): Promise<void> {
+export async function processRawEvent(rawId: number, source: string, skipStatusCheck = false): Promise<void> {
   const raw = await storage.getWebhookRawById(rawId, source);
   if (!raw) {
     throw new Error(`Raw event not found: ${rawId} (source: ${source})`);
@@ -18,8 +18,14 @@ export async function processRawEvent(rawId: number, source: string): Promise<vo
     return;
   }
 
-  if (raw.processingStatus === "processing") {
+  if (!skipStatusCheck && raw.processingStatus === "processing") {
     console.log(`Raw event ${rawId} already being processed, skipping`);
+    return;
+  }
+
+  if ((raw as any).eventsCreatedCount > 0) {
+    console.log(`Raw event ${rawId} already created ${(raw as any).eventsCreatedCount} events, marking as success`);
+    await storage.updateWebhookRawStatus(rawId, source, "success");
     return;
   }
 
@@ -29,7 +35,9 @@ export async function processRawEvent(rawId: number, source: string): Promise<vo
     throw new Error(`No adapter for source: ${source}`);
   }
 
-  await storage.updateWebhookRawStatus(rawId, source, "processing");
+  if (!skipStatusCheck) {
+    await storage.updateWebhookRawStatus(rawId, source, "processing");
+  }
 
   try {
     const payload = raw.payload as any;
@@ -110,7 +118,7 @@ export async function processRawEvent(rawId: number, source: string): Promise<vo
       }
     }
 
-    await storage.updateWebhookRawStatus(rawId, source, "success");
+    await storage.updateWebhookRawStatusWithEventsCount(rawId, source, "success", standardEvents.length);
     await eventBus.emit(EVENTS.RAW_PROCESSED, { rawId, source, eventsCount: standardEvents.length });
 
     console.log(`Processed raw event ${rawId}: ${standardEvents.length} events created`);
@@ -147,9 +155,9 @@ export async function processPendingRaws(): Promise<number> {
   return processedCount;
 }
 
-eventBus.on(EVENTS.RAW_CREATED, async ({ rawId, source }: { rawId: number; source: string }) => {
+eventBus.on(EVENTS.RAW_CREATED, async ({ rawId, source, skipStatusCheck }: { rawId: number; source: string; skipStatusCheck?: boolean }) => {
   try {
-    await processRawEvent(rawId, source);
+    await processRawEvent(rawId, source, skipStatusCheck);
   } catch (error) {
     console.error(`Failed to process raw ${rawId} (source: ${source}) via event:`, error);
   }
