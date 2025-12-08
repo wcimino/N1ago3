@@ -180,7 +180,7 @@ export function KnowledgeBaseForm({
         />
       </div>
 
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-5 gap-2">
         <div>
           <label className={labelClass}>Produto *</label>
           <div className="relative">
@@ -221,18 +221,17 @@ export function KnowledgeBaseForm({
             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
           </div>
         </div>
-      </div>
-
-      <div>
-        <label className={labelClass}>Intenção *</label>
-        <div className="relative">
-          <select name="intent" value={formData.intent} onChange={handleChange} className={selectClass} required>
-            <option value="">Selecione</option>
-            <option value="Suporte">Suporte</option>
-            <option value="Contratar">Contratar</option>
-            <option value="Outros">Outros</option>
-          </select>
-          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+        <div>
+          <label className={labelClass}>Intenção *</label>
+          <div className="relative">
+            <select name="intent" value={formData.intent} onChange={handleChange} className={selectClass} required>
+              <option value="">Selecione</option>
+              <option value="Suporte">Suporte</option>
+              <option value="Contratar">Contratar</option>
+              <option value="Outros">Outros</option>
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+          </div>
         </div>
       </div>
 
