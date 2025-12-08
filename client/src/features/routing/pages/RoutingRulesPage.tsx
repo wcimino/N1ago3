@@ -116,7 +116,7 @@ export function RoutingRulesPage() {
       {showForm && (
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Alocar próximas conversas
+            Alocar próximas novas conversas
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex items-center gap-4 flex-wrap">
