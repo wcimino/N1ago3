@@ -411,15 +411,16 @@ export function SubjectsIntentsPage() {
     return (
       <div key={node.id}>
         <div 
-          className="group flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded cursor-pointer"
+          className="group flex items-center gap-2 py-1.5 px-2 bg-gray-100 hover:bg-gray-200 rounded cursor-pointer border-l-4 border-gray-400"
           style={{ paddingLeft: `${paddingLeft}px` }}
           onClick={() => toggleProduct(node.id)}
         >
           {hasChildren ? (
-            isExpanded ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />
+            isExpanded ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronRight className="w-4 h-4 text-gray-500" />
           ) : (
             <span className="w-4" />
           )}
+          <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-gray-200 text-gray-600 rounded">Produto</span>
           <span className="font-medium text-gray-700">{node.name}</span>
           <span className="text-xs text-gray-400 ml-2">
             {node.subjects.length} assuntos
@@ -451,7 +452,7 @@ export function SubjectsIntentsPage() {
                     renderInlineForm(paddingLeft + 20, "bg-blue-50")
                   ) : (
                     <div 
-                      className="group flex items-center gap-2 py-1.5 px-2 hover:bg-blue-50 rounded cursor-pointer"
+                      className="group flex items-center gap-2 py-1.5 px-2 bg-blue-50 hover:bg-blue-100 rounded cursor-pointer border-l-4 border-blue-400"
                       style={{ paddingLeft: `${paddingLeft + 20}px` }}
                       onClick={() => toggleSubject(subject.id)}
                     >
@@ -517,7 +518,7 @@ export function SubjectsIntentsPage() {
                         ) : (
                           <div 
                             key={`intent-${intent.id}`}
-                            className="group flex items-center gap-2 py-1.5 px-2 hover:bg-green-50 rounded"
+                            className="group flex items-center gap-2 py-1.5 px-2 bg-green-50 hover:bg-green-100 rounded border-l-4 border-green-400"
                             style={{ paddingLeft: `${paddingLeft + 40}px` }}
                           >
                             <span className="w-4" />
@@ -576,9 +577,20 @@ export function SubjectsIntentsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          Gerencie os assuntos e intenções associados aos produtos.
-        </p>
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded bg-gray-200 border border-gray-300"></span>
+            <span className="text-xs text-gray-600">Produto</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded bg-blue-100 border border-blue-300"></span>
+            <span className="text-xs text-gray-600">Assunto</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded bg-green-100 border border-green-300"></span>
+            <span className="text-xs text-gray-600">Intenção</span>
+          </div>
+        </div>
       </div>
 
       {productTree.length === 0 ? (
