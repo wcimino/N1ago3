@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { MessageCircle, Activity, Package, AlertCircle, Heart, Sparkles, Coins, Hash, Clock, Calendar } from "lucide-react";
 import { fetchApi } from "../../lib/queryClient";
 import { DonutChart, StatsCard, StatsTableHeader, StatsRow } from "../components";
+import { useTimezone } from "../../contexts/TimezoneContext";
 import type { UsersStatsResponse, StatsResponse, ProductStatsResponse, EmotionStatsResponse } from "../../types";
 
 interface OpenAIStatsResponse {
@@ -227,6 +228,8 @@ function OpenAIStatsCard({ openaiStats }: { openaiStats: OpenAIStatsResponse | u
 }
 
 export function HomePage() {
+  const { timezone } = useTimezone();
+  
   const { data: usersStats } = useQuery<UsersStatsResponse>({
     queryKey: ["users-stats"],
     queryFn: () => fetchApi<UsersStatsResponse>("/api/users/stats"),
@@ -252,8 +255,8 @@ export function HomePage() {
   });
 
   const { data: openaiStats } = useQuery<OpenAIStatsResponse>({
-    queryKey: ["openai-stats"],
-    queryFn: () => fetchApi<OpenAIStatsResponse>("/api/openai/stats"),
+    queryKey: ["openai-stats", timezone],
+    queryFn: () => fetchApi<OpenAIStatsResponse>(`/api/openai/stats?timezone=${encodeURIComponent(timezone)}`),
     refetchInterval: 30000,
   });
 

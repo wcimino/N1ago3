@@ -6,7 +6,8 @@ const router = Router();
 
 router.get("/api/openai/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
-    const stats = await openaiLogsStorage.getOpenaiApiStats();
+    const timezone = (req.query.timezone as string) || "America/Sao_Paulo";
+    const stats = await openaiLogsStorage.getOpenaiApiStats(timezone);
     res.json(stats);
   } catch (error) {
     console.error("[OpenAI Stats] Error:", error);

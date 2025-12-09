@@ -5,8 +5,6 @@ import type { OpenaiApiConfig, InsertOpenaiApiConfig, OpenaiApiLog, InsertOpenai
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { startOfDay as dateFnsStartOfDay } from "date-fns";
 
-const SAO_PAULO_TIMEZONE = "America/Sao_Paulo";
-
 export const openaiLogsStorage = {
   async getOpenaiApiConfig(configType: string): Promise<OpenaiApiConfig | null> {
     const [config] = await db.select()
@@ -122,17 +120,17 @@ export const openaiLogsStorage = {
       .orderBy(responsesSuggested.createdAt);
   },
 
-  async getOpenaiApiStats(): Promise<{
+  async getOpenaiApiStats(timezone: string = "America/Sao_Paulo"): Promise<{
     last_hour: { total_calls: number; total_tokens: number; estimated_cost: number };
     today: { total_calls: number; total_tokens: number; estimated_cost: number };
   }> {
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
     
-    // Calculate start of day in São Paulo timezone
-    const nowInSaoPaulo = toZonedTime(now, SAO_PAULO_TIMEZONE);
-    const startOfDayInSaoPaulo = dateFnsStartOfDay(nowInSaoPaulo);
-    const startOfDay = fromZonedTime(startOfDayInSaoPaulo, SAO_PAULO_TIMEZONE);
+    // Calculate start of day in the provided timezone
+    const nowInTimezone = toZonedTime(now, timezone);
+    const startOfDayInTimezone = dateFnsStartOfDay(nowInTimezone);
+    const startOfDay = fromZonedTime(startOfDayInTimezone, timezone);
 
     const MODEL_PRICING: Record<string, { input: number; output: number }> = {
       'gpt-4o': { input: 2.50 / 1_000_000, output: 10.00 / 1_000_000 },
