@@ -1,6 +1,7 @@
 import { MessageCircle, UserCheck, UserX, ArrowRight } from "lucide-react";
 import { HandlerBadge, getHandlerInfo } from "../../../shared/components/badges/HandlerBadge";
 import { getUserDisplayName, getActiveConversationsCount } from "../../../lib/userUtils";
+import { FavoriteButton } from "../../favorites/components/FavoriteButton";
 import type { UserGroup } from "../../../types";
 
 const emotionConfig: Record<number, { label: string; color: string; emoji: string }> = {
@@ -15,6 +16,9 @@ interface UserGroupCardProps {
   group: UserGroup;
   onViewConversations: (userId: string) => void;
   formatDateTime: (date: string) => string;
+  favoriteIds: number[];
+  onToggleFavorite: (conversationId: number) => void;
+  isTogglingFavorite?: boolean;
 }
 
 function getLatestHandler(conversations: Array<{ current_handler_name?: string | null }>) {
@@ -30,10 +34,15 @@ export function UserGroupCard({
   group,
   onViewConversations,
   formatDateTime,
+  favoriteIds,
+  onToggleFavorite,
+  isTogglingFavorite = false,
 }: UserGroupCardProps) {
   const activeCount = getActiveConversationsCount(group.conversations);
   const latestHandler = getLatestHandler(group.conversations);
   const handlerInfo = getHandlerInfo(latestHandler);
+  const primaryConversation = group.conversations[group.conversations.length - 1];
+  const isPrimaryFavorite = primaryConversation ? favoriteIds.includes(primaryConversation.id) : false;
 
   return (
     <div className="p-4 hover:bg-gray-50 transition-colors">
@@ -76,13 +85,23 @@ export function UserGroupCard({
                 </span>
               </div>
             </div>
-            <button
-              onClick={() => onViewConversations(group.user_id)}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shrink-0"
-            >
-              Ver atendimento
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              {primaryConversation && (
+                <FavoriteButton
+                  conversationId={primaryConversation.id}
+                  isFavorite={isPrimaryFavorite}
+                  onToggle={() => onToggleFavorite(primaryConversation.id)}
+                  isLoading={isTogglingFavorite}
+                />
+              )}
+              <button
+                onClick={() => onViewConversations(group.user_id)}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Ver atendimento
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {group.conversations.length > 1 && (

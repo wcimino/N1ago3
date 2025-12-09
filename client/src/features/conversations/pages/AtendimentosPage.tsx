@@ -7,6 +7,7 @@ import { useDateFormatters, usePaginatedQuery } from "../../../shared/hooks";
 import { fetchApi } from "../../../lib/queryClient";
 import { FilterBar, UserGroupCard } from "../components";
 import { RoutingRulesContent } from "../../routing/components/RoutingRulesContent";
+import { useFavorites } from "../../favorites/hooks/useFavorites";
 import type { UserGroup } from "../../../types";
 
 interface FiltersResponse {
@@ -53,6 +54,7 @@ export function AtendimentosPage() {
   }, [search]);
 
   const { formatShortDateTime } = useDateFormatters();
+  const { favoriteIds, toggleFavorite, isToggling } = useFavorites();
 
   const { data: filters } = useQuery<FiltersResponse>({
     queryKey: ["conversations-filters"],
@@ -170,6 +172,9 @@ export function AtendimentosPage() {
                     group={group}
                     onViewConversations={(userId) => navigate(`/atendimentos/${encodeURIComponent(userId)}`)}
                     formatDateTime={formatShortDateTime}
+                    favoriteIds={favoriteIds}
+                    onToggleFavorite={toggleFavorite}
+                    isTogglingFavorite={isToggling}
                   />
                 ))}
               </div>
