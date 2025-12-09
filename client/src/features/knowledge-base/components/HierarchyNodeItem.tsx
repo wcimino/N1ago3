@@ -53,7 +53,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
 
         <span className="flex-1 text-sm font-medium text-gray-900">{node.name}</span>
 
-        {onAddArticle && (node.level === "intencao" || node.level === "assunto") && (
+        {onAddArticle && node.level === "intencao" && (
           <button
             onClick={(e) => {
               e.stopPropagation();

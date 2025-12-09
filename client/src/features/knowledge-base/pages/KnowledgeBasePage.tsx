@@ -21,9 +21,19 @@ const baseTabs = [
   { id: "zendesk", label: "Base Zendesk", icon: <Cloud className="w-4 h-4" /> },
 ];
 
+interface PrefilledArticleData {
+  productStandard: string;
+  subproductStandard: string | null;
+  subjectId: number;
+  intentId: number;
+  subjectName: string;
+  intentName: string;
+}
+
 export function KnowledgeBasePage() {
   const [activeTab, setActiveTab] = useState("articles");
   const [activeBaseTab, setActiveBaseTab] = useState("internal");
+  const [prefilledData, setPrefilledData] = useState<PrefilledArticleData | null>(null);
   
   const {
     isLoading,
@@ -50,10 +60,32 @@ export function KnowledgeBasePage() {
     handleDelete,
     handleCancel,
     togglePath,
+    subjects,
+    intents,
   } = useKnowledgeBase(activeTab);
 
   const handleAddArticle = (subjectId?: number, intentId?: number, productName?: string) => {
-    setShowForm(true);
+    if (!intentId || !subjectId) return;
+    
+    const subject = subjects.find(s => s.id === subjectId);
+    const intent = intents.find(i => i.id === intentId);
+    
+    if (subject && intent) {
+      setPrefilledData({
+        productStandard: productName || "",
+        subproductStandard: null,
+        subjectId,
+        intentId,
+        subjectName: subject.name,
+        intentName: intent.name,
+      });
+      setShowForm(true);
+    }
+  };
+
+  const handleCancelForm = () => {
+    handleCancel();
+    setPrefilledData(null);
   };
 
   return (
@@ -105,7 +137,7 @@ export function KnowledgeBasePage() {
                   {editingArticle ? "Editar Artigo" : "Novo Artigo"}
                 </h3>
                 <button
-                  onClick={handleCancel}
+                  onClick={handleCancelForm}
                   className="p-2 text-gray-500 hover:text-gray-700"
                 >
                   <X className="w-5 h-5" />
@@ -113,8 +145,9 @@ export function KnowledgeBasePage() {
               </div>
               <KnowledgeBaseForm
                 initialData={editingArticle}
+                prefilledData={prefilledData}
                 onSubmit={handleSubmit}
-                onCancel={handleCancel}
+                onCancel={handleCancelForm}
                 isLoading={createMutation.isPending || updateMutation.isPending}
               />
             </div>

@@ -53,8 +53,18 @@ interface CatalogProduct {
   fullName: string;
 }
 
+interface PrefilledArticleData {
+  productStandard: string;
+  subproductStandard: string | null;
+  subjectId: number;
+  intentId: number;
+  subjectName: string;
+  intentName: string;
+}
+
 interface KnowledgeBaseFormProps {
   initialData?: KnowledgeBaseArticle | null;
+  prefilledData?: PrefilledArticleData | null;
   onSubmit: (data: KnowledgeBaseFormData) => void;
   onCancel: () => void;
   isLoading?: boolean;
@@ -62,6 +72,7 @@ interface KnowledgeBaseFormProps {
 
 export function KnowledgeBaseForm({
   initialData,
+  prefilledData,
   onSubmit,
   onCancel,
   isLoading = false,
@@ -140,7 +151,19 @@ export function KnowledgeBaseForm({
         intentId: initialData.intentId,
       });
       setInitializedForId(initialData.id);
-    } else if (!initialData && initializedForId !== 0) {
+    } else if (prefilledData && !initialData && initializedForId !== -1) {
+      setFormData({
+        name: "",
+        productStandard: prefilledData.productStandard,
+        intent: prefilledData.intentName,
+        description: "",
+        resolution: "",
+        observations: "",
+        subjectId: prefilledData.subjectId,
+        intentId: prefilledData.intentId,
+      });
+      setInitializedForId(-1);
+    } else if (!initialData && !prefilledData && initializedForId !== 0) {
       setFormData({
         name: "",
         productStandard: "",
@@ -153,7 +176,7 @@ export function KnowledgeBaseForm({
       });
       setInitializedForId(0);
     }
-  }, [initialData, dataReady, initializedForId]);
+  }, [initialData, prefilledData, dataReady, initializedForId]);
 
   const handleSelectChange = (name: string) => (value: string) => {
     if (name === "productStandard") {
@@ -240,44 +263,65 @@ export function KnowledgeBaseForm({
         />
       </div>
 
-      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-        <div className="grid grid-cols-3 gap-6">
-          <div>
-            <label className={labelClass}>Produto *</label>
-            <ModernSelect
-              value={formData.productStandard}
-              onValueChange={handleSelectChange("productStandard")}
-              options={produtos.map((p) => ({ value: p, label: p }))}
-              placeholder="Selecione"
-            />
+      {prefilledData ? (
+        <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs font-medium text-blue-700 uppercase tracking-wide">Classificação</span>
           </div>
-          <div>
-            <label className={labelClass}>Assunto</label>
-            <ModernSelect
-              value={formData.subjectId?.toString() || ""}
-              onValueChange={handleSelectChange("subjectId")}
-              options={filteredSubjects.map((s) => ({ value: s.id.toString(), label: s.name }))}
-              placeholder={filteredSubjects.length === 0 ? "Nenhum assunto" : "Selecione"}
-              disabled={!formData.productStandard || filteredSubjects.length === 0}
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Intenção</label>
-            <ModernSelect
-              value={formData.intentId?.toString() || ""}
-              onValueChange={handleSelectChange("intentId")}
-              options={filteredIntents.map((i) => ({ value: i.id.toString(), label: i.name }))}
-              placeholder={filteredIntents.length === 0 ? "Nenhuma intenção" : "Selecione"}
-              disabled={!formData.subjectId || filteredIntents.length === 0}
-            />
+          <div className="flex items-center gap-3 text-sm">
+            <span className="px-2 py-1 bg-white rounded border border-blue-200 text-gray-700 font-medium">
+              {prefilledData.productStandard}
+            </span>
+            <span className="text-blue-400">&gt;</span>
+            <span className="px-2 py-1 bg-blue-100 rounded border border-blue-300 text-blue-700 font-medium">
+              {prefilledData.subjectName}
+            </span>
+            <span className="text-blue-400">&gt;</span>
+            <span className="px-2 py-1 bg-green-100 rounded border border-green-300 text-green-700 font-medium">
+              {prefilledData.intentName}
+            </span>
           </div>
         </div>
-        {filteredSubjects.length === 0 && formData.productStandard && (
-          <p className="text-xs text-amber-600 mt-2">
-            Nenhum assunto cadastrado para este produto. Cadastre em Base de Conhecimento &gt; Assuntos e Intenções.
-          </p>
-        )}
-      </div>
+      ) : (
+        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+          <div className="grid grid-cols-3 gap-6">
+            <div>
+              <label className={labelClass}>Produto *</label>
+              <ModernSelect
+                value={formData.productStandard}
+                onValueChange={handleSelectChange("productStandard")}
+                options={produtos.map((p) => ({ value: p, label: p }))}
+                placeholder="Selecione"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Assunto</label>
+              <ModernSelect
+                value={formData.subjectId?.toString() || ""}
+                onValueChange={handleSelectChange("subjectId")}
+                options={filteredSubjects.map((s) => ({ value: s.id.toString(), label: s.name }))}
+                placeholder={filteredSubjects.length === 0 ? "Nenhum assunto" : "Selecione"}
+                disabled={!formData.productStandard || filteredSubjects.length === 0}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Intenção</label>
+              <ModernSelect
+                value={formData.intentId?.toString() || ""}
+                onValueChange={handleSelectChange("intentId")}
+                options={filteredIntents.map((i) => ({ value: i.id.toString(), label: i.name }))}
+                placeholder={filteredIntents.length === 0 ? "Nenhuma intenção" : "Selecione"}
+                disabled={!formData.subjectId || filteredIntents.length === 0}
+              />
+            </div>
+          </div>
+          {filteredSubjects.length === 0 && formData.productStandard && (
+            <p className="text-xs text-amber-600 mt-2">
+              Nenhum assunto cadastrado para este produto. Cadastre em Base de Conhecimento &gt; Assuntos e Intenções.
+            </p>
+          )}
+        </div>
+      )}
 
       <div>
         <label className={labelClass}>Descrição do Problema *</label>
