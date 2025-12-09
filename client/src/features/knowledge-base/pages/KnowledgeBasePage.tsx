@@ -1,15 +1,17 @@
 import { useState } from "react";
-import { Plus, Search, BookOpen, X, Lightbulb, BarChart3, Cloud, Database } from "lucide-react";
+import { Plus, Search, BookOpen, X, Lightbulb, BarChart3, Cloud, Database, Tags } from "lucide-react";
 import { KnowledgeBaseForm } from "../components/KnowledgeBaseForm";
 import { HierarchyNodeItem } from "../components/HierarchyNodeItem";
 import { SuggestionsPage } from "./SuggestionsPage";
 import { LearningAttemptsPage } from "./LearningAttemptsPage";
 import { ZendeskArticlesPage } from "./ZendeskArticlesPage";
+import { SubjectsIntentsPage } from "./SubjectsIntentsPage";
 import { SegmentedTabs } from "../../../shared/components/ui";
 import { useKnowledgeBase } from "../hooks/useKnowledgeBase";
 
 const tabs = [
   { id: "articles", label: "Artigos", icon: <BookOpen className="w-4 h-4" /> },
+  { id: "subjects", label: "Assuntos e Intenções", icon: <Tags className="w-4 h-4" /> },
   { id: "suggestions", label: "Sugestões", icon: <Lightbulb className="w-4 h-4" /> },
   { id: "processing", label: "Processamento", icon: <BarChart3 className="w-4 h-4" /> },
 ];
@@ -83,6 +85,10 @@ export function KnowledgeBasePage() {
           ) : activeTab === "suggestions" ? (
             <div className="p-4">
               <SuggestionsPage />
+            </div>
+          ) : activeTab === "subjects" ? (
+            <div className="p-4">
+              <SubjectsIntentsPage />
             </div>
           ) : showForm ? (
             <div className="p-4">
