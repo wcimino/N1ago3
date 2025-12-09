@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useKnowledgeSuggestions, type KnowledgeSuggestion } from "../hooks/useKnowledgeSuggestions";
 import { Check, X, GitMerge, AlertTriangle, Clock, CheckCircle, XCircle, Plus, Pencil, Sparkles, Loader2, ChevronDown, FileText, ExternalLink, ArrowRight, Ban } from "lucide-react";
 import { fetchApi, apiRequest } from "../../../lib/queryClient";
-import ReactDiffViewer, { DiffMethod } from "react-diff-viewer-continued";
+import { diffWordsWithSpace } from "diff";
 
 type StatusFilter = "pending" | "approved" | "rejected" | "merged" | "skipped" | "all";
 
@@ -120,48 +120,43 @@ function computeInlineDiff(oldText: string, newText: string): DiffPart[] {
   return result;
 }
 
-const diffViewerStyles = {
-  variables: {
-    light: {
-      diffViewerBackground: '#f9fafb',
-      addedBackground: '#dcfce7',
-      addedColor: '#166534',
-      removedBackground: '#fee2e2',
-      removedColor: '#991b1b',
-      wordAddedBackground: '#bbf7d0',
-      wordRemovedBackground: '#fecaca',
-      addedGutterBackground: '#dcfce7',
-      removedGutterBackground: '#fee2e2',
-      gutterBackground: '#f3f4f6',
-      gutterBackgroundDark: '#e5e7eb',
-      highlightBackground: '#fef3c7',
-      highlightGutterBackground: '#fef3c7',
-      codeFoldGutterBackground: '#e5e7eb',
-      codeFoldBackground: '#f3f4f6',
-      emptyLineBackground: '#f9fafb',
-    },
-  },
-  line: {
-    padding: '4px 8px',
-    fontSize: '14px',
-    lineHeight: '1.6',
-    wordBreak: 'break-word' as const,
-    whiteSpace: 'pre-wrap' as const,
-  },
-  contentText: {
-    fontSize: '14px',
-    lineHeight: '1.6',
-  },
-  gutter: {
-    minWidth: '30px',
-    padding: '0 8px',
-  },
-  diffContainer: {
-    borderRadius: '6px',
-    border: '1px solid #e5e7eb',
-    overflow: 'hidden',
-  },
+type DiffToken = {
+  type: 'equal' | 'removed' | 'added';
+  value: string;
 };
+
+function computeTextDiff(oldText: string, newText: string): DiffToken[] {
+  const rawDiff = diffWordsWithSpace(oldText, newText);
+  
+  const tokens: DiffToken[] = [];
+  let pendingRemoved: string[] = [];
+  let pendingAdded: string[] = [];
+  
+  const flushPending = () => {
+    if (pendingRemoved.length > 0) {
+      tokens.push({ type: 'removed', value: pendingRemoved.join('') });
+      pendingRemoved = [];
+    }
+    if (pendingAdded.length > 0) {
+      tokens.push({ type: 'added', value: pendingAdded.join('') });
+      pendingAdded = [];
+    }
+  };
+  
+  for (const part of rawDiff) {
+    if (part.added) {
+      pendingAdded.push(part.value);
+    } else if (part.removed) {
+      pendingRemoved.push(part.value);
+    } else {
+      flushPending();
+      tokens.push({ type: 'equal', value: part.value });
+    }
+  }
+  flushPending();
+  
+  return tokens;
+}
 
 function DiffPreview({ 
   label, 
@@ -187,20 +182,29 @@ function DiffPreview({
     );
   }
   
+  const diffTokens = computeTextDiff(before || "", after || "");
+  
   return (
     <div className="space-y-2">
       <span className="text-xs font-medium text-gray-700">{label}:</span>
-      <div className="rounded overflow-hidden border border-gray-200">
-        <ReactDiffViewer
-          oldValue={before || ""}
-          newValue={after || ""}
-          splitView={false}
-          compareMethod={DiffMethod.WORDS}
-          hideLineNumbers={true}
-          showDiffOnly={false}
-          useDarkTheme={false}
-          styles={diffViewerStyles}
-        />
+      <div className="text-sm p-3 rounded border bg-gray-50 border-gray-200 text-gray-700 leading-relaxed">
+        {diffTokens.map((token, idx) => {
+          if (token.type === 'removed') {
+            return (
+              <span key={idx} className="bg-red-100 text-red-800 line-through">
+                {token.value}
+              </span>
+            );
+          }
+          if (token.type === 'added') {
+            return (
+              <span key={idx} className="bg-green-100 text-green-800">
+                {token.value}
+              </span>
+            );
+          }
+          return <span key={idx}>{token.value}</span>;
+        })}
       </div>
     </div>
   );
