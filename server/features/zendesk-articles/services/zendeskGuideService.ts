@@ -56,13 +56,14 @@ interface ListCategoriesResponse {
 }
 
 function getAuthHeader(): string {
-  const apiKey = process.env.ZENDESK_APP_API_KEY;
+  const email = process.env.ZENDESK_SUPPORT_EMAIL;
+  const apiToken = process.env.ZENDESK_SUPPORT_API_TOKEN;
   
-  if (!apiKey) {
-    throw new Error("Missing ZENDESK_APP_API_KEY environment variable");
+  if (!email || !apiToken) {
+    throw new Error("Missing ZENDESK_SUPPORT_EMAIL or ZENDESK_SUPPORT_API_TOKEN environment variables");
   }
   
-  const credentials = Buffer.from(apiKey).toString("base64");
+  const credentials = Buffer.from(`${email}/token:${apiToken}`).toString("base64");
   return `Basic ${credentials}`;
 }
 
