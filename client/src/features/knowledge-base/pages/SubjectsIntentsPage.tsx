@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Tags, ChevronRight, ChevronDown, Plus, Loader2, Pencil, Trash2, X, Check } from "lucide-react";
+import { Tags, ChevronRight, ChevronDown, Plus, Loader2, Pencil, Trash2, X, Check, Tag } from "lucide-react";
 
 interface ProductCatalogItem {
   id: number;
@@ -79,6 +79,11 @@ type FormState =
   | { type: "addIntent"; subjectId: number }
   | { type: "editIntent"; intent: KnowledgeIntent };
 
+type SynonymsEditState = 
+  | { type: "none" }
+  | { type: "subject"; subject: KnowledgeSubject }
+  | { type: "intent"; intent: KnowledgeIntent };
+
 export function SubjectsIntentsPage() {
   const queryClient = useQueryClient();
   const [expandedProducts, setExpandedProducts] = useState<Set<number>>(new Set());
@@ -86,6 +91,8 @@ export function SubjectsIntentsPage() {
   const [formState, setFormState] = useState<FormState>({ type: "none" });
   const [formName, setFormName] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: "subject" | "intent"; id: number } | null>(null);
+  const [synonymsEdit, setSynonymsEdit] = useState<SynonymsEditState>({ type: "none" });
+  const [newSynonym, setNewSynonym] = useState("");
 
   const { data: products = [], isLoading: productsLoading } = useQuery<ProductCatalogItem[]>({
     queryKey: ["/api/product-catalog"],
@@ -131,11 +138,11 @@ export function SubjectsIntentsPage() {
   });
 
   const updateSubjectMutation = useMutation({
-    mutationFn: async ({ id, name }: { id: number; name: string }) => {
+    mutationFn: async ({ id, name, synonyms }: { id: number; name?: string; synonyms?: string[] }) => {
       const res = await fetch(`/api/knowledge/subjects/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, synonyms }),
       });
       if (!res.ok) throw new Error("Failed to update subject");
       return res.json();
@@ -175,11 +182,11 @@ export function SubjectsIntentsPage() {
   });
 
   const updateIntentMutation = useMutation({
-    mutationFn: async ({ id, name }: { id: number; name: string }) => {
+    mutationFn: async ({ id, name, synonyms }: { id: number; name?: string; synonyms?: string[] }) => {
       const res = await fetch(`/api/knowledge/intents/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, synonyms }),
       });
       if (!res.ok) throw new Error("Failed to update intent");
       return res.json();
@@ -289,6 +296,70 @@ export function SubjectsIntentsPage() {
     deleteSubjectMutation.isPending || createIntentMutation.isPending || 
     updateIntentMutation.isPending || deleteIntentMutation.isPending;
 
+  const openSynonymsSubject = (subject: KnowledgeSubject, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSynonymsEdit({ type: "subject", subject });
+    setNewSynonym("");
+  };
+
+  const openSynonymsIntent = (intent: KnowledgeIntent, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSynonymsEdit({ type: "intent", intent });
+    setNewSynonym("");
+  };
+
+  const closeSynonymsPanel = () => {
+    setSynonymsEdit({ type: "none" });
+    setNewSynonym("");
+  };
+
+  const addSynonym = () => {
+    const trimmed = newSynonym.trim();
+    if (!trimmed) return;
+    
+    if (synonymsEdit.type === "subject") {
+      const currentSynonyms = synonymsEdit.subject.synonyms || [];
+      if (currentSynonyms.includes(trimmed)) return;
+      const newSynonyms = [...currentSynonyms, trimmed];
+      updateSubjectMutation.mutate(
+        { id: synonymsEdit.subject.id, synonyms: newSynonyms },
+        { onSuccess: () => {
+          setNewSynonym("");
+          setSynonymsEdit({ type: "subject", subject: { ...synonymsEdit.subject, synonyms: newSynonyms } });
+        }}
+      );
+    } else if (synonymsEdit.type === "intent") {
+      const currentSynonyms = synonymsEdit.intent.synonyms || [];
+      if (currentSynonyms.includes(trimmed)) return;
+      const newSynonyms = [...currentSynonyms, trimmed];
+      updateIntentMutation.mutate(
+        { id: synonymsEdit.intent.id, synonyms: newSynonyms },
+        { onSuccess: () => {
+          setNewSynonym("");
+          setSynonymsEdit({ type: "intent", intent: { ...synonymsEdit.intent, synonyms: newSynonyms } });
+        }}
+      );
+    }
+  };
+
+  const removeSynonym = (synonym: string) => {
+    if (synonymsEdit.type === "subject") {
+      const currentSynonyms = synonymsEdit.subject.synonyms || [];
+      const newSynonyms = currentSynonyms.filter(s => s !== synonym);
+      updateSubjectMutation.mutate(
+        { id: synonymsEdit.subject.id, synonyms: newSynonyms },
+        { onSuccess: () => setSynonymsEdit({ type: "subject", subject: { ...synonymsEdit.subject, synonyms: newSynonyms } }) }
+      );
+    } else if (synonymsEdit.type === "intent") {
+      const currentSynonyms = synonymsEdit.intent.synonyms || [];
+      const newSynonyms = currentSynonyms.filter(s => s !== synonym);
+      updateIntentMutation.mutate(
+        { id: synonymsEdit.intent.id, synonyms: newSynonyms },
+        { onSuccess: () => setSynonymsEdit({ type: "intent", intent: { ...synonymsEdit.intent, synonyms: newSynonyms } }) }
+      );
+    }
+  };
+
   const renderInlineForm = (paddingLeft: number, colorClass: string) => (
     <div 
       className={`flex items-center gap-2 py-1.5 px-2 ${colorClass} rounded`}
@@ -394,6 +465,13 @@ export function SubjectsIntentsPage() {
                       </span>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
+                          onClick={(e) => openSynonymsSubject(subject, e)}
+                          className="p-1 text-purple-600 hover:bg-purple-100 rounded"
+                          title="Gerenciar sinônimos"
+                        >
+                          <Tag className="w-3.5 h-3.5" />
+                        </button>
+                        <button
                           onClick={(e) => startAddIntent(subject.id, e)}
                           className="p-1 text-green-600 hover:bg-green-100 rounded"
                           title="Adicionar intenção"
@@ -444,6 +522,13 @@ export function SubjectsIntentsPage() {
                               </span>
                             )}
                             <div className="flex items-center gap-1 ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={(e) => openSynonymsIntent(intent, e)}
+                                className="p-1 text-purple-600 hover:bg-purple-100 rounded"
+                                title="Gerenciar sinônimos"
+                              >
+                                <Tag className="w-3.5 h-3.5" />
+                              </button>
                               <button
                                 onClick={(e) => startEditIntent(intent, e)}
                                 className="p-1 text-gray-600 hover:bg-gray-200 rounded"
@@ -526,6 +611,71 @@ export function SubjectsIntentsPage() {
                 className="px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
               >
                 {isMutating ? "Excluindo..." : "Excluir"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {synonymsEdit.type !== "none" && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                Sinônimos de "{synonymsEdit.type === "subject" ? synonymsEdit.subject.name : synonymsEdit.intent.name}"
+              </h3>
+              <button
+                onClick={closeSynonymsPanel}
+                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <p className="text-sm text-gray-500 mb-4">
+              Sinônimos ajudam a IA a encontrar este {synonymsEdit.type === "subject" ? "assunto" : "intenção"} usando termos alternativos.
+            </p>
+
+            <div className="flex flex-wrap gap-2 mb-4 min-h-[40px] p-2 border rounded bg-gray-50">
+              {(synonymsEdit.type === "subject" ? synonymsEdit.subject.synonyms : synonymsEdit.intent.synonyms).length === 0 ? (
+                <span className="text-sm text-gray-400 italic">Nenhum sinônimo cadastrado</span>
+              ) : (
+                (synonymsEdit.type === "subject" ? synonymsEdit.subject.synonyms : synonymsEdit.intent.synonyms).map((synonym, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-sm rounded-full"
+                  >
+                    {synonym}
+                    <button
+                      onClick={() => removeSynonym(synonym)}
+                      disabled={isMutating}
+                      className="p-0.5 hover:bg-purple-200 rounded-full disabled:opacity-50"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newSynonym}
+                onChange={(e) => setNewSynonym(e.target.value)}
+                placeholder="Novo sinônimo..."
+                className="flex-1 px-3 py-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") addSynonym();
+                }}
+              />
+              <button
+                onClick={addSynonym}
+                disabled={!newSynonym.trim() || isMutating}
+                className="px-3 py-2 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1"
+              >
+                {isMutating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Adicionar
               </button>
             </div>
           </div>
