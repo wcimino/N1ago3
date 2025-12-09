@@ -338,6 +338,8 @@ export const knowledgeBase = pgTable("knowledge_base", {
   subproductStandard: text("subproduct_standard"),
   category1: text("category1"),
   category2: text("category2"),
+  subjectId: integer("subject_id"),
+  intentId: integer("intent_id"),
   intent: text("intent").notNull(),
   description: text("description").notNull(),
   resolution: text("resolution").notNull(),
@@ -348,6 +350,8 @@ export const knowledgeBase = pgTable("knowledge_base", {
   productIdx: index("idx_knowledge_base_product").on(table.productStandard),
   intentIdx: index("idx_knowledge_base_intent").on(table.intent),
   category1Idx: index("idx_knowledge_base_category1").on(table.category1),
+  subjectIdx: index("idx_knowledge_base_subject").on(table.subjectId),
+  intentIdIdx: index("idx_knowledge_base_intent_id").on(table.intentId),
 }));
 
 export const ifoodProducts = pgTable("products_catalog", {
@@ -524,6 +528,38 @@ export type LearningAttemptResult = "suggestion_created" | "insufficient_message
 
 export type ZendeskArticle = typeof zendeskArticles.$inferSelect;
 export type InsertZendeskArticle = Omit<typeof zendeskArticles.$inferInsert, "id" | "createdAt" | "updatedAt" | "syncedAt">;
+
+// Knowledge Subjects - Assuntos vinculados a produtos
+export const knowledgeSubjects = pgTable("knowledge_subjects", {
+  id: serial("id").primaryKey(),
+  productCatalogId: integer("product_catalog_id").notNull().references(() => ifoodProducts.id),
+  name: text("name").notNull(),
+  synonyms: json("synonyms").$type<string[]>().default([]).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  productCatalogIdx: index("idx_knowledge_subjects_product_catalog").on(table.productCatalogId),
+  nameIdx: index("idx_knowledge_subjects_name").on(table.name),
+}));
+
+export type KnowledgeSubject = typeof knowledgeSubjects.$inferSelect;
+export type InsertKnowledgeSubject = Omit<typeof knowledgeSubjects.$inferInsert, "id" | "createdAt" | "updatedAt">;
+
+// Knowledge Intents - Intenções vinculadas a assuntos
+export const knowledgeIntents = pgTable("knowledge_intents", {
+  id: serial("id").primaryKey(),
+  subjectId: integer("subject_id").notNull().references(() => knowledgeSubjects.id),
+  name: text("name").notNull(),
+  synonyms: json("synonyms").$type<string[]>().default([]).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  subjectIdx: index("idx_knowledge_intents_subject").on(table.subjectId),
+  nameIdx: index("idx_knowledge_intents_name").on(table.name),
+}));
+
+export type KnowledgeIntent = typeof knowledgeIntents.$inferSelect;
+export type InsertKnowledgeIntent = Omit<typeof knowledgeIntents.$inferInsert, "id" | "createdAt" | "updatedAt">;
 
 export const zendeskArticlesStatistics = pgTable("zendesk_articles_statistics", {
   id: serial("id").primaryKey(),
