@@ -428,7 +428,8 @@ export const learningAttempts = pgTable("learning_attempts", {
 
 export const zendeskArticles = pgTable("zendesk_articles", {
   id: serial("id").primaryKey(),
-  zendeskId: text("zendesk_id").notNull().unique(),
+  zendeskId: text("zendesk_id").notNull(),
+  helpCenterSubdomain: text("help_center_subdomain").notNull(),
   title: text("title").notNull(),
   body: text("body"),
   sectionId: text("section_id"),
@@ -450,10 +451,11 @@ export const zendeskArticles = pgTable("zendesk_articles", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
-  zendeskIdIdx: uniqueIndex("idx_zendesk_articles_zendesk_id").on(table.zendeskId),
+  zendeskIdSubdomainUnique: uniqueIndex("idx_zendesk_articles_zendesk_id_subdomain").on(table.zendeskId, table.helpCenterSubdomain),
   sectionIdIdx: index("idx_zendesk_articles_section_id").on(table.sectionId),
   localeIdx: index("idx_zendesk_articles_locale").on(table.locale),
   titleIdx: index("idx_zendesk_articles_title").on(table.title),
+  helpCenterSubdomainIdx: index("idx_zendesk_articles_help_center_subdomain").on(table.helpCenterSubdomain),
 }));
 
 // Types

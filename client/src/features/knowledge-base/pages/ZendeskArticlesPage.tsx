@@ -19,6 +19,7 @@ import {
 interface ZendeskArticle {
   id: number;
   zendeskId: string;
+  helpCenterSubdomain: string | null;
   title: string;
   body: string | null;
   sectionId: string | null;
@@ -35,6 +36,11 @@ interface ZendeskArticle {
   zendeskUpdatedAt: string | null;
   syncedAt: string;
 }
+
+const SUBDOMAIN_LABELS: Record<string, string> = {
+  movilepay: "MovilePay",
+  centralajudaifp: "Central Ajuda",
+};
 
 interface SyncInfo {
   lastSyncAt: string | null;
@@ -83,6 +89,11 @@ function ArticleCard({ article, viewCount }: { article: ZendeskArticle; viewCoun
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-medium text-gray-900 truncate">{article.title}</h3>
+              {article.helpCenterSubdomain && (
+                <span className="px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">
+                  {SUBDOMAIN_LABELS[article.helpCenterSubdomain] || article.helpCenterSubdomain}
+                </span>
+              )}
               {article.draft && (
                 <span className="px-1.5 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded">
                   Rascunho
@@ -198,7 +209,7 @@ export function ZendeskArticlesPage() {
     },
   });
   
-  const viewCountMap = statistics.reduce<Record<number, number>>((acc, stat) => {
+  const viewCountMap = (Array.isArray(statistics) ? statistics : []).reduce<Record<number, number>>((acc, stat) => {
     acc[stat.zendeskArticleId] = stat.viewCount;
     return acc;
   }, {});

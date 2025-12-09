@@ -1,8 +1,8 @@
 import { db } from "../../../db.js";
 import { zendeskArticles } from "../../../../shared/schema.js";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 
-const ZENDESK_SUBDOMAIN = "movilepay";
+const ZENDESK_SUBDOMAINS = ["movilepay", "centralajudaifp"];
 
 interface ZendeskArticleResponse {
   id: number;
@@ -66,13 +66,13 @@ function getAuthHeader(): string {
   return `Basic ${credentials}`;
 }
 
-function getBaseUrl(): string {
-  return `https://${ZENDESK_SUBDOMAIN}.zendesk.com`;
+function getBaseUrl(subdomain: string): string {
+  return `https://${subdomain}.zendesk.com`;
 }
 
-async function fetchAllSections(): Promise<Map<string, { name: string; categoryId: string }>> {
+async function fetchAllSections(subdomain: string): Promise<Map<string, { name: string; categoryId: string }>> {
   const sections = new Map<string, { name: string; categoryId: string }>();
-  let url: string | null = `${getBaseUrl()}/api/v2/help_center/sections.json?per_page=100`;
+  let url: string | null = `${getBaseUrl(subdomain)}/api/v2/help_center/sections.json?per_page=100`;
   
   while (url) {
     const response = await fetch(url, {
@@ -80,7 +80,7 @@ async function fetchAllSections(): Promise<Map<string, { name: string; categoryI
     });
     
     if (!response.ok) {
-      console.error(`[ZendeskGuide] Failed to fetch sections: ${response.status}`);
+      console.error(`[ZendeskGuide:${subdomain}] Failed to fetch sections: ${response.status}`);
       break;
     }
     
@@ -96,13 +96,13 @@ async function fetchAllSections(): Promise<Map<string, { name: string; categoryI
     url = data.next_page;
   }
   
-  console.log(`[ZendeskGuide] Fetched ${sections.size} sections`);
+  console.log(`[ZendeskGuide:${subdomain}] Fetched ${sections.size} sections`);
   return sections;
 }
 
-async function fetchAllCategories(): Promise<Map<string, string>> {
+async function fetchAllCategories(subdomain: string): Promise<Map<string, string>> {
   const categories = new Map<string, string>();
-  let url: string | null = `${getBaseUrl()}/api/v2/help_center/categories.json?per_page=100`;
+  let url: string | null = `${getBaseUrl(subdomain)}/api/v2/help_center/categories.json?per_page=100`;
   
   while (url) {
     const response = await fetch(url, {
@@ -110,7 +110,7 @@ async function fetchAllCategories(): Promise<Map<string, string>> {
     });
     
     if (!response.ok) {
-      console.error(`[ZendeskGuide] Failed to fetch categories: ${response.status}`);
+      console.error(`[ZendeskGuide:${subdomain}] Failed to fetch categories: ${response.status}`);
       break;
     }
     
@@ -123,13 +123,13 @@ async function fetchAllCategories(): Promise<Map<string, string>> {
     url = data.next_page;
   }
   
-  console.log(`[ZendeskGuide] Fetched ${categories.size} categories`);
+  console.log(`[ZendeskGuide:${subdomain}] Fetched ${categories.size} categories`);
   return categories;
 }
 
-async function fetchAllArticles(): Promise<ZendeskArticleResponse[]> {
+async function fetchAllArticles(subdomain: string): Promise<ZendeskArticleResponse[]> {
   const articles: ZendeskArticleResponse[] = [];
-  let url: string | null = `${getBaseUrl()}/api/v2/help_center/articles.json?per_page=100`;
+  let url: string | null = `${getBaseUrl(subdomain)}/api/v2/help_center/articles.json?per_page=100`;
   
   while (url) {
     const response = await fetch(url, {
@@ -138,13 +138,13 @@ async function fetchAllArticles(): Promise<ZendeskArticleResponse[]> {
     
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Failed to fetch articles: ${response.status} - ${errorText}`);
+      throw new Error(`Failed to fetch articles from ${subdomain}: ${response.status} - ${errorText}`);
     }
     
     const data: ListArticlesResponse = await response.json();
     articles.push(...data.articles);
     
-    console.log(`[ZendeskGuide] Fetched page with ${data.articles.length} articles (total: ${articles.length})`);
+    console.log(`[ZendeskGuide:${subdomain}] Fetched page with ${data.articles.length} articles (total: ${articles.length})`);
     
     url = data.next_page;
   }
@@ -159,30 +159,28 @@ export interface SyncResult {
   articlesUpdated: number;
   errors: string[];
   syncedAt: Date;
+  subdomainResults?: Record<string, { total: number; created: number; updated: number }>;
 }
 
-export async function syncArticles(): Promise<SyncResult> {
-  const syncedAt = new Date();
-  const result: SyncResult = {
-    success: false,
-    articlesTotal: 0,
-    articlesCreated: 0,
-    articlesUpdated: 0,
-    errors: [],
-    syncedAt,
-  };
+async function syncSubdomain(subdomain: string, syncedAt: Date): Promise<{
+  total: number;
+  created: number;
+  updated: number;
+  errors: string[];
+}> {
+  const result = { total: 0, created: 0, updated: 0, errors: [] as string[] };
   
   try {
-    console.log("[ZendeskGuide] Starting article sync...");
+    console.log(`[ZendeskGuide:${subdomain}] Starting article sync...`);
     
     const [sections, categories, articles] = await Promise.all([
-      fetchAllSections(),
-      fetchAllCategories(),
-      fetchAllArticles(),
+      fetchAllSections(subdomain),
+      fetchAllCategories(subdomain),
+      fetchAllArticles(subdomain),
     ]);
     
-    result.articlesTotal = articles.length;
-    console.log(`[ZendeskGuide] Processing ${articles.length} articles...`);
+    result.total = articles.length;
+    console.log(`[ZendeskGuide:${subdomain}] Processing ${articles.length} articles...`);
     
     for (const article of articles) {
       try {
@@ -192,6 +190,7 @@ export async function syncArticles(): Promise<SyncResult> {
         
         const articleData = {
           zendeskId: String(article.id),
+          helpCenterSubdomain: subdomain,
           title: article.title,
           body: article.body,
           sectionId: String(article.section_id),
@@ -215,34 +214,73 @@ export async function syncArticles(): Promise<SyncResult> {
         const existing = await db
           .select({ id: zendeskArticles.id })
           .from(zendeskArticles)
-          .where(eq(zendeskArticles.zendeskId, String(article.id)))
+          .where(and(
+            eq(zendeskArticles.zendeskId, String(article.id)),
+            eq(zendeskArticles.helpCenterSubdomain, subdomain)
+          ))
           .limit(1);
         
         if (existing.length > 0) {
           await db
             .update(zendeskArticles)
             .set({ ...articleData, updatedAt: syncedAt })
-            .where(eq(zendeskArticles.zendeskId, String(article.id)));
-          result.articlesUpdated++;
+            .where(and(
+              eq(zendeskArticles.zendeskId, String(article.id)),
+              eq(zendeskArticles.helpCenterSubdomain, subdomain)
+            ));
+          result.updated++;
         } else {
           await db.insert(zendeskArticles).values(articleData);
-          result.articlesCreated++;
+          result.created++;
         }
       } catch (err) {
         const errorMsg = `Failed to process article ${article.id}: ${err instanceof Error ? err.message : String(err)}`;
-        console.error(`[ZendeskGuide] ${errorMsg}`);
+        console.error(`[ZendeskGuide:${subdomain}] ${errorMsg}`);
         result.errors.push(errorMsg);
       }
     }
     
-    result.success = true;
-    console.log(`[ZendeskGuide] Sync complete: ${result.articlesCreated} created, ${result.articlesUpdated} updated`);
+    console.log(`[ZendeskGuide:${subdomain}] Sync complete: ${result.created} created, ${result.updated} updated`);
     
   } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    console.error(`[ZendeskGuide] Sync failed: ${errorMsg}`);
+    const errorMsg = `[${subdomain}] ${err instanceof Error ? err.message : String(err)}`;
+    console.error(`[ZendeskGuide:${subdomain}] Sync failed: ${errorMsg}`);
     result.errors.push(errorMsg);
   }
+  
+  return result;
+}
+
+export async function syncArticles(): Promise<SyncResult> {
+  const syncedAt = new Date();
+  const result: SyncResult = {
+    success: false,
+    articlesTotal: 0,
+    articlesCreated: 0,
+    articlesUpdated: 0,
+    errors: [],
+    syncedAt,
+    subdomainResults: {},
+  };
+  
+  console.log(`[ZendeskGuide] Starting sync for ${ZENDESK_SUBDOMAINS.length} subdomains: ${ZENDESK_SUBDOMAINS.join(", ")}`);
+  
+  for (const subdomain of ZENDESK_SUBDOMAINS) {
+    const subResult = await syncSubdomain(subdomain, syncedAt);
+    
+    result.articlesTotal += subResult.total;
+    result.articlesCreated += subResult.created;
+    result.articlesUpdated += subResult.updated;
+    result.errors.push(...subResult.errors);
+    result.subdomainResults![subdomain] = {
+      total: subResult.total,
+      created: subResult.created,
+      updated: subResult.updated,
+    };
+  }
+  
+  result.success = result.errors.length === 0 || result.articlesTotal > 0;
+  console.log(`[ZendeskGuide] Total sync complete: ${result.articlesCreated} created, ${result.articlesUpdated} updated across ${ZENDESK_SUBDOMAINS.length} subdomains`);
   
   return result;
 }
