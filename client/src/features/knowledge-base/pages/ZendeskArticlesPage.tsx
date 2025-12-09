@@ -132,12 +132,10 @@ function ArticleCard({ article, viewCount }: { article: ZendeskArticle; viewCoun
               {article.locale && (
                 <span className="uppercase">{article.locale}</span>
               )}
-              {viewCount > 0 && (
-                <span className="flex items-center gap-1 text-purple-600">
-                  <BarChart3 className="w-3 h-3" />
-                  {viewCount} {viewCount === 1 ? "consulta" : "consultas"}
-                </span>
-              )}
+              <span className="flex items-center gap-1 text-purple-600">
+                <BarChart3 className="w-3 h-3" />
+                {viewCount} {viewCount === 1 ? "consulta" : "consultas"}
+              </span>
             </div>
           </div>
           
