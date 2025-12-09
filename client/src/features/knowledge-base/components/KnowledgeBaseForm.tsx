@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Save, X } from "lucide-react";
+import { Save, X, FileText, Tag, MessageSquare, CheckCircle, StickyNote } from "lucide-react";
 import { ModernSelect } from "@/shared/components/ui";
 
 interface KnowledgeBaseArticle {
@@ -242,10 +242,6 @@ export function KnowledgeBaseForm({
     formData.description.trim() &&
     formData.resolution.trim();
 
-  const inputClass = "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors hover:border-gray-300";
-  const textareaClass = "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors hover:border-gray-300";
-  const labelClass = "block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide";
-
   if (initialData && !isInitialized) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -255,108 +251,145 @@ export function KnowledgeBaseForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div>
-        <label className={labelClass}>Nome do Artigo</label>
-        <input
-          type="text"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          className={inputClass}
-          placeholder="Ex: Como contratar o Cartão de Crédito"
-        />
-      </div>
-
-      {prefilledData ? (
-        <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-xs font-medium text-blue-700 uppercase tracking-wide">Classificação</span>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap text-sm">
-            <span className="px-2 py-1 bg-white rounded border border-blue-200 text-gray-700 font-medium">
-              {prefilledData.productStandard}
-            </span>
-            {prefilledData.subproductStandard && (
-              <>
-                <span className="text-blue-400">&gt;</span>
-                <span className="px-2 py-1 bg-purple-100 rounded border border-purple-300 text-purple-700 font-medium">
-                  {prefilledData.subproductStandard}
-                </span>
-              </>
-            )}
-            <span className="text-blue-400">&gt;</span>
-            <span className="px-2 py-1 bg-blue-100 rounded border border-blue-300 text-blue-700 font-medium">
-              {prefilledData.subjectName}
-            </span>
-            <span className="text-blue-400">&gt;</span>
-            <span className="px-2 py-1 bg-green-100 rounded border border-green-300 text-green-700 font-medium">
-              {prefilledData.intentName}
-            </span>
-          </div>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="col-span-2 sm:col-span-1">
+          <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
+            <FileText className="w-3.5 h-3.5" />
+            Nome do Artigo
+          </label>
+          <input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+            placeholder="Ex: Como contratar o Cartão de Crédito"
+          />
         </div>
-      ) : (
-        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-          <div className="grid grid-cols-3 gap-6">
-            <div>
-              <label className={labelClass}>Produto *</label>
+
+        <div className="col-span-2 sm:col-span-1">
+          <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
+            <Tag className="w-3.5 h-3.5" />
+            Classificação
+          </label>
+          {prefilledData ? (
+            <div className="flex items-center gap-1.5 flex-wrap py-1.5">
+              <span className="px-2 py-1 text-xs bg-gray-100 rounded border border-gray-200 text-gray-700 font-medium">
+                {prefilledData.productStandard}
+              </span>
+              {prefilledData.subproductStandard && (
+                <>
+                  <span className="text-gray-300">/</span>
+                  <span className="px-2 py-1 text-xs bg-purple-50 rounded border border-purple-200 text-purple-700 font-medium">
+                    {prefilledData.subproductStandard}
+                  </span>
+                </>
+              )}
+              <span className="text-gray-300">/</span>
+              <span className="px-2 py-1 text-xs bg-blue-50 rounded border border-blue-200 text-blue-700 font-medium">
+                {prefilledData.subjectName}
+              </span>
+              <span className="text-gray-300">/</span>
+              <span className="px-2 py-1 text-xs bg-green-50 rounded border border-green-200 text-green-700 font-medium">
+                {prefilledData.intentName}
+              </span>
+            </div>
+          ) : (
+            <div className="flex gap-2">
               <ModernSelect
                 value={formData.productStandard}
                 onValueChange={handleSelectChange("productStandard")}
                 options={produtos.map((p) => ({ value: p, label: p }))}
-                placeholder="Selecione"
+                placeholder="Produto *"
               />
-            </div>
-            <div>
-              <label className={labelClass}>Assunto</label>
               <ModernSelect
                 value={formData.subjectId?.toString() || ""}
                 onValueChange={handleSelectChange("subjectId")}
                 options={filteredSubjects.map((s) => ({ value: s.id.toString(), label: s.name }))}
-                placeholder={filteredSubjects.length === 0 ? "Nenhum assunto" : "Selecione"}
+                placeholder="Assunto"
                 disabled={!formData.productStandard || filteredSubjects.length === 0}
               />
-            </div>
-            <div>
-              <label className={labelClass}>Intenção</label>
               <ModernSelect
                 value={formData.intentId?.toString() || ""}
                 onValueChange={handleSelectChange("intentId")}
                 options={filteredIntents.map((i) => ({ value: i.id.toString(), label: i.name }))}
-                placeholder={filteredIntents.length === 0 ? "Nenhuma intenção" : "Selecione"}
+                placeholder="Intenção"
                 disabled={!formData.subjectId || filteredIntents.length === 0}
               />
             </div>
-          </div>
-          {filteredSubjects.length === 0 && formData.productStandard && (
-            <p className="text-xs text-amber-600 mt-2">
-              Nenhum assunto cadastrado para este produto. Cadastre em Base de Conhecimento &gt; Assuntos e Intenções.
-            </p>
           )}
         </div>
-      )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
+            <MessageSquare className="w-3.5 h-3.5" />
+            Problema
+            <span className="text-red-400">*</span>
+          </label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            rows={4}
+            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors bg-white"
+            placeholder="Descreva a situação ou problema que o cliente pode apresentar..."
+            required
+          />
+        </div>
+
+        <div>
+          <label className="flex items-center gap-1.5 text-xs font-medium text-green-700 mb-1.5">
+            <CheckCircle className="w-3.5 h-3.5" />
+            Resolução
+            <span className="text-red-400">*</span>
+          </label>
+          <textarea
+            name="resolution"
+            value={formData.resolution}
+            onChange={handleChange}
+            rows={4}
+            className="w-full px-3 py-2 text-sm border border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none transition-colors bg-green-50"
+            placeholder="Descreva como resolver o problema..."
+            required
+          />
+        </div>
+      </div>
 
       <div>
-        <label className={labelClass}>Descrição do Problema *</label>
-        <textarea name="description" value={formData.description} onChange={handleChange} rows={2} className={textareaClass} placeholder="Descreva a situação ou problema..." required />
+        <label className="flex items-center gap-1.5 text-xs font-medium text-gray-400 mb-1.5">
+          <StickyNote className="w-3.5 h-3.5" />
+          Observações
+          <span className="text-xs font-normal">(opcional)</span>
+        </label>
+        <textarea
+          name="observations"
+          value={formData.observations}
+          onChange={handleChange}
+          rows={2}
+          className="w-full px-3 py-2 text-sm border border-gray-100 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 resize-none transition-colors bg-gray-50"
+          placeholder="Informações adicionais, links úteis, casos especiais..."
+        />
       </div>
 
-      <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-        <label className={`${labelClass} text-green-700`}>Resolução *</label>
-        <textarea name="resolution" value={formData.resolution} onChange={handleChange} rows={3} className={`${textareaClass} bg-white border-green-200 focus:ring-green-500 focus:border-green-500`} placeholder="Descreva a solução..." required />
-      </div>
-
-      <div>
-        <label className={`${labelClass} text-gray-400`}>Observações</label>
-        <textarea name="observations" value={formData.observations} onChange={handleChange} rows={2} className={`${textareaClass} bg-gray-50 border-gray-100`} placeholder="Opcional..." />
-      </div>
-
-      <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-        <button type="button" onClick={onCancel} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors">
-          <X className="w-4 h-4" /> Cancelar
+      <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          <X className="w-4 h-4" />
+          Cancelar
         </button>
-        <button type="submit" disabled={!isValid || isLoading} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm">
-          <Save className="w-4 h-4" /> {isLoading ? "Salvando..." : "Salvar"}
+        <button
+          type="submit"
+          disabled={!isValid || isLoading}
+          className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          <Save className="w-4 h-4" />
+          {isLoading ? "Salvando..." : "Salvar Artigo"}
         </button>
       </div>
     </form>
