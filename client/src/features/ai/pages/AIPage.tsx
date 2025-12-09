@@ -1,11 +1,12 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
-import { FileText, Tags, MessageSquare, GraduationCap, Wrench, Settings } from "lucide-react";
+import { FileText, Tags, MessageSquare, GraduationCap, Wrench, Settings, Lightbulb } from "lucide-react";
 import { SegmentedTabs } from "../../../shared/components/ui";
 import { OpenaiSummaryConfigPage } from "./OpenaiSummaryConfigPage";
 import { ClassificationConfigPage } from "./ClassificationConfigPage";
 import { ResponseConfigPage } from "./ResponseConfigPage";
 import { LearningConfigPage } from "./LearningConfigPage";
+import { EnrichmentConfigPage } from "./EnrichmentConfigPage";
 import { ToolsPage } from "./ToolsPage";
 import { GeneralSettingsPage } from "./GeneralSettingsPage";
 
@@ -14,6 +15,7 @@ const agentTabs = [
   { id: "classification", label: "Classificação", icon: <Tags className="w-4 h-4" /> },
   { id: "response", label: "Resposta", icon: <MessageSquare className="w-4 h-4" /> },
   { id: "learning", label: "Aprendizado", icon: <GraduationCap className="w-4 h-4" /> },
+  { id: "enrichment", label: "Enriquecimento", icon: <Lightbulb className="w-4 h-4" /> },
 ];
 
 const utilityTabs = [
@@ -35,6 +37,7 @@ export function AIPage() {
     if (location.includes("/classification")) return "classification";
     if (location.includes("/response")) return "response";
     if (location.includes("/learning")) return "learning";
+    if (location.includes("/enrichment")) return "enrichment";
     if (location.includes("/tools")) return "tools";
     if (location.includes("/summary")) return "summary";
     return "summary";
@@ -76,6 +79,7 @@ export function AIPage() {
         {activeTab === "classification" && <ClassificationConfigPage />}
         {activeTab === "response" && <ResponseConfigPage />}
         {activeTab === "learning" && <LearningConfigPage />}
+        {activeTab === "enrichment" && <EnrichmentConfigPage />}
         {activeTab === "tools" && <ToolsPage />}
       </div>
     </div>
