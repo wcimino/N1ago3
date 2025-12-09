@@ -1,10 +1,62 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useKnowledgeSuggestions, type KnowledgeSuggestion } from "../hooks/useKnowledgeSuggestions";
-import { Check, X, GitMerge, AlertTriangle, Clock, CheckCircle, XCircle, Plus, Pencil, Sparkles, Loader2, ChevronDown, FileText, ExternalLink } from "lucide-react";
+import { Check, X, GitMerge, AlertTriangle, Clock, CheckCircle, XCircle, Plus, Pencil, Sparkles, Loader2, ChevronDown, FileText, ExternalLink, ArrowRight } from "lucide-react";
 import { fetchApi, apiRequest } from "../../../lib/queryClient";
 
 type StatusFilter = "pending" | "approved" | "rejected" | "merged" | "all";
+
+interface KnowledgeArticle {
+  id: number;
+  name: string;
+  description: string | null;
+  resolution: string | null;
+  observations: string | null;
+}
+
+function ComparisonField({ 
+  label, 
+  before, 
+  after,
+  beforeLabel = "Artigo Atual",
+  afterLabel = "Sugestão"
+}: { 
+  label: string;
+  before: string | null;
+  after: string | null;
+  beforeLabel?: string;
+  afterLabel?: string;
+}) {
+  const hasChange = before !== after;
+  
+  if (!before && !after) return null;
+  
+  return (
+    <div className="space-y-2">
+      <span className="text-xs font-medium text-gray-700">{label}:</span>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <span className="text-xs text-gray-500 flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+            {beforeLabel}
+          </span>
+          <div className={`text-sm p-2 rounded border ${hasChange ? 'bg-gray-50 border-gray-200' : 'bg-gray-50 border-gray-200'}`}>
+            {before || <span className="text-gray-400 italic">Sem conteúdo</span>}
+          </div>
+        </div>
+        <div className="space-y-1">
+          <span className="text-xs text-gray-500 flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-green-500"></span>
+            {afterLabel}
+          </span>
+          <div className={`text-sm p-2 rounded border ${hasChange ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+            {after || <span className="text-gray-400 italic">Sem conteúdo</span>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
@@ -147,6 +199,14 @@ function SuggestionCard({
 }) {
   const [showRejectReason, setShowRejectReason] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  
+  const isUpdate = suggestion.suggestionType === "update" && suggestion.similarArticleId;
+  
+  const { data: originalArticle, isLoading: isLoadingArticle } = useQuery<KnowledgeArticle>({
+    queryKey: ["knowledge-article", suggestion.similarArticleId],
+    queryFn: () => fetchApi<KnowledgeArticle>(`/api/knowledge/articles/${suggestion.similarArticleId}`),
+    enabled: !!isUpdate,
+  });
 
   const handleReject = () => {
     if (showRejectReason) {
@@ -207,25 +267,70 @@ function SuggestionCard({
         )}
       </div>
 
-      {suggestion.description && (
-        <div>
-          <span className="text-xs text-gray-500">Situação:</span>
-          <p className="text-sm mt-1">{suggestion.description}</p>
-        </div>
-      )}
+      {isUpdate ? (
+        isLoadingArticle ? (
+          <div className="space-y-4 border-t border-b py-3 my-2">
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Carregando artigo original para comparação...</span>
+            </div>
+          </div>
+        ) : originalArticle ? (
+          <div className="space-y-4 border-t border-b py-3 my-2">
+            <div className="flex items-center gap-2 text-xs text-gray-600">
+              <ArrowRight className="w-4 h-4" />
+              <span>Comparação: Artigo #{suggestion.similarArticleId} → Sugestão de melhoria</span>
+            </div>
+            
+            <ComparisonField
+              label="Situação"
+              before={originalArticle.description}
+              after={suggestion.description}
+            />
+            
+            <ComparisonField
+              label="Solução"
+              before={originalArticle.resolution}
+              after={suggestion.resolution}
+            />
+            
+            <ComparisonField
+              label="Observações"
+              before={originalArticle.observations}
+              after={suggestion.observations}
+            />
+          </div>
+        ) : (
+          <div className="space-y-4 border-t border-b py-3 my-2">
+            <div className="flex items-center gap-2 text-xs text-amber-600">
+              <AlertTriangle className="w-4 h-4" />
+              <span>Artigo original #{suggestion.similarArticleId} não encontrado</span>
+            </div>
+          </div>
+        )
+      ) : (
+        <>
+          {suggestion.description && (
+            <div>
+              <span className="text-xs text-gray-500">Situação:</span>
+              <p className="text-sm mt-1">{suggestion.description}</p>
+            </div>
+          )}
 
-      {suggestion.resolution && (
-        <div>
-          <span className="text-xs text-gray-500">Solução:</span>
-          <p className="text-sm mt-1 bg-green-50 p-2 rounded">{suggestion.resolution}</p>
-        </div>
-      )}
+          {suggestion.resolution && (
+            <div>
+              <span className="text-xs text-gray-500">Solução:</span>
+              <p className="text-sm mt-1 bg-green-50 p-2 rounded">{suggestion.resolution}</p>
+            </div>
+          )}
 
-      {suggestion.observations && (
-        <div>
-          <span className="text-xs text-gray-500">Observações:</span>
-          <p className="text-sm mt-1 text-gray-600">{suggestion.observations}</p>
-        </div>
+          {suggestion.observations && (
+            <div>
+              <span className="text-xs text-gray-500">Observações:</span>
+              <p className="text-sm mt-1 text-gray-600">{suggestion.observations}</p>
+            </div>
+          )}
+        </>
       )}
 
       <SourceArticlesBadge rawExtraction={suggestion.rawExtraction} />
