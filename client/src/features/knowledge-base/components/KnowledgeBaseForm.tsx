@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Save, X } from "lucide-react";
 import { ModernSelect } from "@/shared/components/ui";
@@ -8,12 +8,12 @@ interface KnowledgeBaseArticle {
   name: string | null;
   productStandard: string;
   subproductStandard: string | null;
-  category1: string | null;
-  category2: string | null;
   intent: string;
   description: string;
   resolution: string;
   observations: string | null;
+  subjectId: number | null;
+  intentId: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -22,12 +22,35 @@ interface KnowledgeBaseFormData {
   name: string | null;
   productStandard: string;
   subproductStandard: string | null;
-  category1: string | null;
-  category2: string | null;
   intent: string;
   description: string;
   resolution: string;
   observations: string | null;
+  subjectId: number | null;
+  intentId: number | null;
+}
+
+interface KnowledgeSubject {
+  id: number;
+  productCatalogId: number;
+  name: string;
+  synonyms: string[];
+  productName?: string | null;
+}
+
+interface KnowledgeIntent {
+  id: number;
+  subjectId: number;
+  name: string;
+  synonyms: string[];
+  subjectName?: string | null;
+}
+
+interface CatalogProduct {
+  id: number;
+  produto: string;
+  subproduto: string | null;
+  fullName: string;
 }
 
 interface KnowledgeBaseFormProps {
@@ -46,119 +69,148 @@ export function KnowledgeBaseForm({
   const [formData, setFormData] = useState({
     name: "",
     productStandard: "",
-    subproductStandard: "",
-    category1: "",
-    category2: "",
     intent: "",
     description: "",
     resolution: "",
     observations: "",
+    subjectId: null as number | null,
+    intentId: null as number | null,
+  });
+  const [initializedForId, setInitializedForId] = useState<number | null>(null);
+
+  const { data: produtos = [], isSuccess: produtosLoaded } = useQuery<string[]>({
+    queryKey: ["/api/product-catalog/distinct/produtos"],
+    queryFn: async () => {
+      const res = await fetch("/api/product-catalog/distinct/produtos");
+      return res.json();
+    },
   });
 
+  const { data: catalogProducts = [], isSuccess: catalogLoaded } = useQuery<CatalogProduct[]>({
+    queryKey: ["/api/product-catalog"],
+    queryFn: async () => {
+      const res = await fetch("/api/product-catalog");
+      return res.json();
+    },
+  });
+
+  const { data: allSubjects = [], isSuccess: subjectsLoaded } = useQuery<KnowledgeSubject[]>({
+    queryKey: ["/api/knowledge/subjects", { withProduct: true }],
+    queryFn: async () => {
+      const res = await fetch("/api/knowledge/subjects?withProduct=true");
+      return res.json();
+    },
+  });
+
+  const { data: allIntents = [], isSuccess: intentsLoaded } = useQuery<KnowledgeIntent[]>({
+    queryKey: ["/api/knowledge/intents", { withSubject: true }],
+    queryFn: async () => {
+      const res = await fetch("/api/knowledge/intents?withSubject=true");
+      return res.json();
+    },
+  });
+
+  const dataReady = produtosLoaded && catalogLoaded && subjectsLoaded && intentsLoaded;
+
+  const filteredSubjects = useMemo(() => {
+    if (!formData.productStandard || catalogProducts.length === 0) return [];
+    const productCatalogIds = catalogProducts
+      .filter(p => p.produto === formData.productStandard)
+      .map(p => p.id);
+    return allSubjects.filter(s => productCatalogIds.includes(s.productCatalogId));
+  }, [formData.productStandard, catalogProducts, allSubjects]);
+  
+  const filteredIntents = useMemo(() => {
+    if (!formData.subjectId) return [];
+    return allIntents.filter(i => i.subjectId === formData.subjectId);
+  }, [formData.subjectId, allIntents]);
+
+  const isInitialized = initialData ? initializedForId === initialData.id : initializedForId === 0;
+
   useEffect(() => {
-    if (initialData) {
+    if (initialData && dataReady && initializedForId !== initialData.id) {
       setFormData({
         name: initialData.name || "",
         productStandard: initialData.productStandard,
-        subproductStandard: initialData.subproductStandard || "",
-        category1: initialData.category1 || "",
-        category2: initialData.category2 || "",
-        intent: initialData.intent,
+        intent: initialData.intent || "",
         description: initialData.description,
         resolution: initialData.resolution,
         observations: initialData.observations || "",
+        subjectId: initialData.subjectId,
+        intentId: initialData.intentId,
       });
+      setInitializedForId(initialData.id);
+    } else if (!initialData && initializedForId !== 0) {
+      setFormData({
+        name: "",
+        productStandard: "",
+        intent: "",
+        description: "",
+        resolution: "",
+        observations: "",
+        subjectId: null,
+        intentId: null,
+      });
+      setInitializedForId(0);
     }
-  }, [initialData]);
+  }, [initialData, dataReady, initializedForId]);
 
-  const { data: produtos = [] } = useQuery<string[]>({
-    queryKey: ["/api/product-catalog/distinct/produtos"],
-  });
-
-  const { data: subprodutos = [] } = useQuery<string[]>({
-    queryKey: ["/api/product-catalog/distinct/subprodutos", formData.productStandard],
-    queryFn: async () => {
-      if (!formData.productStandard) return [];
-      const res = await fetch(`/api/product-catalog/distinct/subprodutos?produto=${encodeURIComponent(formData.productStandard)}`);
-      return res.json();
-    },
-    enabled: !!formData.productStandard,
-  });
-
-  const { data: categorias1 = [] } = useQuery<string[]>({
-    queryKey: ["/api/product-catalog/distinct/categoria1", formData.productStandard, formData.subproductStandard],
-    queryFn: async () => {
-      if (!formData.productStandard) return [];
-      const params = new URLSearchParams({ produto: formData.productStandard });
-      if (formData.subproductStandard) params.append("subproduto", formData.subproductStandard);
-      const res = await fetch(`/api/product-catalog/distinct/categoria1?${params}`);
-      return res.json();
-    },
-    enabled: !!formData.productStandard,
-  });
-
-  const { data: categorias2 = [] } = useQuery<string[]>({
-    queryKey: ["/api/product-catalog/distinct/categoria2", formData.productStandard, formData.subproductStandard, formData.category1],
-    queryFn: async () => {
-      if (!formData.productStandard) return [];
-      const params = new URLSearchParams({ produto: formData.productStandard });
-      if (formData.subproductStandard) params.append("subproduto", formData.subproductStandard);
-      if (formData.category1) params.append("categoria1", formData.category1);
-      const res = await fetch(`/api/product-catalog/distinct/categoria2?${params}`);
-      return res.json();
-    },
-    enabled: !!formData.productStandard,
-  });
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    
+  const handleSelectChange = (name: string) => (value: string) => {
     if (name === "productStandard") {
       setFormData((prev) => ({
         ...prev,
         productStandard: value,
-        subproductStandard: "",
-        category1: "",
-        category2: "",
+        subjectId: null,
+        intentId: null,
       }));
-    } else if (name === "subproductStandard") {
+    } else if (name === "subjectId") {
+      const numValue = value ? parseInt(value, 10) : null;
       setFormData((prev) => ({
         ...prev,
-        subproductStandard: value,
-        category1: "",
-        category2: "",
+        subjectId: numValue,
+        intentId: null,
       }));
-    } else if (name === "category1") {
-      setFormData((prev) => ({
-        ...prev,
-        category1: value,
-        category2: "",
-      }));
+    } else if (name === "intentId") {
+      const numValue = value ? parseInt(value, 10) : null;
+      setFormData((prev) => ({ ...prev, intentId: numValue }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    let intentValue = formData.intent || "Outros";
+    if (formData.intentId) {
+      const selectedIntent = allIntents.find(i => i.id === formData.intentId);
+      if (selectedIntent) {
+        intentValue = selectedIntent.name;
+      }
+    }
+    
     onSubmit({
       name: formData.name || null,
       productStandard: formData.productStandard,
-      subproductStandard: formData.subproductStandard || null,
-      category1: formData.category1 || null,
-      category2: formData.category2 || null,
-      intent: formData.intent,
+      subproductStandard: null,
+      intent: intentValue,
       description: formData.description,
       resolution: formData.resolution,
       observations: formData.observations || null,
+      subjectId: formData.subjectId,
+      intentId: formData.intentId,
     });
   };
 
   const isValid =
     formData.productStandard.trim() &&
-    formData.intent.trim() &&
     formData.description.trim() &&
     formData.resolution.trim();
 
@@ -166,25 +218,13 @@ export function KnowledgeBaseForm({
   const textareaClass = "w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors hover:border-gray-300";
   const labelClass = "block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide";
 
-  const handleSelectChange = (name: string) => (value: string) => {
-    if (name === "productStandard") {
-      setFormData((prev) => ({
-        ...prev,
-        productStandard: value,
-        subproductStandard: "",
-        category1: "",
-        category2: "",
-      }));
-    } else if (name === "category1") {
-      setFormData((prev) => ({
-        ...prev,
-        category1: value,
-        category2: "",
-      }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
-  };
+  if (initialData && !isInitialized) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -202,81 +242,41 @@ export function KnowledgeBaseForm({
 
       <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
         <div className="grid grid-cols-3 gap-6">
-          <div className="space-y-3">
-            <div>
-              <label className={labelClass}>Produto *</label>
-              <ModernSelect
-                value={formData.productStandard}
-                onValueChange={handleSelectChange("productStandard")}
-                options={produtos.map((p) => ({ value: p, label: p }))}
-                placeholder="Selecione"
-              />
-            </div>
-            {formData.productStandard && subprodutos.length > 0 && (
-              <div>
-                <label className={labelClass}>Subproduto</label>
-                <ModernSelect
-                  value={formData.subproductStandard || ""}
-                  onValueChange={handleSelectChange("subproductStandard")}
-                  options={subprodutos.map((s) => ({ value: s, label: s }))}
-                  placeholder="Selecione"
-                />
-              </div>
-            )}
-          </div>
-          <div className="space-y-3">
-            <div>
-              <label className={labelClass}>Categoria 1</label>
-              <ModernSelect
-                value={formData.category1 || ""}
-                onValueChange={handleSelectChange("category1")}
-                options={categorias1.map((c) => ({ value: c, label: c }))}
-                placeholder={categorias1.length === 0 ? "-" : "Selecione"}
-                disabled={!formData.productStandard || categorias1.length === 0}
-              />
-            </div>
-            {formData.category1 && categorias2.length > 0 && (
-              <div>
-                <label className={labelClass}>Categoria 2</label>
-                <ModernSelect
-                  value={formData.category2 || ""}
-                  onValueChange={handleSelectChange("category2")}
-                  options={categorias2.map((c) => ({ value: c, label: c }))}
-                  placeholder="Selecione"
-                />
-              </div>
-            )}
+          <div>
+            <label className={labelClass}>Produto *</label>
+            <ModernSelect
+              value={formData.productStandard}
+              onValueChange={handleSelectChange("productStandard")}
+              options={produtos.map((p) => ({ value: p, label: p }))}
+              placeholder="Selecione"
+            />
           </div>
           <div>
-            <label className={labelClass}>Intenção *</label>
-            <div className="flex flex-col gap-2 mt-1">
-              {["Suporte", "Contratar", "Outros"].map((option) => {
-                const isSelected = formData.intent.toLowerCase() === option.toLowerCase();
-                return (
-                  <label
-                    key={option}
-                    className={`flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg cursor-pointer transition-all border ${
-                      isSelected
-                        ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                        : "bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="intent"
-                      value={option}
-                      checked={isSelected}
-                      onChange={handleChange}
-                      className="sr-only"
-                      required
-                    />
-                    {option}
-                  </label>
-                );
-              })}
-            </div>
+            <label className={labelClass}>Assunto</label>
+            <ModernSelect
+              value={formData.subjectId?.toString() || ""}
+              onValueChange={handleSelectChange("subjectId")}
+              options={filteredSubjects.map((s) => ({ value: s.id.toString(), label: s.name }))}
+              placeholder={filteredSubjects.length === 0 ? "Nenhum assunto" : "Selecione"}
+              disabled={!formData.productStandard || filteredSubjects.length === 0}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Intenção</label>
+            <ModernSelect
+              value={formData.intentId?.toString() || ""}
+              onValueChange={handleSelectChange("intentId")}
+              options={filteredIntents.map((i) => ({ value: i.id.toString(), label: i.name }))}
+              placeholder={filteredIntents.length === 0 ? "Nenhuma intenção" : "Selecione"}
+              disabled={!formData.subjectId || filteredIntents.length === 0}
+            />
           </div>
         </div>
+        {filteredSubjects.length === 0 && formData.productStandard && (
+          <p className="text-xs text-amber-600 mt-2">
+            Nenhum assunto cadastrado para este produto. Cadastre em Base de Conhecimento &gt; Assuntos e Intenções.
+          </p>
+        )}
       </div>
 
       <div>

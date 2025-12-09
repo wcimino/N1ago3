@@ -11,6 +11,8 @@ export interface KnowledgeBaseArticle {
   description: string;
   resolution: string;
   observations: string | null;
+  subjectId: number | null;
+  intentId: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,6 +25,8 @@ export interface KnowledgeBaseFormData {
   description: string;
   resolution: string;
   observations: string | null;
+  subjectId: number | null;
+  intentId: number | null;
 }
 
 interface Filters {
@@ -37,16 +41,40 @@ export interface CatalogProduct {
   fullName: string;
 }
 
+export interface KnowledgeSubject {
+  id: number;
+  productCatalogId: number;
+  name: string;
+  synonyms: string[];
+  productName?: string | null;
+}
+
+export interface KnowledgeIntent {
+  id: number;
+  subjectId: number;
+  name: string;
+  synonyms: string[];
+  subjectName?: string | null;
+}
+
 export interface HierarchyNode {
   name: string;
   level: ProductLevelType;
   fullPath: string;
   children: HierarchyNode[];
   articles: KnowledgeBaseArticle[];
+  subjectId?: number;
+  intentId?: number;
 }
 
-function buildHierarchy(products: CatalogProduct[], articles: KnowledgeBaseArticle[]): HierarchyNode[] {
+function buildHierarchy(
+  products: CatalogProduct[],
+  subjects: KnowledgeSubject[],
+  intents: KnowledgeIntent[],
+  articles: KnowledgeBaseArticle[]
+): HierarchyNode[] {
   const productNodes = new Map<string, HierarchyNode>();
+  const subjectToProduct = new Map<number, string>();
   
   for (const product of products) {
     if (!productNodes.has(product.produto)) {
@@ -58,49 +86,116 @@ function buildHierarchy(products: CatalogProduct[], articles: KnowledgeBaseArtic
         articles: [],
       });
     }
+  }
+  
+  for (const subject of subjects) {
+    const product = products.find(p => p.id === subject.productCatalogId);
+    if (!product) continue;
     
-    const prodNode = productNodes.get(product.produto)!;
+    subjectToProduct.set(subject.id, product.produto);
     
-    if (product.subproduto) {
-      let subNode = prodNode.children.find(c => c.name === product.subproduto);
-      if (!subNode) {
-        subNode = {
-          name: product.subproduto,
-          level: "subproduto",
-          fullPath: `${product.produto} > ${product.subproduto}`,
-          children: [],
-          articles: [],
-        };
-        prodNode.children.push(subNode);
-      }
+    let prodNode = productNodes.get(product.produto);
+    if (!prodNode) {
+      prodNode = {
+        name: product.produto,
+        level: "produto",
+        fullPath: product.produto,
+        children: [],
+        articles: [],
+      };
+      productNodes.set(product.produto, prodNode);
+    }
+    
+    let subjectNode = prodNode.children.find(c => c.subjectId === subject.id);
+    if (!subjectNode) {
+      subjectNode = {
+        name: subject.name,
+        level: "assunto",
+        fullPath: `${product.produto} > ${subject.name}`,
+        children: [],
+        articles: [],
+        subjectId: subject.id,
+      };
+      prodNode.children.push(subjectNode);
+    }
+  }
+  
+  for (const intent of intents) {
+    const productName = subjectToProduct.get(intent.subjectId);
+    if (!productName) continue;
+    
+    const prodNode = productNodes.get(productName);
+    if (!prodNode) continue;
+    
+    const subjectNode = prodNode.children.find(c => c.subjectId === intent.subjectId);
+    if (!subjectNode) continue;
+    
+    let intentNode = subjectNode.children.find(c => c.intentId === intent.id);
+    if (!intentNode) {
+      intentNode = {
+        name: intent.name,
+        level: "intencao",
+        fullPath: `${subjectNode.fullPath} > ${intent.name}`,
+        children: [],
+        articles: [],
+        intentId: intent.id,
+      };
+      subjectNode.children.push(intentNode);
     }
   }
   
   for (const article of articles) {
-    const prodNode = productNodes.get(article.productStandard);
-    if (!prodNode) {
-      if (!productNodes.has(article.productStandard)) {
-        productNodes.set(article.productStandard, {
-          name: article.productStandard,
-          level: "produto",
-          fullPath: article.productStandard,
-          children: [],
-          articles: [],
-        });
+    if (article.intentId) {
+      let placed = false;
+      for (const prodNode of productNodes.values()) {
+        for (const subjectNode of prodNode.children) {
+          const intentNode = subjectNode.children.find(c => c.intentId === article.intentId);
+          if (intentNode) {
+            intentNode.articles.push(article);
+            placed = true;
+            break;
+          }
+        }
+        if (placed) break;
       }
-      productNodes.get(article.productStandard)!.articles.push(article);
-      continue;
-    }
-    
-    if (article.subproductStandard) {
-      const subNode = prodNode.children.find(c => c.name === article.subproductStandard);
-      if (subNode) {
-        subNode.articles.push(article);
-      } else {
-        prodNode.articles.push(article);
+      if (!placed) {
+        const prodNode = productNodes.get(article.productStandard);
+        if (prodNode) {
+          prodNode.articles.push(article);
+        }
+      }
+    } else if (article.subjectId) {
+      let placed = false;
+      for (const prodNode of productNodes.values()) {
+        const subjectNode = prodNode.children.find(c => c.subjectId === article.subjectId);
+        if (subjectNode) {
+          subjectNode.articles.push(article);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        const prodNode = productNodes.get(article.productStandard);
+        if (prodNode) {
+          prodNode.articles.push(article);
+        }
       }
     } else {
-      prodNode.articles.push(article);
+      const prodNode = productNodes.get(article.productStandard);
+      if (prodNode) {
+        prodNode.articles.push(article);
+      } else {
+        if (!productNodes.has(article.productStandard)) {
+          productNodes.set(article.productStandard, {
+            name: article.productStandard,
+            level: "produto",
+            fullPath: article.productStandard,
+            children: [],
+            articles: [],
+          });
+        }
+        productNodes.get(article.productStandard)!.articles.push(article);
+      }
     }
   }
   
@@ -140,6 +235,26 @@ export function useKnowledgeBase(activeTab: string) {
     enabled: activeTab === "articles",
   });
 
+  const { data: subjects = [] } = useQuery<KnowledgeSubject[]>({
+    queryKey: ["/api/knowledge/subjects", { withProduct: true }],
+    queryFn: async () => {
+      const res = await fetch("/api/knowledge/subjects?withProduct=true");
+      if (!res.ok) throw new Error("Failed to fetch subjects");
+      return res.json();
+    },
+    enabled: activeTab === "articles",
+  });
+
+  const { data: intents = [] } = useQuery<KnowledgeIntent[]>({
+    queryKey: ["/api/knowledge/intents", { withSubject: true }],
+    queryFn: async () => {
+      const res = await fetch("/api/knowledge/intents?withSubject=true");
+      if (!res.ok) throw new Error("Failed to fetch intents");
+      return res.json();
+    },
+    enabled: activeTab === "articles",
+  });
+
   const { data: filters } = useQuery<Filters>({
     queryKey: ["/api/knowledge/articles/filters"],
     queryFn: async () => {
@@ -150,7 +265,7 @@ export function useKnowledgeBase(activeTab: string) {
     enabled: activeTab === "articles",
   });
 
-  const hierarchy = useMemo(() => buildHierarchy(catalogProducts, articles), [catalogProducts, articles]);
+  const hierarchy = useMemo(() => buildHierarchy(catalogProducts, subjects, intents, articles), [catalogProducts, subjects, intents, articles]);
 
   const createMutation = useMutation({
     mutationFn: async (data: KnowledgeBaseFormData) => {
@@ -253,5 +368,7 @@ export function useKnowledgeBase(activeTab: string) {
     handleDelete,
     handleCancel,
     togglePath,
+    subjects,
+    intents,
   };
 }

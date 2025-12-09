@@ -91,14 +91,6 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 </span>
               </div>
 
-              <span className={`px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide rounded ${
-                article.intent === "contratar" 
-                  ? "bg-emerald-500 text-white" 
-                  : "bg-slate-500 text-white"
-              }`}>
-                {article.intent}
-              </span>
-
               <span className="text-xs text-gray-400 whitespace-nowrap hidden sm:block">
                 {formatDistanceToNow(new Date(article.updatedAt), { addSuffix: true, locale: ptBR })}
               </span>

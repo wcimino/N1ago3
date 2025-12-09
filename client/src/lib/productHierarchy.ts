@@ -1,4 +1,4 @@
-export type ProductLevelType = "produto" | "subproduto";
+export type ProductLevelType = "produto" | "subproduto" | "assunto" | "intencao";
 
 export interface ProductAncestry {
   produto: string;
@@ -23,11 +23,15 @@ export interface ProductTreeNode {
 export const LEVEL_LABELS: Record<ProductLevelType, string> = {
   produto: "Produto",
   subproduto: "Subproduto",
+  assunto: "Assunto",
+  intencao: "Intenção",
 };
 
 export const LEVEL_COLORS: Record<ProductLevelType, { bg: string; text: string; border: string }> = {
   produto: { bg: "bg-blue-100", text: "text-blue-800", border: "border-blue-200" },
   subproduto: { bg: "bg-green-100", text: "text-green-800", border: "border-green-200" },
+  assunto: { bg: "bg-purple-100", text: "text-purple-800", border: "border-purple-200" },
+  intencao: { bg: "bg-amber-100", text: "text-amber-800", border: "border-amber-200" },
 };
 
 export function getNodeKey(node: ProductTreeNode): string {
