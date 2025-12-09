@@ -20,11 +20,11 @@ const HANDLER_TABS = [
   { id: "bot", label: "Bot Zendesk", icon: <Bot className="w-4 h-4" /> },
   { id: "human", label: "Humano", icon: <UserCircle className="w-4 h-4" /> },
   { id: "n1ago", label: "n1ago", icon: <Brain className="w-4 h-4" /> },
+  { id: "favoritos", label: "Favoritos", icon: <Star className="w-4 h-4" /> },
 ];
 
 const CONFIG_TABS = [
   { id: "atendimento", label: "Atendimento", icon: <Users className="w-4 h-4" /> },
-  { id: "favoritos", label: "Favoritos", icon: <Star className="w-4 h-4" /> },
   { id: "routing", label: "Roteamento", icon: <Settings2 className="w-4 h-4" /> },
 ];
 
@@ -103,8 +103,6 @@ export function AtendimentosPage() {
   const handleConfigTabChange = (tabId: string) => {
     if (tabId === "routing") {
       navigate("/atendimentos/routing");
-    } else if (tabId === "favoritos") {
-      navigate("/atendimentos/favoritos");
     } else if (tabId === "atendimento") {
       navigate("/atendimentos");
     }
@@ -112,14 +110,22 @@ export function AtendimentosPage() {
 
   const getActiveConfigTab = () => {
     if (isRoutingView) return "routing";
-    if (isFavoritosView) return "favoritos";
     return "atendimento";
   };
 
+  const getActiveHandlerTab = () => {
+    if (isFavoritosView) return "favoritos";
+    return handlerFilter;
+  };
+
   const handleHandlerTabChange = (tabId: string) => {
-    setHandlerFilter(tabId);
-    if (isRoutingView || isFavoritosView) {
-      navigate("/atendimentos");
+    if (tabId === "favoritos") {
+      navigate("/atendimentos/favoritos");
+    } else {
+      setHandlerFilter(tabId);
+      if (isFavoritosView) {
+        navigate("/atendimentos");
+      }
     }
   };
 
@@ -139,9 +145,9 @@ export function AtendimentosPage() {
         </div>
       </div>
 
-      {!isRoutingView && !isFavoritosView && (
+      {!isRoutingView && (
         <div className="px-4 py-3 border-b">
-          <SegmentedTabs tabs={HANDLER_TABS} activeTab={handlerFilter} onChange={handleHandlerTabChange} />
+          <SegmentedTabs tabs={HANDLER_TABS} activeTab={getActiveHandlerTab()} onChange={handleHandlerTabChange} />
         </div>
       )}
 
