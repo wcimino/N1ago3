@@ -2,6 +2,7 @@ import { knowledgeSuggestionsStorage } from "../storage/knowledgeSuggestionsStor
 import { knowledgeBaseStorage } from "../storage/knowledgeBaseStorage.js";
 import { callOpenAI, ToolDefinition } from "./openaiApiService.js";
 import { createZendeskKnowledgeBaseTool } from "./aiTools.js";
+import { ENRICHMENT_SYSTEM_PROMPT, ENRICHMENT_USER_PROMPT_TEMPLATE } from "../constants/enrichmentAgentPrompts.js";
 
 export interface EnrichmentConfig {
   enabled: boolean;
@@ -167,40 +168,11 @@ function buildCreateEnrichmentSuggestionTool(): ToolDefinition {
 }
 
 function buildUserPrompt(params: EnrichmentParams): string {
-  const basePrompt = params.config.promptTemplate || DEFAULT_ENRICHMENT_PROMPT;
+  const basePrompt = params.config.promptTemplate || ENRICHMENT_USER_PROMPT_TEMPLATE;
   return basePrompt
     .replace(/\{\{produto\}\}/gi, params.product || "Todos")
     .replace(/\{\{subproduto\}\}/gi, params.subproduct || "Todos");
 }
-
-const DEFAULT_ENRICHMENT_PROMPT = `
-Você é um especialista em gestão de base de conhecimento.
-
-Sua tarefa é analisar artigos do Zendesk Help Center e compará-los com a base de conhecimento interna para identificar oportunidades de melhoria.
-
-## Filtros aplicados
-- Produto: {{produto}}
-- Subproduto: {{subproduto}}
-
-## Instruções
-
-1. Use a ferramenta search_knowledge_base_zendesk para buscar artigos do Zendesk relacionados ao produto/subproduto
-2. Use a ferramenta search_local_knowledge_base para verificar o que já existe na base interna
-3. Compare os artigos e identifique:
-   - Informações novas que não existem na base interna (criar novo artigo)
-   - Informações que podem complementar artigos existentes (atualizar artigo)
-   - Artigos que já estão completos (ignorar)
-
-4. Para cada oportunidade identificada, use create_enrichment_suggestion com:
-   - action: "create" para novo artigo, "update" para atualização, "skip" para ignorar
-   - sourceArticles: lista dos artigos do Zendesk utilizados com scores de similaridade
-   - Todos os campos relevantes preenchidos
-
-## Importante
-- Sempre inclua os artigos fonte (sourceArticles) com ID, título e score de similaridade
-- O score de similaridade deve refletir quão próximo o conteúdo do Zendesk está do artigo local
-- Crie sugestões específicas e acionáveis
-`;
 
 export async function generateEnrichmentSuggestions(params: EnrichmentParams): Promise<EnrichmentResult> {
   const userPrompt = buildUserPrompt(params);
@@ -226,7 +198,7 @@ export async function generateEnrichmentSuggestions(params: EnrichmentParams): P
   const result = await callOpenAI({
     requestType: "enrichment_agent",
     modelName: params.config.modelName,
-    promptSystem: params.config.promptSystem || "Você é um especialista em gestão de base de conhecimento para atendimento ao cliente.",
+    promptSystem: params.config.promptSystem || ENRICHMENT_SYSTEM_PROMPT,
     promptUser: userPrompt,
     tools,
     maxTokens: 4096,

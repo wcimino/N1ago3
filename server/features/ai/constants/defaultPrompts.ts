@@ -98,4 +98,4 @@ export const DEFAULT_RESPONSE_FORMATS: Record<string, string> = {
 }`,
 };
 
-export const VALID_CONFIG_TYPES = ["summary", "classification", "response", "learning"];
+export const VALID_CONFIG_TYPES = ["summary", "classification", "response", "learning", "enrichment"];
