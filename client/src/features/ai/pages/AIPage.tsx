@@ -9,12 +9,15 @@ import { LearningConfigPage } from "./LearningConfigPage";
 import { ToolsPage } from "./ToolsPage";
 import { GeneralSettingsPage } from "./GeneralSettingsPage";
 
-const tabs = [
-  { id: "general", label: "Configurações", icon: <Settings className="w-4 h-4" /> },
+const agentTabs = [
   { id: "summary", label: "Resumo", icon: <FileText className="w-4 h-4" /> },
   { id: "classification", label: "Classificação", icon: <Tags className="w-4 h-4" /> },
   { id: "response", label: "Resposta", icon: <MessageSquare className="w-4 h-4" /> },
   { id: "learning", label: "Aprendizado", icon: <GraduationCap className="w-4 h-4" /> },
+];
+
+const utilityTabs = [
+  { id: "general", label: "Configurações", icon: <Settings className="w-4 h-4" /> },
   { id: "tools", label: "Ferramentas", icon: <Wrench className="w-4 h-4" /> },
 ];
 
@@ -23,7 +26,7 @@ export function AIPage() {
 
   useEffect(() => {
     if (location === "/ai" || location === "/ai/" || location === "/ai/settings" || location === "/ai/settings/") {
-      navigate("/ai/settings/general", { replace: true });
+      navigate("/ai/settings/summary", { replace: true });
     }
   }, [location, navigate]);
 
@@ -34,10 +37,11 @@ export function AIPage() {
     if (location.includes("/learning")) return "learning";
     if (location.includes("/tools")) return "tools";
     if (location.includes("/summary")) return "summary";
-    return "general";
+    return "summary";
   };
 
   const activeTab = getActiveTab();
+  const isUtilityTab = activeTab === "general" || activeTab === "tools";
 
   const handleTabChange = (tabId: string) => {
     navigate(`/ai/settings/${tabId}`);
@@ -45,15 +49,24 @@ export function AIPage() {
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="px-4 py-3 border-b">
-        <h2 className="text-lg font-semibold text-gray-900">Configuração de IA</h2>
-        <p className="text-sm text-gray-500 mt-1">Configure as funcionalidades de inteligência artificial</p>
+      <div className="px-4 py-3 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Configuração de IA</h2>
+          <p className="text-sm text-gray-500 mt-1">Configure as funcionalidades de inteligência artificial</p>
+        </div>
+        <div className="shrink-0">
+          <SegmentedTabs
+            tabs={utilityTabs}
+            activeTab={isUtilityTab ? activeTab : ""}
+            onChange={handleTabChange}
+          />
+        </div>
       </div>
 
       <div className="px-4 py-3 border-b">
         <SegmentedTabs
-          tabs={tabs}
-          activeTab={activeTab}
+          tabs={agentTabs}
+          activeTab={!isUtilityTab ? activeTab : ""}
           onChange={handleTabChange}
         />
       </div>
