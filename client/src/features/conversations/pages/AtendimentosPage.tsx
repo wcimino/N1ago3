@@ -24,8 +24,8 @@ const HANDLER_TABS = [
 ];
 
 const CONFIG_TABS = [
-  { id: "atendimento", label: "Atendimento", icon: <Users className="w-4 h-4" /> },
-  { id: "routing", label: "Roteamento", icon: <Settings2 className="w-4 h-4" /> },
+  { id: "atendimento", label: "Atendimentos", icon: <Users className="w-4 h-4" /> },
+  { id: "routing", label: "Roteamentos", icon: <Settings2 className="w-4 h-4" /> },
 ];
 
 export function AtendimentosPage() {
