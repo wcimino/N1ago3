@@ -40,10 +40,14 @@ export function UserGroupCard({
 
   return (
     <div className="p-4 hover:bg-gray-50 transition-colors">
-      <div className="flex flex-col gap-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            {handlerInfo && <HandlerBadge handlerName={latestHandler} />}
+      <div className="flex gap-3">
+        {handlerInfo && (
+          <div className="flex-shrink-0 self-stretch flex items-center">
+            <HandlerBadge handlerName={latestHandler} size="lg" />
+          </div>
+        )}
+        <div className="flex flex-col gap-2 min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-medium text-gray-900 truncate">{getUserDisplayName(group)}</h3>
@@ -70,77 +74,77 @@ export function UserGroupCard({
                 </span>
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-1 flex-shrink-0">
-            {group.user_info && (
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {group.user_info && (
+                <button
+                  onClick={() => {
+                    const user = getUserFromGroup(group);
+                    if (user) onViewUser(user);
+                  }}
+                  title="Ver detalhes do usuário"
+                  className="p-2 border border-gray-200 text-gray-600 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 rounded-lg transition-colors"
+                >
+                  <User className="w-4 h-4" />
+                </button>
+              )}
               <button
-                onClick={() => {
-                  const user = getUserFromGroup(group);
-                  if (user) onViewUser(user);
-                }}
-                title="Ver detalhes do usuário"
-                className="p-2 border border-gray-200 text-gray-600 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 rounded-lg transition-colors"
+                onClick={() => onViewConversations(group.user_id)}
+                title="Ver conversas"
+                className="p-2 border border-gray-200 text-gray-600 hover:text-green-600 hover:border-green-300 hover:bg-green-50 rounded-lg transition-colors"
               >
-                <User className="w-4 h-4" />
+                <MessageCircle className="w-4 h-4" />
               </button>
-            )}
-            <button
-              onClick={() => onViewConversations(group.user_id)}
-              title="Ver conversas"
-              className="p-2 border border-gray-200 text-gray-600 hover:text-green-600 hover:border-green-300 hover:bg-green-50 rounded-lg transition-colors"
-            >
-              <MessageCircle className="w-4 h-4" />
-            </button>
-            <Link
-              href={`/events?user=${encodeURIComponent(group.user_id)}`}
-              title="Ver eventos"
-              className="p-2 border border-gray-200 text-gray-600 hover:text-purple-600 hover:border-purple-300 hover:bg-purple-50 rounded-lg transition-colors"
-            >
-              <Activity className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-
-        {group.conversations.length > 1 && (
-          <div className="flex flex-wrap gap-2">
-            {group.conversations.map((conv, idx) => (
-              <span
-                key={conv.id}
-                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${
-                  conv.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"
-                }`}
+              <Link
+                href={`/events?user=${encodeURIComponent(group.user_id)}`}
+                title="Ver eventos"
+                className="p-2 border border-gray-200 text-gray-600 hover:text-purple-600 hover:border-purple-300 hover:bg-purple-50 rounded-lg transition-colors"
               >
-                #{idx + 1} - {conv.message_count} msgs - {formatDateTime(conv.created_at)}
-              </span>
-            ))}
+                <Activity className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
-        )}
 
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-          {group.last_product_standard && (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              {group.last_product_standard}
-            </span>
+          {group.conversations.length > 1 && (
+            <div className="flex flex-wrap gap-2">
+              {group.conversations.map((conv, idx) => (
+                <span
+                  key={conv.id}
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${
+                    conv.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  #{idx + 1} - {conv.message_count} msgs - {formatDateTime(conv.created_at)}
+                </span>
+              ))}
+            </div>
           )}
-          {group.last_intent && (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-              {group.last_intent}
-            </span>
-          )}
-          <div className="flex items-center gap-1">
-            <span className="text-gray-500">Início:</span>
-            <span className="text-xs text-gray-500">{formatDateTime(group.first_activity)}</span>
+
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+            {group.last_product_standard && (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {group.last_product_standard}
+              </span>
+            )}
+            {group.last_intent && (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                {group.last_intent}
+              </span>
+            )}
+            <div className="flex items-center gap-1">
+              <span className="text-gray-500">Início:</span>
+              <span className="text-xs text-gray-500">{formatDateTime(group.first_activity)}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-gray-500">Última:</span>
+              <span className="text-xs text-gray-500">{formatDateTime(group.last_activity)}</span>
+            </div>
+            {activeCount > 0 && (
+              <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                {activeCount} ativa{activeCount > 1 ? "s" : ""}
+              </span>
+            )}
           </div>
-          <div className="flex items-center gap-1">
-            <span className="text-gray-500">Última:</span>
-            <span className="text-xs text-gray-500">{formatDateTime(group.last_activity)}</span>
-          </div>
-          {activeCount > 0 && (
-            <span className="inline-flex items-center gap-1 text-xs text-green-600">
-              <span className="w-2 h-2 rounded-full bg-green-500"></span>
-              {activeCount} ativa{activeCount > 1 ? "s" : ""}
-            </span>
-          )}
         </div>
       </div>
     </div>

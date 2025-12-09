@@ -2,7 +2,7 @@ import { Bot, Brain, UserCircle, MessageCircle } from "lucide-react";
 
 interface HandlerBadgeProps {
   handlerName: string | null | undefined;
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "lg";
   showLabel?: boolean;
 }
 
@@ -22,8 +22,8 @@ export function getHandlerInfo(handlerName: string | null | undefined): HandlerI
     return {
       label: "Bot",
       icon: Bot,
-      bgClassName: "bg-emerald-100",
-      iconClassName: "text-emerald-600",
+      bgClassName: "bg-amber-100",
+      iconClassName: "text-amber-600",
     };
   }
 
@@ -40,8 +40,8 @@ export function getHandlerInfo(handlerName: string | null | undefined): HandlerI
     return {
       label: "Humano",
       icon: UserCircle,
-      bgClassName: "bg-amber-100",
-      iconClassName: "text-amber-600",
+      bgClassName: "bg-emerald-100",
+      iconClassName: "text-emerald-600",
     };
   }
 
@@ -60,6 +60,7 @@ export function HandlerBadge({ handlerName, size = "md", showLabel = false }: Ha
   const sizeClasses = {
     sm: { container: "w-8 h-8", icon: "w-4 h-4" },
     md: { container: "w-10 h-10", icon: "w-5 h-5" },
+    lg: { container: "w-14 h-14", icon: "w-7 h-7" },
   };
 
   const Icon = info.icon;
