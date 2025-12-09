@@ -460,8 +460,8 @@ export function SubjectsIntentsPage() {
                       ) : (
                         <span className="w-4" />
                       )}
-                      <Tags className="w-4 h-4 text-blue-500" />
-                      <span className="text-blue-700">{subject.name}</span>
+                      <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-blue-100 text-blue-700 rounded">Assunto</span>
+                      <span className="font-medium text-blue-700">{subject.name}</span>
                       {subject.synonyms.length > 0 && (
                         <span className="text-xs text-gray-400">
                           ({subject.synonyms.length} sinônimos)
@@ -521,7 +521,7 @@ export function SubjectsIntentsPage() {
                             style={{ paddingLeft: `${paddingLeft + 40}px` }}
                           >
                             <span className="w-4" />
-                            <span className="w-2 h-2 rounded-full bg-green-500" />
+                            <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-green-100 text-green-700 rounded">Intenção</span>
                             <span className="text-green-700">{intent.name}</span>
                             {intent.synonyms.length > 0 && (
                               <span className="text-xs text-gray-400">
