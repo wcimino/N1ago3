@@ -420,7 +420,6 @@ export function SubjectsIntentsPage() {
           ) : (
             <span className="w-4" />
           )}
-          <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-gray-200 text-gray-600 rounded">Produto</span>
           <span className="font-medium text-gray-700">{node.name}</span>
           <span className="text-xs text-gray-400 ml-2">
             {node.subjects.length} assuntos
@@ -436,8 +435,6 @@ export function SubjectsIntentsPage() {
         
         {isExpanded && (
           <>
-            {node.children.map(child => renderProductNode(child, depth + 1))}
-            
             {showAddSubjectForm && renderInlineForm(paddingLeft + 20, "bg-blue-50")}
             
             {node.subjects.map(subject => {
@@ -560,6 +557,8 @@ export function SubjectsIntentsPage() {
                 </div>
               );
             })}
+            
+            {node.children.map(child => renderProductNode(child, depth + 1))}
           </>
         )}
       </div>
