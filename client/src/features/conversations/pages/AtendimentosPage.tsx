@@ -93,12 +93,14 @@ export function AtendimentosPage() {
       title="Atendimentos" 
       description="Lista de atendimentos agrupados por usuário"
       headerRight={
-        <Link href="/routing-rules">
-          <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">
-            <Settings2 className="w-4 h-4" />
-            Regras de Roteamento
-          </button>
-        </Link>
+        <div className="bg-gray-100 p-1 rounded-lg flex gap-1">
+          <Link href="/routing-rules">
+            <button className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 bg-white text-purple-700 shadow-sm">
+              <Settings2 className="w-4 h-4" />
+              Regras de Roteamento
+            </button>
+          </Link>
+        </div>
       }
     >
       <div className="px-4 py-3 border-b">
