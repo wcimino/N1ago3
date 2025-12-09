@@ -1,6 +1,6 @@
 import { db } from "../../../db.js";
 import { knowledgeBase, knowledgeIntents, knowledgeSubjects, ifoodProducts } from "../../../../shared/schema.js";
-import { eq, desc, ilike, or, and, type SQL } from "drizzle-orm";
+import { eq, desc, asc, ilike, or, and, isNull, type SQL } from "drizzle-orm";
 import type { KnowledgeBaseArticle, InsertKnowledgeBaseArticle, KnowledgeIntent } from "../../../../shared/schema.js";
 
 export interface IntentWithArticle {
@@ -178,32 +178,43 @@ export const knowledgeBaseStorage = {
         intentId: knowledgeIntents.id,
         intentName: knowledgeIntents.name,
         intentSynonyms: knowledgeIntents.synonyms,
+        intentUpdatedAt: knowledgeIntents.updatedAt,
         subjectId: knowledgeSubjects.id,
         subjectName: knowledgeSubjects.name,
         subjectSynonyms: knowledgeSubjects.synonyms,
         productName: ifoodProducts.produto,
         subproductName: ifoodProducts.subproduto,
+        articleId: knowledgeBase.id,
       })
       .from(knowledgeIntents)
       .innerJoin(knowledgeSubjects, eq(knowledgeIntents.subjectId, knowledgeSubjects.id))
-      .innerJoin(ifoodProducts, eq(knowledgeSubjects.productCatalogId, ifoodProducts.id));
+      .innerJoin(ifoodProducts, eq(knowledgeSubjects.productCatalogId, ifoodProducts.id))
+      .leftJoin(knowledgeBase, eq(knowledgeBase.intentId, knowledgeIntents.id));
 
     if (conditions.length > 0) {
       query = query.where(and(...conditions)) as typeof query;
     }
 
     const intentsQuery = await query
-      .orderBy(desc(knowledgeIntents.updatedAt))
+      .orderBy(
+        desc(isNull(knowledgeBase.id)),
+        asc(knowledgeIntents.updatedAt)
+      )
       .limit(filters?.limit || 100);
 
     const results: IntentWithArticle[] = [];
     
     for (const intent of intentsQuery) {
-      const [article] = await db
-        .select()
-        .from(knowledgeBase)
-        .where(eq(knowledgeBase.intentId, intent.intentId))
-        .limit(1);
+      let article: KnowledgeBaseArticle | null = null;
+      
+      if (intent.articleId) {
+        const [foundArticle] = await db
+          .select()
+          .from(knowledgeBase)
+          .where(eq(knowledgeBase.id, intent.articleId))
+          .limit(1);
+        article = foundArticle || null;
+      }
 
       results.push({
         intent: {
@@ -215,7 +226,7 @@ export const knowledgeBaseStorage = {
           subjectSynonyms: intent.subjectSynonyms || [],
           productName: intent.productName,
         },
-        article: article || null,
+        article,
       });
     }
 
