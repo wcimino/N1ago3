@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useKnowledgeSuggestions, type KnowledgeSuggestion } from "../hooks/useKnowledgeSuggestions";
-import { Check, X, GitMerge, AlertTriangle, Clock, CheckCircle, XCircle, Plus, Pencil } from "lucide-react";
+import { Check, X, GitMerge, AlertTriangle, Clock, CheckCircle, XCircle, Plus, Pencil, Sparkles, Loader2, ChevronDown, FileText, ExternalLink } from "lucide-react";
+import { fetchApi, apiRequest } from "../../../lib/queryClient";
 
 type StatusFilter = "pending" | "approved" | "rejected" | "merged" | "all";
 
@@ -79,6 +81,53 @@ function QualityFlags({ flags }: { flags: KnowledgeSuggestion["qualityFlags"] })
     <div className="flex items-center gap-1 text-amber-600">
       <AlertTriangle className="w-4 h-4" />
       <span className="text-xs">{warnings.join(", ")}</span>
+    </div>
+  );
+}
+
+function SourceArticlesBadge({ rawExtraction }: { rawExtraction: KnowledgeSuggestion["rawExtraction"] }) {
+  if (!rawExtraction?.sourceArticles || rawExtraction.sourceArticles.length === 0) return null;
+  
+  const isEnrichment = rawExtraction.enrichmentSource === "zendesk";
+  
+  return (
+    <div className="bg-blue-50 border border-blue-200 rounded-md p-3 space-y-2">
+      <div className="flex items-center gap-2">
+        <FileText className="w-4 h-4 text-blue-600" />
+        <span className="text-xs font-medium text-blue-800">
+          {isEnrichment ? "Fontes do Zendesk" : "Artigos Relacionados"} ({rawExtraction.sourceArticles.length})
+        </span>
+      </div>
+      <div className="space-y-1">
+        {rawExtraction.sourceArticles.map((article, i) => (
+          <div key={article.id || i} className="flex items-center justify-between text-xs bg-white rounded px-2 py-1.5 border border-blue-100">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <span className="text-blue-600 font-mono shrink-0">#{article.id}</span>
+              <span className="text-gray-700 truncate">{article.title}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 ml-2">
+              <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                article.similarityScore >= 80 ? "bg-green-100 text-green-700" :
+                article.similarityScore >= 60 ? "bg-yellow-100 text-yellow-700" :
+                "bg-gray-100 text-gray-600"
+              }`}>
+                {article.similarityScore}%
+              </span>
+              {isEnrichment && (
+                <a
+                  href={`https://ifoodbr.zendesk.com/hc/pt-br/articles/${article.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:text-blue-700"
+                  title="Abrir no Zendesk"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -179,6 +228,8 @@ function SuggestionCard({
         </div>
       )}
 
+      <SourceArticlesBadge rawExtraction={suggestion.rawExtraction} />
+
       {suggestion.status === "pending" && (
         <div className="pt-2 border-t">
           {showRejectReason ? (
@@ -240,6 +291,120 @@ function SuggestionCard({
   );
 }
 
+function EnrichmentPanel() {
+  const queryClient = useQueryClient();
+  const [selectedProduct, setSelectedProduct] = useState<string>("");
+  const [selectedSubproduct, setSelectedSubproduct] = useState<string>("");
+
+  const { data: products = [] } = useQuery<string[]>({
+    queryKey: ["product-catalog-distinct-produtos"],
+    queryFn: () => fetchApi<string[]>("/api/product-catalog/distinct/produtos"),
+  });
+
+  const { data: subproducts = [] } = useQuery<string[]>({
+    queryKey: ["product-catalog-distinct-subprodutos", selectedProduct],
+    queryFn: () => fetchApi<string[]>(`/api/product-catalog/distinct/subprodutos?produto=${encodeURIComponent(selectedProduct)}`),
+    enabled: !!selectedProduct,
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: async (params: { product?: string; subproduct?: string }) => {
+      return apiRequest("POST", "/api/ai/enrichment/generate", params);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["knowledge-suggestions"] });
+    },
+  });
+
+  const handleGenerate = () => {
+    generateMutation.mutate({
+      product: selectedProduct || undefined,
+      subproduct: selectedSubproduct || undefined,
+    });
+  };
+
+  return (
+    <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4 mb-4">
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-end">
+        <div className="flex-1 space-y-1">
+          <h3 className="font-medium text-purple-900 flex items-center gap-2">
+            <Sparkles className="w-4 h-4" />
+            Gerar Sugestões de Melhoria
+          </h3>
+          <p className="text-sm text-purple-700">
+            Analise artigos do Zendesk e gere sugestões de melhoria para a base de conhecimento
+          </p>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+          <div className="relative">
+            <select
+              value={selectedProduct}
+              onChange={(e) => {
+                setSelectedProduct(e.target.value);
+                setSelectedSubproduct("");
+              }}
+              className="appearance-none bg-white border border-purple-300 rounded-lg px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 min-w-[160px]"
+            >
+              <option value="">Todos os produtos</option>
+              {products.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-500 pointer-events-none" />
+          </div>
+          
+          {selectedProduct && (
+            <div className="relative">
+              <select
+                value={selectedSubproduct}
+                onChange={(e) => setSelectedSubproduct(e.target.value)}
+                className="appearance-none bg-white border border-purple-300 rounded-lg px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 min-w-[160px]"
+              >
+                <option value="">Todos subprodutos</option>
+                {subproducts.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-500 pointer-events-none" />
+            </div>
+          )}
+          
+          <button
+            onClick={handleGenerate}
+            disabled={generateMutation.isPending}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+          >
+            {generateMutation.isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Gerando...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Gerar sugestões
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+      
+      {generateMutation.isError && (
+        <div className="mt-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2">
+          Erro ao gerar sugestões. Verifique se a configuração de enriquecimento está ativada nas configurações de IA.
+        </div>
+      )}
+      
+      {generateMutation.isSuccess && (
+        <div className="mt-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-md p-2">
+          Sugestões geradas com sucesso! As novas sugestões aparecem na lista abaixo.
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function SuggestionsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending");
   const { 
@@ -254,6 +419,8 @@ export function SuggestionsPage() {
 
   return (
     <div className="space-y-4">
+      <EnrichmentPanel />
+      
       <div className="flex flex-wrap gap-2">
         {(["pending", "approved", "rejected", "merged", "all"] as StatusFilter[]).map((status) => (
           <button

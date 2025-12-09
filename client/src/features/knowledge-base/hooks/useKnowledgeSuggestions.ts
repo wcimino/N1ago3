@@ -1,6 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi, apiRequest } from "../../../lib/queryClient";
 
+export interface SourceArticle {
+  id: string;
+  title: string;
+  similarityScore: number;
+}
+
 export interface KnowledgeSuggestion {
   id: number;
   conversationId: number | null;
@@ -28,6 +34,10 @@ export interface KnowledgeSuggestion {
   reviewedAt: string | null;
   rejectionReason: string | null;
   conversationHandler: string | null;
+  rawExtraction: {
+    sourceArticles?: SourceArticle[];
+    enrichmentSource?: string;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }
