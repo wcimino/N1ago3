@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { MessageCircle, Activity, User, UserCheck } from "lucide-react";
+import { MessageCircle, Activity, User, UserCheck, UserX } from "lucide-react";
 import { HandlerBadge, getHandlerInfo } from "../../../shared/components/badges/HandlerBadge";
 import { getUserDisplayName, getActiveConversationsCount, getUserFromGroup } from "../../../lib/userUtils";
 import type { User as UserType, UserGroup } from "../../../types";
@@ -56,10 +56,15 @@ export function UserGroupCard({
                     {emotionConfig[group.last_customer_emotion_level].emoji} {emotionConfig[group.last_customer_emotion_level].label}
                   </span>
                 )}
-                {group.user_info?.authenticated && (
+                {group.user_info?.authenticated ? (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                     <UserCheck className="w-3 h-3" />
                     Autenticado
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                    <UserX className="w-3 h-3" />
+                    Não autenticado
                   </span>
                 )}
               </div>
