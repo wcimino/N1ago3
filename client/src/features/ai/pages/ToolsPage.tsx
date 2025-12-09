@@ -12,14 +12,6 @@ export function ToolsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-blue-800 mb-2">Ferramentas de IA</h3>
-        <p className="text-sm text-blue-700">
-          Use esta interface para testar as ferramentas disponíveis para os agentes de IA. 
-          Essas mesmas funções são usadas automaticamente quando habilitadas nas configurações de cada agente.
-        </p>
-      </div>
-
       <KnowledgeBaseSearchTool
         isExpanded={expandedTool === "knowledge_base"}
         onToggle={() => toggleTool("knowledge_base")}

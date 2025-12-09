@@ -52,7 +52,6 @@ export function AIPage() {
       <div className="px-4 py-3 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Configuração de IA</h2>
-          <p className="text-sm text-gray-500 mt-1">Configure as funcionalidades de inteligência artificial</p>
         </div>
         <div className="shrink-0">
           <SegmentedTabs
