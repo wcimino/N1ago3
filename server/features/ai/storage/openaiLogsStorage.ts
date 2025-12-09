@@ -2,6 +2,10 @@ import { db } from "../../../db.js";
 import { openaiApiConfig, openaiApiLogs, responsesSuggested } from "../../../../shared/schema.js";
 import { eq, desc, gte, sql, and } from "drizzle-orm";
 import type { OpenaiApiConfig, InsertOpenaiApiConfig, OpenaiApiLog, InsertOpenaiApiLog, SuggestedResponse } from "../../../../shared/schema.js";
+import { toZonedTime, fromZonedTime } from "date-fns-tz";
+import { startOfDay as dateFnsStartOfDay } from "date-fns";
+
+const SAO_PAULO_TIMEZONE = "America/Sao_Paulo";
 
 export const openaiLogsStorage = {
   async getOpenaiApiConfig(configType: string): Promise<OpenaiApiConfig | null> {
@@ -124,7 +128,11 @@ export const openaiLogsStorage = {
   }> {
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    // Calculate start of day in São Paulo timezone
+    const nowInSaoPaulo = toZonedTime(now, SAO_PAULO_TIMEZONE);
+    const startOfDayInSaoPaulo = dateFnsStartOfDay(nowInSaoPaulo);
+    const startOfDay = fromZonedTime(startOfDayInSaoPaulo, SAO_PAULO_TIMEZONE);
 
     const MODEL_PRICING: Record<string, { input: number; output: number }> = {
       'gpt-4o': { input: 2.50 / 1_000_000, output: 10.00 / 1_000_000 },
