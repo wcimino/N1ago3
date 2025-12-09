@@ -117,13 +117,13 @@ export function useKnowledgeBase(activeTab: string) {
   const queryClient = useQueryClient();
 
   const { data: articles = [], isLoading } = useQuery<KnowledgeBaseArticle[]>({
-    queryKey: ["/api/knowledge-base", searchTerm, selectedProduct, selectedIntent],
+    queryKey: ["/api/knowledge/articles", searchTerm, selectedProduct, selectedIntent],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (searchTerm) params.set("search", searchTerm);
       if (selectedProduct) params.set("productStandard", selectedProduct);
       if (selectedIntent) params.set("intent", selectedIntent);
-      const res = await fetch(`/api/knowledge-base?${params}`);
+      const res = await fetch(`/api/knowledge/articles?${params}`);
       if (!res.ok) throw new Error("Failed to fetch articles");
       return res.json();
     },
@@ -141,9 +141,9 @@ export function useKnowledgeBase(activeTab: string) {
   });
 
   const { data: filters } = useQuery<Filters>({
-    queryKey: ["/api/knowledge-base/filters"],
+    queryKey: ["/api/knowledge/articles/filters"],
     queryFn: async () => {
-      const res = await fetch("/api/knowledge-base/filters");
+      const res = await fetch("/api/knowledge/articles/filters");
       if (!res.ok) throw new Error("Failed to fetch filters");
       return res.json();
     },
@@ -154,7 +154,7 @@ export function useKnowledgeBase(activeTab: string) {
 
   const createMutation = useMutation({
     mutationFn: async (data: KnowledgeBaseFormData) => {
-      const res = await fetch("/api/knowledge-base", {
+      const res = await fetch("/api/knowledge/articles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -163,14 +163,14 @@ export function useKnowledgeBase(activeTab: string) {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge-base"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/articles"] });
       setShowForm(false);
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...data }: KnowledgeBaseFormData & { id: number }) => {
-      const res = await fetch(`/api/knowledge-base/${id}`, {
+      const res = await fetch(`/api/knowledge/articles/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -179,7 +179,7 @@ export function useKnowledgeBase(activeTab: string) {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge-base"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/articles"] });
       setEditingArticle(null);
       setShowForm(false);
     },
@@ -187,11 +187,11 @@ export function useKnowledgeBase(activeTab: string) {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await fetch(`/api/knowledge-base/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/knowledge/articles/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete article");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge-base"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/articles"] });
     },
   });
 

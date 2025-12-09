@@ -47,28 +47,28 @@ export function useKnowledgeSuggestions(status?: string) {
     queryFn: () => {
       const params = new URLSearchParams();
       if (status) params.set("status", status);
-      const url = `/api/knowledge-suggestions${params.toString() ? `?${params.toString()}` : ""}`;
+      const url = `/api/knowledge/suggestions${params.toString() ? `?${params.toString()}` : ""}`;
       return fetchApi<KnowledgeSuggestion[]>(url);
     },
   });
 
   const statsQuery = useQuery<SuggestionStats>({
     queryKey: ["knowledge-suggestions-stats"],
-    queryFn: () => fetchApi<SuggestionStats>("/api/knowledge-suggestions/stats"),
+    queryFn: () => fetchApi<SuggestionStats>("/api/knowledge/suggestions/stats"),
   });
 
   const approveMutation = useMutation({
-    mutationFn: (id: number) => apiRequest("POST", `/api/knowledge-suggestions/${id}/approve`),
+    mutationFn: (id: number) => apiRequest("POST", `/api/knowledge/suggestions/${id}/approve`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["knowledge-suggestions"] });
       queryClient.invalidateQueries({ queryKey: ["knowledge-suggestions-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["knowledge-base"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/articles"] });
     },
   });
 
   const rejectMutation = useMutation({
     mutationFn: ({ id, reason }: { id: number; reason?: string }) => 
-      apiRequest("POST", `/api/knowledge-suggestions/${id}/reject`, { reason }),
+      apiRequest("POST", `/api/knowledge/suggestions/${id}/reject`, { reason }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["knowledge-suggestions"] });
       queryClient.invalidateQueries({ queryKey: ["knowledge-suggestions-stats"] });
@@ -77,17 +77,17 @@ export function useKnowledgeSuggestions(status?: string) {
 
   const mergeMutation = useMutation({
     mutationFn: ({ id, targetArticleId }: { id: number; targetArticleId: number }) => 
-      apiRequest("POST", `/api/knowledge-suggestions/${id}/merge`, { targetArticleId }),
+      apiRequest("POST", `/api/knowledge/suggestions/${id}/merge`, { targetArticleId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["knowledge-suggestions"] });
       queryClient.invalidateQueries({ queryKey: ["knowledge-suggestions-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["knowledge-base"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/articles"] });
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<KnowledgeSuggestion> }) => 
-      apiRequest("PUT", `/api/knowledge-suggestions/${id}`, data),
+      apiRequest("PUT", `/api/knowledge/suggestions/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["knowledge-suggestions"] });
     },

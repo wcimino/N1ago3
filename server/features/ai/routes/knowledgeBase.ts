@@ -6,7 +6,7 @@ import type { InsertKnowledgeBaseArticle } from "../../../../shared/schema.js";
 
 const router = Router();
 
-router.get("/api/knowledge-base", async (req, res) => {
+router.get("/api/knowledge/articles", async (req, res) => {
   try {
     const { search, productStandard, intent } = req.query;
     const articles = await knowledgeBaseStorage.getAllArticles({
@@ -21,7 +21,7 @@ router.get("/api/knowledge-base", async (req, res) => {
   }
 });
 
-router.get("/api/knowledge-base/filters", async (req, res) => {
+router.get("/api/knowledge/articles/filters", async (req, res) => {
   try {
     const [products, intents] = await Promise.all([
       knowledgeBaseStorage.getDistinctProducts(),
@@ -34,7 +34,7 @@ router.get("/api/knowledge-base/filters", async (req, res) => {
   }
 });
 
-router.get("/api/knowledge-base/:id", async (req, res) => {
+router.get("/api/knowledge/articles/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -51,7 +51,7 @@ router.get("/api/knowledge-base/:id", async (req, res) => {
   }
 });
 
-router.post("/api/knowledge-base", async (req, res) => {
+router.post("/api/knowledge/articles", async (req, res) => {
   try {
     const data: InsertKnowledgeBaseArticle = req.body;
     
@@ -67,7 +67,7 @@ router.post("/api/knowledge-base", async (req, res) => {
   }
 });
 
-router.put("/api/knowledge-base/:id", async (req, res) => {
+router.put("/api/knowledge/articles/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -88,7 +88,7 @@ router.put("/api/knowledge-base/:id", async (req, res) => {
   }
 });
 
-router.delete("/api/knowledge-base/:id", async (req, res) => {
+router.delete("/api/knowledge/articles/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -107,7 +107,7 @@ router.delete("/api/knowledge-base/:id", async (req, res) => {
   }
 });
 
-router.get("/api/knowledge-base-search", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+router.get("/api/knowledge/search", isAuthenticated, requireAuthorizedUser, async (req, res) => {
   try {
     const { product, intent, keywords, limit } = req.query;
 
@@ -133,7 +133,7 @@ router.get("/api/knowledge-base-search", isAuthenticated, requireAuthorizedUser,
   }
 });
 
-router.get("/api/knowledge-base-search/product", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+router.get("/api/knowledge/search/product", isAuthenticated, requireAuthorizedUser, async (req, res) => {
   try {
     const { q, limit } = req.query;
 
@@ -153,7 +153,7 @@ router.get("/api/knowledge-base-search/product", isAuthenticated, requireAuthori
   }
 });
 
-router.get("/api/knowledge-base-search/category", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+router.get("/api/knowledge/search/category", isAuthenticated, requireAuthorizedUser, async (req, res) => {
   try {
     const { category1, category2, limit } = req.query;
 
@@ -174,7 +174,7 @@ router.get("/api/knowledge-base-search/category", isAuthenticated, requireAuthor
   }
 });
 
-router.get("/api/knowledge-base-search/keywords", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+router.get("/api/knowledge/search/keywords", isAuthenticated, requireAuthorizedUser, async (req, res) => {
   try {
     const { q, limit } = req.query;
 

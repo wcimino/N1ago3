@@ -5,7 +5,7 @@ import type { LearningAttemptResult } from "../../../../shared/schema.js";
 
 const router = Router();
 
-router.get("/api/learning-attempts", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+router.get("/api/knowledge/learning-attempts", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
     const { result, limit, offset, since } = req.query;
 
@@ -40,7 +40,7 @@ router.get("/api/learning-attempts", isAuthenticated, requireAuthorizedUser, asy
   }
 });
 
-router.get("/api/learning-attempts/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+router.get("/api/knowledge/learning-attempts/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
     const { since } = req.query;
     const sinceDate = since && typeof since === "string" ? new Date(since) : undefined;

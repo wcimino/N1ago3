@@ -83,9 +83,9 @@ export function LearningAttemptsPage() {
   const [filter, setFilter] = useState<ResultFilter>("all");
 
   const { data: stats } = useQuery<Stats>({
-    queryKey: ["/api/learning-attempts/stats"],
+    queryKey: ["/api/knowledge/learning-attempts/stats"],
     queryFn: async () => {
-      const res = await fetch("/api/learning-attempts/stats");
+      const res = await fetch("/api/knowledge/learning-attempts/stats");
       if (!res.ok) throw new Error("Failed to fetch stats");
       return res.json();
     },
@@ -93,12 +93,12 @@ export function LearningAttemptsPage() {
   });
 
   const { data: attempts = [], isLoading } = useQuery<LearningAttempt[]>({
-    queryKey: ["/api/learning-attempts", filter],
+    queryKey: ["/api/knowledge/learning-attempts", filter],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (filter !== "all") params.set("result", filter);
       params.set("limit", "100");
-      const res = await fetch(`/api/learning-attempts?${params}`);
+      const res = await fetch(`/api/knowledge/learning-attempts?${params}`);
       if (!res.ok) throw new Error("Failed to fetch attempts");
       return res.json();
     },

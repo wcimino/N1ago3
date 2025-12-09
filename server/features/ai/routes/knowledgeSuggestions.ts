@@ -4,7 +4,7 @@ import type { InsertKnowledgeSuggestion } from "../../../../shared/schema.js";
 
 const router = Router();
 
-router.get("/api/knowledge-suggestions", async (req, res) => {
+router.get("/api/knowledge/suggestions", async (req, res) => {
   try {
     const { status, productStandard, limit, offset } = req.query;
     const suggestions = await knowledgeSuggestionsStorage.getAllSuggestions({
@@ -20,7 +20,7 @@ router.get("/api/knowledge-suggestions", async (req, res) => {
   }
 });
 
-router.get("/api/knowledge-suggestions/stats", async (req, res) => {
+router.get("/api/knowledge/suggestions/stats", async (req, res) => {
   try {
     const counts = await knowledgeSuggestionsStorage.getStatusCounts();
     res.json(counts);
@@ -30,7 +30,7 @@ router.get("/api/knowledge-suggestions/stats", async (req, res) => {
   }
 });
 
-router.get("/api/knowledge-suggestions/:id", async (req, res) => {
+router.get("/api/knowledge/suggestions/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -47,7 +47,7 @@ router.get("/api/knowledge-suggestions/:id", async (req, res) => {
   }
 });
 
-router.post("/api/knowledge-suggestions", async (req, res) => {
+router.post("/api/knowledge/suggestions", async (req, res) => {
   try {
     const data: InsertKnowledgeSuggestion = req.body;
     const suggestion = await knowledgeSuggestionsStorage.createSuggestion(data);
@@ -58,7 +58,7 @@ router.post("/api/knowledge-suggestions", async (req, res) => {
   }
 });
 
-router.put("/api/knowledge-suggestions/:id", async (req, res) => {
+router.put("/api/knowledge/suggestions/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -79,7 +79,7 @@ router.put("/api/knowledge-suggestions/:id", async (req, res) => {
   }
 });
 
-router.post("/api/knowledge-suggestions/:id/approve", async (req, res) => {
+router.post("/api/knowledge/suggestions/:id/approve", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -100,7 +100,7 @@ router.post("/api/knowledge-suggestions/:id/approve", async (req, res) => {
   }
 });
 
-router.post("/api/knowledge-suggestions/:id/reject", async (req, res) => {
+router.post("/api/knowledge/suggestions/:id/reject", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -122,7 +122,7 @@ router.post("/api/knowledge-suggestions/:id/reject", async (req, res) => {
   }
 });
 
-router.post("/api/knowledge-suggestions/:id/merge", async (req, res) => {
+router.post("/api/knowledge/suggestions/:id/merge", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {

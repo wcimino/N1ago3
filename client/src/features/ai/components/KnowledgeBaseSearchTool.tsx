@@ -48,18 +48,18 @@ export function KnowledgeBaseSearchTool({ isExpanded, onToggle }: KnowledgeBaseS
         if (product) params.set("product", product);
         if (intent) params.set("intent", intent);
         if (keywords) params.set("keywords", keywords);
-        return { endpoint: "/api/knowledge-base-search", params };
+        return { endpoint: "/api/knowledge/search", params };
       case "product":
         params.set("q", product);
-        return { endpoint: "/api/knowledge-base-search/product", params };
+        return { endpoint: "/api/knowledge/search/product", params };
       case "category":
         params.set("category1", intent);
-        return { endpoint: "/api/knowledge-base-search/category", params };
+        return { endpoint: "/api/knowledge/search/category", params };
       case "keywords":
         params.set("q", keywords);
-        return { endpoint: "/api/knowledge-base-search/keywords", params };
+        return { endpoint: "/api/knowledge/search/keywords", params };
       default:
-        return { endpoint: "/api/knowledge-base-search", params };
+        return { endpoint: "/api/knowledge/search", params };
     }
   };
 
