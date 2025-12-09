@@ -222,7 +222,7 @@ export function KnowledgeBasePage() {
                     <p className="text-sm mt-1">Cadastre produtos em Configurações &gt; Cadastro &gt; Produtos</p>
                   </div>
                 ) : (
-                  <div className="space-y-1 border rounded-lg p-3 max-h-[500px] overflow-y-auto">
+                  <div className="space-y-1 border rounded-lg p-3 max-h-[calc(100vh-280px)] overflow-y-auto">
                     {hierarchy.map((node) => (
                       <HierarchyNodeItem
                         key={node.fullPath}

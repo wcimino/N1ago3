@@ -20,7 +20,7 @@ function AuthenticatedApp() {
     <div className="min-h-screen bg-gray-50">
       <EnvironmentBadge />
       <header className="bg-white shadow-sm border-b sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="w-full px-3 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-3 sm:py-4">
             <Link href="/" className="flex items-center gap-2 text-xl sm:text-2xl font-bold text-gray-900 hover:text-gray-700">
               <N1agoLogo className="w-8 h-8" />
@@ -73,7 +73,7 @@ function AuthenticatedApp() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      <main className="w-full px-4 py-4 sm:px-6 lg:px-8">
         <Switch>
           <Route path="/" component={HomePage} />
           <Route path="/ai" component={AIPage} />
