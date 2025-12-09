@@ -24,6 +24,7 @@ function formatConfigResponse(config: any) {
     use_knowledge_base_tool: config.useKnowledgeBaseTool ?? false,
     use_product_catalog_tool: config.useProductCatalogTool ?? false,
     use_zendesk_knowledge_base_tool: config.useZendeskKnowledgeBaseTool ?? false,
+    use_general_settings: config.useGeneralSettings ?? true,
     created_at: config.createdAt?.toISOString(),
     updated_at: config.updatedAt?.toISOString(),
   };
@@ -41,6 +42,7 @@ function getDefaultConfig(configType: string) {
     use_knowledge_base_tool: false,
     use_product_catalog_tool: false,
     use_zendesk_knowledge_base_tool: false,
+    use_general_settings: true,
     config_type: configType,
   };
 }
@@ -68,7 +70,7 @@ router.put("/api/openai-config/:configType", isAuthenticated, requireAuthorizedU
     return res.status(400).json({ error: `Invalid config type. Must be one of: ${VALID_CONFIG_TYPES.join(", ")}` });
   }
 
-  const { enabled, trigger_event_types, trigger_author_types, prompt_system, prompt_template, response_format, model_name, use_knowledge_base_tool, use_product_catalog_tool, use_zendesk_knowledge_base_tool } = req.body;
+  const { enabled, trigger_event_types, trigger_author_types, prompt_system, prompt_template, response_format, model_name, use_knowledge_base_tool, use_product_catalog_tool, use_zendesk_knowledge_base_tool, use_general_settings } = req.body;
 
   if (prompt_template !== undefined && !prompt_template.trim()) {
     return res.status(400).json({ error: "prompt_template cannot be empty" });
@@ -105,6 +107,7 @@ router.put("/api/openai-config/:configType", isAuthenticated, requireAuthorizedU
     useKnowledgeBaseTool: use_knowledge_base_tool ?? false,
     useProductCatalogTool: use_product_catalog_tool ?? false,
     useZendeskKnowledgeBaseTool: use_zendesk_knowledge_base_tool ?? false,
+    useGeneralSettings: use_general_settings ?? true,
   });
 
   res.json(formatConfigResponse(config));

@@ -15,6 +15,7 @@ import usersStandardRoutes from "../features/cadastro/routes/usersStandard.js";
 import organizationsStandardRoutes from "../features/cadastro/routes/organizationsStandard.js";
 
 import openaiConfigRoutes from "../features/ai/routes/openaiConfig.js";
+import generalSettingsRoutes from "../features/ai/routes/generalSettings.js";
 import openaiLogsRoutes from "../features/ai/routes/openaiLogs.js";
 import openaiStatsRoutes from "../features/ai/routes/openaiStats.js";
 import knowledgeBaseRoutes from "../features/ai/routes/knowledgeBase.js";
@@ -33,6 +34,7 @@ export function registerRoutes(app: Express) {
   app.use(conversationsRoutes);
   app.use(eventsRoutes);
   app.use(openaiConfigRoutes);
+  app.use(generalSettingsRoutes);
   app.use(openaiLogsRoutes);
   app.use(openaiStatsRoutes);
   app.use(productsRoutes);

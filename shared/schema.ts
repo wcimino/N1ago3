@@ -180,10 +180,22 @@ export const openaiApiConfig = pgTable("openai_api_config", {
   useKnowledgeBaseTool: boolean("use_knowledge_base_tool").default(false).notNull(),
   useProductCatalogTool: boolean("use_product_catalog_tool").default(false).notNull(),
   useZendeskKnowledgeBaseTool: boolean("use_zendesk_knowledge_base_tool").default(false).notNull(),
+  useGeneralSettings: boolean("use_general_settings").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   configTypeIdx: uniqueIndex("idx_openai_api_config_type").on(table.configType),
+}));
+
+export const openaiApiConfigGeneral = pgTable("openai_api_config_general", {
+  id: serial("id").primaryKey(),
+  configType: text("config_type").notNull(),
+  enabled: boolean("enabled").default(true).notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  configTypeIdx: uniqueIndex("idx_openai_api_config_general_type").on(table.configType),
 }));
 
 export const openaiApiLogs = pgTable("openai_api_logs", {
@@ -468,6 +480,9 @@ export type InsertConversationSummary = Omit<typeof conversationsSummary.$inferI
 
 export type OpenaiApiConfig = typeof openaiApiConfig.$inferSelect;
 export type InsertOpenaiApiConfig = Omit<typeof openaiApiConfig.$inferInsert, "id" | "createdAt" | "updatedAt">;
+
+export type OpenaiApiConfigGeneral = typeof openaiApiConfigGeneral.$inferSelect;
+export type InsertOpenaiApiConfigGeneral = Omit<typeof openaiApiConfigGeneral.$inferInsert, "id" | "createdAt" | "updatedAt">;
 
 export type OpenaiApiLog = typeof openaiApiLogs.$inferSelect;
 export type InsertOpenaiApiLog = Omit<typeof openaiApiLogs.$inferInsert, "id" | "createdAt">;
