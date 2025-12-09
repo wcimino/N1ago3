@@ -108,76 +108,78 @@ function SuggestionBubble({ suggestion, formatDateTime }: SuggestionBubbleProps)
 
   return (
     <div className="flex justify-end">
-      <div className="max-w-[85%] rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl shadow-sm px-4 py-2 border-2 bg-gray-200 opacity-60 border-dashed border-gray-300 relative">
-        <div className="flex items-center gap-2 mb-1">
-          <Sparkles className="w-3 h-3 text-gray-500" />
-          <span className="text-xs font-medium text-gray-500">
+      <div className="max-w-[85%] rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl shadow-sm px-4 py-2 border-2 bg-gray-100 border-dashed border-gray-300">
+        <div className="flex items-center gap-2 mb-1 relative">
+          <Sparkles className="w-3 h-3 text-purple-500" />
+          <span className="text-xs font-medium text-purple-600">
             Sugestão IA
           </span>
           {hasArticles && (
-            <button
-              onClick={() => setShowArticles(!showArticles)}
-              className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 transition-colors ml-1"
-              title="Ver artigos usados"
-            >
-              <BookOpen className="w-3 h-3" />
-              <span>{suggestion.articles_used!.length} artigo(s)</span>
-            </button>
-          )}
-        </div>
-        <p className="text-sm whitespace-pre-wrap break-words text-gray-600">
-          {suggestion.text}
-        </p>
-        <p className="text-[10px] mt-1 text-right text-gray-400">
-          {formatDateTime(suggestion.created_at)}
-        </p>
-
-        {showArticles && hasArticles && (
-          <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[280px] max-w-[350px]">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-gray-700 flex items-center gap-1">
-                <BookOpen className="w-3 h-3 text-purple-600" />
-                Artigos da Base de Conhecimento
-              </span>
+            <div className="relative">
               <button
-                onClick={() => setShowArticles(false)}
-                className="text-gray-400 hover:text-gray-600"
+                onClick={() => setShowArticles(!showArticles)}
+                className="flex items-center gap-1 text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 px-2 py-0.5 rounded-full transition-colors ml-1"
+                title="Ver artigos usados"
               >
-                <X className="w-3 h-3" />
+                <BookOpen className="w-3 h-3" />
+                <span>{suggestion.articles_used!.length} artigo(s)</span>
               </button>
-            </div>
-            <div className="space-y-2">
-              {suggestion.articles_used!.map((article) => (
-                <div
-                  key={article.id}
-                  className="p-2 bg-gray-50 rounded border border-gray-100 hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-gray-800 truncate">
-                        {article.name}
-                      </p>
-                      <p className="text-[10px] text-gray-500">
-                        {article.product} • ID: {article.id}
-                      </p>
-                    </div>
-                    {article.url && (
-                      <a
-                        href={article.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-purple-600 hover:text-purple-800 flex-shrink-0"
-                        title="Abrir artigo"
+              
+              {showArticles && (
+                <div className="absolute right-0 bottom-full mb-2 z-50 bg-white border border-purple-200 rounded-lg shadow-xl p-3 min-w-[300px] max-w-[380px]">
+                  <div className="flex items-center justify-between mb-2 pb-2 border-b border-purple-100">
+                    <span className="text-sm font-semibold text-purple-800 flex items-center gap-1.5">
+                      <BookOpen className="w-4 h-4 text-purple-600" />
+                      Artigos da Base de Conhecimento
+                    </span>
+                    <button
+                      onClick={() => setShowArticles(false)}
+                      className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {suggestion.articles_used!.map((article) => (
+                      <div
+                        key={article.id}
+                        className="p-2.5 bg-purple-50 rounded-lg border border-purple-100 hover:bg-purple-100 transition-colors"
                       >
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900">
+                              {article.name}
+                            </p>
+                            <p className="text-xs text-purple-600 mt-0.5">
+                              {article.product} • ID: {article.id}
+                            </p>
+                          </div>
+                          {article.url && (
+                            <a
+                              href={article.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-purple-600 hover:text-purple-800 flex-shrink-0 p-1 hover:bg-purple-200 rounded"
+                              title="Abrir artigo"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
+              )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
+        <p className="text-sm whitespace-pre-wrap break-words text-gray-700">
+          {suggestion.text}
+        </p>
+        <p className="text-[10px] mt-1 text-right text-gray-500">
+          {formatDateTime(suggestion.created_at)}
+        </p>
       </div>
     </div>
   );
