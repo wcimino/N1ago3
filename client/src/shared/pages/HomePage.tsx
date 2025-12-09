@@ -150,16 +150,16 @@ function OpenAIStatsCard({ openaiStats }: { openaiStats: OpenAIStatsResponse | u
   
   return (
     <div className="flex flex-col items-center text-center">
-      <p className="text-sm text-gray-500">Total de Chamadas</p>
-      <p className="text-3xl font-bold text-gray-900 mt-2">{formatNumber(stats.total_calls)}</p>
+      <p className="text-sm text-gray-500">Custo (USD)</p>
+      <p className="text-3xl font-bold text-gray-900 mt-2">${stats.estimated_cost.toFixed(2)}</p>
       <div className="mt-4 pt-4 border-t border-gray-100 w-full grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-xs text-gray-500">Chamadas</p>
+          <p className="text-lg font-semibold text-violet-600">{formatNumber(stats.total_calls)}</p>
+        </div>
         <div>
           <p className="text-xs text-gray-500">Tokens</p>
           <p className="text-lg font-semibold text-violet-600">{formatNumber(stats.total_tokens)}</p>
-        </div>
-        <div>
-          <p className="text-xs text-gray-500">Custo (USD)</p>
-          <p className="text-lg font-semibold text-violet-600">${stats.estimated_cost.toFixed(2)}</p>
         </div>
       </div>
     </div>
