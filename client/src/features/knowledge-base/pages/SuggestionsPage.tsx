@@ -128,9 +128,6 @@ function DiffPreview({
   before: string | null;
   after: string | null;
 }) {
-  const oldValue = before || "";
-  const newValue = after || "";
-  
   if (!before && !after) return null;
   
   const hasChange = before !== after;
@@ -146,35 +143,18 @@ function DiffPreview({
     );
   }
   
-  const diffParts = computeInlineDiff(oldValue, newValue);
-  
   return (
     <div className="space-y-2">
       <span className="text-xs font-medium text-gray-700">{label}:</span>
-      <div className="text-sm p-3 rounded border bg-gray-50 border-gray-200 text-gray-700 leading-relaxed">
-        {diffParts.map((part, idx) => {
-          if (part.type === 'removed') {
-            return (
-              <span 
-                key={idx} 
-                className="bg-red-100 text-red-800 line-through px-0.5 rounded"
-              >
-                {part.value}
-              </span>
-            );
-          }
-          if (part.type === 'added') {
-            return (
-              <span 
-                key={idx} 
-                className="bg-green-100 text-green-800 px-0.5 rounded"
-              >
-                {part.value}
-              </span>
-            );
-          }
-          return <span key={idx}>{part.value}</span>;
-        })}
+      <div className="space-y-2">
+        <div className="text-sm p-3 rounded border bg-red-50 border-red-200 text-gray-700 leading-relaxed">
+          <span className="text-xs font-medium text-red-600 block mb-1">Antes:</span>
+          <span className="text-red-800">{before || <span className="text-gray-400 italic">Sem conteúdo</span>}</span>
+        </div>
+        <div className="text-sm p-3 rounded border bg-green-50 border-green-200 text-gray-700 leading-relaxed">
+          <span className="text-xs font-medium text-green-600 block mb-1">Depois:</span>
+          <span className="text-green-800">{after || <span className="text-gray-400 italic">Sem conteúdo</span>}</span>
+        </div>
       </div>
     </div>
   );
