@@ -147,37 +147,27 @@ export async function generateResponse(
     const originalHandler = kbTool.handler;
     kbTool.handler = async (args) => {
       usedKnowledgeBase = true;
-      const results = await knowledgeBaseService.findRelatedArticles(
-        args.product,
-        args.intent,
-        args.keywords || [],
-        { limit: 3, minScore: 20 }
-      );
+      const result = await originalHandler(args);
+      console.log(`[Response Adapter] KB search: product=${args.product}`);
       
-      const newArticles = results.map(r => ({
-        id: r.article.id,
-        name: r.article.name || 'Sem nome',
-        product: r.article.productStandard || '',
-      }));
+      const articleMatches = result.matchAll(/### Artigo \d+: (.+?) \(ID: (\d+)\)\n- \*\*Produto:\*\* (.+?)\n/g);
+      const newArticles: ArticleUsed[] = [];
+      for (const match of articleMatches) {
+        newArticles.push({
+          id: parseInt(match[2], 10),
+          name: match[1],
+          product: match[3],
+        });
+      }
       
       const existingIds = new Set(articlesUsed.map(a => a.id));
       const uniqueNewArticles = newArticles.filter(a => !existingIds.has(a.id));
       articlesUsed = [...articlesUsed, ...uniqueNewArticles];
       articlesFound += uniqueNewArticles.length;
       
-      console.log(`[Response Adapter] KB search: product=${args.product}, found ${results.length} articles, added ${uniqueNewArticles.length}, total=${articlesUsed.length}`);
+      console.log(`[Response Adapter] KB search: found ${newArticles.length} articles, added ${uniqueNewArticles.length}, total=${articlesUsed.length}`);
       
-      if (results.length === 0) {
-        return "Nenhum artigo encontrado na base de conhecimento. Responda com base no contexto da conversa.";
-      }
-
-      return results.map((r, i) => `
-### Artigo ${i + 1}: ${r.article.name || 'Sem nome'} (ID: ${r.article.id})
-- **Produto:** ${r.article.productStandard}
-- **Intenção:** ${r.article.intent}
-- **Problema:** ${r.article.description}
-- **Resolução:** ${r.article.resolution}
-${r.article.observations ? `- **Observações:** ${r.article.observations}` : ''}`).join("\n\n");
+      return result;
     };
     tools.push(kbTool);
   }
