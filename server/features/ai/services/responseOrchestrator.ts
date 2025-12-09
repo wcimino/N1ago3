@@ -1,5 +1,6 @@
 import { storage } from "../../../storage/index.js";
 import { generateAndSaveResponse, type ResponsePayload } from "./responseAdapter.js";
+import { generalSettingsStorage } from "../storage/generalSettingsStorage.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 
 export async function shouldGenerateResponse(event: EventStandard): Promise<boolean> {
@@ -80,11 +81,19 @@ export async function generateConversationResponse(event: EventStandard): Promis
     const useProductCatalogTool = config.useProductCatalogTool ?? false;
     const useZendeskKnowledgeBaseTool = config.useZendeskKnowledgeBaseTool ?? false;
 
-    console.log(`[Response Orchestrator] Generating response for conversation ${event.conversationId} with ${reversedMessages.length} messages, useKB=${useKnowledgeBaseTool}, useCatalog=${useProductCatalogTool}, useZendeskKB=${useZendeskKnowledgeBaseTool}`);
+    let effectivePromptSystem = config.promptSystem;
+    if (config.useGeneralSettings) {
+      const generalSettings = await generalSettingsStorage.getConcatenatedContent();
+      if (generalSettings) {
+        effectivePromptSystem = generalSettings + "\n\n" + (config.promptSystem || "");
+      }
+    }
+
+    console.log(`[Response Orchestrator] Generating response for conversation ${event.conversationId} with ${reversedMessages.length} messages, useKB=${useKnowledgeBaseTool}, useCatalog=${useProductCatalogTool}, useZendeskKB=${useZendeskKnowledgeBaseTool}, useGeneralSettings=${config.useGeneralSettings}`);
 
     const result = await generateAndSaveResponse(
       payload,
-      config.promptSystem,
+      effectivePromptSystem,
       config.responseFormat,
       config.modelName,
       event.conversationId,

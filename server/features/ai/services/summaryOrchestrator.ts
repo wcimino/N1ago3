@@ -1,5 +1,6 @@
 import { storage } from "../../../storage/index.js";
 import { generateAndSaveSummary, type SummaryPayload } from "./summaryAdapter.js";
+import { generalSettingsStorage } from "../storage/generalSettingsStorage.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 
 export async function shouldGenerateSummary(event: EventStandard): Promise<boolean> {
@@ -69,11 +70,19 @@ export async function generateConversationSummary(event: EventStandard): Promise
       }
     };
 
-    console.log(`[Summary Orchestrator] Generating summary for conversation ${event.conversationId} with ${reversedMessages.length} messages`);
+    let effectivePromptSystem = config.promptSystem;
+    if (config.useGeneralSettings) {
+      const generalSettings = await generalSettingsStorage.getConcatenatedContent();
+      if (generalSettings) {
+        effectivePromptSystem = generalSettings + "\n\n" + (config.promptSystem || "");
+      }
+    }
+
+    console.log(`[Summary Orchestrator] Generating summary for conversation ${event.conversationId} with ${reversedMessages.length} messages, useGeneralSettings=${config.useGeneralSettings}`);
 
     const result = await generateAndSaveSummary(
       payload,
-      config.promptSystem,
+      effectivePromptSystem,
       config.responseFormat,
       config.modelName,
       event.conversationId,

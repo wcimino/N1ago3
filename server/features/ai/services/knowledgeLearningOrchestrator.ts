@@ -1,6 +1,7 @@
 import { storage } from "../../../storage/index.js";
 import { extractKnowledgeWithAgent, type AgentLearningPayload } from "./knowledgeLearningAgentAdapter.js";
 import { learningAttemptsStorage } from "../storage/learningAttemptsStorage.js";
+import { generalSettingsStorage } from "../storage/generalSettingsStorage.js";
 import type { EventStandard, LearningAttemptResult } from "../../../../shared/schema.js";
 
 export async function shouldExtractKnowledge(event: EventStandard): Promise<boolean> {
@@ -106,12 +107,20 @@ export async function extractConversationKnowledge(event: EventStandard): Promis
     const useProductCatalogTool = config.useProductCatalogTool ?? false;
     const useZendeskKnowledgeBaseTool = config.useZendeskKnowledgeBaseTool ?? false;
 
-    console.log(`[Learning Orchestrator] Extracting knowledge with agent from conversation ${event.conversationId} with ${reversedMessages.length} messages, useKB=${useKnowledgeBaseTool}, useCatalog=${useProductCatalogTool}, useZendeskKB=${useZendeskKnowledgeBaseTool}`);
+    let effectivePromptSystem = config.promptSystem;
+    if (config.useGeneralSettings) {
+      const generalSettings = await generalSettingsStorage.getConcatenatedContent();
+      if (generalSettings) {
+        effectivePromptSystem = generalSettings + "\n\n" + (config.promptSystem || "");
+      }
+    }
+
+    console.log(`[Learning Orchestrator] Extracting knowledge with agent from conversation ${event.conversationId} with ${reversedMessages.length} messages, useKB=${useKnowledgeBaseTool}, useCatalog=${useProductCatalogTool}, useZendeskKB=${useZendeskKnowledgeBaseTool}, useGeneralSettings=${config.useGeneralSettings}`);
 
     const result = await extractKnowledgeWithAgent(
       payload,
       config.modelName,
-      config.promptSystem,
+      effectivePromptSystem,
       config.responseFormat,
       event.conversationId,
       event.externalConversationId,

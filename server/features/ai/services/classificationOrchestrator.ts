@@ -1,5 +1,6 @@
 import { storage } from "../../../storage/index.js";
 import { classifyAndSave, type ClassificationPayload } from "./productClassificationAdapter.js";
+import { generalSettingsStorage } from "../storage/generalSettingsStorage.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 
 export async function shouldClassify(event: EventStandard): Promise<boolean> {
@@ -62,11 +63,19 @@ export async function classifyConversationProduct(event: EventStandard): Promise
       currentSummary: existingSummary?.summary || null,
     };
 
-    console.log(`[Classification Orchestrator] Classifying conversation ${event.conversationId} with ${reversedMessages.length} messages${existingSummary ? ' and existing summary' : ''}`);
+    let effectivePromptSystem = config.promptSystem;
+    if (config.useGeneralSettings) {
+      const generalSettings = await generalSettingsStorage.getConcatenatedContent();
+      if (generalSettings) {
+        effectivePromptSystem = generalSettings + "\n\n" + (config.promptSystem || "");
+      }
+    }
+
+    console.log(`[Classification Orchestrator] Classifying conversation ${event.conversationId} with ${reversedMessages.length} messages${existingSummary ? ' and existing summary' : ''}, useGeneralSettings=${config.useGeneralSettings}`);
 
     const result = await classifyAndSave(
       payload,
-      config.promptSystem,
+      effectivePromptSystem,
       config.responseFormat,
       config.modelName,
       event.conversationId,

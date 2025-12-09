@@ -89,6 +89,23 @@ export function OpenaiConfigForm({
             </button>
           </div>
 
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-medium text-gray-900">Usar configurações gerais</h3>
+              <p className="text-sm text-gray-500">Concatena as configurações gerais ao prompt deste agente</p>
+            </div>
+            <button
+              onClick={() => actions.setUseGeneralSettings(!state.useGeneralSettings)}
+              className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${state.useGeneralSettings ? "bg-green-500" : "bg-gray-300"}`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transform transition-transform ${
+                  state.useGeneralSettings ? "translate-x-6" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+
           <div>
             <h3 className="text-sm font-medium text-gray-900 mb-2">Modelo OpenAI</h3>
             <select
