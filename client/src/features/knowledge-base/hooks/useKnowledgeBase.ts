@@ -73,7 +73,7 @@ function buildHierarchy(
   articles: KnowledgeBaseArticle[]
 ): HierarchyNode[] {
   const productNodes = new Map<string, HierarchyNode>();
-  const subjectToProduct = new Map<number, string>();
+  const subproductNodes = new Map<string, HierarchyNode>();
   
   for (const product of products) {
     if (!productNodes.has(product.produto)) {
@@ -85,13 +85,27 @@ function buildHierarchy(
         articles: [],
       });
     }
+    
+    if (product.subproduto) {
+      const prodNode = productNodes.get(product.produto)!;
+      const subprodKey = `${product.produto}|${product.subproduto}`;
+      if (!subproductNodes.has(subprodKey)) {
+        const subprodNode: HierarchyNode = {
+          name: product.subproduto,
+          level: "subproduto",
+          fullPath: `${product.produto} > ${product.subproduto}`,
+          children: [],
+          articles: [],
+        };
+        subproductNodes.set(subprodKey, subprodNode);
+        prodNode.children.push(subprodNode);
+      }
+    }
   }
   
   for (const subject of subjects) {
     const product = products.find(p => p.id === subject.productCatalogId);
     if (!product) continue;
-    
-    subjectToProduct.set(subject.id, product.produto);
     
     let prodNode = productNodes.get(product.produto);
     if (!prodNode) {
@@ -105,28 +119,58 @@ function buildHierarchy(
       productNodes.set(product.produto, prodNode);
     }
     
-    let subjectNode = prodNode.children.find(c => c.subjectId === subject.id);
+    let parentNode: HierarchyNode = prodNode;
+    let basePath = product.produto;
+    
+    if (product.subproduto) {
+      const subprodKey = `${product.produto}|${product.subproduto}`;
+      let subprodNode = subproductNodes.get(subprodKey);
+      if (!subprodNode) {
+        subprodNode = {
+          name: product.subproduto,
+          level: "subproduto",
+          fullPath: `${product.produto} > ${product.subproduto}`,
+          children: [],
+          articles: [],
+        };
+        subproductNodes.set(subprodKey, subprodNode);
+        prodNode.children.push(subprodNode);
+      }
+      parentNode = subprodNode;
+      basePath = `${product.produto} > ${product.subproduto}`;
+    }
+    
+    let subjectNode = parentNode.children.find(c => c.subjectId === subject.id);
     if (!subjectNode) {
       subjectNode = {
         name: subject.name,
         level: "assunto",
-        fullPath: `${product.produto} > ${subject.name}`,
+        fullPath: `${basePath} > ${subject.name}`,
         children: [],
         articles: [],
         subjectId: subject.id,
       };
-      prodNode.children.push(subjectNode);
+      parentNode.children.push(subjectNode);
     }
   }
   
+  const findSubjectNode = (subjectId: number): HierarchyNode | null => {
+    for (const prodNode of productNodes.values()) {
+      const directSubject = prodNode.children.find(c => c.subjectId === subjectId);
+      if (directSubject) return directSubject;
+      
+      for (const child of prodNode.children) {
+        if (child.level === "subproduto") {
+          const subjectInSubprod = child.children.find(c => c.subjectId === subjectId);
+          if (subjectInSubprod) return subjectInSubprod;
+        }
+      }
+    }
+    return null;
+  };
+  
   for (const intent of intents) {
-    const productName = subjectToProduct.get(intent.subjectId);
-    if (!productName) continue;
-    
-    const prodNode = productNodes.get(productName);
-    if (!prodNode) continue;
-    
-    const subjectNode = prodNode.children.find(c => c.subjectId === intent.subjectId);
+    const subjectNode = findSubjectNode(intent.subjectId);
     if (!subjectNode) continue;
     
     let intentNode = subjectNode.children.find(c => c.intentId === intent.id);
@@ -143,58 +187,76 @@ function buildHierarchy(
     }
   }
   
-  for (const article of articles) {
-    if (article.intentId) {
-      let placed = false;
-      for (const prodNode of productNodes.values()) {
-        for (const subjectNode of prodNode.children) {
-          const intentNode = subjectNode.children.find(c => c.intentId === article.intentId);
-          if (intentNode) {
-            intentNode.articles.push(article);
-            placed = true;
-            break;
+  const findIntentNode = (intentId: number): HierarchyNode | null => {
+    for (const prodNode of productNodes.values()) {
+      for (const child of prodNode.children) {
+        if (child.level === "assunto") {
+          const intentNode = child.children.find(c => c.intentId === intentId);
+          if (intentNode) return intentNode;
+        } else if (child.level === "subproduto") {
+          for (const subjectNode of child.children) {
+            const intentNode = subjectNode.children.find(c => c.intentId === intentId);
+            if (intentNode) return intentNode;
           }
         }
-        if (placed) break;
       }
-      if (!placed) {
-        const prodNode = productNodes.get(article.productStandard);
-        if (prodNode) {
-          prodNode.articles.push(article);
-        }
+    }
+    return null;
+  };
+  
+  const placeArticleInFallback = (article: KnowledgeBaseArticle) => {
+    const prodNode = productNodes.get(article.productStandard);
+    if (!prodNode) {
+      if (!productNodes.has(article.productStandard)) {
+        productNodes.set(article.productStandard, {
+          name: article.productStandard,
+          level: "produto",
+          fullPath: article.productStandard,
+          children: [],
+          articles: [],
+        });
+      }
+      productNodes.get(article.productStandard)!.articles.push(article);
+      return;
+    }
+    
+    if (article.subproductStandard) {
+      const subprodKey = `${article.productStandard}|${article.subproductStandard}`;
+      let subprodNode = subproductNodes.get(subprodKey);
+      if (!subprodNode) {
+        subprodNode = {
+          name: article.subproductStandard,
+          level: "subproduto",
+          fullPath: `${article.productStandard} > ${article.subproductStandard}`,
+          children: [],
+          articles: [],
+        };
+        subproductNodes.set(subprodKey, subprodNode);
+        prodNode.children.push(subprodNode);
+      }
+      subprodNode.articles.push(article);
+    } else {
+      prodNode.articles.push(article);
+    }
+  };
+  
+  for (const article of articles) {
+    if (article.intentId) {
+      const intentNode = findIntentNode(article.intentId);
+      if (intentNode) {
+        intentNode.articles.push(article);
+      } else {
+        placeArticleInFallback(article);
       }
     } else if (article.subjectId) {
-      let placed = false;
-      for (const prodNode of productNodes.values()) {
-        const subjectNode = prodNode.children.find(c => c.subjectId === article.subjectId);
-        if (subjectNode) {
-          subjectNode.articles.push(article);
-          placed = true;
-          break;
-        }
-      }
-      if (!placed) {
-        const prodNode = productNodes.get(article.productStandard);
-        if (prodNode) {
-          prodNode.articles.push(article);
-        }
+      const subjectNode = findSubjectNode(article.subjectId);
+      if (subjectNode) {
+        subjectNode.articles.push(article);
+      } else {
+        placeArticleInFallback(article);
       }
     } else {
-      const prodNode = productNodes.get(article.productStandard);
-      if (prodNode) {
-        prodNode.articles.push(article);
-      } else {
-        if (!productNodes.has(article.productStandard)) {
-          productNodes.set(article.productStandard, {
-            name: article.productStandard,
-            level: "produto",
-            fullPath: article.productStandard,
-            children: [],
-            articles: [],
-          });
-        }
-        productNodes.get(article.productStandard)!.articles.push(article);
-      }
+      placeArticleInFallback(article);
     }
   }
   
