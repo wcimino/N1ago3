@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Users, MessageCircle, Activity, User, UserCheck, ArrowLeftRight } from "lucide-react";
+import { MessageCircle, Activity, User, UserCheck } from "lucide-react";
 import { HandlerBadge, getHandlerInfo } from "../../../shared/components/badges/HandlerBadge";
 import { getUserDisplayName, getActiveConversationsCount, getUserFromGroup } from "../../../lib/userUtils";
 import type { User as UserType, UserGroup } from "../../../types";
@@ -44,10 +44,6 @@ export function UserGroupCard({
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             {handlerInfo && <HandlerBadge handlerName={latestHandler} />}
-            <ArrowLeftRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
-            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-              <Users className="w-5 h-5 text-blue-600" />
-            </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-medium text-gray-900 truncate">{getUserDisplayName(group)}</h3>
