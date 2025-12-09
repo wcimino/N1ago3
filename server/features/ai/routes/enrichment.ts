@@ -11,11 +11,13 @@ router.post("/api/ai/enrichment/generate", isAuthenticated, requireAuthorizedUse
     const { product, subproduct, limit = 3 } = req.body;
 
     const config = await storage.getOpenaiApiConfig("enrichment");
-    if (!config || !config.enabled) {
+    if (!config) {
       return res.status(400).json({ 
-        error: "Enrichment is not enabled. Please configure it in the AI settings." 
+        error: "Enrichment configuration not found. Please configure it in the AI settings." 
       });
     }
+    // Note: Manual execution works even if config.enabled is false
+    // The enabled flag controls automatic triggers only
 
     const articles = await knowledgeBaseStorage.getAllArticles({
       productStandard: product,
