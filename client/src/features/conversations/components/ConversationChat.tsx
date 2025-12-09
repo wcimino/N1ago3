@@ -1,4 +1,4 @@
-import { RefObject, useMemo, useState } from "react";
+import { RefObject, useMemo, useState, useRef, useEffect } from "react";
 import { Sparkles, BookOpen, ExternalLink, X } from "lucide-react";
 import { MessageBubble } from "../../../shared/components/ui/MessageBubble";
 import type { ImagePayload, Message } from "../../../types";
@@ -105,6 +105,25 @@ interface SuggestionBubbleProps {
 function SuggestionBubble({ suggestion, formatDateTime }: SuggestionBubbleProps) {
   const [showArticles, setShowArticles] = useState(false);
   const hasArticles = suggestion.articles_used && suggestion.articles_used.length > 0;
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showArticles) return;
+    
+    const handleClickOutside = (event: MouseEvent) => {
+      if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
+        setShowArticles(false);
+      }
+    };
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showArticles]);
+
+  const handleArticleClick = (articleId: number) => {
+    window.open(`/knowledge-base?article=${articleId}`, "_blank");
+    setShowArticles(false);
+  };
 
   return (
     <div className="flex justify-end">
@@ -115,7 +134,7 @@ function SuggestionBubble({ suggestion, formatDateTime }: SuggestionBubbleProps)
             Sugestão IA
           </span>
           {hasArticles && (
-            <div className="relative">
+            <div className="relative" ref={tooltipRef}>
               <button
                 onClick={() => setShowArticles(!showArticles)}
                 className="flex items-center gap-1 text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 px-2 py-0.5 rounded-full transition-colors ml-1"
@@ -141,32 +160,18 @@ function SuggestionBubble({ suggestion, formatDateTime }: SuggestionBubbleProps)
                   </div>
                   <div className="space-y-2">
                     {suggestion.articles_used!.map((article) => (
-                      <div
+                      <button
                         key={article.id}
-                        className="p-2.5 bg-purple-50 rounded-lg border border-purple-100 hover:bg-purple-100 transition-colors"
+                        onClick={() => handleArticleClick(article.id)}
+                        className="w-full text-left p-2.5 bg-purple-50 rounded-lg border border-purple-100 hover:bg-purple-100 transition-colors cursor-pointer"
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900">
-                              {article.name}
-                            </p>
-                            <p className="text-xs text-purple-600 mt-0.5">
-                              {article.product} • ID: {article.id}
-                            </p>
-                          </div>
-                          {article.url && (
-                            <a
-                              href={article.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-purple-600 hover:text-purple-800 flex-shrink-0 p-1 hover:bg-purple-200 rounded"
-                              title="Abrir artigo"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
-                          )}
-                        </div>
-                      </div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {article.name}
+                        </p>
+                        <p className="text-xs text-purple-600 mt-0.5">
+                          {article.product} • ID: {article.id}
+                        </p>
+                      </button>
                     ))}
                   </div>
                 </div>
