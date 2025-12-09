@@ -62,6 +62,11 @@ interface Section {
   count: number;
 }
 
+interface Subdomain {
+  subdomain: string;
+  count: number;
+}
+
 interface ArticleViewCount {
   zendeskArticleId: number;
   viewCount: number;
@@ -179,6 +184,7 @@ export function ZendeskArticlesPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [selectedSection, setSelectedSection] = useState("");
+  const [selectedSubdomain, setSelectedSubdomain] = useState("");
   
   const { data: syncInfo } = useQuery<SyncInfo>({
     queryKey: ["/api/zendesk-articles/sync-info"],
@@ -188,12 +194,17 @@ export function ZendeskArticlesPage() {
     queryKey: ["/api/zendesk-articles/sections"],
   });
   
+  const { data: subdomains = [] } = useQuery<Subdomain[]>({
+    queryKey: ["/api/zendesk-articles/subdomains"],
+  });
+  
   const { data: articles = [], isLoading } = useQuery<ZendeskArticle[]>({
-    queryKey: ["/api/zendesk-articles", search, selectedSection],
+    queryKey: ["/api/zendesk-articles", search, selectedSection, selectedSubdomain],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (search) params.append("search", search);
       if (selectedSection) params.append("sectionId", selectedSection);
+      if (selectedSubdomain) params.append("helpCenterSubdomain", selectedSubdomain);
       const res = await fetch(`/api/zendesk-articles?${params}`);
       return res.json();
     },
@@ -225,6 +236,7 @@ export function ZendeskArticlesPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/zendesk-articles"] });
       queryClient.invalidateQueries({ queryKey: ["/api/zendesk-articles/sync-info"] });
       queryClient.invalidateQueries({ queryKey: ["/api/zendesk-articles/sections"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/zendesk-articles/subdomains"] });
     },
   });
   
@@ -292,6 +304,21 @@ export function ZendeskArticlesPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-8 pr-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
+        </div>
+        <div className="relative">
+          <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <select
+            value={selectedSubdomain}
+            onChange={(e) => setSelectedSubdomain(e.target.value)}
+            className="pl-8 pr-8 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
+          >
+            <option value="">Todos os subdomínios</option>
+            {subdomains.map((sub) => (
+              <option key={sub.subdomain} value={sub.subdomain}>
+                {SUBDOMAIN_LABELS[sub.subdomain] || sub.subdomain} ({sub.count})
+              </option>
+            ))}
+          </select>
         </div>
         <div className="relative">
           <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />

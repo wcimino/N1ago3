@@ -7,12 +7,13 @@ const router = Router();
 
 router.get("/", async (req, res) => {
   try {
-    const { search, sectionId, locale, limit, offset } = req.query;
+    const { search, sectionId, locale, helpCenterSubdomain, limit, offset } = req.query;
     
     const articles = await ZendeskArticlesStorage.getAllArticles({
       search: search as string | undefined,
       sectionId: sectionId as string | undefined,
       locale: locale as string | undefined,
+      helpCenterSubdomain: helpCenterSubdomain as string | undefined,
       limit: limit ? parseInt(limit as string, 10) : undefined,
       offset: offset ? parseInt(offset as string, 10) : undefined,
     });
@@ -31,6 +32,16 @@ router.get("/sections", async (_req, res) => {
   } catch (error) {
     console.error("[ZendeskArticles] Error fetching sections:", error);
     res.status(500).json({ error: "Failed to fetch sections" });
+  }
+});
+
+router.get("/subdomains", async (_req, res) => {
+  try {
+    const subdomains = await ZendeskArticlesStorage.getDistinctSubdomains();
+    res.json(subdomains);
+  } catch (error) {
+    console.error("[ZendeskArticles] Error fetching subdomains:", error);
+    res.status(500).json({ error: "Failed to fetch subdomains" });
   }
 });
 

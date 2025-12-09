@@ -6,12 +6,13 @@ export interface ArticleFilters {
   search?: string;
   sectionId?: string;
   locale?: string;
+  helpCenterSubdomain?: string;
   limit?: number;
   offset?: number;
 }
 
 export async function getAllArticles(filters: ArticleFilters = {}): Promise<ZendeskArticle[]> {
-  const { search, sectionId, locale, limit = 100, offset = 0 } = filters;
+  const { search, sectionId, locale, helpCenterSubdomain, limit = 100, offset = 0 } = filters;
   
   const conditions: SQL[] = [];
   
@@ -31,6 +32,10 @@ export async function getAllArticles(filters: ArticleFilters = {}): Promise<Zend
   
   if (locale) {
     conditions.push(eq(zendeskArticles.locale, locale));
+  }
+  
+  if (helpCenterSubdomain) {
+    conditions.push(eq(zendeskArticles.helpCenterSubdomain, helpCenterSubdomain));
   }
   
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -88,10 +93,26 @@ export async function getArticleCount(): Promise<number> {
   return result?.count ?? 0;
 }
 
+export async function getDistinctSubdomains(): Promise<Array<{ subdomain: string; count: number }>> {
+  const results = await db
+    .select({
+      subdomain: zendeskArticles.helpCenterSubdomain,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(zendeskArticles)
+    .groupBy(zendeskArticles.helpCenterSubdomain)
+    .orderBy(zendeskArticles.helpCenterSubdomain);
+  
+  return results.filter((r): r is { subdomain: string; count: number } => 
+    r.subdomain !== null
+  );
+}
+
 export const ZendeskArticlesStorage = {
   getAllArticles,
   getArticleById,
   getArticleByZendeskId,
   getDistinctSections,
+  getDistinctSubdomains,
   getArticleCount,
 };
