@@ -1,14 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { MessageCircle, Activity, Package, AlertCircle, Heart, Sparkles, Coins, Hash, Clock, Calendar } from "lucide-react";
+import { MessageCircle, Activity, Package, AlertCircle, Heart, Sparkles } from "lucide-react";
 import { fetchApi } from "../../lib/queryClient";
 import { DonutChart, StatsCard, StatsTableHeader, StatsRow } from "../components";
 import { useTimezone } from "../../contexts/TimezoneContext";
 import type { UsersStatsResponse, StatsResponse, ProductStatsResponse, EmotionStatsResponse } from "../../types";
 
 interface OpenAIStatsResponse {
-  last_hour: { total_calls: number; total_tokens: number; estimated_cost: number };
-  today: { total_calls: number; total_tokens: number; estimated_cost: number };
+  last_24h: { total_calls: number; total_tokens: number; estimated_cost: number };
 }
 
 const emotionConfig: Record<number, { label: string; color: string; bgColor: string; emoji: string }> = {
@@ -143,87 +142,27 @@ function EmotionsCard({ emotionStats }: { emotionStats: EmotionStatsResponse | u
 }
 
 function OpenAIStatsCard({ openaiStats }: { openaiStats: OpenAIStatsResponse | undefined }) {
-  const lastHour = openaiStats?.last_hour;
-  const today = openaiStats?.today;
+  const stats = openaiStats?.last_24h;
   
-  if (!lastHour && !today) {
+  if (!stats) {
     return <p className="text-sm text-gray-400 italic">Nenhum dado ainda</p>;
   }
   
   return (
-    <table className="w-full">
-      <thead>
-        <tr className="border-b border-gray-100">
-          <th className="text-left pb-2"></th>
-          <th className="text-right pb-2 w-24">
-            <span title="Última hora" className="inline-flex justify-center w-full">
-              <Clock className="w-3 h-3 text-violet-500" />
-            </span>
-          </th>
-          <th className="text-right pb-2 w-24">
-            <span title="Hoje" className="inline-flex justify-center w-full">
-              <Calendar className="w-3 h-3 text-violet-500" />
-            </span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td className="py-2">
-            <div className="flex items-center gap-2">
-              <Hash className="w-3.5 h-3.5 text-violet-500" />
-              <span className="text-sm text-gray-700">Chamadas</span>
-            </div>
-          </td>
-          <td className="py-2 text-right">
-            <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs">
-              {formatNumber(lastHour?.total_calls || 0)}
-            </span>
-          </td>
-          <td className="py-2 text-right">
-            <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs">
-              {formatNumber(today?.total_calls || 0)}
-            </span>
-          </td>
-        </tr>
-        <tr>
-          <td className="py-2">
-            <div className="flex items-center gap-2">
-              <span className="text-violet-500 text-xs font-bold w-3.5 text-center">TK</span>
-              <span className="text-sm text-gray-700">Tokens</span>
-            </div>
-          </td>
-          <td className="py-2 text-right">
-            <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs">
-              {formatNumber(lastHour?.total_tokens || 0)}
-            </span>
-          </td>
-          <td className="py-2 text-right">
-            <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs">
-              {formatNumber(today?.total_tokens || 0)}
-            </span>
-          </td>
-        </tr>
-        <tr>
-          <td className="py-2">
-            <div className="flex items-center gap-2">
-              <Coins className="w-3.5 h-3.5 text-violet-500" />
-              <span className="text-sm text-gray-700">Custo (USD)</span>
-            </div>
-          </td>
-          <td className="py-2 text-right">
-            <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs">
-              ${(lastHour?.estimated_cost || 0).toFixed(2)}
-            </span>
-          </td>
-          <td className="py-2 text-right">
-            <span className="font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded text-xs">
-              ${(today?.estimated_cost || 0).toFixed(2)}
-            </span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div className="flex flex-col items-center text-center">
+      <p className="text-sm text-gray-500">Total de Chamadas</p>
+      <p className="text-3xl font-bold text-gray-900 mt-2">{formatNumber(stats.total_calls)}</p>
+      <div className="mt-4 pt-4 border-t border-gray-100 w-full grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-xs text-gray-500">Tokens</p>
+          <p className="text-lg font-semibold text-violet-600">{formatNumber(stats.total_tokens)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-500">Custo (USD)</p>
+          <p className="text-lg font-semibold text-violet-600">${stats.estimated_cost.toFixed(2)}</p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -311,6 +250,7 @@ export function HomePage() {
         <StatsCard
           title="OpenAI API"
           icon={<Sparkles className="w-4 h-4 text-violet-600" />}
+          badge="24h"
         >
           <OpenAIStatsCard openaiStats={openaiStats} />
         </StatsCard>

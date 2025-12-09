@@ -122,16 +122,10 @@ export const openaiLogsStorage = {
   },
 
   async getOpenaiApiStats(timezone: string = "America/Sao_Paulo"): Promise<{
-    last_hour: { total_calls: number; total_tokens: number; estimated_cost: number };
-    today: { total_calls: number; total_tokens: number; estimated_cost: number };
+    last_24h: { total_calls: number; total_tokens: number; estimated_cost: number };
   }> {
     const now = new Date();
-    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-    
-    // Calculate start of day in the provided timezone
-    const nowInTimezone = toZonedTime(now, timezone);
-    const startOfDayInTimezone = dateFnsStartOfDay(nowInTimezone);
-    const startOfDay = fromZonedTime(startOfDayInTimezone, timezone);
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
     const MODEL_PRICING: Record<string, { input: number; output: number }> = {
       'gpt-4o': { input: 2.50 / 1_000_000, output: 10.00 / 1_000_000 },
@@ -141,21 +135,13 @@ export const openaiLogsStorage = {
       'gpt-3.5-turbo': { input: 0.50 / 1_000_000, output: 1.50 / 1_000_000 },
     };
 
-    const lastHourLogs = await db.select({
+    const last24hLogs = await db.select({
       modelName: openaiApiLogs.modelName,
       tokensPrompt: openaiApiLogs.tokensPrompt,
       tokensCompletion: openaiApiLogs.tokensCompletion,
     })
       .from(openaiApiLogs)
-      .where(gte(openaiApiLogs.createdAt, oneHourAgo));
-
-    const todayLogs = await db.select({
-      modelName: openaiApiLogs.modelName,
-      tokensPrompt: openaiApiLogs.tokensPrompt,
-      tokensCompletion: openaiApiLogs.tokensCompletion,
-    })
-      .from(openaiApiLogs)
-      .where(gte(openaiApiLogs.createdAt, startOfDay));
+      .where(gte(openaiApiLogs.createdAt, twentyFourHoursAgo));
 
     function calculateStats(logs: { modelName: string; tokensPrompt: number | null; tokensCompletion: number | null }[]) {
       let totalTokens = 0;
@@ -178,8 +164,7 @@ export const openaiLogsStorage = {
     }
 
     return {
-      last_hour: calculateStats(lastHourLogs),
-      today: calculateStats(todayLogs),
+      last_24h: calculateStats(last24hLogs),
     };
   },
 };
