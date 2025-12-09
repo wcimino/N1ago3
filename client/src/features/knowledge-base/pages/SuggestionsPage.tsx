@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useKnowledgeSuggestions, type KnowledgeSuggestion } from "../hooks/useKnowledgeSuggestions";
 import { Check, X, GitMerge, AlertTriangle, Clock, CheckCircle, XCircle, Plus, Pencil, Sparkles, Loader2, ChevronDown, FileText, ExternalLink, ArrowRight } from "lucide-react";
 import { fetchApi, apiRequest } from "../../../lib/queryClient";
+import ReactDiffViewer, { DiffMethod } from "react-diff-viewer-continued";
 
 type StatusFilter = "pending" | "approved" | "rejected" | "merged" | "no_improvement" | "all";
 
@@ -14,45 +15,94 @@ interface KnowledgeArticle {
   observations: string | null;
 }
 
-function ComparisonField({ 
+const diffStyles = {
+  variables: {
+    light: {
+      diffViewerBackground: '#ffffff',
+      diffViewerColor: '#374151',
+      addedBackground: '#dcfce7',
+      addedColor: '#166534',
+      removedBackground: '#fee2e2',
+      removedColor: '#991b1b',
+      wordAddedBackground: '#bbf7d0',
+      wordRemovedBackground: '#fecaca',
+      addedGutterBackground: '#dcfce7',
+      removedGutterBackground: '#fee2e2',
+      gutterBackground: '#f9fafb',
+      gutterBackgroundDark: '#f3f4f6',
+      highlightBackground: '#fef3c7',
+      highlightGutterBackground: '#fef3c7',
+      codeFoldGutterBackground: '#e5e7eb',
+      codeFoldBackground: '#f9fafb',
+      emptyLineBackground: '#f9fafb',
+      gutterColor: '#9ca3af',
+      addedGutterColor: '#166534',
+      removedGutterColor: '#991b1b',
+      codeFoldContentColor: '#6b7280',
+      diffViewerTitleBackground: '#f3f4f6',
+      diffViewerTitleColor: '#374151',
+      diffViewerTitleBorderColor: '#e5e7eb',
+    },
+  },
+  contentText: {
+    fontSize: '0.875rem',
+    lineHeight: '1.5',
+    fontFamily: 'inherit',
+  },
+  line: {
+    padding: '4px 8px',
+  },
+  wordDiff: {
+    padding: '1px 2px',
+    borderRadius: '2px',
+  },
+  gutter: {
+    minWidth: '30px',
+    padding: '0 8px',
+  },
+};
+
+function DiffPreview({ 
   label, 
   before, 
-  after,
-  beforeLabel = "Artigo Atual",
-  afterLabel = "Sugestão"
+  after 
 }: { 
   label: string;
   before: string | null;
   after: string | null;
-  beforeLabel?: string;
-  afterLabel?: string;
 }) {
-  const hasChange = before !== after;
+  const oldValue = before || "";
+  const newValue = after || "";
   
   if (!before && !after) return null;
+  
+  const hasChange = before !== after;
+  
+  if (!hasChange) {
+    return (
+      <div className="space-y-2">
+        <span className="text-xs font-medium text-gray-700">{label}:</span>
+        <div className="text-sm p-3 rounded border bg-gray-50 border-gray-200 text-gray-700">
+          {before || <span className="text-gray-400 italic">Sem conteúdo</span>}
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-2">
       <span className="text-xs font-medium text-gray-700">{label}:</span>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <span className="text-xs text-gray-500 flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-gray-400"></span>
-            {beforeLabel}
-          </span>
-          <div className={`text-sm p-2 rounded border ${hasChange ? 'bg-gray-50 border-gray-200' : 'bg-gray-50 border-gray-200'}`}>
-            {before || <span className="text-gray-400 italic">Sem conteúdo</span>}
-          </div>
-        </div>
-        <div className="space-y-1">
-          <span className="text-xs text-gray-500 flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-green-500"></span>
-            {afterLabel}
-          </span>
-          <div className={`text-sm p-2 rounded border ${hasChange ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
-            {after || <span className="text-gray-400 italic">Sem conteúdo</span>}
-          </div>
-        </div>
+      <div className="border border-gray-200 rounded overflow-hidden">
+        <ReactDiffViewer
+          oldValue={oldValue}
+          newValue={newValue}
+          splitView={false}
+          compareMethod={DiffMethod.WORDS}
+          hideLineNumbers={true}
+          showDiffOnly={false}
+          useDarkTheme={false}
+          styles={diffStyles}
+        />
       </div>
     </div>
   );
@@ -289,19 +339,19 @@ function SuggestionCard({
               <span>Comparação: Artigo #{suggestion.similarArticleId} → Sugestão de melhoria</span>
             </div>
             
-            <ComparisonField
+            <DiffPreview
               label="Situação"
               before={originalArticle.description}
               after={suggestion.description}
             />
             
-            <ComparisonField
+            <DiffPreview
               label="Solução"
               before={originalArticle.resolution}
               after={suggestion.resolution}
             />
             
-            <ComparisonField
+            <DiffPreview
               label="Observações"
               before={originalArticle.observations}
               after={suggestion.observations}
