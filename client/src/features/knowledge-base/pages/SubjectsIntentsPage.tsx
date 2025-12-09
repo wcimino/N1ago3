@@ -411,7 +411,7 @@ export function SubjectsIntentsPage() {
     return (
       <div key={node.id}>
         <div 
-          className="group flex items-center gap-2 py-1.5 px-2 bg-gray-100 hover:bg-gray-200 rounded cursor-pointer border-l-4 border-gray-400"
+          className="group flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded cursor-pointer border-l-4 border-gray-400"
           style={{ paddingLeft: `${paddingLeft}px` }}
           onClick={() => toggleProduct(node.id)}
         >
@@ -452,7 +452,7 @@ export function SubjectsIntentsPage() {
                     renderInlineForm(paddingLeft + 20, "bg-blue-50")
                   ) : (
                     <div 
-                      className="group flex items-center gap-2 py-1.5 px-2 bg-blue-50 hover:bg-blue-100 rounded cursor-pointer border-l-4 border-blue-400"
+                      className="group flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded cursor-pointer border-l-4 border-blue-400"
                       style={{ paddingLeft: `${paddingLeft + 20}px` }}
                       onClick={() => toggleSubject(subject.id)}
                     >
@@ -518,7 +518,7 @@ export function SubjectsIntentsPage() {
                         ) : (
                           <div 
                             key={`intent-${intent.id}`}
-                            className="group flex items-center gap-2 py-1.5 px-2 bg-green-50 hover:bg-green-100 rounded border-l-4 border-green-400"
+                            className="group flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded border-l-4 border-green-400"
                             style={{ paddingLeft: `${paddingLeft + 40}px` }}
                           >
                             <span className="w-4" />
