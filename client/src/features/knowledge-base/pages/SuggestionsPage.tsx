@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useKnowledgeSuggestions, type KnowledgeSuggestion } from "../hooks/useKnowledgeSuggestions";
 import { Check, X, GitMerge, AlertTriangle, Clock, CheckCircle, XCircle, Plus, Pencil, Sparkles, Loader2, ChevronDown, FileText, ExternalLink, ArrowRight, Ban } from "lucide-react";
 import { fetchApi, apiRequest } from "../../../lib/queryClient";
+import ReactDiffViewer, { DiffMethod } from "react-diff-viewer-continued";
 
 type StatusFilter = "pending" | "approved" | "rejected" | "merged" | "skipped" | "all";
 
@@ -119,6 +120,49 @@ function computeInlineDiff(oldText: string, newText: string): DiffPart[] {
   return result;
 }
 
+const diffViewerStyles = {
+  variables: {
+    light: {
+      diffViewerBackground: '#f9fafb',
+      addedBackground: '#dcfce7',
+      addedColor: '#166534',
+      removedBackground: '#fee2e2',
+      removedColor: '#991b1b',
+      wordAddedBackground: '#bbf7d0',
+      wordRemovedBackground: '#fecaca',
+      addedGutterBackground: '#dcfce7',
+      removedGutterBackground: '#fee2e2',
+      gutterBackground: '#f3f4f6',
+      gutterBackgroundDark: '#e5e7eb',
+      highlightBackground: '#fef3c7',
+      highlightGutterBackground: '#fef3c7',
+      codeFoldGutterBackground: '#e5e7eb',
+      codeFoldBackground: '#f3f4f6',
+      emptyLineBackground: '#f9fafb',
+    },
+  },
+  line: {
+    padding: '4px 8px',
+    fontSize: '14px',
+    lineHeight: '1.6',
+    wordBreak: 'break-word' as const,
+    whiteSpace: 'pre-wrap' as const,
+  },
+  contentText: {
+    fontSize: '14px',
+    lineHeight: '1.6',
+  },
+  gutter: {
+    minWidth: '30px',
+    padding: '0 8px',
+  },
+  diffContainer: {
+    borderRadius: '6px',
+    border: '1px solid #e5e7eb',
+    overflow: 'hidden',
+  },
+};
+
 function DiffPreview({ 
   label, 
   before, 
@@ -146,15 +190,17 @@ function DiffPreview({
   return (
     <div className="space-y-2">
       <span className="text-xs font-medium text-gray-700">{label}:</span>
-      <div className="space-y-2">
-        <div className="text-sm p-3 rounded border bg-red-50 border-red-200 text-gray-700 leading-relaxed">
-          <span className="text-xs font-medium text-red-600 block mb-1">Antes:</span>
-          <span className="text-red-800">{before || <span className="text-gray-400 italic">Sem conteúdo</span>}</span>
-        </div>
-        <div className="text-sm p-3 rounded border bg-green-50 border-green-200 text-gray-700 leading-relaxed">
-          <span className="text-xs font-medium text-green-600 block mb-1">Depois:</span>
-          <span className="text-green-800">{after || <span className="text-gray-400 italic">Sem conteúdo</span>}</span>
-        </div>
+      <div className="rounded overflow-hidden border border-gray-200">
+        <ReactDiffViewer
+          oldValue={before || ""}
+          newValue={after || ""}
+          splitView={false}
+          compareMethod={DiffMethod.WORDS}
+          hideLineNumbers={true}
+          showDiffOnly={false}
+          useDarkTheme={false}
+          styles={diffViewerStyles}
+        />
       </div>
     </div>
   );
