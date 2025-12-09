@@ -1,5 +1,5 @@
 import { Route, Switch, Link, Redirect } from "wouter";
-import { Home, Sparkles, Settings, LogOut, MessageCircle, BookOpen } from "lucide-react";
+import { Home, Sparkles, Settings, LogOut, MessageCircle, BookOpen, Star } from "lucide-react";
 import { useAuth } from "./shared/hooks";
 import { NavLink, EnvironmentBadge, N1agoLogo } from "./shared/components";
 import { TimezoneProvider } from "./contexts/TimezoneContext";
@@ -11,6 +11,7 @@ import { CadastroPage, UserStandardDetailPage, OrganizationStandardDetailPage } 
 import { ExportPage } from "./features/export";
 import { KnowledgeBasePage } from "./features/knowledge-base";
 import { RoutingRulesPage } from "./features/routing";
+import { FavoritosPage } from "./features/favorites";
 import { LandingPage, LoadingPage, UnauthorizedPage, HomePage } from "./shared/pages";
 
 function AuthenticatedApp() {
@@ -50,6 +51,10 @@ function AuthenticatedApp() {
                 <Home className="w-4 h-4" />
                 <span className="hidden sm:inline">Home</span>
               </NavLink>
+              <NavLink href="/favoritos">
+                <Star className="w-4 h-4" />
+                <span className="hidden sm:inline">Favoritos</span>
+              </NavLink>
               <NavLink href="/atendimentos">
                 <MessageCircle className="w-4 h-4" />
                 <span className="hidden sm:inline">Atendimentos</span>
@@ -76,6 +81,7 @@ function AuthenticatedApp() {
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         <Switch>
           <Route path="/" component={HomePage} />
+          <Route path="/favoritos" component={FavoritosPage} />
           <Route path="/ai" component={AIPage} />
           <Route path="/ai/settings/:rest*" component={AIPage} />
           <Route path="/settings/events" component={EventsLayout} />

@@ -544,3 +544,17 @@ export const routingRules = pgTable("routing_rules", {
 
 export type RoutingRule = typeof routingRules.$inferSelect;
 export type InsertRoutingRule = Omit<typeof routingRules.$inferInsert, "id" | "createdAt" | "updatedAt" | "allocatedCount">;
+
+export const authUsersConversationFavorites = pgTable("auth_users_conversation_favorites", {
+  id: serial("id").primaryKey(),
+  authUserId: varchar("auth_user_id").notNull(),
+  conversationId: integer("conversation_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userConversationUnique: uniqueIndex("idx_favorites_user_conversation").on(table.authUserId, table.conversationId),
+  authUserIdx: index("idx_favorites_auth_user").on(table.authUserId),
+  conversationIdx: index("idx_favorites_conversation").on(table.conversationId),
+}));
+
+export type AuthUserConversationFavorite = typeof authUsersConversationFavorites.$inferSelect;
+export type InsertAuthUserConversationFavorite = Omit<typeof authUsersConversationFavorites.$inferInsert, "id" | "createdAt">;

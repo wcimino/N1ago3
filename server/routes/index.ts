@@ -26,6 +26,7 @@ import maintenanceRoutes from "../features/maintenance/routes/maintenance.js";
 import { zendeskArticlesRouter } from "../features/zendesk-articles/index.js";
 import routingRulesRoutes from "../features/routing/routes/routing.js";
 import transferRoutes from "../features/routing/routes/transfer.js";
+import favoritesRoutes from "../features/favorites/routes/favorites.js";
 
 export function registerRoutes(app: Express) {
   app.use(webhooksRoutes);
@@ -49,4 +50,5 @@ export function registerRoutes(app: Express) {
   app.use("/api/zendesk-articles", zendeskArticlesRouter);
   app.use(routingRulesRoutes);
   app.use(transferRoutes);
+  app.use(favoritesRoutes);
 }
