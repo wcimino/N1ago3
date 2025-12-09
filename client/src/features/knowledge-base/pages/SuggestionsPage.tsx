@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useKnowledgeSuggestions, type KnowledgeSuggestion } from "../hooks/useKnowledgeSuggestions";
 import { Check, X, GitMerge, AlertTriangle, Clock, CheckCircle, XCircle, Plus, Pencil, Sparkles, Loader2, ChevronDown, FileText, ExternalLink, ArrowRight } from "lucide-react";
 import { fetchApi, apiRequest } from "../../../lib/queryClient";
-import ReactDiffViewer, { DiffMethod } from "react-diff-viewer-continued";
 
 type StatusFilter = "pending" | "approved" | "rejected" | "merged" | "no_improvement" | "all";
 
@@ -15,52 +14,62 @@ interface KnowledgeArticle {
   observations: string | null;
 }
 
-const diffStyles = {
-  variables: {
-    light: {
-      diffViewerBackground: '#ffffff',
-      diffViewerColor: '#374151',
-      addedBackground: '#dcfce7',
-      addedColor: '#166534',
-      removedBackground: '#fee2e2',
-      removedColor: '#991b1b',
-      wordAddedBackground: '#bbf7d0',
-      wordRemovedBackground: '#fecaca',
-      addedGutterBackground: '#dcfce7',
-      removedGutterBackground: '#fee2e2',
-      gutterBackground: '#f9fafb',
-      gutterBackgroundDark: '#f3f4f6',
-      highlightBackground: '#fef3c7',
-      highlightGutterBackground: '#fef3c7',
-      codeFoldGutterBackground: '#e5e7eb',
-      codeFoldBackground: '#f9fafb',
-      emptyLineBackground: '#f9fafb',
-      gutterColor: '#9ca3af',
-      addedGutterColor: '#166534',
-      removedGutterColor: '#991b1b',
-      codeFoldContentColor: '#6b7280',
-      diffViewerTitleBackground: '#f3f4f6',
-      diffViewerTitleColor: '#374151',
-      diffViewerTitleBorderColor: '#e5e7eb',
-    },
-  },
-  contentText: {
-    fontSize: '0.875rem',
-    lineHeight: '1.5',
-    fontFamily: 'inherit',
-  },
-  line: {
-    padding: '4px 8px',
-  },
-  wordDiff: {
-    padding: '1px 2px',
-    borderRadius: '2px',
-  },
-  gutter: {
-    minWidth: '30px',
-    padding: '0 8px',
-  },
+type DiffPart = {
+  type: 'equal' | 'removed' | 'added';
+  value: string;
 };
+
+function computeInlineDiff(oldText: string, newText: string): DiffPart[] {
+  const oldWords = oldText.split(/(\s+)/);
+  const newWords = newText.split(/(\s+)/);
+  
+  const m = oldWords.length;
+  const n = newWords.length;
+  
+  const dp: number[][] = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+  
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (oldWords[i - 1] === newWords[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+  
+  const result: DiffPart[] = [];
+  let i = m, j = n;
+  const temp: DiffPart[] = [];
+  
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && oldWords[i - 1] === newWords[j - 1]) {
+      temp.push({ type: 'equal', value: oldWords[i - 1] });
+      i--; j--;
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      temp.push({ type: 'added', value: newWords[j - 1] });
+      j--;
+    } else {
+      temp.push({ type: 'removed', value: oldWords[i - 1] });
+      i--;
+    }
+  }
+  
+  temp.reverse();
+  
+  let current: DiffPart | null = null;
+  for (const part of temp) {
+    if (current && current.type === part.type) {
+      current.value += part.value;
+    } else {
+      if (current) result.push(current);
+      current = { ...part };
+    }
+  }
+  if (current) result.push(current);
+  
+  return result;
+}
 
 function DiffPreview({ 
   label, 
@@ -89,20 +98,35 @@ function DiffPreview({
     );
   }
   
+  const diffParts = computeInlineDiff(oldValue, newValue);
+  
   return (
     <div className="space-y-2">
       <span className="text-xs font-medium text-gray-700">{label}:</span>
-      <div className="border border-gray-200 rounded overflow-hidden">
-        <ReactDiffViewer
-          oldValue={oldValue}
-          newValue={newValue}
-          splitView={false}
-          compareMethod={DiffMethod.WORDS}
-          hideLineNumbers={true}
-          showDiffOnly={false}
-          useDarkTheme={false}
-          styles={diffStyles}
-        />
+      <div className="text-sm p-3 rounded border bg-gray-50 border-gray-200 text-gray-700 leading-relaxed">
+        {diffParts.map((part, idx) => {
+          if (part.type === 'removed') {
+            return (
+              <span 
+                key={idx} 
+                className="bg-red-100 text-red-800 line-through px-0.5 rounded"
+              >
+                {part.value}
+              </span>
+            );
+          }
+          if (part.type === 'added') {
+            return (
+              <span 
+                key={idx} 
+                className="bg-green-100 text-green-800 px-0.5 rounded"
+              >
+                {part.value}
+              </span>
+            );
+          }
+          return <span key={idx}>{part.value}</span>;
+        })}
       </div>
     </div>
   );
