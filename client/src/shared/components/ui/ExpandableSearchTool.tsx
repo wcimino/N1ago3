@@ -1,6 +1,5 @@
 import { ReactNode } from "react";
 import { ChevronDown, ChevronUp, Search, FileText } from "lucide-react";
-import { Button } from "./Button";
 
 interface ExpandableSearchToolProps {
   title: string;
