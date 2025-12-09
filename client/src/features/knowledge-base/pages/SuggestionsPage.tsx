@@ -55,7 +55,7 @@ function computeInlineDiff(oldText: string, newText: string): DiffPart[] {
     }
   }
   
-  const result: DiffPart[] = [];
+  const rawParts: DiffPart[] = [];
   let i = m, j = n;
   const temp: DiffPart[] = [];
   
@@ -79,11 +79,42 @@ function computeInlineDiff(oldText: string, newText: string): DiffPart[] {
     if (current && current.type === part.type) {
       current.value += part.value;
     } else {
-      if (current) result.push(current);
+      if (current) rawParts.push(current);
       current = { ...part };
     }
   }
-  if (current) result.push(current);
+  if (current) rawParts.push(current);
+  
+  const result: DiffPart[] = [];
+  let idx = 0;
+  
+  while (idx < rawParts.length) {
+    const part = rawParts[idx];
+    
+    if (part.type === 'equal') {
+      result.push(part);
+      idx++;
+    } else {
+      const removedParts: string[] = [];
+      const addedParts: string[] = [];
+      
+      while (idx < rawParts.length && rawParts[idx].type !== 'equal') {
+        if (rawParts[idx].type === 'removed') {
+          removedParts.push(rawParts[idx].value);
+        } else {
+          addedParts.push(rawParts[idx].value);
+        }
+        idx++;
+      }
+      
+      if (removedParts.length > 0) {
+        result.push({ type: 'removed', value: removedParts.join('') });
+      }
+      if (addedParts.length > 0) {
+        result.push({ type: 'added', value: addedParts.join('') });
+      }
+    }
+  }
   
   return result;
 }
