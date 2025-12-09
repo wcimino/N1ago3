@@ -10,7 +10,7 @@ export function getUserDisplayName(group: UserGroup): string {
       return profile.email;
     }
   }
-  return group.user_id.slice(0, 16) + "...";
+  return group.user_id;
 }
 
 export function getUserDisplayNameFromProfile(profile: UserProfile | null | undefined, fallbackId?: string): string {
@@ -23,7 +23,7 @@ export function getUserDisplayNameFromProfile(profile: UserProfile | null | unde
     }
   }
   if (fallbackId) {
-    return fallbackId.slice(0, 16) + "...";
+    return fallbackId;
   }
   return "Usuário desconhecido";
 }
