@@ -13,6 +13,7 @@ import {
   Filter,
   CheckCircle,
   AlertCircle,
+  BarChart3,
 } from "lucide-react";
 
 interface ZendeskArticle {
@@ -55,12 +56,17 @@ interface Section {
   count: number;
 }
 
+interface ArticleViewCount {
+  zendeskArticleId: number;
+  viewCount: number;
+}
+
 function stripHtmlTags(html: string | null): string {
   if (!html) return "";
   return html.replace(/<[^>]*>/g, "").trim();
 }
 
-function ArticleCard({ article }: { article: ZendeskArticle }) {
+function ArticleCard({ article, viewCount }: { article: ZendeskArticle; viewCount: number }) {
   const [isExpanded, setIsExpanded] = useState(false);
   
   const plainText = stripHtmlTags(article.body);
@@ -114,6 +120,12 @@ function ArticleCard({ article }: { article: ZendeskArticle }) {
               )}
               {article.locale && (
                 <span className="uppercase">{article.locale}</span>
+              )}
+              {viewCount > 0 && (
+                <span className="flex items-center gap-1 text-purple-600">
+                  <BarChart3 className="w-3 h-3" />
+                  {viewCount} {viewCount === 1 ? "consulta" : "consultas"}
+                </span>
               )}
             </div>
           </div>
@@ -177,6 +189,19 @@ export function ZendeskArticlesPage() {
       return res.json();
     },
   });
+  
+  const { data: statistics = [] } = useQuery<ArticleViewCount[]>({
+    queryKey: ["/api/zendesk-articles/statistics"],
+    queryFn: async () => {
+      const res = await fetch("/api/zendesk-articles/statistics?limit=1000");
+      return res.json();
+    },
+  });
+  
+  const viewCountMap = statistics.reduce<Record<number, number>>((acc, stat) => {
+    acc[stat.zendeskArticleId] = stat.viewCount;
+    return acc;
+  }, {});
   
   const syncMutation = useMutation<SyncResult, Error>({
     mutationFn: async () => {
@@ -287,7 +312,11 @@ export function ZendeskArticlesPage() {
           </div>
         ) : (
           articles.map((article) => (
-            <ArticleCard key={article.id} article={article} />
+            <ArticleCard 
+              key={article.id} 
+              article={article} 
+              viewCount={viewCountMap[article.id] ?? 0} 
+            />
           ))
         )}
       </div>
