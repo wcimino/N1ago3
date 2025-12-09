@@ -525,6 +525,23 @@ export type LearningAttemptResult = "suggestion_created" | "insufficient_message
 export type ZendeskArticle = typeof zendeskArticles.$inferSelect;
 export type InsertZendeskArticle = Omit<typeof zendeskArticles.$inferInsert, "id" | "createdAt" | "updatedAt" | "syncedAt">;
 
+export const zendeskArticleStatistics = pgTable("zendesk_article_statistics", {
+  id: serial("id").primaryKey(),
+  zendeskArticleId: integer("zendesk_article_id").notNull(),
+  keywords: text("keywords"),
+  sectionId: text("section_id"),
+  conversationId: integer("conversation_id"),
+  externalConversationId: text("external_conversation_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  zendeskArticleIdIdx: index("idx_zendesk_article_statistics_article_id").on(table.zendeskArticleId),
+  createdAtIdx: index("idx_zendesk_article_statistics_created_at").on(table.createdAt),
+  conversationIdIdx: index("idx_zendesk_article_statistics_conversation_id").on(table.conversationId),
+}));
+
+export type ZendeskArticleStatistic = typeof zendeskArticleStatistics.$inferSelect;
+export type InsertZendeskArticleStatistic = Omit<typeof zendeskArticleStatistics.$inferInsert, "id" | "createdAt">;
+
 export const routingRules = pgTable("routing_rules", {
   id: serial("id").primaryKey(),
   ruleType: text("rule_type").notNull(),

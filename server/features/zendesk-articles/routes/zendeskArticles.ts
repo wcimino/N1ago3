@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { ZendeskGuideService } from "../services/zendeskGuideService.js";
 import { ZendeskArticlesStorage } from "../storage/zendeskArticlesStorage.js";
+import { ZendeskArticleStatisticsStorage } from "../storage/zendeskArticleStatisticsStorage.js";
 
 const router = Router();
 
@@ -30,6 +31,67 @@ router.get("/sections", async (_req, res) => {
   } catch (error) {
     console.error("[ZendeskArticles] Error fetching sections:", error);
     res.status(500).json({ error: "Failed to fetch sections" });
+  }
+});
+
+router.get("/statistics", async (req, res) => {
+  try {
+    const { startDate, endDate, limit, offset } = req.query;
+    
+    const filters = {
+      startDate: startDate ? new Date(startDate as string) : undefined,
+      endDate: endDate ? new Date(endDate as string) : undefined,
+      limit: limit ? parseInt(limit as string, 10) : 50,
+      offset: offset ? parseInt(offset as string, 10) : 0,
+    };
+    
+    const [viewCounts, totalViews] = await Promise.all([
+      ZendeskArticleStatisticsStorage.getViewCountByArticle(filters),
+      ZendeskArticleStatisticsStorage.getTotalViewCount(filters),
+    ]);
+    
+    res.json({
+      totalViews,
+      articles: viewCounts,
+    });
+  } catch (error) {
+    console.error("[ZendeskArticles] Error fetching statistics:", error);
+    res.status(500).json({ error: "Failed to fetch statistics" });
+  }
+});
+
+router.get("/statistics/:articleId", async (req, res) => {
+  try {
+    const articleId = parseInt(req.params.articleId, 10);
+    const { startDate, endDate, limit } = req.query;
+    
+    const filters = {
+      startDate: startDate ? new Date(startDate as string) : undefined,
+      endDate: endDate ? new Date(endDate as string) : undefined,
+      limit: limit ? parseInt(limit as string, 10) : 20,
+    };
+    
+    const [article, statistics] = await Promise.all([
+      ZendeskArticlesStorage.getArticleById(articleId),
+      ZendeskArticleStatisticsStorage.getStatisticsForArticle(articleId, filters),
+    ]);
+    
+    if (!article) {
+      res.status(404).json({ error: "Article not found" });
+      return;
+    }
+    
+    res.json({
+      article: {
+        id: article.id,
+        title: article.title,
+        sectionName: article.sectionName,
+      },
+      ...statistics,
+    });
+  } catch (error) {
+    console.error("[ZendeskArticles] Error fetching article statistics:", error);
+    res.status(500).json({ error: "Failed to fetch article statistics" });
   }
 });
 

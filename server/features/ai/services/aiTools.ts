@@ -1,6 +1,7 @@
 import { knowledgeBaseStorage } from "../storage/knowledgeBaseStorage.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 import { ZendeskArticlesStorage } from "../../zendesk-articles/storage/zendeskArticlesStorage.js";
+import { ZendeskArticleStatisticsStorage } from "../../zendesk-articles/storage/zendeskArticleStatisticsStorage.js";
 import type { ToolDefinition } from "./openaiApiService.js";
 
 export function createKnowledgeBaseTool(): ToolDefinition {
@@ -140,6 +141,15 @@ export function createZendeskKnowledgeBaseTool(): ToolDefinition {
           message: "Nenhum artigo encontrado na base de conhecimento do Zendesk",
           articles: [] 
         });
+      }
+      
+      try {
+        await ZendeskArticleStatisticsStorage.recordMultipleArticleViews(
+          articles.map(a => ({ id: a.id })),
+          { keywords: args.keywords, sectionId: args.section }
+        );
+      } catch (error) {
+        console.error("[Zendesk KB Tool] Failed to record article statistics:", error);
       }
       
       const articleList = articles.map(a => ({
