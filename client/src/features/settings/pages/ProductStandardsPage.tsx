@@ -103,15 +103,21 @@ export function ProductStandardsPage() {
     );
   };
 
-  const renderProductSelect = (p: ProductStandard, isMobile: boolean = false) => {
+  const renderProductSelect = (p: ProductStandard, needsMapping: boolean = false) => {
     const hasOptions = catalogProductNames && catalogProductNames.length > 0;
+    const currentValue = editedValues[p.product] || "";
+    const showRedBorder = needsMapping && !currentValue;
     
     return (
       <div className="relative">
         <select
-          value={editedValues[p.product] || ""}
+          value={currentValue}
           onChange={(e) => handleInputChange(p.product, e.target.value)}
-          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm appearance-none bg-white pr-10 ${!hasOptions ? 'text-gray-400' : 'text-gray-900'}`}
+          className={`w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm appearance-none bg-white pr-10 ${
+            showRedBorder 
+              ? 'border-2 border-red-400 text-red-600' 
+              : 'border border-gray-300 text-gray-900'
+          } ${!hasOptions ? 'text-gray-400' : ''}`}
           disabled={!hasOptions}
         >
           <option value="">
@@ -123,25 +129,28 @@ export function ProductStandardsPage() {
             </option>
           ))}
         </select>
-        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+        <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${showRedBorder ? 'text-red-400' : 'text-gray-400'}`} />
       </div>
     );
   };
 
-  const renderMobileCard = (p: ProductStandard) => (
-    <div key={p.product} className="p-4 bg-white border-b last:border-b-0">
-      <div className="flex items-center gap-2 mb-3">
-        <Package className="w-4 h-4 text-gray-400" />
-        <span className="text-sm text-gray-900 font-medium">{p.product}</span>
-      </div>
-      <div className="space-y-3">
-        {renderProductSelect(p, true)}
-        <div className="flex justify-end">
-          {renderSaveButton(p)}
+  const renderMobileCard = (p: ProductStandard) => {
+    const needsMapping = !p.productStandard;
+    return (
+      <div key={p.product} className={`p-4 border-b last:border-b-0 ${needsMapping ? 'bg-red-50' : 'bg-white'}`}>
+        <div className="flex items-center gap-2 mb-3">
+          <Package className={`w-4 h-4 ${needsMapping ? 'text-red-400' : 'text-gray-400'}`} />
+          <span className={`text-sm font-medium ${needsMapping ? 'text-red-700' : 'text-gray-900'}`}>{p.product}</span>
+        </div>
+        <div className="space-y-3">
+          {renderProductSelect(p, needsMapping)}
+          <div className="flex justify-end">
+            {renderSaveButton(p)}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -199,22 +208,25 @@ export function ProductStandardsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {products.map((p) => (
-                    <tr key={p.product} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <Package className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm text-gray-900 font-medium">{p.product}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        {renderProductSelect(p)}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {renderSaveButton(p)}
-                      </td>
-                    </tr>
-                  ))}
+                  {products.map((p) => {
+                    const needsMapping = !p.productStandard;
+                    return (
+                      <tr key={p.product} className={`hover:bg-gray-50 ${needsMapping ? 'bg-red-50' : ''}`}>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <Package className={`w-4 h-4 ${needsMapping ? 'text-red-400' : 'text-gray-400'}`} />
+                            <span className={`text-sm font-medium ${needsMapping ? 'text-red-700' : 'text-gray-900'}`}>{p.product}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {renderProductSelect(p, needsMapping)}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {renderSaveButton(p)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
