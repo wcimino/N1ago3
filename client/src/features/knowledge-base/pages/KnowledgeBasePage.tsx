@@ -54,9 +54,6 @@ export function KnowledgeBasePage() {
             <BookOpen className="w-5 h-5" />
             Base de Conhecimento
           </h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Repositório de informações para apoio ao atendimento
-          </p>
         </div>
         <SegmentedTabs
           tabs={baseTabs}
