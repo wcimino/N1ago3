@@ -1,7 +1,20 @@
 import { db } from "../../../db.js";
 import { knowledgeBase, knowledgeIntents, knowledgeSubjects, ifoodProducts } from "../../../../shared/schema.js";
-import { eq, desc, asc, ilike, or, and, isNull, type SQL } from "drizzle-orm";
+import { eq, desc, asc, ilike, or, and, isNull, sql, type SQL } from "drizzle-orm";
 import type { KnowledgeBaseArticle, InsertKnowledgeBaseArticle, KnowledgeIntent } from "../../../../shared/schema.js";
+
+export interface SearchArticleResult extends KnowledgeBaseArticle {
+  relevanceScore: number;
+}
+
+function normalizeForFts(search: string): string {
+  return search
+    .toLowerCase()
+    .replace(/[^\w\sáàâãéèêíìîóòôõúùûç]/g, ' ')
+    .split(/\s+/)
+    .filter(term => term.length >= 2)
+    .join(' ');
+}
 
 export interface IntentWithArticle {
   intent: {
@@ -89,6 +102,101 @@ export const knowledgeBaseStorage = {
       return await baseQuery.limit(filters.limit);
     }
     return await baseQuery;
+  },
+
+  async searchArticlesWithRelevance(
+    keywords: string,
+    options: {
+      productStandard?: string;
+      subjectId?: number;
+      intentId?: number;
+      limit?: number;
+    } = {}
+  ): Promise<SearchArticleResult[]> {
+    const { productStandard, subjectId, intentId, limit = 5 } = options;
+    const normalizedSearch = normalizeForFts(keywords);
+    
+    if (!normalizedSearch.trim()) {
+      return [];
+    }
+    
+    const searchTerms = normalizedSearch.split(/\s+/).filter(t => t.length >= 2);
+    
+    const conditions: SQL[] = [];
+    
+    if (productStandard) {
+      conditions.push(eq(knowledgeBase.productStandard, productStandard));
+    }
+    if (subjectId) {
+      conditions.push(eq(knowledgeBase.subjectId, subjectId));
+    }
+    if (intentId) {
+      conditions.push(eq(knowledgeBase.intentId, intentId));
+    }
+    
+    const likeConditions = searchTerms.slice(0, 3).flatMap(term => [
+      ilike(knowledgeBase.description, `%${term}%`),
+      ilike(knowledgeBase.resolution, `%${term}%`),
+      ilike(knowledgeBase.intent, `%${term}%`),
+      ilike(knowledgeBase.name, `%${term}%`)
+    ]).filter((c): c is SQL => c !== undefined);
+    
+    const ftsCondition = sql`(
+      to_tsvector('portuguese', 
+        COALESCE(${knowledgeBase.description}, '') || ' ' || 
+        COALESCE(${knowledgeBase.resolution}, '') || ' ' ||
+        COALESCE(${knowledgeBase.intent}, '') || ' ' ||
+        COALESCE(${knowledgeBase.name}, '')
+      )
+      @@ plainto_tsquery('portuguese', ${normalizedSearch})
+      OR ${or(...likeConditions)}
+    )`;
+    conditions.push(ftsCondition);
+    
+    const whereClause = and(...conditions);
+    
+    const firstTerm = searchTerms[0] || '';
+    
+    const results = await db
+      .select({
+        id: knowledgeBase.id,
+        name: knowledgeBase.name,
+        productStandard: knowledgeBase.productStandard,
+        subproductStandard: knowledgeBase.subproductStandard,
+        category1: knowledgeBase.category1,
+        category2: knowledgeBase.category2,
+        subjectId: knowledgeBase.subjectId,
+        intentId: knowledgeBase.intentId,
+        intent: knowledgeBase.intent,
+        description: knowledgeBase.description,
+        resolution: knowledgeBase.resolution,
+        observations: knowledgeBase.observations,
+        createdAt: knowledgeBase.createdAt,
+        updatedAt: knowledgeBase.updatedAt,
+        relevanceScore: sql<number>`(
+          COALESCE(
+            ts_rank_cd(
+              setweight(to_tsvector('portuguese', COALESCE(${knowledgeBase.description}, '')), 'A') ||
+              setweight(to_tsvector('portuguese', COALESCE(${knowledgeBase.resolution}, '')), 'A') ||
+              setweight(to_tsvector('portuguese', COALESCE(${knowledgeBase.intent}, '')), 'B') ||
+              setweight(to_tsvector('portuguese', COALESCE(${knowledgeBase.name}, '')), 'B'),
+              plainto_tsquery('portuguese', ${normalizedSearch})
+            ), 0
+          ) * 10 +
+          CASE WHEN LOWER(${knowledgeBase.description}) ILIKE ${'%' + firstTerm + '%'} THEN 5 ELSE 0 END +
+          CASE WHEN LOWER(${knowledgeBase.resolution}) ILIKE ${'%' + firstTerm + '%'} THEN 5 ELSE 0 END +
+          CASE WHEN LOWER(${knowledgeBase.intent}) ILIKE ${'%' + firstTerm + '%'} THEN 3 ELSE 0 END
+        )`.as('relevance_score'),
+      })
+      .from(knowledgeBase)
+      .where(whereClause)
+      .orderBy(sql`relevance_score DESC`, desc(knowledgeBase.updatedAt))
+      .limit(limit);
+    
+    return results.map(r => ({
+      ...r,
+      relevanceScore: Number(r.relevanceScore) || 0,
+    }));
   },
 
   async getArticleById(id: number): Promise<KnowledgeBaseArticle | null> {
