@@ -154,14 +154,18 @@ export async function generateResponse(
         { limit: 3, minScore: 20 }
       );
       
-      articlesFound = results.length;
-      articlesUsed = results.map(r => ({
+      const newArticles = results.map(r => ({
         id: r.article.id,
         name: r.article.name || 'Sem nome',
         product: r.article.productStandard || '',
       }));
       
-      console.log(`[Response Adapter] KB search: product=${args.product}, found ${articlesFound} articles`);
+      const existingIds = new Set(articlesUsed.map(a => a.id));
+      const uniqueNewArticles = newArticles.filter(a => !existingIds.has(a.id));
+      articlesUsed = [...articlesUsed, ...uniqueNewArticles];
+      articlesFound += uniqueNewArticles.length;
+      
+      console.log(`[Response Adapter] KB search: product=${args.product}, found ${results.length} articles, added ${uniqueNewArticles.length}, total=${articlesUsed.length}`);
       
       if (results.length === 0) {
         return "Nenhum artigo encontrado na base de conhecimento. Responda com base no contexto da conversa.";
@@ -185,6 +189,30 @@ ${r.article.observations ? `- **Observações:** ${r.article.observations}` : ''
       usedKnowledgeBase = true;
       const result = await originalHandler(args);
       console.log(`[Response Adapter] Zendesk KB search: keywords=${args.keywords}`);
+      
+      try {
+        const parsed = JSON.parse(result);
+        if (parsed.articles && Array.isArray(parsed.articles)) {
+          const existingUrls = new Set(articlesUsed.filter(a => a.url).map(a => a.url));
+          const nextNegativeId = Math.min(0, ...articlesUsed.map(a => a.id)) - 1;
+          
+          const newZendeskArticles = parsed.articles
+            .filter((a: { url?: string }) => !a.url || !existingUrls.has(a.url))
+            .map((a: { title: string; section?: string; url?: string }, idx: number) => ({
+              id: nextNegativeId - idx,
+              name: a.title || 'Artigo Zendesk',
+              product: a.section || 'Zendesk Help Center',
+              url: a.url,
+            }));
+          
+          articlesUsed = [...articlesUsed, ...newZendeskArticles];
+          articlesFound += newZendeskArticles.length;
+          console.log(`[Response Adapter] Zendesk KB: found ${parsed.articles.length} articles, added ${newZendeskArticles.length}, total=${articlesUsed.length}`);
+        }
+      } catch (e) {
+        console.log(`[Response Adapter] Could not parse Zendesk KB result`);
+      }
+      
       return result;
     };
     tools.push(zendeskTool);

@@ -120,8 +120,12 @@ function SuggestionBubble({ suggestion, formatDateTime }: SuggestionBubbleProps)
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showArticles]);
 
-  const handleArticleClick = (articleId: number) => {
-    window.open(`/knowledge-base?article=${articleId}`, "_blank");
+  const handleArticleClick = (article: ArticleUsed) => {
+    if (article.url) {
+      window.open(article.url, "_blank");
+    } else {
+      window.open(`/knowledge-base?article=${article.id}`, "_blank");
+    }
     setShowArticles(false);
   };
 
@@ -161,15 +165,16 @@ function SuggestionBubble({ suggestion, formatDateTime }: SuggestionBubbleProps)
                   <div className="space-y-2">
                     {suggestion.articles_used!.map((article) => (
                       <button
-                        key={article.id}
-                        onClick={() => handleArticleClick(article.id)}
+                        key={article.url || article.id}
+                        onClick={() => handleArticleClick(article)}
                         className="w-full text-left p-2.5 bg-purple-50 rounded-lg border border-purple-100 hover:bg-purple-100 transition-colors cursor-pointer"
                       >
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-medium text-gray-900 flex items-center gap-1.5">
                           {article.name}
+                          {article.url && <ExternalLink className="w-3 h-3 text-purple-500" />}
                         </p>
                         <p className="text-xs text-purple-600 mt-0.5">
-                          {article.product} • ID: {article.id}
+                          {article.product}{article.id > 0 && ` • ID: ${article.id}`}
                         </p>
                       </button>
                     ))}
