@@ -279,6 +279,20 @@ async function processIntent(
 
   const suggestionResult = result.toolResult;
 
+  // Validação defensiva: se a action não for válida, trata como skip
+  const validActions = ['create', 'update', 'skip'];
+  if (!suggestionResult.action || !validActions.includes(suggestionResult.action)) {
+    console.log(`[Enrichment Agent] Invalid or missing action for intent #${intent.id}, treating as skip`);
+    return {
+      success: true,
+      action: 'skip',
+      openaiLogId: result.logId,
+      outcomeReason: suggestionResult.skipReason || `Resposta inválida da OpenAI para intenção #${intent.id}`,
+      confidenceScore: suggestionResult.confidenceScore,
+      sourceArticles: []
+    };
+  }
+
   if (suggestionResult.action === "skip") {
     console.log(`[Enrichment Agent] Skipping intent #${intent.id}: ${suggestionResult.skipReason}`);
     const sourceArticlesData = suggestionResult.sourceArticles?.map((s: ZendeskSourceArticle) => ({
@@ -290,7 +304,7 @@ async function processIntent(
       success: true, 
       action: 'skip',
       openaiLogId: result.logId,
-      outcomeReason: suggestionResult.skipReason,
+      outcomeReason: suggestionResult.skipReason || `Sem informação suficiente para criar sugestão para intenção #${intent.id}`,
       confidenceScore: suggestionResult.confidenceScore,
       sourceArticles: sourceArticlesData
     };
@@ -416,6 +430,7 @@ export async function generateEnrichmentSuggestions(params: EnrichmentParams): P
 
       if (!result.success) {
         errors.push(result.error || `Error processing intent #${intent.id}`);
+        skipped++;
       } else if (result.action === 'skip') {
         skipped++;
       } else if (result.action === 'create') {
@@ -432,6 +447,7 @@ export async function generateEnrichmentSuggestions(params: EnrichmentParams): P
     } catch (error: any) {
       console.error(`[Enrichment Agent] Error processing intent #${intent.id}:`, error.message);
       errors.push(`Intent #${intent.id}: ${error.message}`);
+      skipped++;
       
       const errorLogData: InsertKnowledgeEnrichmentLog = {
         intentId: intent.id,
@@ -450,6 +466,7 @@ export async function generateEnrichmentSuggestions(params: EnrichmentParams): P
       
       try {
         await enrichmentLogStorage.create(errorLogData);
+        console.log(`[Enrichment Agent] Error log saved for intent #${intent.id}: action=skip`);
       } catch (logError: any) {
         console.error(`[Enrichment Agent] Failed to save error log for intent #${intent.id}:`, logError.message);
       }
