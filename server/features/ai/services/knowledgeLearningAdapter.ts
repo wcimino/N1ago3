@@ -18,8 +18,6 @@ export interface LearningPayload {
 export interface ExtractedKnowledge {
   productStandard: string | null;
   subproductStandard: string | null;
-  category1: string | null;
-  category2: string | null;
   description: string | null;
   resolution: string | null;
   observations: string | null;
@@ -90,8 +88,6 @@ Retorne APENAS um JSON válido:
 {
   "productStandard": "produto principal",
   "subproductStandard": "subproduto ou null",
-  "category1": "categoria principal",
-  "category2": "subcategoria ou null",
   "description": "descrição do problema",
   "resolution": "PASSO A PASSO com instruções específicas",
   "observations": "exceções ou detalhes adicionais",
@@ -116,7 +112,7 @@ ARTIGOS RELACIONADOS NA BASE DE CONHECIMENTO:
 function buildProductCatalogTool(): ToolDefinition {
   return {
     name: "search_product_catalog",
-    description: "Busca produtos no catálogo para classificar corretamente o artigo. Retorna a hierarquia completa: Produto > Subproduto > Categoria1 > Categoria2",
+    description: "Busca produtos no catálogo para classificar corretamente o artigo. Retorna a hierarquia: Produto > Subproduto",
     parameters: {
       type: "object",
       properties: {
@@ -134,9 +130,7 @@ function buildProductCatalogTool(): ToolDefinition {
       const filtered = products.filter(p => 
         p.fullName.toLowerCase().includes(query) ||
         p.produto.toLowerCase().includes(query) ||
-        (p.subproduto && p.subproduto.toLowerCase().includes(query)) ||
-        (p.categoria1 && p.categoria1.toLowerCase().includes(query)) ||
-        (p.categoria2 && p.categoria2.toLowerCase().includes(query))
+        (p.subproduto && p.subproduto.toLowerCase().includes(query))
       );
 
       if (filtered.length === 0) {
@@ -147,8 +141,6 @@ function buildProductCatalogTool(): ToolDefinition {
       const result = filtered.slice(0, 10).map(p => ({
         produto: p.produto,
         subproduto: p.subproduto,
-        categoria1: p.categoria1,
-        categoria2: p.categoria2,
         fullName: p.fullName
       }));
 
@@ -249,7 +241,7 @@ async function findSimilarArticle(extraction: ExtractedKnowledge): Promise<{ art
 
   const results = await knowledgeBaseService.findRelatedArticles(
     extraction.productStandard || undefined,
-    extraction.category1 || undefined,
+    undefined,
     descriptionKeywords,
     { limit: 1, minScore: 40 }
   );
@@ -301,8 +293,6 @@ export async function extractAndSaveKnowledge(
     externalConversationId,
     productStandard: extraction.productStandard,
     subproductStandard: extraction.subproductStandard,
-    category1: extraction.category1,
-    category2: extraction.category2,
     description: extraction.description,
     resolution: extraction.resolution,
     observations: extraction.observations,

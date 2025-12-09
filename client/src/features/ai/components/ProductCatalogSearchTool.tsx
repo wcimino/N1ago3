@@ -7,8 +7,6 @@ interface ProductResult {
   id: number;
   produto: string;
   subproduto: string | null;
-  categoria1: string | null;
-  categoria2: string | null;
   fullName: string;
 }
 
@@ -71,16 +69,6 @@ export function ProductCatalogSearchTool({ isExpanded, onToggle }: ProductCatalo
                 {product.subproduto && (
                   <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
                     {product.subproduto}
-                  </span>
-                )}
-                {product.categoria1 && (
-                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
-                    {product.categoria1}
-                  </span>
-                )}
-                {product.categoria2 && (
-                  <span className="px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700">
-                    {product.categoria2}
                   </span>
                 )}
               </div>

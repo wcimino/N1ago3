@@ -1,13 +1,13 @@
 import { db } from "../../../db.js";
 import { ifoodProducts, type IfoodProduct, type InsertIfoodProduct } from "../../../../shared/schema.js";
-import { eq, asc, and, type SQL } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 
 export const productCatalogStorage = {
   async getAll(): Promise<IfoodProduct[]> {
     return db
       .select()
       .from(ifoodProducts)
-      .orderBy(asc(ifoodProducts.produto), asc(ifoodProducts.subproduto), asc(ifoodProducts.categoria1), asc(ifoodProducts.categoria2));
+      .orderBy(asc(ifoodProducts.produto), asc(ifoodProducts.subproduto));
   },
 
   async getById(id: number): Promise<IfoodProduct | null> {
@@ -38,35 +38,6 @@ export const productCatalogStorage = {
     
     const result = await query.orderBy(asc(ifoodProducts.subproduto));
     return result.map(r => r.subproduto).filter((s): s is string => s !== null);
-  },
-
-  async getDistinctCategorias1(produto?: string, subproduto?: string): Promise<string[]> {
-    const conditions: SQL[] = [];
-    if (produto) conditions.push(eq(ifoodProducts.produto, produto));
-    if (subproduto) conditions.push(eq(ifoodProducts.subproduto, subproduto));
-    
-    const result = await db
-      .selectDistinct({ categoria1: ifoodProducts.categoria1 })
-      .from(ifoodProducts)
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(asc(ifoodProducts.categoria1));
-    
-    return result.map(r => r.categoria1).filter((c): c is string => c !== null);
-  },
-
-  async getDistinctCategorias2(produto?: string, subproduto?: string, categoria1?: string): Promise<string[]> {
-    const conditions: SQL[] = [];
-    if (produto) conditions.push(eq(ifoodProducts.produto, produto));
-    if (subproduto) conditions.push(eq(ifoodProducts.subproduto, subproduto));
-    if (categoria1) conditions.push(eq(ifoodProducts.categoria1, categoria1));
-    
-    const result = await db
-      .selectDistinct({ categoria2: ifoodProducts.categoria2 })
-      .from(ifoodProducts)
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(asc(ifoodProducts.categoria2));
-    
-    return result.map(r => r.categoria2).filter((c): c is string => c !== null);
   },
 
   async create(data: InsertIfoodProduct): Promise<IfoodProduct> {

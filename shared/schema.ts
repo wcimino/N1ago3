@@ -354,8 +354,6 @@ export const ifoodProducts = pgTable("products_catalog", {
   id: serial("id").primaryKey(),
   produto: text("produto").notNull(),
   subproduto: text("subproduto"),
-  categoria1: text("categoria1"),
-  categoria2: text("categoria2"),
   fullName: text("full_name").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

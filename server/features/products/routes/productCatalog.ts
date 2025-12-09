@@ -45,35 +45,6 @@ router.get("/api/product-catalog/distinct/subprodutos", isAuthenticated, require
   }
 });
 
-router.get("/api/product-catalog/distinct/categoria1", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  try {
-    const { produto, subproduto } = req.query;
-    const categorias = await productCatalogStorage.getDistinctCategorias1(
-      produto as string | undefined,
-      subproduto as string | undefined
-    );
-    res.json(categorias);
-  } catch (error: any) {
-    console.error("[Product Catalog] Error fetching distinct categoria1:", error.message);
-    res.status(500).json({ error: "Failed to fetch distinct categoria1" });
-  }
-});
-
-router.get("/api/product-catalog/distinct/categoria2", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  try {
-    const { produto, subproduto, categoria1 } = req.query;
-    const categorias = await productCatalogStorage.getDistinctCategorias2(
-      produto as string | undefined,
-      subproduto as string | undefined,
-      categoria1 as string | undefined
-    );
-    res.json(categorias);
-  } catch (error: any) {
-    console.error("[Product Catalog] Error fetching distinct categoria2:", error.message);
-    res.status(500).json({ error: "Failed to fetch distinct categoria2" });
-  }
-});
-
 router.get("/api/product-catalog/:id", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
@@ -95,7 +66,7 @@ router.get("/api/product-catalog/:id", isAuthenticated, requireAuthorizedUser, a
 
 router.post("/api/product-catalog", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
-    const { produto, subproduto, categoria1, categoria2 } = req.body;
+    const { produto, subproduto } = req.body;
 
     if (!produto || typeof produto !== "string" || produto.trim() === "") {
       return res.status(400).json({ error: "Produto is required" });
@@ -103,15 +74,11 @@ router.post("/api/product-catalog", isAuthenticated, requireAuthorizedUser, asyn
 
     const parts = [produto.trim()];
     if (subproduto && subproduto.trim()) parts.push(subproduto.trim());
-    if (categoria1 && categoria1.trim()) parts.push(categoria1.trim());
-    if (categoria2 && categoria2.trim()) parts.push(categoria2.trim());
     const fullName = parts.join(" > ");
 
     const product = await productCatalogStorage.create({
       produto: produto.trim(),
       subproduto: subproduto?.trim() || null,
-      categoria1: categoria1?.trim() || null,
-      categoria2: categoria2?.trim() || null,
       fullName,
     });
 
@@ -132,7 +99,7 @@ router.put("/api/product-catalog/:id", isAuthenticated, requireAuthorizedUser, a
       return res.status(400).json({ error: "Invalid ID" });
     }
 
-    const { produto, subproduto, categoria1, categoria2 } = req.body;
+    const { produto, subproduto } = req.body;
 
     if (!produto || typeof produto !== "string" || produto.trim() === "") {
       return res.status(400).json({ error: "Produto is required" });
@@ -140,15 +107,11 @@ router.put("/api/product-catalog/:id", isAuthenticated, requireAuthorizedUser, a
 
     const parts = [produto.trim()];
     if (subproduto && subproduto.trim()) parts.push(subproduto.trim());
-    if (categoria1 && categoria1.trim()) parts.push(categoria1.trim());
-    if (categoria2 && categoria2.trim()) parts.push(categoria2.trim());
     const fullName = parts.join(" > ");
 
     const product = await productCatalogStorage.update(id, {
       produto: produto.trim(),
       subproduto: subproduto?.trim() || null,
-      categoria1: categoria1?.trim() || null,
-      categoria2: categoria2?.trim() || null,
       fullName,
     });
 

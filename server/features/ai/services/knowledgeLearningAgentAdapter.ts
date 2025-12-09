@@ -78,7 +78,7 @@ function buildSearchKnowledgeBaseTool(): ToolDefinition {
 function buildProductCatalogTool(): ToolDefinition {
   return {
     name: "search_product_catalog",
-    description: "Busca produtos no catálogo para classificar corretamente o artigo. Retorna a hierarquia completa: Produto > Subproduto > Categoria1 > Categoria2. Use SEMPRE antes de criar uma sugestão.",
+    description: "Busca produtos no catálogo para classificar corretamente o artigo. Retorna a hierarquia: Produto > Subproduto. Use SEMPRE antes de criar uma sugestão.",
     parameters: {
       type: "object",
       properties: {
@@ -96,9 +96,7 @@ function buildProductCatalogTool(): ToolDefinition {
       const filtered = products.filter(p => 
         p.fullName.toLowerCase().includes(query) ||
         p.produto.toLowerCase().includes(query) ||
-        (p.subproduto && p.subproduto.toLowerCase().includes(query)) ||
-        (p.categoria1 && p.categoria1.toLowerCase().includes(query)) ||
-        (p.categoria2 && p.categoria2.toLowerCase().includes(query))
+        (p.subproduto && p.subproduto.toLowerCase().includes(query))
       );
 
       if (filtered.length === 0) {
@@ -109,8 +107,6 @@ function buildProductCatalogTool(): ToolDefinition {
       const result = filtered.slice(0, 10).map(p => ({
         produto: p.produto,
         subproduto: p.subproduto,
-        categoria1: p.categoria1,
-        categoria2: p.categoria2,
         fullName: p.fullName
       }));
 
@@ -150,14 +146,6 @@ function buildCreateSuggestionTool(): ToolDefinition {
         subproductStandard: {
           type: "string",
           description: "Subproduto específico (use valor do catálogo)"
-        },
-        category1: {
-          type: "string",
-          description: "Categoria principal (use valor do catálogo)"
-        },
-        category2: {
-          type: "string",
-          description: "Subcategoria (use valor do catálogo)"
         },
         description: {
           type: "string",

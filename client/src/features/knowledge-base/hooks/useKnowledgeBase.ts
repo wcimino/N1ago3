@@ -7,8 +7,6 @@ export interface KnowledgeBaseArticle {
   name: string | null;
   productStandard: string;
   subproductStandard: string | null;
-  category1: string | null;
-  category2: string | null;
   intent: string;
   description: string;
   resolution: string;
@@ -36,8 +34,6 @@ export interface CatalogProduct {
   id: number;
   produto: string;
   subproduto: string | null;
-  categoria1: string | null;
-  categoria2: string | null;
   fullName: string;
 }
 
@@ -77,34 +73,6 @@ function buildHierarchy(products: CatalogProduct[], articles: KnowledgeBaseArtic
         };
         prodNode.children.push(subNode);
       }
-      
-      if (product.categoria1) {
-        let cat1Node = subNode.children.find(c => c.name === product.categoria1);
-        if (!cat1Node) {
-          cat1Node = {
-            name: product.categoria1,
-            level: "categoria1",
-            fullPath: `${product.produto} > ${product.subproduto} > ${product.categoria1}`,
-            children: [],
-            articles: [],
-          };
-          subNode.children.push(cat1Node);
-        }
-        
-        if (product.categoria2) {
-          let cat2Node = cat1Node.children.find(c => c.name === product.categoria2);
-          if (!cat2Node) {
-            cat2Node = {
-              name: product.categoria2,
-              level: "categoria2",
-              fullPath: `${product.produto} > ${product.subproduto} > ${product.categoria1} > ${product.categoria2}`,
-              children: [],
-              articles: [],
-            };
-            cat1Node.children.push(cat2Node);
-          }
-        }
-      }
     }
   }
   
@@ -127,25 +95,7 @@ function buildHierarchy(products: CatalogProduct[], articles: KnowledgeBaseArtic
     if (article.subproductStandard) {
       const subNode = prodNode.children.find(c => c.name === article.subproductStandard);
       if (subNode) {
-        if (article.category1) {
-          const cat1Node = subNode.children.find(c => c.name === article.category1);
-          if (cat1Node) {
-            if (article.category2) {
-              const cat2Node = cat1Node.children.find(c => c.name === article.category2);
-              if (cat2Node) {
-                cat2Node.articles.push(article);
-              } else {
-                cat1Node.articles.push(article);
-              }
-            } else {
-              cat1Node.articles.push(article);
-            }
-          } else {
-            subNode.articles.push(article);
-          }
-        } else {
-          subNode.articles.push(article);
-        }
+        subNode.articles.push(article);
       } else {
         prodNode.articles.push(article);
       }

@@ -59,7 +59,7 @@ export function ProductCatalogPage() {
       <div className="bg-white rounded-lg shadow p-4 sm:p-6">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <p className="text-sm text-blue-800">
-            <strong>Hierarquia:</strong> Produto → Subproduto (opcional) → Categoria 1 (opcional) → Categoria 2 (opcional)
+            <strong>Hierarquia:</strong> Produto → Subproduto (opcional)
           </p>
           <p className="text-xs text-blue-600 mt-1">
             Clique no <Plus className="w-3 h-3 inline" /> para adicionar itens dentro de cada nível

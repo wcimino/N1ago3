@@ -82,8 +82,6 @@ export function createProductCatalogTool(): ToolDefinition {
         products = allProducts.filter(p => 
           p.produto.toLowerCase().includes(query) ||
           (p.subproduto && p.subproduto.toLowerCase().includes(query)) ||
-          (p.categoria1 && p.categoria1.toLowerCase().includes(query)) ||
-          (p.categoria2 && p.categoria2.toLowerCase().includes(query)) ||
           p.fullName.toLowerCase().includes(query)
         );
       }
@@ -98,9 +96,7 @@ export function createProductCatalogTool(): ToolDefinition {
       const productList = products.map(p => ({
         fullName: p.fullName,
         produto: p.produto,
-        subproduto: p.subproduto,
-        categoria1: p.categoria1,
-        categoria2: p.categoria2
+        subproduto: p.subproduto
       }));
       
       return JSON.stringify({
