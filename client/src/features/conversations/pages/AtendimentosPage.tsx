@@ -22,7 +22,8 @@ const HANDLER_TABS = [
 ];
 
 const CONFIG_TABS = [
-  { id: "routing", label: "Regras de Roteamento", icon: <Settings2 className="w-4 h-4" /> },
+  { id: "atendimento", label: "Atendimento", icon: <Users className="w-4 h-4" /> },
+  { id: "routing", label: "Roteamento", icon: <Settings2 className="w-4 h-4" /> },
 ];
 
 export function AtendimentosPage() {
@@ -98,6 +99,8 @@ export function AtendimentosPage() {
   const handleConfigTabChange = (tabId: string) => {
     if (tabId === "routing") {
       navigate("/atendimentos/routing");
+    } else if (tabId === "atendimento") {
+      navigate("/atendimentos");
     }
   };
 
@@ -118,7 +121,7 @@ export function AtendimentosPage() {
         <div className="shrink-0">
           <SegmentedTabs
             tabs={CONFIG_TABS}
-            activeTab={isRoutingView ? "routing" : ""}
+            activeTab={isRoutingView ? "routing" : "atendimento"}
             onChange={handleConfigTabChange}
           />
         </div>
