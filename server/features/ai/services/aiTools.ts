@@ -2,12 +2,14 @@ import { knowledgeBaseStorage } from "../storage/knowledgeBaseStorage.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 import { ZendeskArticlesStorage } from "../../zendesk-articles/storage/zendeskArticlesStorage.js";
 import { ZendeskArticleStatisticsStorage } from "../../zendesk-articles/storage/zendeskArticleStatisticsStorage.js";
+import { knowledgeSubjectsStorage } from "../../knowledge/storage/knowledgeSubjectsStorage.js";
+import { knowledgeIntentsStorage } from "../../knowledge/storage/knowledgeIntentsStorage.js";
 import type { ToolDefinition } from "./openaiApiService.js";
 
 export function createKnowledgeBaseTool(): ToolDefinition {
   return {
     name: "search_knowledge_base",
-    description: "Busca artigos na base de conhecimento. Use para encontrar informações sobre produtos, procedimentos e resoluções de problemas.",
+    description: "Busca artigos na base de conhecimento. Use para encontrar informações sobre produtos, procedimentos e resoluções de problemas. Você pode filtrar por assunto (tema geral) e intenção (o que o cliente quer fazer).",
     parameters: {
       type: "object",
       properties: {
@@ -15,10 +17,13 @@ export function createKnowledgeBaseTool(): ToolDefinition {
           type: "string",
           description: "Nome do produto para filtrar (ex: 'Conta Digital', 'Cartão de Crédito')"
         },
+        subject: {
+          type: "string",
+          description: "Assunto/tema do problema (ex: 'fatura', 'pagamento', 'limite'). Aceita sinônimos."
+        },
         intent: {
           type: "string",
-          enum: ["suporte", "contratar"],
-          description: "Intenção do cliente: 'suporte' ou 'contratar'"
+          description: "Intenção do cliente - o que ele quer fazer (ex: 'contestar', 'cancelar', 'parcelar'). Aceita sinônimos."
         },
         keywords: {
           type: "string",
@@ -27,33 +32,72 @@ export function createKnowledgeBaseTool(): ToolDefinition {
       },
       required: []
     },
-    handler: async (args: { product?: string; intent?: string; keywords?: string }) => {
+    handler: async (args: { product?: string; subject?: string; intent?: string; keywords?: string }) => {
+      let subjectId: number | undefined;
+      let intentId: number | undefined;
+      let resolvedSubject: string | undefined;
+      let resolvedIntent: string | undefined;
+
+      if (args.subject) {
+        const subjects = await knowledgeSubjectsStorage.findByNameOrSynonym(args.subject);
+        if (subjects.length > 0) {
+          subjectId = subjects[0].id;
+          resolvedSubject = subjects[0].name;
+        }
+      }
+
+      if (args.intent) {
+        const intents = await knowledgeIntentsStorage.findByNameOrSynonym(args.intent, subjectId);
+        if (intents.length > 0) {
+          intentId = intents[0].id;
+          resolvedIntent = intents[0].name;
+        }
+      }
+
       const articles = await knowledgeBaseStorage.getAllArticles({
         productStandard: args.product,
-        intent: args.intent,
+        subjectId: subjectId,
+        intentId: intentId,
         search: args.keywords
       });
       
       const limitedArticles = articles.slice(0, 5);
       
       if (limitedArticles.length === 0) {
+        const synonymInfo: string[] = [];
+        if (args.subject && resolvedSubject && args.subject.toLowerCase() !== resolvedSubject.toLowerCase()) {
+          synonymInfo.push(`assunto '${args.subject}' resolvido para '${resolvedSubject}'`);
+        }
+        if (args.intent && resolvedIntent && args.intent.toLowerCase() !== resolvedIntent.toLowerCase()) {
+          synonymInfo.push(`intenção '${args.intent}' resolvido para '${resolvedIntent}'`);
+        }
+        
         return JSON.stringify({ 
-          message: "Nenhum artigo encontrado na base de conhecimento",
-          articles: [] 
+          message: "Nenhum artigo encontrado na base de conhecimento" + (synonymInfo.length > 0 ? ` (${synonymInfo.join(', ')})` : ""),
+          articles: [],
+          resolvedFilters: {
+            subject: resolvedSubject || args.subject,
+            intent: resolvedIntent || args.intent
+          }
         });
       }
       
       const articleList = limitedArticles.map(a => ({
         product: a.productStandard,
         subproduct: a.subproductStandard,
-        intent: a.intent,
+        subject: resolvedSubject,
+        intent: resolvedIntent || a.intent,
         description: a.description,
         resolution: a.resolution
       }));
       
       return JSON.stringify({
         message: `Encontrados ${limitedArticles.length} artigos relevantes`,
-        articles: articleList
+        articles: articleList,
+        resolvedFilters: {
+          subject: resolvedSubject,
+          intent: resolvedIntent
+        }
       });
     }
   };
