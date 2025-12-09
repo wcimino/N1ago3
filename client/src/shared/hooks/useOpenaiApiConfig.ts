@@ -72,7 +72,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
   const [useKnowledgeBaseTool, setUseKnowledgeBaseToolState] = useState(false);
   const [useProductCatalogTool, setUseProductCatalogToolState] = useState(false);
   const [useZendeskKnowledgeBaseTool, setUseZendeskKnowledgeBaseToolState] = useState(false);
-  const [useGeneralSettings, setUseGeneralSettingsState] = useState(true);
+  const [useGeneralSettings, setUseGeneralSettingsState] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
   const { data: config, isLoading: isLoadingConfig } = useQuery<OpenaiApiConfigResponse>({
@@ -97,7 +97,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       setUseKnowledgeBaseToolState(config.use_knowledge_base_tool ?? false);
       setUseProductCatalogToolState(config.use_product_catalog_tool ?? false);
       setUseZendeskKnowledgeBaseToolState(config.use_zendesk_knowledge_base_tool ?? false);
-      setUseGeneralSettingsState(config.use_general_settings ?? true);
+      setUseGeneralSettingsState(config.use_general_settings ?? false);
       setHasChanges(false);
     }
   }, [config]);
