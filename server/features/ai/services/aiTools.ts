@@ -6,6 +6,11 @@ import { knowledgeSubjectsStorage } from "../../knowledge/storage/knowledgeSubje
 import { knowledgeIntentsStorage } from "../../knowledge/storage/knowledgeIntentsStorage.js";
 import type { ToolDefinition } from "./openaiApiService.js";
 
+// Threshold mínimo de relevância para resultados de busca (5%)
+// Artigos abaixo desse threshold são considerados não relevantes
+// Baseado nos scores típicos de ts_rank_cd e Zendesk API
+const RELEVANCE_THRESHOLD = 0.05;
+
 export function createKnowledgeBaseTool(): ToolDefinition {
   return {
     name: "search_knowledge_base",
@@ -68,16 +73,20 @@ export function createKnowledgeBaseTool(): ToolDefinition {
           productStandard: args.product,
           subjectId: subjectId,
           intentId: intentId,
-          limit: 5
+          limit: 10 // Busca mais para filtrar pelo threshold
         });
-        articles = searchResults.map(a => ({
-          productStandard: a.productStandard,
-          subproductStandard: a.subproductStandard,
-          intent: a.intent,
-          description: a.description,
-          resolution: a.resolution,
-          relevanceScore: a.relevanceScore
-        }));
+        // Filtra artigos abaixo do threshold de relevância
+        articles = searchResults
+          .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
+          .slice(0, 5) // Limita a 5 após filtro
+          .map(a => ({
+            productStandard: a.productStandard,
+            subproductStandard: a.subproductStandard,
+            intent: a.intent,
+            description: a.description,
+            resolution: a.resolution,
+            relevanceScore: a.relevanceScore
+          }));
       } else {
         const allArticles = await knowledgeBaseStorage.getAllArticles({
           productStandard: args.product,
@@ -206,13 +215,17 @@ export function createZendeskKnowledgeBaseTool(): ToolDefinition {
       let articles;
       
       if (args.keywords && args.keywords.trim().length > 0) {
-        articles = await ZendeskArticlesStorage.searchArticlesWithRelevance(
+        const searchResults = await ZendeskArticlesStorage.searchArticlesWithRelevance(
           args.keywords,
           {
             sectionId: args.section,
-            limit: 5
+            limit: 10 // Busca mais para filtrar pelo threshold
           }
         );
+        // Filtra artigos abaixo do threshold de relevância
+        articles = searchResults
+          .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
+          .slice(0, 5); // Limita a 5 após filtro
       } else {
         const allArticles = await ZendeskArticlesStorage.getAllArticles({
           sectionId: args.section,
