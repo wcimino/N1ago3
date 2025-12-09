@@ -154,13 +154,13 @@ export function createProductCatalogTool(): ToolDefinition {
 export function createZendeskKnowledgeBaseTool(): ToolDefinition {
   return {
     name: "search_knowledge_base_zendesk",
-    description: "Busca artigos na base de conhecimento do Zendesk (Help Center). Use para encontrar artigos de ajuda, FAQs e documentação pública.",
+    description: "Busca artigos na base de conhecimento do Zendesk (Help Center). Use para encontrar artigos de ajuda, FAQs e documentação pública. A busca é inteligente e encontra os artigos mais relevantes baseado nas palavras-chave.",
     parameters: {
       type: "object",
       properties: {
         keywords: {
           type: "string",
-          description: "Palavras-chave para buscar no título e conteúdo dos artigos"
+          description: "Palavras-chave para buscar no título e conteúdo dos artigos. Pode ser uma frase ou múltiplas palavras."
         },
         section: {
           type: "string",
@@ -170,11 +170,23 @@ export function createZendeskKnowledgeBaseTool(): ToolDefinition {
       required: []
     },
     handler: async (args: { keywords?: string; section?: string }) => {
-      const articles = await ZendeskArticlesStorage.getAllArticles({
-        search: args.keywords,
-        sectionId: args.section,
-        limit: 5
-      });
+      let articles;
+      
+      if (args.keywords && args.keywords.trim().length > 0) {
+        articles = await ZendeskArticlesStorage.searchArticlesWithRelevance(
+          args.keywords,
+          {
+            sectionId: args.section,
+            limit: 5
+          }
+        );
+      } else {
+        const allArticles = await ZendeskArticlesStorage.getAllArticles({
+          sectionId: args.section,
+          limit: 5
+        });
+        articles = allArticles.map(a => ({ ...a, relevanceScore: 0 }));
+      }
       
       if (articles.length === 0) {
         return JSON.stringify({ 
@@ -196,12 +208,13 @@ export function createZendeskKnowledgeBaseTool(): ToolDefinition {
         id: String(a.id),
         title: a.title,
         section: a.sectionName,
+        relevance: a.relevanceScore.toFixed(2),
         body: a.body ? a.body.substring(0, 500) + (a.body.length > 500 ? "..." : "") : null,
         url: a.htmlUrl
       }));
       
       return JSON.stringify({
-        message: `Encontrados ${articles.length} artigos do Zendesk`,
+        message: `Encontrados ${articles.length} artigos mais relevantes do Zendesk`,
         articles: articleList
       });
     }

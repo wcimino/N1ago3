@@ -11,6 +11,115 @@ export interface ArticleFilters {
   offset?: number;
 }
 
+export interface SearchArticleResult extends ZendeskArticle {
+  relevanceScore: number;
+  matchedSnippet?: string;
+}
+
+function normalizeForFts(search: string): string {
+  return search
+    .toLowerCase()
+    .replace(/[^\w\sáàâãéèêíìîóòôõúùûç]/g, ' ')
+    .split(/\s+/)
+    .filter(term => term.length >= 2)
+    .join(' ');
+}
+
+export async function searchArticlesWithRelevance(
+  search: string,
+  options: {
+    sectionId?: string;
+    locale?: string;
+    helpCenterSubdomain?: string;
+    limit?: number;
+  } = {}
+): Promise<SearchArticleResult[]> {
+  const { sectionId, locale, helpCenterSubdomain, limit = 5 } = options;
+  const normalizedSearch = normalizeForFts(search);
+  
+  if (!normalizedSearch.trim()) {
+    return [];
+  }
+  
+  const searchTerms = normalizedSearch.split(/\s+/).filter(t => t.length >= 2);
+  
+  const conditions: SQL[] = [];
+  
+  if (sectionId) {
+    conditions.push(eq(zendeskArticles.sectionId, sectionId));
+  }
+  if (locale) {
+    conditions.push(eq(zendeskArticles.locale, locale));
+  }
+  if (helpCenterSubdomain) {
+    conditions.push(eq(zendeskArticles.helpCenterSubdomain, helpCenterSubdomain));
+  }
+  
+  const likeConditions = searchTerms.slice(0, 3).flatMap(term => [
+    ilike(zendeskArticles.title, `%${term}%`),
+    ilike(zendeskArticles.body, `%${term}%`)
+  ]).filter((c): c is SQL => c !== undefined);
+  
+  const ftsCondition = sql`(
+    to_tsvector('portuguese', COALESCE(${zendeskArticles.title}, '') || ' ' || COALESCE(${zendeskArticles.body}, ''))
+    @@ plainto_tsquery('portuguese', ${normalizedSearch})
+    OR ${or(...likeConditions)}
+  )`;
+  conditions.push(ftsCondition);
+  
+  const whereClause = and(...conditions);
+  
+  const firstTerm = searchTerms[0] || '';
+  
+  const results = await db
+    .select({
+      id: zendeskArticles.id,
+      zendeskId: zendeskArticles.zendeskId,
+      helpCenterSubdomain: zendeskArticles.helpCenterSubdomain,
+      title: zendeskArticles.title,
+      body: zendeskArticles.body,
+      sectionId: zendeskArticles.sectionId,
+      sectionName: zendeskArticles.sectionName,
+      categoryId: zendeskArticles.categoryId,
+      categoryName: zendeskArticles.categoryName,
+      authorId: zendeskArticles.authorId,
+      locale: zendeskArticles.locale,
+      htmlUrl: zendeskArticles.htmlUrl,
+      draft: zendeskArticles.draft,
+      promoted: zendeskArticles.promoted,
+      position: zendeskArticles.position,
+      voteSum: zendeskArticles.voteSum,
+      voteCount: zendeskArticles.voteCount,
+      labelNames: zendeskArticles.labelNames,
+      zendeskCreatedAt: zendeskArticles.zendeskCreatedAt,
+      zendeskUpdatedAt: zendeskArticles.zendeskUpdatedAt,
+      syncedAt: zendeskArticles.syncedAt,
+      createdAt: zendeskArticles.createdAt,
+      updatedAt: zendeskArticles.updatedAt,
+      relevanceScore: sql<number>`(
+        COALESCE(
+          ts_rank_cd(
+            setweight(to_tsvector('portuguese', COALESCE(${zendeskArticles.title}, '')), 'A') ||
+            setweight(to_tsvector('portuguese', COALESCE(${zendeskArticles.body}, '')), 'B'),
+            plainto_tsquery('portuguese', ${normalizedSearch})
+          ), 0
+        ) * 10 +
+        CASE WHEN LOWER(${zendeskArticles.title}) ILIKE ${'%' + firstTerm + '%'} THEN 5 ELSE 0 END +
+        CASE WHEN ${zendeskArticles.promoted} = true THEN 2 ELSE 0 END +
+        COALESCE(${zendeskArticles.voteSum}, 0) * 0.1
+      )`.as('relevance_score'),
+    })
+    .from(zendeskArticles)
+    .where(whereClause)
+    .orderBy(sql`relevance_score DESC`, desc(zendeskArticles.zendeskUpdatedAt))
+    .limit(limit);
+  
+  return results.map(r => ({
+    ...r,
+    relevanceScore: Number(r.relevanceScore) || 0,
+  }));
+}
+
 export async function getAllArticles(filters: ArticleFilters = {}): Promise<ZendeskArticle[]> {
   const { search, sectionId, locale, helpCenterSubdomain, limit = 100, offset = 0 } = filters;
   
@@ -110,6 +219,7 @@ export async function getDistinctSubdomains(): Promise<Array<{ subdomain: string
 
 export const ZendeskArticlesStorage = {
   getAllArticles,
+  searchArticlesWithRelevance,
   getArticleById,
   getArticleByZendeskId,
   getDistinctSections,
