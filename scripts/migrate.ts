@@ -1,31 +1,11 @@
 import { db } from "../server/db.js";
-import { sql } from "drizzle-orm";
+import { migrate } from "drizzle-orm/neon-serverless/migrator";
 
-async function migrate() {
+async function runMigrations() {
   console.log("Running database migrations...");
   
   try {
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS products_catalog (
-        id SERIAL PRIMARY KEY,
-        produto TEXT NOT NULL,
-        subproduto TEXT,
-        categoria1 TEXT,
-        categoria2 TEXT,
-        full_name TEXT NOT NULL,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-      )
-    `);
-    
-    await db.execute(sql`
-      CREATE INDEX IF NOT EXISTS idx_ifood_products_produto ON products_catalog(produto)
-    `);
-    
-    await db.execute(sql`
-      CREATE UNIQUE INDEX IF NOT EXISTS idx_ifood_products_full_name ON products_catalog(full_name)
-    `);
-    
+    await migrate(db, { migrationsFolder: "./drizzle" });
     console.log("Database migrations completed successfully");
   } catch (error: any) {
     console.error("Migration error:", error.message);
@@ -35,4 +15,4 @@ async function migrate() {
   process.exit(0);
 }
 
-migrate();
+runMigrations();

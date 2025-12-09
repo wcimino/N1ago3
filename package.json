@@ -8,8 +8,8 @@
     "dev:client": "vite",
     "build": "vite build && tsc -p tsconfig.server.json && npm run db:migrate",
     "db:migrate": "tsx scripts/migrate.ts",
+    "db:generate": "drizzle-kit generate:pg",
     "start": "NODE_ENV=production node dist/server/index.js",
-    "db:push": "drizzle-kit push:pg",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
