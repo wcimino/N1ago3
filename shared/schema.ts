@@ -216,6 +216,7 @@ export const responsesSuggested = pgTable("responses_suggested", {
   status: text("status").default("created").notNull(),
   usedAt: timestamp("used_at"),
   dismissed: boolean("dismissed").default(false).notNull(),
+  articlesUsed: json("articles_used").$type<Array<{ id: number; name: string; product: string; url?: string }>>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   conversationIdIdx: index("idx_responses_suggested_conversation_id").on(table.conversationId),

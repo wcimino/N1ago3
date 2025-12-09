@@ -102,6 +102,7 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
           created_at: sr.createdAt?.toISOString(),
           last_event_id: sr.lastEventId,
           status: sr.status,
+          articles_used: sr.articlesUsed || null,
         })),
       };
     })

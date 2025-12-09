@@ -26,12 +26,20 @@ export interface ResponsePayload {
   };
 }
 
+export interface ArticleUsed {
+  id: number;
+  name: string;
+  product: string;
+  url?: string;
+}
+
 export interface ResponseResult {
   suggestedResponse: string | null;
   success: boolean;
   logId: number;
   usedKnowledgeBase?: boolean;
   articlesFound?: number;
+  articlesUsed?: ArticleUsed[];
   error?: string;
 }
 
@@ -132,17 +140,40 @@ export async function generateResponse(
   const tools: ToolDefinition[] = [];
   let articlesFound = 0;
   let usedKnowledgeBase = false;
+  let articlesUsed: ArticleUsed[] = [];
 
   if (useKnowledgeBaseTool) {
     const kbTool = buildKnowledgeBaseTool();
     const originalHandler = kbTool.handler;
     kbTool.handler = async (args) => {
       usedKnowledgeBase = true;
-      const result = await originalHandler(args);
-      const matches = result.match(/### Artigo/g);
-      articlesFound = matches ? matches.length : 0;
+      const results = await knowledgeBaseService.findRelatedArticles(
+        args.product,
+        args.intent,
+        args.keywords || [],
+        { limit: 3, minScore: 20 }
+      );
+      
+      articlesFound = results.length;
+      articlesUsed = results.map(r => ({
+        id: r.article.id,
+        name: r.article.name || 'Sem nome',
+        product: r.article.productStandard || '',
+      }));
+      
       console.log(`[Response Adapter] KB search: product=${args.product}, found ${articlesFound} articles`);
-      return result;
+      
+      if (results.length === 0) {
+        return "Nenhum artigo encontrado na base de conhecimento. Responda com base no contexto da conversa.";
+      }
+
+      return results.map((r, i) => `
+### Artigo ${i + 1}: ${r.article.name || 'Sem nome'} (ID: ${r.article.id})
+- **Produto:** ${r.article.productStandard}
+- **Intenção:** ${r.article.intent}
+- **Problema:** ${r.article.description}
+- **Resolução:** ${r.article.resolution}
+${r.article.observations ? `- **Observações:** ${r.article.observations}` : ''}`).join("\n\n");
     };
     tools.push(kbTool);
   }
@@ -208,7 +239,8 @@ export async function generateResponse(
     success: true,
     logId: result.logId,
     usedKnowledgeBase,
-    articlesFound
+    articlesFound,
+    articlesUsed: articlesUsed.length > 0 ? articlesUsed : undefined
   };
 }
 
@@ -244,6 +276,7 @@ export async function generateAndSaveResponse(
       openaiLogId: result.logId,
       externalConversationId,
       inResponseTo,
+      articlesUsed: result.articlesUsed,
     });
 
     await storage.saveStandardEvent({

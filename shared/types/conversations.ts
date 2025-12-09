@@ -106,11 +106,19 @@ export interface ConversationSummary {
   customer_emotion_level: number | null;
 }
 
+export interface ArticleUsed {
+  id: number;
+  name: string;
+  product: string;
+  url?: string;
+}
+
 export interface SuggestedResponse {
   text: string;
   created_at: string;
   last_event_id: number | null;
   status: string | null;
+  articles_used?: ArticleUsed[] | null;
 }
 
 export interface ConversationWithMessages {
