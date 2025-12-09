@@ -35,7 +35,7 @@ router.get("/api/routing/rules/active", isAuthenticated, requireAuthorizedUser, 
 
 router.post("/api/routing/rules", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
-    const { ruleType, target, allocateCount, expiresAt } = req.body;
+    const { ruleType, target, allocateCount, expiresAt, authFilter } = req.body;
     const user = (req as any).user;
 
     if (!ruleType || !target) {
@@ -45,6 +45,9 @@ router.post("/api/routing/rules", isAuthenticated, requireAuthorizedUser, async 
     if (ruleType === "allocate_next_n" && (!allocateCount || allocateCount < 1)) {
       return res.status(400).json({ error: "allocateCount must be greater than 0" });
     }
+
+    const validAuthFilters = ["all", "authenticated", "unauthenticated"];
+    const finalAuthFilter = validAuthFilters.includes(authFilter) ? authFilter : "all";
 
     await db
       .update(routingRules)
@@ -61,6 +64,7 @@ router.post("/api/routing/rules", isAuthenticated, requireAuthorizedUser, async 
         target,
         allocateCount: allocateCount || null,
         isActive: true,
+        authFilter: finalAuthFilter,
         createdBy: user?.email || null,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
       })

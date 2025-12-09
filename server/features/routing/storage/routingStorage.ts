@@ -1,6 +1,6 @@
 import { db } from "../../../db.js";
 import { routingRules, type RoutingRule } from "../../../../shared/schema.js";
-import { eq, and, sql, lt } from "drizzle-orm";
+import { eq, and, sql, lt, or } from "drizzle-orm";
 
 export async function getActiveRoutingRules(): Promise<RoutingRule[]> {
   const rules = await db
@@ -11,16 +11,27 @@ export async function getActiveRoutingRules(): Promise<RoutingRule[]> {
   return rules;
 }
 
-export async function getActiveAllocateNextNRule(): Promise<RoutingRule | null> {
+export async function getActiveAllocateNextNRule(userAuthenticated?: boolean): Promise<RoutingRule | null> {
+  const baseConditions = and(
+    eq(routingRules.isActive, true),
+    eq(routingRules.ruleType, "allocate_next_n")
+  );
+
+  let whereCondition;
+  if (userAuthenticated === undefined) {
+    whereCondition = baseConditions;
+  } else {
+    const authFilterCondition = or(
+      eq(routingRules.authFilter, "all"),
+      eq(routingRules.authFilter, userAuthenticated ? "authenticated" : "unauthenticated")
+    );
+    whereCondition = and(baseConditions, authFilterCondition);
+  }
+
   const rules = await db
     .select()
     .from(routingRules)
-    .where(
-      and(
-        eq(routingRules.isActive, true),
-        eq(routingRules.ruleType, "allocate_next_n")
-      )
-    )
+    .where(whereCondition)
     .limit(1);
   
   return rules[0] || null;

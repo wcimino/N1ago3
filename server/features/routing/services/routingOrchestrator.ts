@@ -1,5 +1,6 @@
 import { routingStorage } from "../storage/routingStorage.js";
 import { ZendeskApiService } from "../../../services/zendeskApiService.js";
+import { userStorage } from "../../conversations/storage/userStorage.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 
 const processedConversations = new Set<string>();
@@ -32,7 +33,16 @@ export async function processRoutingForEvent(event: EventStandard): Promise<void
     return;
   }
 
-  const activeRule = await routingStorage.getActiveAllocateNextNRule();
+  let userAuthenticated: boolean | undefined = undefined;
+  if (event.externalUserId) {
+    const user = await userStorage.getUserBySunshineId(event.externalUserId);
+    if (user) {
+      userAuthenticated = user.authenticated;
+      console.log(`[RoutingOrchestrator] User ${event.externalUserId} authenticated: ${userAuthenticated}`);
+    }
+  }
+
+  const activeRule = await routingStorage.getActiveAllocateNextNRule(userAuthenticated);
   
   if (!activeRule) {
     console.log("[RoutingOrchestrator] No active routing rules found");

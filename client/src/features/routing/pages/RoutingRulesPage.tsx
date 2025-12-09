@@ -10,10 +10,17 @@ interface RoutingRule {
   allocateCount: number | null;
   allocatedCount: number;
   isActive: boolean;
+  authFilter: string;
   createdBy: string | null;
   createdAt: string;
   expiresAt: string | null;
 }
+
+const AUTH_FILTER_INFO: Record<string, { label: string; shortLabel: string }> = {
+  all: { label: "Todos os clientes", shortLabel: "Todos" },
+  authenticated: { label: "Apenas autenticados", shortLabel: "Autenticados" },
+  unauthenticated: { label: "Apenas não autenticados", shortLabel: "Não autenticados" },
+};
 
 const TARGET_INFO: Record<string, { label: string; icon: typeof Bot; bgClass: string; iconClass: string }> = {
   n1ago: { label: "N1ago", icon: Brain, bgClass: "bg-purple-100", iconClass: "text-purple-600" },
@@ -27,6 +34,7 @@ export function RoutingRulesPage() {
   const [formData, setFormData] = useState({
     target: "n1ago",
     allocateCount: 10,
+    authFilter: "all",
   });
 
   const { data: rules, isLoading } = useQuery<RoutingRule[]>({
@@ -35,7 +43,7 @@ export function RoutingRulesPage() {
   });
 
   const createRule = useMutation({
-    mutationFn: async (data: { ruleType: string; target: string; allocateCount: number }) => {
+    mutationFn: async (data: { ruleType: string; target: string; allocateCount: number; authFilter: string }) => {
       const response = await fetch("/api/routing/rules", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -48,7 +56,7 @@ export function RoutingRulesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["routing-rules"] });
       setShowForm(false);
-      setFormData({ target: "n1ago", allocateCount: 10 });
+      setFormData({ target: "n1ago", allocateCount: 10, authFilter: "all" });
     },
   });
 
@@ -86,6 +94,7 @@ export function RoutingRulesPage() {
       ruleType: "allocate_next_n",
       target: formData.target,
       allocateCount: formData.allocateCount,
+      authFilter: formData.authFilter,
     });
   };
 
@@ -138,6 +147,18 @@ export function RoutingRulesPage() {
                 <option value="n1ago">N1ago</option>
                 <option value="human">Humano</option>
                 <option value="bot">Bot Zendesk</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-4 flex-wrap">
+              <span className="text-gray-700">Tipo de cliente:</span>
+              <select
+                value={formData.authFilter}
+                onChange={(e) => setFormData({ ...formData, authFilter: e.target.value })}
+                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              >
+                <option value="all">Todos os clientes</option>
+                <option value="authenticated">Apenas autenticados</option>
+                <option value="unauthenticated">Apenas não autenticados</option>
               </select>
             </div>
             <div className="flex gap-2">
@@ -226,6 +247,7 @@ interface RuleCardProps {
 
 function RuleCard({ rule, onDeactivate, onDelete, isDeactivating }: RuleCardProps) {
   const targetInfo = TARGET_INFO[rule.target] || TARGET_INFO.n1ago;
+  const authInfo = AUTH_FILTER_INFO[rule.authFilter] || AUTH_FILTER_INFO.all;
   const Icon = targetInfo.icon;
   const progress = rule.allocateCount ? (rule.allocatedCount / rule.allocateCount) * 100 : 0;
   const remaining = rule.allocateCount ? rule.allocateCount - rule.allocatedCount : 0;
@@ -242,6 +264,11 @@ function RuleCard({ rule, onDeactivate, onDelete, isDeactivating }: RuleCardProp
               <span className="font-medium">Alocar próximas {rule.allocateCount} conversas</span>
               <ArrowRight className="w-4 h-4 text-gray-400" />
               <span className={`font-semibold ${targetInfo.iconClass}`}>{targetInfo.label}</span>
+              {rule.authFilter !== "all" && (
+                <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">
+                  {authInfo.shortLabel}
+                </span>
+              )}
             </div>
             {rule.isActive && (
               <div className="mt-2">
@@ -249,6 +276,12 @@ function RuleCard({ rule, onDeactivate, onDelete, isDeactivating }: RuleCardProp
                   <span>{rule.allocatedCount} alocadas</span>
                   <span>•</span>
                   <span>{remaining} restantes</span>
+                  {rule.authFilter !== "all" && (
+                    <>
+                      <span>•</span>
+                      <span>{authInfo.label}</span>
+                    </>
+                  )}
                 </div>
                 <div className="w-48 h-1.5 bg-gray-200 rounded-full mt-1">
                   <div
