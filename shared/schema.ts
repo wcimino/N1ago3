@@ -611,3 +611,28 @@ export const authUsersConversationFavorites = pgTable("auth_users_conversation_f
 
 export type AuthUserConversationFavorite = typeof authUsersConversationFavorites.$inferSelect;
 export type InsertAuthUserConversationFavorite = Omit<typeof authUsersConversationFavorites.$inferInsert, "id" | "createdAt">;
+
+// Knowledge Enrichment Log - Log de processamento de enriquecimento
+export const knowledgeEnrichmentLog = pgTable("knowledge_enrichment_log", {
+  id: serial("id").primaryKey(),
+  intentId: integer("intent_id").notNull(),
+  articleId: integer("article_id"),
+  action: text("action").notNull(), // 'create' | 'update' | 'skip'
+  outcomeReason: text("outcome_reason"),
+  suggestionId: integer("suggestion_id"),
+  sourceArticles: json("source_articles").$type<Array<{ id: string; title: string; similarityScore: number }>>(),
+  confidenceScore: integer("confidence_score"),
+  productStandard: text("product_standard"),
+  outcomePayload: json("outcome_payload"),
+  openaiLogId: integer("openai_log_id"),
+  triggerRunId: text("trigger_run_id"),
+  processedAt: timestamp("processed_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  actionProductIdx: index("idx_knowledge_enrichment_log_action_product").on(table.action, table.productStandard, table.processedAt),
+  intentIdx: index("idx_knowledge_enrichment_log_intent").on(table.intentId, table.processedAt),
+  triggerRunIdx: index("idx_knowledge_enrichment_log_trigger_run").on(table.triggerRunId),
+}));
+
+export type KnowledgeEnrichmentLog = typeof knowledgeEnrichmentLog.$inferSelect;
+export type InsertKnowledgeEnrichmentLog = Omit<typeof knowledgeEnrichmentLog.$inferInsert, "id" | "createdAt">;
