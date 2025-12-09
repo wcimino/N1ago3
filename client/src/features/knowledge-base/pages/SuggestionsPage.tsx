@@ -254,12 +254,12 @@ function SuggestionCard({
             <p className="font-medium">{suggestion.productStandard}</p>
           </div>
         )}
-        {suggestion.subproductStandard && (
-          <div>
-            <span className="text-gray-500">Subproduto:</span>
-            <p className="font-medium">{suggestion.subproductStandard}</p>
-          </div>
-        )}
+        <div>
+          <span className="text-gray-500">Subproduto:</span>
+          <p className={suggestion.subproductStandard ? "font-medium" : "text-gray-400 italic"}>
+            {suggestion.subproductStandard || "(vazio)"}
+          </p>
+        </div>
         {suggestion.rawExtraction?.subjectName && (
           <div>
             <span className="text-gray-500">Assunto:</span>
