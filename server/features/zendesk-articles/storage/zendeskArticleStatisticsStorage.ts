@@ -1,5 +1,5 @@
 import { db } from "../../../db.js";
-import { zendeskArticleStatistics, zendeskArticles, type InsertZendeskArticleStatistic } from "../../../../shared/schema.js";
+import { zendeskArticlesStatistics, zendeskArticles, type InsertZendeskArticleStatistic } from "../../../../shared/schema.js";
 import { eq, sql, desc, and, gte, lte, type SQL } from "drizzle-orm";
 
 export interface StatisticsFilters {
@@ -19,7 +19,7 @@ export interface ArticleViewCount {
 }
 
 export async function recordArticleView(data: InsertZendeskArticleStatistic): Promise<void> {
-  await db.insert(zendeskArticleStatistics).values(data);
+  await db.insert(zendeskArticlesStatistics).values(data);
 }
 
 export async function recordMultipleArticleViews(
@@ -36,7 +36,7 @@ export async function recordMultipleArticleViews(
     externalConversationId: context.externalConversationId || null,
   }));
 
-  await db.insert(zendeskArticleStatistics).values(records);
+  await db.insert(zendeskArticlesStatistics).values(records);
 }
 
 export async function getViewCountByArticle(filters: StatisticsFilters = {}): Promise<ArticleViewCount[]> {
@@ -45,26 +45,26 @@ export async function getViewCountByArticle(filters: StatisticsFilters = {}): Pr
   const conditions: SQL[] = [];
   
   if (startDate) {
-    conditions.push(gte(zendeskArticleStatistics.createdAt, startDate));
+    conditions.push(gte(zendeskArticlesStatistics.createdAt, startDate));
   }
   
   if (endDate) {
-    conditions.push(lte(zendeskArticleStatistics.createdAt, endDate));
+    conditions.push(lte(zendeskArticlesStatistics.createdAt, endDate));
   }
   
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
   
   const results = await db
     .select({
-      zendeskArticleId: zendeskArticleStatistics.zendeskArticleId,
+      zendeskArticleId: zendeskArticlesStatistics.zendeskArticleId,
       articleTitle: zendeskArticles.title,
       sectionName: zendeskArticles.sectionName,
       viewCount: sql<number>`count(*)::int`,
     })
-    .from(zendeskArticleStatistics)
-    .leftJoin(zendeskArticles, eq(zendeskArticleStatistics.zendeskArticleId, zendeskArticles.id))
+    .from(zendeskArticlesStatistics)
+    .leftJoin(zendeskArticles, eq(zendeskArticlesStatistics.zendeskArticleId, zendeskArticles.id))
     .where(whereClause)
-    .groupBy(zendeskArticleStatistics.zendeskArticleId, zendeskArticles.title, zendeskArticles.sectionName)
+    .groupBy(zendeskArticlesStatistics.zendeskArticleId, zendeskArticles.title, zendeskArticles.sectionName)
     .orderBy(desc(sql`count(*)`))
     .limit(limit)
     .offset(offset);
@@ -75,31 +75,31 @@ export async function getViewCountByArticle(filters: StatisticsFilters = {}): Pr
 export async function getStatisticsForArticle(
   zendeskArticleId: number,
   filters: StatisticsFilters = {}
-): Promise<{ totalViews: number; recentViews: typeof zendeskArticleStatistics.$inferSelect[] }> {
+): Promise<{ totalViews: number; recentViews: typeof zendeskArticlesStatistics.$inferSelect[] }> {
   const { startDate, endDate, limit = 20 } = filters;
   
-  const conditions: SQL[] = [eq(zendeskArticleStatistics.zendeskArticleId, zendeskArticleId)];
+  const conditions: SQL[] = [eq(zendeskArticlesStatistics.zendeskArticleId, zendeskArticleId)];
   
   if (startDate) {
-    conditions.push(gte(zendeskArticleStatistics.createdAt, startDate));
+    conditions.push(gte(zendeskArticlesStatistics.createdAt, startDate));
   }
   
   if (endDate) {
-    conditions.push(lte(zendeskArticleStatistics.createdAt, endDate));
+    conditions.push(lte(zendeskArticlesStatistics.createdAt, endDate));
   }
   
   const whereClause = and(...conditions);
   
   const [countResult] = await db
     .select({ count: sql<number>`count(*)::int` })
-    .from(zendeskArticleStatistics)
+    .from(zendeskArticlesStatistics)
     .where(whereClause);
   
   const recentViews = await db
     .select()
-    .from(zendeskArticleStatistics)
+    .from(zendeskArticlesStatistics)
     .where(whereClause)
-    .orderBy(desc(zendeskArticleStatistics.createdAt))
+    .orderBy(desc(zendeskArticlesStatistics.createdAt))
     .limit(limit);
   
   return {
@@ -114,18 +114,18 @@ export async function getTotalViewCount(filters: StatisticsFilters = {}): Promis
   const conditions: SQL[] = [];
   
   if (startDate) {
-    conditions.push(gte(zendeskArticleStatistics.createdAt, startDate));
+    conditions.push(gte(zendeskArticlesStatistics.createdAt, startDate));
   }
   
   if (endDate) {
-    conditions.push(lte(zendeskArticleStatistics.createdAt, endDate));
+    conditions.push(lte(zendeskArticlesStatistics.createdAt, endDate));
   }
   
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
   
   const [result] = await db
     .select({ count: sql<number>`count(*)::int` })
-    .from(zendeskArticleStatistics)
+    .from(zendeskArticlesStatistics)
     .where(whereClause);
   
   return result?.count ?? 0;

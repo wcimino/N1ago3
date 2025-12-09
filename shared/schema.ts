@@ -525,7 +525,7 @@ export type LearningAttemptResult = "suggestion_created" | "insufficient_message
 export type ZendeskArticle = typeof zendeskArticles.$inferSelect;
 export type InsertZendeskArticle = Omit<typeof zendeskArticles.$inferInsert, "id" | "createdAt" | "updatedAt" | "syncedAt">;
 
-export const zendeskArticleStatistics = pgTable("zendesk_article_statistics", {
+export const zendeskArticlesStatistics = pgTable("zendesk_articles_statistics", {
   id: serial("id").primaryKey(),
   zendeskArticleId: integer("zendesk_article_id").notNull(),
   keywords: text("keywords"),
@@ -534,13 +534,13 @@ export const zendeskArticleStatistics = pgTable("zendesk_article_statistics", {
   externalConversationId: text("external_conversation_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
-  zendeskArticleIdIdx: index("idx_zendesk_article_statistics_article_id").on(table.zendeskArticleId),
-  createdAtIdx: index("idx_zendesk_article_statistics_created_at").on(table.createdAt),
-  conversationIdIdx: index("idx_zendesk_article_statistics_conversation_id").on(table.conversationId),
+  zendeskArticleIdIdx: index("idx_zendesk_articles_statistics_article_id").on(table.zendeskArticleId),
+  createdAtIdx: index("idx_zendesk_articles_statistics_created_at").on(table.createdAt),
+  conversationIdIdx: index("idx_zendesk_articles_statistics_conversation_id").on(table.conversationId),
 }));
 
-export type ZendeskArticleStatistic = typeof zendeskArticleStatistics.$inferSelect;
-export type InsertZendeskArticleStatistic = Omit<typeof zendeskArticleStatistics.$inferInsert, "id" | "createdAt">;
+export type ZendeskArticleStatistic = typeof zendeskArticlesStatistics.$inferSelect;
+export type InsertZendeskArticleStatistic = Omit<typeof zendeskArticlesStatistics.$inferInsert, "id" | "createdAt">;
 
 export const routingRules = pgTable("routing_rules", {
   id: serial("id").primaryKey(),
