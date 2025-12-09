@@ -6,10 +6,7 @@ interface ProductCatalogItem {
   id: number;
   produto: string;
   subproduto: string | null;
-  categoria1: string | null;
-  categoria2: string | null;
   fullName: string;
-  parentId: number | null;
 }
 
 interface KnowledgeSubject {
@@ -37,39 +34,49 @@ interface ProductNode {
 }
 
 function buildProductTree(products: ProductCatalogItem[], subjects: KnowledgeSubject[]): ProductNode[] {
-  const productMap = new Map<string, ProductNode>();
+  const rootNodes = new Map<string, ProductNode>();
   
-  const sortedProducts = [...products].sort((a, b) => {
-    const aDepth = [a.produto, a.subproduto, a.categoria1, a.categoria2].filter(Boolean).length;
-    const bDepth = [b.produto, b.subproduto, b.categoria1, b.categoria2].filter(Boolean).length;
-    return aDepth - bDepth;
-  });
+  const rootProducts = products.filter(p => !p.subproduto);
+  const subProducts = products.filter(p => p.subproduto);
   
-  for (const p of sortedProducts) {
-    const node: ProductNode = {
+  for (const p of rootProducts) {
+    rootNodes.set(p.produto, {
       id: p.id,
-      name: p.categoria2 || p.categoria1 || p.subproduto || p.produto,
+      name: p.produto,
       fullPath: p.fullName,
       children: [],
       subjects: subjects.filter(s => s.productCatalogId === p.id),
-    };
-    
-    productMap.set(p.fullName, node);
-    
-    if (p.parentId) {
-      const parent = [...productMap.values()].find(n => 
-        products.find(prod => prod.id === p.parentId)?.fullName === n.fullPath
-      );
-      if (parent) {
-        parent.children.push(node);
-      }
-    }
+    });
   }
   
-  return [...productMap.values()].filter(node => {
-    const product = products.find(p => p.fullName === node.fullPath);
-    return product && !product.parentId;
-  });
+  for (const p of subProducts) {
+    let parentNode = rootNodes.get(p.produto);
+    
+    if (!parentNode) {
+      parentNode = {
+        id: -1,
+        name: p.produto,
+        fullPath: p.produto,
+        children: [],
+        subjects: [],
+      };
+      rootNodes.set(p.produto, parentNode);
+    }
+    
+    parentNode.children.push({
+      id: p.id,
+      name: p.subproduto!,
+      fullPath: p.fullName,
+      children: [],
+      subjects: subjects.filter(s => s.productCatalogId === p.id),
+    });
+  }
+  
+  for (const node of rootNodes.values()) {
+    node.children.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  
+  return [...rootNodes.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 type FormState = 
