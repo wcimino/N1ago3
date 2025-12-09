@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { ClipboardList, CheckCircle2 } from "lucide-react";
-import { getAuthorColor, isCustomerMessage } from "../../../lib/messageUtils";
+import { getAuthorColor, isCustomerMessage, getMessageSender } from "../../../lib/messageUtils";
 import { useDateFormatters } from "../../hooks";
 import type { Message, ImagePayload } from "../../../types";
 
@@ -114,15 +114,12 @@ function FormResponseContent({ payload }: { payload: FormResponsePayload }) {
 export function MessageBubble({ message, onImageClick, currentHandlerName }: MessageBubbleProps) {
   const { formatDateTimeShort } = useDateFormatters();
   const isCustomer = isCustomerMessage(message.author_type);
-  const isN1agoByName = message.author_name?.toLowerCase().includes("n1ago");
-  const isN1agoByHandler = currentHandlerName?.toLowerCase().includes("n1ago") && 
-    (message.author_type === "business" || message.author_type === "agent");
-  const isN1ago = isN1agoByName || isN1agoByHandler;
+  const sender = getMessageSender(message.author_type, message.author_name);
   const hasImage = message.content_type === "image" && message.content_payload && "mediaUrl" in message.content_payload;
   
   const timestamp = message.zendesk_timestamp || message.received_at;
   
-  const displayName = isN1ago && !isN1agoByName ? "N1ago" : (message.author_name || message.author_type);
+  const displayName = message.author_name || message.author_type;
 
   const renderContent = () => {
     if (hasImage) {
@@ -169,25 +166,47 @@ export function MessageBubble({ message, onImageClick, currentHandlerName }: Mes
     if (isCustomer) {
       return "bg-white rounded-tl-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl";
     }
-    if (isN1ago) {
-      return "bg-purple-100 rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl";
+    
+    const baseRounded = "rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl";
+    
+    switch (sender) {
+      case "n1ago":
+        return `bg-purple-100 ${baseRounded}`;
+      case "zendeskBot":
+        return `bg-amber-100 ${baseRounded}`;
+      case "human":
+      default:
+        return `bg-green-100 ${baseRounded}`;
     }
-    return "bg-green-100 rounded-tl-2xl rounded-tr-sm rounded-br-2xl rounded-bl-2xl";
   };
+  
+  const getSenderTextColor = () => {
+    switch (sender) {
+      case "n1ago":
+        return { main: "text-purple-700", muted: "text-purple-400" };
+      case "zendeskBot":
+        return { main: "text-amber-700", muted: "text-amber-400" };
+      case "human":
+      default:
+        return { main: "text-green-700", muted: "text-green-400" };
+    }
+  };
+  
+  const textColors = getSenderTextColor();
 
   return (
     <div className={`flex ${isCustomer ? "justify-start" : "justify-end"}`}>
       <div className={`max-w-[75%] ${getBubbleStyle()} shadow-sm px-4 py-2`}>
         <div className="flex items-center gap-2 mb-1">
-          <span className={`w-2 h-2 rounded-full ${isN1ago ? "bg-purple-500" : getAuthorColor(message.author_type)}`} />
-          <span className={`text-xs font-medium ${isN1ago ? "text-purple-700" : "text-gray-700"}`}>
+          <span className={`w-2 h-2 rounded-full ${getAuthorColor(message.author_type, message.author_name)}`} />
+          <span className={`text-xs font-medium ${isCustomer ? "text-gray-700" : textColors.main}`}>
             {displayName}
           </span>
         </div>
 
         {renderContent()}
 
-        <p className={`text-[10px] mt-1 text-right ${isN1ago ? "text-purple-400" : "text-gray-400"}`}>
+        <p className={`text-[10px] mt-1 text-right ${isCustomer ? "text-gray-400" : textColors.muted}`}>
           {timestamp ? formatDateTimeShort(timestamp) : "-"}
         </p>
       </div>

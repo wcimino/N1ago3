@@ -1,13 +1,36 @@
 export type AuthorType = "customer" | "user" | "agent" | "business" | "app" | "bot" | "system";
 
-export function getAuthorColor(authorType: string): string {
-  switch (authorType) {
+export type MessageSender = "customer" | "n1ago" | "zendeskBot" | "human";
+
+export function getMessageSender(authorType: string, authorName?: string | null): MessageSender {
+  if (authorType === "customer" || authorType === "user") {
+    return "customer";
+  }
+  
+  const name = (authorName || "").toLowerCase();
+  
+  if (name.includes("n1ago")) {
+    return "n1ago";
+  }
+  
+  if (name.includes("answerbot") || name.includes("zd-answerbot") || authorType === "bot") {
+    return "zendeskBot";
+  }
+  
+  return "human";
+}
+
+export function getAuthorColor(authorType: string, authorName?: string | null): string {
+  const sender = getMessageSender(authorType, authorName);
+  
+  switch (sender) {
     case "customer":
-    case "user":
       return "bg-blue-500";
-    case "agent":
-    case "business":
-    case "app":
+    case "n1ago":
+      return "bg-purple-500";
+    case "zendeskBot":
+      return "bg-amber-500";
+    case "human":
       return "bg-green-500";
     default:
       return "bg-gray-500";
