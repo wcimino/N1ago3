@@ -40,25 +40,29 @@ router.post("/api/ai/enrichment/generate", isAuthenticated, requireAuthorizedUse
     // Note: Manual execution works even if config.enabled is false
     // The enabled flag controls automatic triggers only
 
-    const articles = await knowledgeBaseStorage.getAllArticles({
-      productStandard: product,
-      subproductStandard: subproduct,
+    const intentsWithArticles = await knowledgeBaseStorage.getIntentsWithArticles({
+      product,
+      subproduct,
       limit: Math.min(limit, 50),
     });
 
-    if (articles.length === 0) {
+    if (intentsWithArticles.length === 0) {
       return res.json({
         success: true,
+        intentsProcessed: 0,
+        articlesCreated: 0,
+        articlesUpdated: 0,
         suggestionsGenerated: 0,
+        skipped: 0,
         suggestions: [],
-        message: "Nenhum artigo encontrado na base local com os filtros aplicados."
+        message: "Nenhuma intenção encontrada com os filtros aplicados. Cadastre intenções primeiro na aba 'Assuntos e Intenções'."
       });
     }
 
-    console.log(`[Enrichment] Processing ${articles.length} articles from local KB`);
+    console.log(`[Enrichment] Processing ${intentsWithArticles.length} intents (with/without articles)`);
 
     const result = await generateEnrichmentSuggestions({
-      articles,
+      intentsWithArticles,
       config
     });
 

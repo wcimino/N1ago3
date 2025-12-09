@@ -308,9 +308,21 @@ function EnrichmentPanel() {
     enabled: !!selectedProduct,
   });
 
+  interface EnrichmentResponse {
+    success: boolean;
+    intentsProcessed: number;
+    articlesCreated: number;
+    articlesUpdated: number;
+    suggestionsGenerated: number;
+    skipped: number;
+    message?: string;
+    errors?: string[];
+  }
+
   const generateMutation = useMutation({
-    mutationFn: async (params: { product?: string; subproduct?: string; limit: number }) => {
-      return apiRequest("POST", "/api/ai/enrichment/generate", params);
+    mutationFn: async (params: { product?: string; subproduct?: string; limit: number }): Promise<EnrichmentResponse> => {
+      const response = await apiRequest("POST", "/api/ai/enrichment/generate", params);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["knowledge-suggestions"] });
@@ -410,10 +422,42 @@ function EnrichmentPanel() {
         </div>
       )}
       
-      {generateMutation.isSuccess && (
-        <div className="mt-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-md p-2">
-          Sugestões geradas com sucesso! As novas sugestões aparecem na lista abaixo.
-        </div>
+      {generateMutation.isSuccess && generateMutation.data && (
+        <>
+          {(generateMutation.data.articlesCreated > 0 || generateMutation.data.articlesUpdated > 0) ? (
+            <div className="mt-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-md p-2">
+              {generateMutation.data.articlesCreated > 0 && (
+                <span>{generateMutation.data.articlesCreated} artigo(s) criado(s). </span>
+              )}
+              {generateMutation.data.articlesUpdated > 0 && (
+                <span>{generateMutation.data.articlesUpdated} artigo(s) atualizado(s). </span>
+              )}
+              {generateMutation.data.skipped > 0 && (
+                <span>{generateMutation.data.skipped} ignorado(s). </span>
+              )}
+              As novas sugestões aparecem na lista abaixo.
+            </div>
+          ) : generateMutation.data.intentsProcessed === 0 ? (
+            <div className="mt-3 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md p-2">
+              {generateMutation.data.message || "Nenhuma intenção encontrada. Cadastre intenções primeiro na aba 'Assuntos e Intenções'."}
+            </div>
+          ) : generateMutation.data.skipped > 0 ? (
+            <div className="mt-3 text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-md p-2">
+              {generateMutation.data.skipped} intenção(ões) analisada(s), mas nenhuma sugestão gerada. 
+              Os artigos já estão completos ou não há informação suficiente no Zendesk.
+            </div>
+          ) : (
+            <div className="mt-3 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md p-2">
+              {generateMutation.data.message || "Nenhuma sugestão gerada."}
+            </div>
+          )}
+          
+          {generateMutation.data.errors && generateMutation.data.errors.length > 0 && (
+            <div className="mt-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2">
+              Erros: {generateMutation.data.errors.join(", ")}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

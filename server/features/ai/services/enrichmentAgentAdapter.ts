@@ -1,4 +1,5 @@
 import { knowledgeSuggestionsStorage } from "../storage/knowledgeSuggestionsStorage.js";
+import { knowledgeBaseStorage, IntentWithArticle } from "../storage/knowledgeBaseStorage.js";
 import { callOpenAI, ToolDefinition } from "./openaiApiService.js";
 import { createZendeskKnowledgeBaseTool } from "./aiTools.js";
 import { ENRICHMENT_SYSTEM_PROMPT, ENRICHMENT_USER_PROMPT_TEMPLATE } from "../constants/enrichmentAgentPrompts.js";
@@ -15,22 +16,26 @@ export interface EnrichmentConfig {
 }
 
 export interface EnrichmentParams {
-  articles: KnowledgeBaseArticle[];
+  intentsWithArticles: IntentWithArticle[];
   config: EnrichmentConfig;
 }
 
 export interface EnrichmentResult {
   success: boolean;
+  intentsProcessed: number;
+  articlesCreated: number;
+  articlesUpdated: number;
   suggestionsGenerated: number;
-  articlesProcessed: number;
+  skipped: number;
   suggestions?: Array<{
     id: number;
     type: string;
-    localArticleId: number;
+    intentId: number;
+    articleId?: number;
     product?: string;
-    subproduct?: string;
   }>;
   errors?: string[];
+  message?: string;
 }
 
 interface ZendeskSourceArticle {
@@ -39,29 +44,43 @@ interface ZendeskSourceArticle {
   similarityScore: number;
 }
 
-function buildCreateEnrichmentSuggestionTool(localArticle: KnowledgeBaseArticle): ToolDefinition {
+function buildCreateEnrichmentSuggestionTool(intentWithArticle: IntentWithArticle): ToolDefinition {
+  const hasArticle = !!intentWithArticle.article;
+  
   return {
     name: "create_enrichment_suggestion",
-    description: "Registra uma sugestão de melhoria para o artigo local baseada na comparação com artigos do Zendesk.",
+    description: hasArticle 
+      ? "Registra uma sugestão de melhoria para o artigo existente baseada na comparação com artigos do Zendesk."
+      : "Registra uma sugestão de criação de artigo para a intenção baseada nos artigos do Zendesk.",
     parameters: {
       type: "object",
       properties: {
         action: {
           type: "string",
-          enum: ["update", "skip"],
-          description: "Ação a tomar: update (melhorar o artigo existente), skip (ignorar pois não há melhoria)"
+          enum: hasArticle ? ["update", "skip"] : ["create", "skip"],
+          description: hasArticle 
+            ? "Ação a tomar: update (melhorar o artigo existente), skip (ignorar pois não há melhoria)"
+            : "Ação a tomar: create (criar primeiro artigo), skip (ignorar pois não há informação suficiente)"
         },
-        improvedDescription: {
+        name: {
           type: "string",
-          description: "Descrição melhorada do problema/situação (se action=update)"
+          description: "Nome do artigo (obrigatório se action=create)"
         },
-        improvedResolution: {
+        description: {
           type: "string",
-          description: "Resolução melhorada/complementada (se action=update)"
+          description: "Descrição do problema/situação (obrigatório se action=create ou update)"
         },
-        additionalObservations: {
+        resolution: {
           type: "string",
-          description: "Observações adicionais encontradas no Zendesk (se action=update)"
+          description: "Resolução com verbos no infinitivo (obrigatório se action=create ou update)"
+        },
+        observations: {
+          type: "string",
+          description: "Observações adicionais (opcional)"
+        },
+        createReason: {
+          type: "string",
+          description: "Motivo da criação do artigo (obrigatório se action=create)"
         },
         updateReason: {
           type: "string",
@@ -91,45 +110,63 @@ function buildCreateEnrichmentSuggestionTool(localArticle: KnowledgeBaseArticle)
       required: ["action"]
     },
     handler: async (args: any) => {
-      return `Sugestão registrada para artigo #${localArticle.id}: action=${args.action}`;
+      return `Sugestão registrada para intenção #${intentWithArticle.intent.id}: action=${args.action}`;
     }
   };
 }
 
-function buildUserPromptForArticle(article: KnowledgeBaseArticle, config: EnrichmentConfig): string {
-  const basePrompt = config.promptTemplate || ENRICHMENT_USER_PROMPT_TEMPLATE;
-  return basePrompt
-    .replace(/\{\{artigo_id\}\}/gi, String(article.id))
-    .replace(/\{\{artigo_nome\}\}/gi, article.name || "Sem nome")
-    .replace(/\{\{produto\}\}/gi, article.productStandard || "N/A")
-    .replace(/\{\{subproduto\}\}/gi, article.subproductStandard || "N/A")
-    .replace(/\{\{categoria1\}\}/gi, article.category1 || "N/A")
-    .replace(/\{\{categoria2\}\}/gi, article.category2 || "N/A")
-    .replace(/\{\{intencao\}\}/gi, article.intent || "N/A")
-    .replace(/\{\{descricao\}\}/gi, article.description || "Sem descrição")
-    .replace(/\{\{resolucao\}\}/gi, article.resolution || "Sem resolução")
-    .replace(/\{\{observacoes\}\}/gi, article.observations || "Sem observações");
+function buildUserPromptForIntent(intentWithArticle: IntentWithArticle, config: EnrichmentConfig): string {
+  const { intent, article } = intentWithArticle;
+  const hasArticle = !!article;
+  
+  let prompt = config.promptTemplate || ENRICHMENT_USER_PROMPT_TEMPLATE;
+  
+  prompt = prompt
+    .replace(/\{\{intencao_id\}\}/gi, String(intent.id))
+    .replace(/\{\{intencao_nome\}\}/gi, intent.name)
+    .replace(/\{\{assunto_nome\}\}/gi, intent.subjectName)
+    .replace(/\{\{produto\}\}/gi, intent.productName);
+  
+  if (hasArticle) {
+    prompt = prompt
+      .replace(/\{\{#if_artigo_existe\}\}([\s\S]*?)\{\{\/if_artigo_existe\}\}/gi, '$1')
+      .replace(/\{\{#if_artigo_nao_existe\}\}[\s\S]*?\{\{\/if_artigo_nao_existe\}\}/gi, '')
+      .replace(/\{\{artigo_id\}\}/gi, String(article.id))
+      .replace(/\{\{artigo_nome\}\}/gi, article.name || intent.name)
+      .replace(/\{\{descricao\}\}/gi, article.description || "Sem descrição")
+      .replace(/\{\{resolucao\}\}/gi, article.resolution || "Sem resolução")
+      .replace(/\{\{observacoes\}\}/gi, article.observations || "Sem observações");
+  } else {
+    prompt = prompt
+      .replace(/\{\{#if_artigo_nao_existe\}\}([\s\S]*?)\{\{\/if_artigo_nao_existe\}\}/gi, '$1')
+      .replace(/\{\{#if_artigo_existe\}\}[\s\S]*?\{\{\/if_artigo_existe\}\}/gi, '');
+  }
+  
+  return prompt;
 }
 
-async function processArticle(
-  article: KnowledgeBaseArticle,
+async function processIntent(
+  intentWithArticle: IntentWithArticle,
   config: EnrichmentConfig
 ): Promise<{
   success: boolean;
-  suggestion?: { id: number; type: string; localArticleId: number; product?: string; subproduct?: string };
+  action?: 'create' | 'update' | 'skip';
+  suggestion?: { id: number; type: string; intentId: number; articleId?: number; product?: string };
+  newArticleId?: number;
   error?: string;
 }> {
-  const userPrompt = buildUserPromptForArticle(article, config);
+  const { intent, article } = intentWithArticle;
+  const userPrompt = buildUserPromptForIntent(intentWithArticle, config);
 
   const tools: ToolDefinition[] = [
-    buildCreateEnrichmentSuggestionTool(article)
+    buildCreateEnrichmentSuggestionTool(intentWithArticle)
   ];
 
   if (config.useZendeskKnowledgeBaseTool) {
     const zendeskTool = createZendeskKnowledgeBaseTool();
     const originalHandler = zendeskTool.handler;
     zendeskTool.handler = async (args) => {
-      console.log(`[Enrichment Agent] Zendesk KB search for article #${article.id}: keywords=${args.keywords}`);
+      console.log(`[Enrichment Agent] Zendesk KB search for intent #${intent.id}: keywords=${args.keywords}`);
       return originalHandler(args);
     };
     tools.unshift(zendeskTool);
@@ -144,29 +181,30 @@ async function processArticle(
     maxTokens: 4096,
     maxIterations: 5,
     contextType: "enrichment",
-    contextId: `enrichment-article-${article.id}`,
+    contextId: `enrichment-intent-${intent.id}`,
     finalToolName: "create_enrichment_suggestion"
   });
 
   if (!result.success) {
     return {
       success: false,
-      error: result.error || `Failed to process article #${article.id}`
+      error: result.error || `Failed to process intent #${intent.id}`
     };
   }
 
   if (!result.toolResult) {
     return {
       success: true,
-      error: `No suggestion generated for article #${article.id}`
+      action: 'skip',
+      error: `No suggestion generated for intent #${intent.id}`
     };
   }
 
   const suggestionResult = result.toolResult;
 
   if (suggestionResult.action === "skip") {
-    console.log(`[Enrichment Agent] Skipping article #${article.id}: ${suggestionResult.skipReason}`);
-    return { success: true };
+    console.log(`[Enrichment Agent] Skipping intent #${intent.id}: ${suggestionResult.skipReason}`);
+    return { success: true, action: 'skip' };
   }
 
   const sourceArticlesData = suggestionResult.sourceArticles?.map((s: ZendeskSourceArticle) => ({
@@ -175,70 +213,130 @@ async function processArticle(
     similarityScore: s.similarityScore
   })) || [];
 
+  let newArticleId: number | undefined;
+  let targetArticleId: number | null = article?.id || null;
+
+  if (suggestionResult.action === "create") {
+    const newArticle = await knowledgeBaseStorage.createArticle({
+      name: suggestionResult.name || intent.name,
+      productStandard: intent.productName,
+      subproductStandard: null,
+      category1: null,
+      category2: null,
+      subjectId: intent.subjectId,
+      intentId: intent.id,
+      intent: intent.name,
+      description: suggestionResult.description || "",
+      resolution: suggestionResult.resolution || "",
+      observations: suggestionResult.observations || null,
+    });
+    
+    newArticleId = newArticle.id;
+    targetArticleId = newArticle.id;
+    console.log(`[Enrichment Agent] Article created: id=${newArticle.id} for intent #${intent.id}`);
+  }
+
   const suggestion = await knowledgeSuggestionsStorage.createSuggestion({
     conversationId: null,
     externalConversationId: null,
-    suggestionType: "update",
-    name: article.name,
-    productStandard: article.productStandard,
-    subproductStandard: article.subproductStandard,
-    category1: article.category1,
-    category2: article.category2,
-    description: suggestionResult.improvedDescription || article.description,
-    resolution: suggestionResult.improvedResolution || article.resolution,
-    observations: suggestionResult.additionalObservations || article.observations,
+    suggestionType: suggestionResult.action,
+    name: suggestionResult.name || article?.name || intent.name,
+    productStandard: intent.productName,
+    subproductStandard: null,
+    category1: null,
+    category2: null,
+    description: suggestionResult.description || article?.description,
+    resolution: suggestionResult.resolution || article?.resolution,
+    observations: suggestionResult.observations || article?.observations,
     confidenceScore: suggestionResult.confidenceScore,
-    similarArticleId: article.id,
-    updateReason: suggestionResult.updateReason,
+    similarArticleId: targetArticleId,
+    updateReason: suggestionResult.updateReason || suggestionResult.createReason,
     status: "pending",
     conversationHandler: null,
     rawExtraction: {
       ...suggestionResult,
-      localArticleId: article.id,
+      intentId: intent.id,
+      intentName: intent.name,
+      subjectName: intent.subjectName,
+      productName: intent.productName,
       sourceArticles: sourceArticlesData,
-      enrichmentSource: "zendesk"
+      enrichmentSource: "zendesk",
+      newArticleId: newArticleId
     }
   });
 
-  console.log(`[Enrichment Agent] Suggestion saved: id=${suggestion.id} for article #${article.id}`);
+  console.log(`[Enrichment Agent] Suggestion saved: id=${suggestion.id} for intent #${intent.id}, action=${suggestionResult.action}`);
 
   return {
     success: true,
+    action: suggestionResult.action,
+    newArticleId,
     suggestion: {
       id: suggestion.id,
-      type: "update",
-      localArticleId: article.id,
-      product: article.productStandard || undefined,
-      subproduct: article.subproductStandard || undefined
+      type: suggestionResult.action,
+      intentId: intent.id,
+      articleId: targetArticleId || undefined,
+      product: intent.productName
     }
   };
 }
 
 export async function generateEnrichmentSuggestions(params: EnrichmentParams): Promise<EnrichmentResult> {
-  const suggestions: Array<{ id: number; type: string; localArticleId: number; product?: string; subproduct?: string }> = [];
+  const suggestions: Array<{ id: number; type: string; intentId: number; articleId?: number; product?: string }> = [];
   const errors: string[] = [];
+  let articlesCreated = 0;
+  let articlesUpdated = 0;
+  let skipped = 0;
 
-  for (const article of params.articles) {
+  for (const intentWithArticle of params.intentsWithArticles) {
     try {
-      console.log(`[Enrichment Agent] Processing article #${article.id}: ${article.name}`);
-      const result = await processArticle(article, params.config);
+      console.log(`[Enrichment Agent] Processing intent #${intentWithArticle.intent.id}: ${intentWithArticle.intent.name} (hasArticle: ${!!intentWithArticle.article})`);
+      const result = await processIntent(intentWithArticle, params.config);
 
       if (!result.success) {
-        errors.push(result.error || `Error processing article #${article.id}`);
-      } else if (result.suggestion) {
-        suggestions.push(result.suggestion);
+        errors.push(result.error || `Error processing intent #${intentWithArticle.intent.id}`);
+      } else if (result.action === 'skip') {
+        skipped++;
+      } else if (result.action === 'create') {
+        articlesCreated++;
+        if (result.suggestion) {
+          suggestions.push(result.suggestion);
+        }
+      } else if (result.action === 'update') {
+        articlesUpdated++;
+        if (result.suggestion) {
+          suggestions.push(result.suggestion);
+        }
       }
     } catch (error: any) {
-      console.error(`[Enrichment Agent] Error processing article #${article.id}:`, error.message);
-      errors.push(`Article #${article.id}: ${error.message}`);
+      console.error(`[Enrichment Agent] Error processing intent #${intentWithArticle.intent.id}:`, error.message);
+      errors.push(`Intent #${intentWithArticle.intent.id}: ${error.message}`);
     }
+  }
+
+  const total = params.intentsWithArticles.length;
+  let message = "";
+  if (articlesCreated > 0 || articlesUpdated > 0) {
+    const parts: string[] = [];
+    if (articlesCreated > 0) parts.push(`${articlesCreated} artigo(s) criado(s)`);
+    if (articlesUpdated > 0) parts.push(`${articlesUpdated} artigo(s) atualizado(s)`);
+    if (skipped > 0) parts.push(`${skipped} ignorado(s)`);
+    message = parts.join(", ");
+  } else if (skipped > 0) {
+    message = `${skipped} intenção(ões) ignorada(s) - artigos já estão completos ou sem informação suficiente no Zendesk`;
+  } else if (total === 0) {
+    message = "Nenhuma intenção encontrada com os filtros aplicados";
   }
 
   return {
     success: errors.length === 0,
+    intentsProcessed: total,
+    articlesCreated,
+    articlesUpdated,
     suggestionsGenerated: suggestions.length,
-    articlesProcessed: params.articles.length,
+    skipped,
     suggestions,
-    errors: errors.length > 0 ? errors : undefined
+    errors: errors.length > 0 ? errors : undefined,
+    message
   };
 }

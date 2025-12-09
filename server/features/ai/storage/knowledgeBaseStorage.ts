@@ -1,7 +1,18 @@
 import { db } from "../../../db.js";
-import { knowledgeBase } from "../../../../shared/schema.js";
+import { knowledgeBase, knowledgeIntents, knowledgeSubjects, ifoodProducts } from "../../../../shared/schema.js";
 import { eq, desc, ilike, or, and, type SQL } from "drizzle-orm";
-import type { KnowledgeBaseArticle, InsertKnowledgeBaseArticle } from "../../../../shared/schema.js";
+import type { KnowledgeBaseArticle, InsertKnowledgeBaseArticle, KnowledgeIntent } from "../../../../shared/schema.js";
+
+export interface IntentWithArticle {
+  intent: {
+    id: number;
+    name: string;
+    subjectId: number;
+    subjectName: string;
+    productName: string;
+  };
+  article: KnowledgeBaseArticle | null;
+}
 
 export const knowledgeBaseStorage = {
   async getAllArticles(filters?: {
@@ -143,5 +154,65 @@ export const knowledgeBaseStorage = {
       .from(knowledgeBase)
       .orderBy(knowledgeBase.category2);
     return results.filter(r => r.category2).map(r => r.category2!);
+  },
+
+  async getIntentsWithArticles(filters?: {
+    product?: string;
+    subproduct?: string;
+    limit?: number;
+  }): Promise<IntentWithArticle[]> {
+    const conditions: SQL[] = [];
+    
+    if (filters?.product) {
+      conditions.push(eq(ifoodProducts.produto, filters.product));
+    }
+    
+    if (filters?.subproduct) {
+      conditions.push(eq(ifoodProducts.subproduto, filters.subproduct));
+    }
+
+    let query = db
+      .select({
+        intentId: knowledgeIntents.id,
+        intentName: knowledgeIntents.name,
+        subjectId: knowledgeSubjects.id,
+        subjectName: knowledgeSubjects.name,
+        productName: ifoodProducts.produto,
+        subproductName: ifoodProducts.subproduto,
+      })
+      .from(knowledgeIntents)
+      .innerJoin(knowledgeSubjects, eq(knowledgeIntents.subjectId, knowledgeSubjects.id))
+      .innerJoin(ifoodProducts, eq(knowledgeSubjects.productCatalogId, ifoodProducts.id));
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as typeof query;
+    }
+
+    const intentsQuery = await query
+      .orderBy(desc(knowledgeIntents.updatedAt))
+      .limit(filters?.limit || 100);
+
+    const results: IntentWithArticle[] = [];
+    
+    for (const intent of intentsQuery) {
+      const [article] = await db
+        .select()
+        .from(knowledgeBase)
+        .where(eq(knowledgeBase.intentId, intent.intentId))
+        .limit(1);
+
+      results.push({
+        intent: {
+          id: intent.intentId,
+          name: intent.intentName,
+          subjectId: intent.subjectId,
+          subjectName: intent.subjectName,
+          productName: intent.productName,
+        },
+        article: article || null,
+      });
+    }
+
+    return results;
   },
 };
