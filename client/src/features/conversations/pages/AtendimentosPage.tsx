@@ -1,13 +1,13 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Users, MessageCircle, Bot, Brain, UserCircle, Settings2 } from "lucide-react";
+import { Users, MessageCircle, Bot, Brain, UserCircle, Settings2, Star } from "lucide-react";
 import { LoadingState, EmptyState, Pagination, SegmentedTabs } from "../../../shared/components/ui";
 import { useDateFormatters, usePaginatedQuery } from "../../../shared/hooks";
 import { fetchApi } from "../../../lib/queryClient";
 import { FilterBar, UserGroupCard } from "../components";
 import { RoutingRulesContent } from "../../routing/components/RoutingRulesContent";
-import { useFavorites } from "../../favorites/hooks/useFavorites";
+import { FavoritosContent, useFavorites } from "../../favorites";
 import type { UserGroup } from "../../../types";
 
 interface FiltersResponse {
@@ -24,6 +24,7 @@ const HANDLER_TABS = [
 
 const CONFIG_TABS = [
   { id: "atendimento", label: "Atendimento", icon: <Users className="w-4 h-4" /> },
+  { id: "favoritos", label: "Favoritos", icon: <Star className="w-4 h-4" /> },
   { id: "routing", label: "Roteamento", icon: <Settings2 className="w-4 h-4" /> },
 ];
 
@@ -42,6 +43,7 @@ export function AtendimentosPage() {
   const [handlerFilter, setHandlerFilter] = useState<string>("all");
 
   const isRoutingView = location.includes("/routing");
+  const isFavoritosView = location.includes("/favoritos");
 
   useEffect(() => {
     const params = new URLSearchParams(search);
@@ -101,14 +103,22 @@ export function AtendimentosPage() {
   const handleConfigTabChange = (tabId: string) => {
     if (tabId === "routing") {
       navigate("/atendimentos/routing");
+    } else if (tabId === "favoritos") {
+      navigate("/atendimentos/favoritos");
     } else if (tabId === "atendimento") {
       navigate("/atendimentos");
     }
   };
 
+  const getActiveConfigTab = () => {
+    if (isRoutingView) return "routing";
+    if (isFavoritosView) return "favoritos";
+    return "atendimento";
+  };
+
   const handleHandlerTabChange = (tabId: string) => {
     setHandlerFilter(tabId);
-    if (isRoutingView) {
+    if (isRoutingView || isFavoritosView) {
       navigate("/atendimentos");
     }
   };
@@ -123,13 +133,13 @@ export function AtendimentosPage() {
         <div className="shrink-0">
           <SegmentedTabs
             tabs={CONFIG_TABS}
-            activeTab={isRoutingView ? "routing" : "atendimento"}
+            activeTab={getActiveConfigTab()}
             onChange={handleConfigTabChange}
           />
         </div>
       </div>
 
-      {!isRoutingView && (
+      {!isRoutingView && !isFavoritosView && (
         <div className="px-4 py-3 border-b">
           <SegmentedTabs tabs={HANDLER_TABS} activeTab={handlerFilter} onChange={handleHandlerTabChange} />
         </div>
@@ -137,6 +147,8 @@ export function AtendimentosPage() {
 
       {isRoutingView ? (
         <RoutingRulesContent />
+      ) : isFavoritosView ? (
+        <FavoritosContent />
       ) : (
         <>
           <FilterBar
