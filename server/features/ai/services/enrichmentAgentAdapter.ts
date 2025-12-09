@@ -123,6 +123,10 @@ function buildUserPromptForIntent(intentWithArticle: IntentWithArticle, config: 
   
   let prompt = config.promptTemplate || ENRICHMENT_USER_PROMPT_TEMPLATE;
   
+  // Track if synonyms were substituted via template placeholders
+  let intentSynonymsSubstituted = false;
+  let subjectSynonymsSubstituted = false;
+  
   prompt = prompt
     .replace(/\{\{intencao_id\}\}/gi, String(intent.id))
     .replace(/\{\{intencao_nome\}\}/gi, intent.name)
@@ -130,6 +134,10 @@ function buildUserPromptForIntent(intentWithArticle: IntentWithArticle, config: 
     .replace(/\{\{produto\}\}/gi, intent.productName);
   
   if (hasIntentSynonyms) {
+    // Check if template contains synonym placeholders before replacing
+    if (prompt.includes('{{intencao_sinonimos}}') || prompt.includes('{{#if_intencao_sinonimos}}')) {
+      intentSynonymsSubstituted = true;
+    }
     prompt = prompt
       .replace(/\{\{#if_intencao_sinonimos\}\}([\s\S]*?)\{\{\/if_intencao_sinonimos\}\}/gi, '$1')
       .replace(/\{\{intencao_sinonimos\}\}/gi, intent.synonyms.join(', '));
@@ -139,6 +147,10 @@ function buildUserPromptForIntent(intentWithArticle: IntentWithArticle, config: 
   }
   
   if (hasSubjectSynonyms) {
+    // Check if template contains synonym placeholders before replacing
+    if (prompt.includes('{{assunto_sinonimos}}') || prompt.includes('{{#if_assunto_sinonimos}}')) {
+      subjectSynonymsSubstituted = true;
+    }
     prompt = prompt
       .replace(/\{\{#if_assunto_sinonimos\}\}([\s\S]*?)\{\{\/if_assunto_sinonimos\}\}/gi, '$1')
       .replace(/\{\{assunto_sinonimos\}\}/gi, intent.subjectSynonyms.join(', '));
@@ -162,7 +174,14 @@ function buildUserPromptForIntent(intentWithArticle: IntentWithArticle, config: 
       .replace(/\{\{#if_artigo_existe\}\}[\s\S]*?\{\{\/if_artigo_existe\}\}/gi, '');
   }
   
-  const synonymsContext = buildSynonymsContext(intent.synonyms, intent.subjectSynonyms);
+  // Always append synonyms context if not already substituted via template placeholders
+  // This ensures synonyms are ALWAYS included in the prompt regardless of template customization
+  const synonymsToAppend = {
+    intentSynonyms: (!intentSynonymsSubstituted && hasIntentSynonyms) ? intent.synonyms : [],
+    subjectSynonyms: (!subjectSynonymsSubstituted && hasSubjectSynonyms) ? intent.subjectSynonyms : []
+  };
+  
+  const synonymsContext = buildSynonymsContext(synonymsToAppend.intentSynonyms, synonymsToAppend.subjectSynonyms);
   if (synonymsContext) {
     prompt += synonymsContext;
   }
