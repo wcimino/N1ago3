@@ -4,7 +4,7 @@ import { useKnowledgeSuggestions, type KnowledgeSuggestion } from "../hooks/useK
 import { Check, X, GitMerge, AlertTriangle, Clock, CheckCircle, XCircle, Plus, Pencil, Sparkles, Loader2, ChevronDown, FileText, ExternalLink, ArrowRight } from "lucide-react";
 import { fetchApi, apiRequest } from "../../../lib/queryClient";
 
-type StatusFilter = "pending" | "approved" | "rejected" | "merged" | "all";
+type StatusFilter = "pending" | "approved" | "rejected" | "merged" | "no_improvement" | "all";
 
 interface KnowledgeArticle {
   id: number;
@@ -64,18 +64,21 @@ function StatusBadge({ status }: { status: string }) {
     approved: "bg-green-100 text-green-800",
     rejected: "bg-red-100 text-red-800",
     merged: "bg-blue-100 text-blue-800",
+    no_improvement: "bg-gray-100 text-gray-800",
   };
   const icons: Record<string, React.ReactNode> = {
     pending: <Clock className="w-3 h-3" />,
     approved: <CheckCircle className="w-3 h-3" />,
     rejected: <XCircle className="w-3 h-3" />,
     merged: <GitMerge className="w-3 h-3" />,
+    no_improvement: <CheckCircle className="w-3 h-3" />,
   };
   const labels: Record<string, string> = {
     pending: "Pendente",
     approved: "Aprovado",
     rejected: "Rejeitado",
     merged: "Mesclado",
+    no_improvement: "Sem melhoria",
   };
 
   return (
@@ -188,14 +191,18 @@ function SuggestionCard({
   suggestion, 
   onApprove, 
   onReject,
+  onMarkNoImprovement,
   isApproving,
   isRejecting,
+  isMarkingNoImprovement,
 }: { 
   suggestion: KnowledgeSuggestion;
   onApprove: (id: number) => void;
   onReject: (params: { id: number; reason?: string }) => void;
+  onMarkNoImprovement: (id: number) => void;
   isApproving: boolean;
   isRejecting: boolean;
+  isMarkingNoImprovement: boolean;
 }) {
   const [showRejectReason, setShowRejectReason] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
@@ -372,6 +379,14 @@ function SuggestionCard({
               >
                 <Check className="w-4 h-4" />
                 Aprovar
+              </button>
+              <button
+                onClick={() => onMarkNoImprovement(suggestion.id)}
+                disabled={isMarkingNoImprovement}
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-500 text-white rounded-md text-sm hover:bg-gray-600 disabled:opacity-50"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Sem melhoria
               </button>
               <button
                 onClick={handleReject}
@@ -576,8 +591,10 @@ export function SuggestionsPage() {
     isLoading, 
     approve, 
     reject, 
+    markNoImprovement,
     isApproving, 
-    isRejecting 
+    isRejecting,
+    isMarkingNoImprovement 
   } = useKnowledgeSuggestions(statusFilter === "all" ? undefined : statusFilter);
 
   return (
@@ -585,7 +602,7 @@ export function SuggestionsPage() {
       <EnrichmentPanel />
       
       <div className="flex flex-wrap gap-2">
-        {(["pending", "approved", "rejected", "merged", "all"] as StatusFilter[]).map((status) => (
+        {(["pending", "approved", "rejected", "merged", "no_improvement", "all"] as StatusFilter[]).map((status) => (
           <button
             key={status}
             onClick={() => setStatusFilter(status)}
@@ -599,6 +616,7 @@ export function SuggestionsPage() {
             {status === "approved" && `Aprovados${stats ? ` (${stats.approved})` : ""}`}
             {status === "rejected" && `Rejeitados${stats ? ` (${stats.rejected})` : ""}`}
             {status === "merged" && `Mesclados${stats ? ` (${stats.merged})` : ""}`}
+            {status === "no_improvement" && `Sem melhoria${stats ? ` (${stats.no_improvement})` : ""}`}
             {status === "all" && "Todos"}
           </button>
         ))}
@@ -618,8 +636,10 @@ export function SuggestionsPage() {
               suggestion={suggestion}
               onApprove={approve}
               onReject={reject}
+              onMarkNoImprovement={markNoImprovement}
               isApproving={isApproving}
               isRejecting={isRejecting}
+              isMarkingNoImprovement={isMarkingNoImprovement}
             />
           ))}
         </div>

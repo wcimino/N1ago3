@@ -3,7 +3,7 @@ import { knowledgeSuggestions, knowledgeBase } from "../../../../shared/schema.j
 import { eq, desc, and, type SQL } from "drizzle-orm";
 import type { KnowledgeSuggestion, InsertKnowledgeSuggestion, InsertKnowledgeBaseArticle } from "../../../../shared/schema.js";
 
-export type SuggestionStatus = "pending" | "approved" | "rejected" | "merged";
+export type SuggestionStatus = "pending" | "approved" | "rejected" | "merged" | "no_improvement";
 
 export const knowledgeSuggestionsStorage = {
   async getAllSuggestions(filters?: {
@@ -143,6 +143,7 @@ export const knowledgeSuggestionsStorage = {
       approved: 0,
       rejected: 0,
       merged: 0,
+      no_improvement: 0,
     };
 
     for (const suggestion of results) {
@@ -153,6 +154,19 @@ export const knowledgeSuggestionsStorage = {
     }
 
     return counts;
+  },
+
+  async markNoImprovement(id: number, reviewedBy: string): Promise<KnowledgeSuggestion | null> {
+    const [suggestion] = await db.update(knowledgeSuggestions)
+      .set({
+        status: "no_improvement",
+        reviewedBy,
+        reviewedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(knowledgeSuggestions.id, id))
+      .returning();
+    return suggestion || null;
   },
 
   async getSuggestionByConversation(conversationId: number): Promise<KnowledgeSuggestion | null> {

@@ -29,7 +29,7 @@ export interface KnowledgeSuggestion {
   similarArticleId: number | null;
   similarityScore: number | null;
   updateReason: string | null;
-  status: "pending" | "approved" | "rejected" | "merged";
+  status: "pending" | "approved" | "rejected" | "merged" | "no_improvement";
   reviewedBy: string | null;
   reviewedAt: string | null;
   rejectionReason: string | null;
@@ -51,6 +51,7 @@ export interface SuggestionStats {
   approved: number;
   rejected: number;
   merged: number;
+  no_improvement: number;
 }
 
 export function useKnowledgeSuggestions(status?: string) {
@@ -89,6 +90,15 @@ export function useKnowledgeSuggestions(status?: string) {
     },
   });
 
+  const noImprovementMutation = useMutation({
+    mutationFn: (id: number) => 
+      apiRequest("POST", `/api/knowledge/suggestions/${id}/no-improvement`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["knowledge-suggestions"] });
+      queryClient.invalidateQueries({ queryKey: ["knowledge-suggestions-stats"] });
+    },
+  });
+
   const mergeMutation = useMutation({
     mutationFn: ({ id, targetArticleId }: { id: number; targetArticleId: number }) => 
       apiRequest("POST", `/api/knowledge/suggestions/${id}/merge`, { targetArticleId }),
@@ -116,8 +126,10 @@ export function useKnowledgeSuggestions(status?: string) {
     reject: rejectMutation.mutate,
     merge: mergeMutation.mutate,
     update: updateMutation.mutate,
+    markNoImprovement: noImprovementMutation.mutate,
     isApproving: approveMutation.isPending,
     isRejecting: rejectMutation.isPending,
     isMerging: mergeMutation.isPending,
+    isMarkingNoImprovement: noImprovementMutation.isPending,
   };
 }

@@ -152,4 +152,25 @@ router.post("/api/knowledge/suggestions/:id/merge", async (req, res) => {
   }
 });
 
+router.post("/api/knowledge/suggestions/:id/no-improvement", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Invalid ID" });
+    }
+
+    const reviewedBy = (req as any).user?.id || "system";
+    const suggestion = await knowledgeSuggestionsStorage.markNoImprovement(id, reviewedBy);
+    
+    if (!suggestion) {
+      return res.status(404).json({ error: "Suggestion not found" });
+    }
+    
+    res.json(suggestion);
+  } catch (error) {
+    console.error("Error marking suggestion as no improvement:", error);
+    res.status(500).json({ error: "Failed to mark suggestion" });
+  }
+});
+
 export default router;
