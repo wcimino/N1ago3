@@ -31,7 +31,6 @@ export interface KnowledgeBaseFormData {
 
 interface Filters {
   products: string[];
-  intents: string[];
 }
 
 export interface CatalogProduct {
@@ -207,17 +206,30 @@ export function useKnowledgeBase(activeTab: string) {
   const [editingArticle, setEditingArticle] = useState<KnowledgeBaseArticle | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProduct, setSelectedProduct] = useState("");
-  const [selectedIntent, setSelectedIntent] = useState("");
+  const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null);
+  const [selectedIntentId, setSelectedIntentId] = useState<number | null>(null);
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
+  const handleProductChange = (product: string) => {
+    setSelectedProduct(product);
+    setSelectedSubjectId(null);
+    setSelectedIntentId(null);
+  };
+
+  const handleSubjectChange = (subjectId: number | null) => {
+    setSelectedSubjectId(subjectId);
+    setSelectedIntentId(null);
+  };
+
   const { data: articles = [], isLoading } = useQuery<KnowledgeBaseArticle[]>({
-    queryKey: ["/api/knowledge/articles", searchTerm, selectedProduct, selectedIntent],
+    queryKey: ["/api/knowledge/articles", searchTerm, selectedProduct, selectedSubjectId, selectedIntentId],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (searchTerm) params.set("search", searchTerm);
       if (selectedProduct) params.set("productStandard", selectedProduct);
-      if (selectedIntent) params.set("intent", selectedIntent);
+      if (selectedSubjectId) params.set("subjectId", selectedSubjectId.toString());
+      if (selectedIntentId) params.set("intentId", selectedIntentId.toString());
       const res = await fetch(`/api/knowledge/articles?${params}`);
       if (!res.ok) throw new Error("Failed to fetch articles");
       return res.json();
@@ -346,6 +358,17 @@ export function useKnowledgeBase(activeTab: string) {
     });
   };
 
+  const filteredSubjects = useMemo(() => {
+    if (!selectedProduct) return [];
+    const productIds = catalogProducts.filter(p => p.produto === selectedProduct).map(p => p.id);
+    return subjects.filter(s => productIds.includes(s.productCatalogId));
+  }, [selectedProduct, catalogProducts, subjects]);
+
+  const filteredIntents = useMemo(() => {
+    if (!selectedSubjectId) return [];
+    return intents.filter(i => i.subjectId === selectedSubjectId);
+  }, [selectedSubjectId, intents]);
+
   return {
     articles,
     isLoading,
@@ -357,9 +380,13 @@ export function useKnowledgeBase(activeTab: string) {
     searchTerm,
     setSearchTerm,
     selectedProduct,
-    setSelectedProduct,
-    selectedIntent,
-    setSelectedIntent,
+    handleProductChange,
+    selectedSubjectId,
+    handleSubjectChange,
+    selectedIntentId,
+    setSelectedIntentId,
+    filteredSubjects,
+    filteredIntents,
     expandedPaths,
     createMutation,
     updateMutation,

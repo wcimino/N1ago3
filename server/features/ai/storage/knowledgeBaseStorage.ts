@@ -11,6 +11,8 @@ export const knowledgeBaseStorage = {
     category1?: string;
     category2?: string;
     intent?: string;
+    subjectId?: number;
+    intentId?: number;
   }): Promise<KnowledgeBaseArticle[]> {
     const conditions: SQL[] = [];
 
@@ -48,6 +50,14 @@ export const knowledgeBaseStorage = {
 
     if (filters?.intent) {
       conditions.push(eq(knowledgeBase.intent, filters.intent));
+    }
+
+    if (filters?.subjectId) {
+      conditions.push(eq(knowledgeBase.subjectId, filters.subjectId));
+    }
+
+    if (filters?.intentId) {
+      conditions.push(eq(knowledgeBase.intentId, filters.intentId));
     }
 
     const query = db.select().from(knowledgeBase);

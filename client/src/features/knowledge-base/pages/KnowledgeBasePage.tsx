@@ -35,9 +35,13 @@ export function KnowledgeBasePage() {
     searchTerm,
     setSearchTerm,
     selectedProduct,
-    setSelectedProduct,
-    selectedIntent,
-    setSelectedIntent,
+    handleProductChange,
+    selectedSubjectId,
+    handleSubjectChange,
+    selectedIntentId,
+    setSelectedIntentId,
+    filteredSubjects,
+    filteredIntents,
     expandedPaths,
     createMutation,
     updateMutation,
@@ -126,8 +130,8 @@ export function KnowledgeBasePage() {
                   </div>
                   <select
                     value={selectedProduct}
-                    onChange={(e) => setSelectedProduct(e.target.value)}
-                    className="px-2 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-w-[120px]"
+                    onChange={(e) => handleProductChange(e.target.value)}
+                    className="px-2 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-w-[140px]"
                   >
                     <option value="">Produto</option>
                     {filters?.products.map((product) => (
@@ -137,14 +141,30 @@ export function KnowledgeBasePage() {
                     ))}
                   </select>
                   <select
-                    value={selectedIntent}
-                    onChange={(e) => setSelectedIntent(e.target.value)}
-                    className="px-2 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-w-[100px]"
+                    value={selectedSubjectId?.toString() || ""}
+                    onChange={(e) => handleSubjectChange(e.target.value ? parseInt(e.target.value) : null)}
+                    className="px-2 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-w-[140px]"
+                    disabled={!selectedProduct || filteredSubjects.length === 0}
+                  >
+                    <option value="">Assunto</option>
+                    {filteredSubjects.map((subject) => (
+                      <option key={subject.id} value={subject.id}>
+                        {subject.name}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedIntentId?.toString() || ""}
+                    onChange={(e) => setSelectedIntentId(e.target.value ? parseInt(e.target.value) : null)}
+                    className="px-2 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-w-[140px]"
+                    disabled={!selectedSubjectId || filteredIntents.length === 0}
                   >
                     <option value="">Intenção</option>
-                    <option value="Suporte">Suporte</option>
-                    <option value="Contratar">Contratar</option>
-                    <option value="Outros">Outros</option>
+                    {filteredIntents.map((intent) => (
+                      <option key={intent.id} value={intent.id}>
+                        {intent.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

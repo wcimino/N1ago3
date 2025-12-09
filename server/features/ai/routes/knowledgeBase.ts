@@ -8,11 +8,13 @@ const router = Router();
 
 router.get("/api/knowledge/articles", async (req, res) => {
   try {
-    const { search, productStandard, intent } = req.query;
+    const { search, productStandard, intent, subjectId, intentId } = req.query;
     const articles = await knowledgeBaseStorage.getAllArticles({
       search: search as string | undefined,
       productStandard: productStandard as string | undefined,
       intent: intent as string | undefined,
+      subjectId: subjectId ? parseInt(subjectId as string) : undefined,
+      intentId: intentId ? parseInt(intentId as string) : undefined,
     });
     res.json(articles);
   } catch (error) {
