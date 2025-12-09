@@ -62,16 +62,27 @@ export const classificationStorage = {
 
     // Count distinct users (clients) that had at least one message in the period
     // grouped by product (including conversations without product classification)
+    // Logic:
+    // - "Sem classificação" = no summary exists at all
+    // - "Sem mapeamento" = summary exists with product but no productStandard
+    // - Otherwise show the productStandard value
+    const productCaseExpr = sql<string>`CASE 
+      WHEN ${conversationsSummary.conversationId} IS NULL THEN 'Sem classificação'
+      WHEN ${conversationsSummary.productStandard} IS NOT NULL THEN ${conversationsSummary.productStandard}
+      WHEN ${conversationsSummary.product} IS NOT NULL THEN 'Sem mapeamento'
+      ELSE 'Sem classificação'
+    END`;
+    
     const results = await db
       .select({
-        product: sql<string>`COALESCE(${conversationsSummary.productStandard}, 'Sem classificação')`,
+        product: productCaseExpr,
         count: sql<number>`count(DISTINCT ${conversations.userId})::int`,
       })
       .from(eventsStandard)
       .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
       .leftJoin(conversationsSummary, eq(conversations.id, conversationsSummary.conversationId))
       .where(gte(eventsStandard.occurredAt, since))
-      .groupBy(sql`COALESCE(${conversationsSummary.productStandard}, 'Sem classificação')`)
+      .groupBy(productCaseExpr)
       .orderBy(sql`count(DISTINCT ${conversations.userId}) desc`);
 
     return { 
