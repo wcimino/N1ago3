@@ -55,7 +55,9 @@ Sempre use verbos no INFINITIVO (Orientar, Verificar, Solicitar, Informar).
 export const ENRICHMENT_USER_PROMPT_TEMPLATE = `## Intenção a Processar (ID: {{intencao_id}})
 
 **Nome da Intenção:** {{intencao_nome}}
+{{#if_intencao_sinonimos}}**Sinônimos da Intenção:** {{intencao_sinonimos}}{{/if_intencao_sinonimos}}
 **Assunto:** {{assunto_nome}}
+{{#if_assunto_sinonimos}}**Sinônimos do Assunto:** {{assunto_sinonimos}}{{/if_assunto_sinonimos}}
 **Produto:** {{produto}}
 
 {{#if_artigo_existe}}
@@ -83,7 +85,7 @@ Esta intenção ainda não possui artigo na base de conhecimento. Você deve cri
 
 ## Tarefa
 
-1. Use a ferramenta search_knowledge_base_zendesk para buscar artigos do Zendesk relacionados a este tema (use o nome da intenção e produto como palavras-chave)
+1. Use a ferramenta search_knowledge_base_zendesk para buscar artigos do Zendesk relacionados a este tema (use o nome da intenção, sinônimos, assunto e produto como palavras-chave - IMPORTANTE: inclua os sinônimos na busca para obter resultados mais completos)
 2. Analise os resultados do Zendesk
 
 {{#if_artigo_existe}}

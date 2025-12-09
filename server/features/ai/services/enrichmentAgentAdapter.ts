@@ -118,6 +118,8 @@ function buildCreateEnrichmentSuggestionTool(intentWithArticle: IntentWithArticl
 function buildUserPromptForIntent(intentWithArticle: IntentWithArticle, config: EnrichmentConfig): string {
   const { intent, article } = intentWithArticle;
   const hasArticle = !!article;
+  const hasIntentSynonyms = intent.synonyms && intent.synonyms.length > 0;
+  const hasSubjectSynonyms = intent.subjectSynonyms && intent.subjectSynonyms.length > 0;
   
   let prompt = config.promptTemplate || ENRICHMENT_USER_PROMPT_TEMPLATE;
   
@@ -126,6 +128,24 @@ function buildUserPromptForIntent(intentWithArticle: IntentWithArticle, config: 
     .replace(/\{\{intencao_nome\}\}/gi, intent.name)
     .replace(/\{\{assunto_nome\}\}/gi, intent.subjectName)
     .replace(/\{\{produto\}\}/gi, intent.productName);
+  
+  if (hasIntentSynonyms) {
+    prompt = prompt
+      .replace(/\{\{#if_intencao_sinonimos\}\}([\s\S]*?)\{\{\/if_intencao_sinonimos\}\}/gi, '$1')
+      .replace(/\{\{intencao_sinonimos\}\}/gi, intent.synonyms.join(', '));
+  } else {
+    prompt = prompt
+      .replace(/\{\{#if_intencao_sinonimos\}\}[\s\S]*?\{\{\/if_intencao_sinonimos\}\}/gi, '');
+  }
+  
+  if (hasSubjectSynonyms) {
+    prompt = prompt
+      .replace(/\{\{#if_assunto_sinonimos\}\}([\s\S]*?)\{\{\/if_assunto_sinonimos\}\}/gi, '$1')
+      .replace(/\{\{assunto_sinonimos\}\}/gi, intent.subjectSynonyms.join(', '));
+  } else {
+    prompt = prompt
+      .replace(/\{\{#if_assunto_sinonimos\}\}[\s\S]*?\{\{\/if_assunto_sinonimos\}\}/gi, '');
+  }
   
   if (hasArticle) {
     prompt = prompt
@@ -142,7 +162,33 @@ function buildUserPromptForIntent(intentWithArticle: IntentWithArticle, config: 
       .replace(/\{\{#if_artigo_existe\}\}[\s\S]*?\{\{\/if_artigo_existe\}\}/gi, '');
   }
   
+  const synonymsContext = buildSynonymsContext(intent.synonyms, intent.subjectSynonyms);
+  if (synonymsContext) {
+    prompt += synonymsContext;
+  }
+  
   return prompt;
+}
+
+function buildSynonymsContext(intentSynonyms: string[], subjectSynonyms: string[]): string {
+  const hasIntentSynonyms = intentSynonyms && intentSynonyms.length > 0;
+  const hasSubjectSynonyms = subjectSynonyms && subjectSynonyms.length > 0;
+  
+  if (!hasIntentSynonyms && !hasSubjectSynonyms) {
+    return '';
+  }
+  
+  let context = '\n\n---\n\n## Sinônimos para Busca\n\nUse estes termos alternativos na busca do Zendesk para obter resultados mais completos:\n';
+  
+  if (hasIntentSynonyms) {
+    context += `- **Sinônimos da Intenção:** ${intentSynonyms.join(', ')}\n`;
+  }
+  
+  if (hasSubjectSynonyms) {
+    context += `- **Sinônimos do Assunto:** ${subjectSynonyms.join(', ')}\n`;
+  }
+  
+  return context;
 }
 
 async function processIntent(

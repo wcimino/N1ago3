@@ -7,8 +7,10 @@ export interface IntentWithArticle {
   intent: {
     id: number;
     name: string;
+    synonyms: string[];
     subjectId: number;
     subjectName: string;
+    subjectSynonyms: string[];
     productName: string;
   };
   article: KnowledgeBaseArticle | null;
@@ -175,8 +177,10 @@ export const knowledgeBaseStorage = {
       .select({
         intentId: knowledgeIntents.id,
         intentName: knowledgeIntents.name,
+        intentSynonyms: knowledgeIntents.synonyms,
         subjectId: knowledgeSubjects.id,
         subjectName: knowledgeSubjects.name,
+        subjectSynonyms: knowledgeSubjects.synonyms,
         productName: ifoodProducts.produto,
         subproductName: ifoodProducts.subproduto,
       })
@@ -205,8 +209,10 @@ export const knowledgeBaseStorage = {
         intent: {
           id: intent.intentId,
           name: intent.intentName,
+          synonyms: intent.intentSynonyms || [],
           subjectId: intent.subjectId,
           subjectName: intent.subjectName,
+          subjectSynonyms: intent.subjectSynonyms || [],
           productName: intent.productName,
         },
         article: article || null,
