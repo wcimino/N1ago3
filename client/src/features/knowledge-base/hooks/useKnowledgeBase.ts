@@ -421,6 +421,25 @@ export function useKnowledgeBase(activeTab: string) {
     });
   };
 
+  const getAllPaths = (nodes: HierarchyNode[]): string[] => {
+    const paths: string[] = [];
+    const collect = (n: HierarchyNode) => {
+      paths.push(n.fullPath);
+      n.children.forEach(collect);
+    };
+    nodes.forEach(collect);
+    return paths;
+  };
+
+  const expandAllPaths = () => {
+    const allPaths = getAllPaths(hierarchy);
+    setExpandedPaths(new Set(allPaths));
+  };
+
+  const collapseAllPaths = () => {
+    setExpandedPaths(new Set());
+  };
+
   const filteredSubjects = useMemo(() => {
     if (!selectedProduct) return [];
     const productIds = catalogProducts.filter(p => p.produto === selectedProduct).map(p => p.id);
@@ -458,6 +477,8 @@ export function useKnowledgeBase(activeTab: string) {
     handleDelete,
     handleCancel,
     togglePath,
+    expandAllPaths,
+    collapseAllPaths,
     subjects,
     intents,
   };

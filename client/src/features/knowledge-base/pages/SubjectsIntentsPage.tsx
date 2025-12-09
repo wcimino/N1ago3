@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Tags, ChevronRight, ChevronDown, Plus, Loader2, Pencil, Trash2, X, Check, Tag } from "lucide-react";
+import { Tags, ChevronRight, ChevronDown, Plus, Loader2, Pencil, Trash2, X, Check, Tag, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
 
 interface ProductCatalogItem {
   id: number;
@@ -218,6 +218,69 @@ export function SubjectsIntentsPage() {
   const isLoading = productsLoading || subjectsLoading || intentsLoading;
   const productTree = buildProductTree(products, subjects);
 
+  const allProductIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const node of productTree) {
+      ids.add(node.id);
+      for (const child of node.children) {
+        ids.add(child.id);
+      }
+    }
+    return ids;
+  }, [productTree]);
+
+  const allSubjectIds = useMemo(() => {
+    return new Set(subjects.map(s => s.id));
+  }, [subjects]);
+
+  const isAllExpanded = expandedProducts.size >= allProductIds.size && expandedSubjects.size >= allSubjectIds.size;
+
+  const expandAll = () => {
+    setExpandedProducts(new Set(allProductIds));
+    setExpandedSubjects(new Set(allSubjectIds));
+  };
+
+  const collapseAll = () => {
+    setExpandedProducts(new Set());
+    setExpandedSubjects(new Set());
+  };
+
+  const totalSynonyms = useMemo(() => {
+    let count = 0;
+    for (const s of subjects) {
+      count += s.synonyms?.length || 0;
+    }
+    for (const i of intents) {
+      count += i.synonyms?.length || 0;
+    }
+    return count;
+  }, [subjects, intents]);
+
+  const getNodeStats = (node: ProductNode) => {
+    let subproductCount = node.children.length;
+    let subjectCount = node.subjects.length;
+    let intentCount = 0;
+    let synonymCount = 0;
+    
+    for (const s of node.subjects) {
+      synonymCount += s.synonyms?.length || 0;
+      const subjectIntents = intents.filter(i => i.subjectId === s.id);
+      intentCount += subjectIntents.length;
+      for (const i of subjectIntents) {
+        synonymCount += i.synonyms?.length || 0;
+      }
+    }
+    
+    for (const child of node.children) {
+      const childStats = getNodeStats(child);
+      subjectCount += childStats.subjectCount;
+      intentCount += childStats.intentCount;
+      synonymCount += childStats.synonymCount;
+    }
+    
+    return { subproductCount, subjectCount, intentCount, synonymCount };
+  };
+
   const resetForm = () => {
     setFormState({ type: "none" });
     setFormName("");
@@ -407,6 +470,13 @@ export function SubjectsIntentsPage() {
     const hasChildren = node.children.length > 0 || node.subjects.length > 0;
     const paddingLeft = depth * 20;
     const showAddSubjectForm = formState.type === "addSubject" && formState.productId === node.id;
+    const stats = getNodeStats(node);
+
+    const statsText = [];
+    if (stats.subproductCount > 0) statsText.push(`${stats.subproductCount} subproduto${stats.subproductCount > 1 ? 's' : ''}`);
+    if (stats.subjectCount > 0) statsText.push(`${stats.subjectCount} assunto${stats.subjectCount > 1 ? 's' : ''}`);
+    if (stats.intentCount > 0) statsText.push(`${stats.intentCount} intenç${stats.intentCount > 1 ? 'ões' : 'ão'}`);
+    if (stats.synonymCount > 0) statsText.push(`${stats.synonymCount} sinônimo${stats.synonymCount > 1 ? 's' : ''}`);
 
     return (
       <div key={node.id}>
@@ -422,7 +492,7 @@ export function SubjectsIntentsPage() {
           )}
           <span className="font-medium text-gray-700">{node.name}</span>
           <span className="text-xs text-gray-400 ml-2">
-            {node.subjects.length} assuntos
+            {statsText.join(', ')}
           </span>
           <button
             onClick={(e) => startAddSubject(node.id, e)}
@@ -574,8 +644,8 @@ export function SubjectsIntentsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded bg-gray-200 border border-gray-300"></span>
@@ -590,6 +660,25 @@ export function SubjectsIntentsPage() {
             <span className="text-xs text-gray-600">Intenção</span>
           </div>
         </div>
+        
+        {productTree.length > 0 && (
+          <button
+            onClick={isAllExpanded ? collapseAll : expandAll}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            {isAllExpanded ? (
+              <>
+                <ChevronsDownUp className="w-4 h-4" />
+                Recolher tudo
+              </>
+            ) : (
+              <>
+                <ChevronsUpDown className="w-4 h-4" />
+                Expandir tudo
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {productTree.length === 0 ? (
@@ -599,7 +688,7 @@ export function SubjectsIntentsPage() {
           <p className="text-sm mt-1">Cadastre produtos em Configurações &gt; Cadastro &gt; Produtos</p>
         </div>
       ) : (
-        <div className="border rounded-lg p-3 max-h-[500px] overflow-y-auto">
+        <div className="border rounded-lg p-3 flex-1 overflow-y-auto min-h-0">
           {productTree.map(node => renderProductNode(node))}
         </div>
       )}

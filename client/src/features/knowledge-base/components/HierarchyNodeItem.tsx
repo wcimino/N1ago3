@@ -4,12 +4,51 @@ import { ptBR } from "date-fns/locale";
 import { LEVEL_LABELS, LEVEL_COLORS } from "../../../lib/productHierarchy";
 import type { HierarchyNode, KnowledgeBaseArticle } from "../hooks/useKnowledgeBase";
 
-function countArticles(node: HierarchyNode): number {
-  let count = node.articles.length;
+interface NodeStats {
+  subproductCount: number;
+  subjectCount: number;
+  intentCount: number;
+  articleCount: number;
+}
+
+function getNodeStats(node: HierarchyNode): NodeStats {
+  let subproductCount = 0;
+  let subjectCount = 0;
+  let intentCount = 0;
+  let articleCount = node.articles.length;
+
   for (const child of node.children) {
-    count += countArticles(child);
+    if (child.level === "subproduto") subproductCount++;
+    else if (child.level === "assunto") subjectCount++;
+    else if (child.level === "intencao") intentCount++;
+    
+    const childStats = getNodeStats(child);
+    subproductCount += childStats.subproductCount;
+    subjectCount += childStats.subjectCount;
+    intentCount += childStats.intentCount;
+    articleCount += childStats.articleCount;
   }
-  return count;
+
+  return { subproductCount, subjectCount, intentCount, articleCount };
+}
+
+function formatStats(stats: NodeStats, level: string): string {
+  const parts: string[] = [];
+  
+  if (level === "produto" && stats.subproductCount > 0) {
+    parts.push(`${stats.subproductCount} subproduto${stats.subproductCount > 1 ? 's' : ''}`);
+  }
+  if ((level === "produto" || level === "subproduto") && stats.subjectCount > 0) {
+    parts.push(`${stats.subjectCount} assunto${stats.subjectCount > 1 ? 's' : ''}`);
+  }
+  if ((level !== "intencao") && stats.intentCount > 0) {
+    parts.push(`${stats.intentCount} intenç${stats.intentCount > 1 ? 'ões' : 'ão'}`);
+  }
+  if (stats.articleCount > 0) {
+    parts.push(`${stats.articleCount} artigo${stats.articleCount > 1 ? 's' : ''}`);
+  }
+  
+  return parts.join(', ');
 }
 
 interface HierarchyNodeItemProps {
@@ -25,7 +64,8 @@ interface HierarchyNodeItemProps {
 export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete, onAddArticle }: HierarchyNodeItemProps) {
   const isExpanded = expandedPaths.has(node.fullPath);
   const hasChildren = node.children.length > 0 || node.articles.length > 0;
-  const articleCount = countArticles(node);
+  const stats = getNodeStats(node);
+  const statsText = formatStats(stats, node.level);
   const colors = LEVEL_COLORS[node.level];
   
   return (
@@ -51,7 +91,15 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
           {LEVEL_LABELS[node.level]}
         </span>
 
-        <span className="flex-1 text-sm font-medium text-gray-900">{node.name}</span>
+        <span className="text-sm font-medium text-gray-900">{node.name}</span>
+
+        {statsText && (
+          <span className="text-xs text-gray-400 ml-1">
+            {statsText}
+          </span>
+        )}
+
+        <div className="flex-1" />
 
         {onAddArticle && node.level === "intencao" && (
           <button
@@ -66,16 +114,12 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
           </button>
         )}
 
-        {articleCount === 0 ? (
+        {stats.articleCount === 0 ? (
           <span className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-700">
             <AlertCircle className="w-3 h-3" />
             Sem artigos
           </span>
-        ) : (
-          <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
-            {articleCount}
-          </span>
-        )}
+        ) : null}
       </div>
 
       {isExpanded && (

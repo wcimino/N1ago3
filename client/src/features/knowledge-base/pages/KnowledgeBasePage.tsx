@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Search, BookOpen, X, Lightbulb, BarChart3, Cloud, Database, Tags } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Plus, Search, BookOpen, X, Lightbulb, BarChart3, Cloud, Database, Tags, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
 import { KnowledgeBaseForm } from "../components/KnowledgeBaseForm";
 import { HierarchyNodeItem } from "../components/HierarchyNodeItem";
 import { SuggestionsPage } from "./SuggestionsPage";
@@ -60,9 +60,19 @@ export function KnowledgeBasePage() {
     handleDelete,
     handleCancel,
     togglePath,
+    expandAllPaths,
+    collapseAllPaths,
     subjects,
     intents,
   } = useKnowledgeBase(activeTab);
+
+  const allPathsCount = useMemo(() => {
+    const count = (nodes: typeof hierarchy): number => 
+      nodes.reduce((acc, n) => acc + 1 + count(n.children), 0);
+    return count(hierarchy);
+  }, [hierarchy]);
+
+  const isAllArticlesExpanded = expandedPaths.size >= allPathsCount && allPathsCount > 0;
 
   const handleAddArticle = (subjectId?: number, intentId?: number, fullPath?: string) => {
     if (!intentId || !subjectId || !fullPath) return;
@@ -133,7 +143,7 @@ export function KnowledgeBasePage() {
               <SuggestionsPage />
             </div>
           ) : activeTab === "subjects" ? (
-            <div className="p-4">
+            <div className="p-4 h-[calc(100vh-220px)]">
               <SubjectsIntentsPage />
             </div>
           ) : showForm ? (
@@ -212,7 +222,7 @@ export function KnowledgeBasePage() {
                 </div>
               </div>
 
-              <div className="p-4">
+              <div className="p-4 h-[calc(100vh-250px)] flex flex-col">
                 {isLoading ? (
                   <div className="text-center py-8 text-gray-500">Carregando...</div>
                 ) : hierarchy.length === 0 ? (
@@ -222,20 +232,40 @@ export function KnowledgeBasePage() {
                     <p className="text-sm mt-1">Cadastre produtos em Configurações &gt; Cadastro &gt; Produtos</p>
                   </div>
                 ) : (
-                  <div className="space-y-1 border rounded-lg p-3 max-h-[calc(100vh-280px)] overflow-y-auto">
-                    {hierarchy.map((node) => (
-                      <HierarchyNodeItem
-                        key={node.fullPath}
-                        node={node}
-                        depth={0}
-                        expandedPaths={expandedPaths}
-                        onToggle={togglePath}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                        onAddArticle={handleAddArticle}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    <div className="flex justify-end mb-2">
+                      <button
+                        onClick={isAllArticlesExpanded ? collapseAllPaths : expandAllPaths}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        {isAllArticlesExpanded ? (
+                          <>
+                            <ChevronsDownUp className="w-4 h-4" />
+                            Recolher tudo
+                          </>
+                        ) : (
+                          <>
+                            <ChevronsUpDown className="w-4 h-4" />
+                            Expandir tudo
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <div className="space-y-1 border rounded-lg p-3 flex-1 overflow-y-auto min-h-0">
+                      {hierarchy.map((node) => (
+                        <HierarchyNodeItem
+                          key={node.fullPath}
+                          node={node}
+                          depth={0}
+                          expandedPaths={expandedPaths}
+                          onToggle={togglePath}
+                          onEdit={handleEdit}
+                          onDelete={handleDelete}
+                          onAddArticle={handleAddArticle}
+                        />
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
             </>
