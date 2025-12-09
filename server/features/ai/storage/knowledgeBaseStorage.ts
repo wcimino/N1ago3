@@ -13,6 +13,7 @@ export const knowledgeBaseStorage = {
     intent?: string;
     subjectId?: number;
     intentId?: number;
+    limit?: number;
   }): Promise<KnowledgeBaseArticle[]> {
     const conditions: SQL[] = [];
 
@@ -60,13 +61,21 @@ export const knowledgeBaseStorage = {
       conditions.push(eq(knowledgeBase.intentId, filters.intentId));
     }
 
-    const query = db.select().from(knowledgeBase);
+    let query = db.select().from(knowledgeBase);
     
     if (conditions.length > 0) {
-      return await query.where(and(...conditions)).orderBy(desc(knowledgeBase.updatedAt));
+      const baseQuery = query.where(and(...conditions)).orderBy(desc(knowledgeBase.updatedAt));
+      if (filters?.limit) {
+        return await baseQuery.limit(filters.limit);
+      }
+      return await baseQuery;
     }
 
-    return await query.orderBy(desc(knowledgeBase.updatedAt));
+    const baseQuery = query.orderBy(desc(knowledgeBase.updatedAt));
+    if (filters?.limit) {
+      return await baseQuery.limit(filters.limit);
+    }
+    return await baseQuery;
   },
 
   async getArticleById(id: number): Promise<KnowledgeBaseArticle | null> {

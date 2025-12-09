@@ -1,8 +1,8 @@
 import { knowledgeSuggestionsStorage } from "../storage/knowledgeSuggestionsStorage.js";
-import { knowledgeBaseStorage } from "../storage/knowledgeBaseStorage.js";
 import { callOpenAI, ToolDefinition } from "./openaiApiService.js";
 import { createZendeskKnowledgeBaseTool } from "./aiTools.js";
 import { ENRICHMENT_SYSTEM_PROMPT, ENRICHMENT_USER_PROMPT_TEMPLATE } from "../constants/enrichmentAgentPrompts.js";
+import type { KnowledgeBaseArticle } from "../../../../shared/schema.js";
 
 export interface EnrichmentConfig {
   enabled: boolean;
@@ -15,22 +15,22 @@ export interface EnrichmentConfig {
 }
 
 export interface EnrichmentParams {
-  product?: string;
-  subproduct?: string;
+  articles: KnowledgeBaseArticle[];
   config: EnrichmentConfig;
 }
 
 export interface EnrichmentResult {
   success: boolean;
   suggestionsGenerated: number;
+  articlesProcessed: number;
   suggestions?: Array<{
     id: number;
     type: string;
+    localArticleId: number;
     product?: string;
     subproduct?: string;
   }>;
-  error?: string;
-  logId?: number;
+  errors?: string[];
 }
 
 interface ZendeskSourceArticle {
@@ -39,104 +39,33 @@ interface ZendeskSourceArticle {
   similarityScore: number;
 }
 
-function buildLocalKnowledgeBaseTool(): ToolDefinition {
-  return {
-    name: "search_local_knowledge_base",
-    description: "Busca artigos existentes na base de conhecimento interna. Use para verificar se já existe informação sobre o tema antes de decidir criar ou atualizar.",
-    parameters: {
-      type: "object",
-      properties: {
-        product: {
-          type: "string",
-          description: "Produto para filtrar (ex: Antecipação, Repasse, Conta Digital)"
-        },
-        subproduct: {
-          type: "string",
-          description: "Subproduto para filtrar"
-        },
-        keywords: {
-          type: "array",
-          items: { type: "string" },
-          description: "Palavras-chave para busca textual"
-        }
-      },
-      required: []
-    },
-    handler: async (args: { product?: string; subproduct?: string; keywords?: string[] }) => {
-      const articles = await knowledgeBaseStorage.getAllArticles({
-        productStandard: args.product,
-        subproductStandard: args.subproduct
-      });
-
-      if (articles.length === 0) {
-        return "Nenhum artigo encontrado na base local com esses critérios.";
-      }
-
-      const filtered = args.keywords && args.keywords.length > 0
-        ? articles.filter(a => {
-            const text = `${a.description} ${a.resolution} ${a.observations || ""}`.toLowerCase();
-            return args.keywords!.some(k => text.includes(k.toLowerCase()));
-          })
-        : articles;
-
-      if (filtered.length === 0) {
-        return "Nenhum artigo encontrado com essas palavras-chave.";
-      }
-
-      return filtered.slice(0, 10).map((a, i) => `
-### Artigo Local ${i + 1} (ID: ${a.id})
-- Produto: ${a.productStandard}
-- Subproduto: ${a.subproductStandard || "N/A"}
-- Descrição: ${a.description}
-- Resolução: ${a.resolution}
-`).join("\n");
-    }
-  };
-}
-
-function buildCreateEnrichmentSuggestionTool(): ToolDefinition {
+function buildCreateEnrichmentSuggestionTool(localArticle: KnowledgeBaseArticle): ToolDefinition {
   return {
     name: "create_enrichment_suggestion",
-    description: "Cria uma sugestão de melhoria para a base de conhecimento baseada na comparação com artigos do Zendesk.",
+    description: "Registra uma sugestão de melhoria para o artigo local baseada na comparação com artigos do Zendesk.",
     parameters: {
       type: "object",
       properties: {
         action: {
           type: "string",
-          enum: ["create", "update", "skip"],
-          description: "Ação a tomar: create (novo artigo), update (atualizar existente), skip (ignorar)"
+          enum: ["update", "skip"],
+          description: "Ação a tomar: update (melhorar o artigo existente), skip (ignorar pois não há melhoria)"
         },
-        targetArticleId: {
-          type: "number",
-          description: "ID do artigo local a atualizar (obrigatório se action=update)"
+        improvedDescription: {
+          type: "string",
+          description: "Descrição melhorada do problema/situação (se action=update)"
+        },
+        improvedResolution: {
+          type: "string",
+          description: "Resolução melhorada/complementada (se action=update)"
+        },
+        additionalObservations: {
+          type: "string",
+          description: "Observações adicionais encontradas no Zendesk (se action=update)"
         },
         updateReason: {
           type: "string",
-          description: "Motivo da atualização (obrigatório se action=update)"
-        },
-        name: {
-          type: "string",
-          description: "Nome curto e descritivo do artigo"
-        },
-        productStandard: {
-          type: "string",
-          description: "Produto principal"
-        },
-        subproductStandard: {
-          type: "string",
-          description: "Subproduto específico"
-        },
-        description: {
-          type: "string",
-          description: "Descrição do problema/situação"
-        },
-        resolution: {
-          type: "string",
-          description: "Solução detalhada"
-        },
-        observations: {
-          type: "string",
-          description: "Observações adicionais"
+          description: "Motivo da atualização/melhoria proposta (obrigatório se action=update)"
         },
         confidenceScore: {
           type: "number",
@@ -162,34 +91,45 @@ function buildCreateEnrichmentSuggestionTool(): ToolDefinition {
       required: ["action"]
     },
     handler: async (args: any) => {
-      return `Sugestão registrada: action=${args.action}`;
+      return `Sugestão registrada para artigo #${localArticle.id}: action=${args.action}`;
     }
   };
 }
 
-function buildUserPrompt(params: EnrichmentParams): string {
-  const basePrompt = params.config.promptTemplate || ENRICHMENT_USER_PROMPT_TEMPLATE;
+function buildUserPromptForArticle(article: KnowledgeBaseArticle, config: EnrichmentConfig): string {
+  const basePrompt = config.promptTemplate || ENRICHMENT_USER_PROMPT_TEMPLATE;
   return basePrompt
-    .replace(/\{\{produto\}\}/gi, params.product || "Todos")
-    .replace(/\{\{subproduto\}\}/gi, params.subproduct || "Todos");
+    .replace(/\{\{artigo_id\}\}/gi, String(article.id))
+    .replace(/\{\{artigo_nome\}\}/gi, article.name || "Sem nome")
+    .replace(/\{\{produto\}\}/gi, article.productStandard || "N/A")
+    .replace(/\{\{subproduto\}\}/gi, article.subproductStandard || "N/A")
+    .replace(/\{\{categoria1\}\}/gi, article.category1 || "N/A")
+    .replace(/\{\{categoria2\}\}/gi, article.category2 || "N/A")
+    .replace(/\{\{intencao\}\}/gi, article.intent || "N/A")
+    .replace(/\{\{descricao\}\}/gi, article.description || "Sem descrição")
+    .replace(/\{\{resolucao\}\}/gi, article.resolution || "Sem resolução")
+    .replace(/\{\{observacoes\}\}/gi, article.observations || "Sem observações");
 }
 
-export async function generateEnrichmentSuggestions(params: EnrichmentParams): Promise<EnrichmentResult> {
-  const userPrompt = buildUserPrompt(params);
+async function processArticle(
+  article: KnowledgeBaseArticle,
+  config: EnrichmentConfig
+): Promise<{
+  success: boolean;
+  suggestion?: { id: number; type: string; localArticleId: number; product?: string; subproduct?: string };
+  error?: string;
+}> {
+  const userPrompt = buildUserPromptForArticle(article, config);
 
   const tools: ToolDefinition[] = [
-    buildCreateEnrichmentSuggestionTool()
+    buildCreateEnrichmentSuggestionTool(article)
   ];
 
-  if (params.config.useKnowledgeBaseTool) {
-    tools.unshift(buildLocalKnowledgeBaseTool());
-  }
-
-  if (params.config.useZendeskKnowledgeBaseTool) {
+  if (config.useZendeskKnowledgeBaseTool) {
     const zendeskTool = createZendeskKnowledgeBaseTool();
     const originalHandler = zendeskTool.handler;
     zendeskTool.handler = async (args) => {
-      console.log(`[Enrichment Agent] Zendesk KB search: keywords=${args.keywords}`);
+      console.log(`[Enrichment Agent] Zendesk KB search for article #${article.id}: keywords=${args.keywords}`);
       return originalHandler(args);
     };
     tools.unshift(zendeskTool);
@@ -197,79 +137,108 @@ export async function generateEnrichmentSuggestions(params: EnrichmentParams): P
 
   const result = await callOpenAI({
     requestType: "enrichment_agent",
-    modelName: params.config.modelName,
-    promptSystem: params.config.promptSystem || ENRICHMENT_SYSTEM_PROMPT,
+    modelName: config.modelName,
+    promptSystem: config.promptSystem || ENRICHMENT_SYSTEM_PROMPT,
     promptUser: userPrompt,
     tools,
     maxTokens: 4096,
-    maxIterations: 10,
+    maxIterations: 5,
     contextType: "enrichment",
-    contextId: `enrichment-${Date.now()}`,
+    contextId: `enrichment-article-${article.id}`,
     finalToolName: "create_enrichment_suggestion"
   });
 
   if (!result.success) {
     return {
       success: false,
-      suggestionsGenerated: 0,
-      error: result.error || "Agent failed to generate suggestions",
-      logId: result.logId
+      error: result.error || `Failed to process article #${article.id}`
     };
   }
 
-  const suggestions: Array<{ id: number; type: string; product?: string; subproduct?: string }> = [];
+  if (!result.toolResult) {
+    return {
+      success: true,
+      error: `No suggestion generated for article #${article.id}`
+    };
+  }
 
-  if (result.toolResult) {
-    const suggestionResult = result.toolResult;
-    
-    if (suggestionResult.action === "skip") {
-      console.log(`[Enrichment Agent] Skipping: ${suggestionResult.skipReason}`);
-    } else {
-      const sourceArticlesData = suggestionResult.sourceArticles?.map((s: ZendeskSourceArticle) => ({
-        id: s.id,
-        title: s.title,
-        similarityScore: s.similarityScore
-      })) || [];
+  const suggestionResult = result.toolResult;
 
-      const suggestion = await knowledgeSuggestionsStorage.createSuggestion({
-        conversationId: null,
-        externalConversationId: null,
-        suggestionType: suggestionResult.action,
-        name: suggestionResult.name,
-        productStandard: suggestionResult.productStandard || params.product,
-        subproductStandard: suggestionResult.subproductStandard || params.subproduct,
-        category1: null,
-        category2: null,
-        description: suggestionResult.description,
-        resolution: suggestionResult.resolution,
-        observations: suggestionResult.observations,
-        confidenceScore: suggestionResult.confidenceScore,
-        similarArticleId: suggestionResult.targetArticleId,
-        updateReason: suggestionResult.updateReason,
-        status: "pending",
-        conversationHandler: null,
-        rawExtraction: {
-          ...suggestionResult,
-          sourceArticles: sourceArticlesData,
-          enrichmentSource: "zendesk"
-        }
-      });
+  if (suggestionResult.action === "skip") {
+    console.log(`[Enrichment Agent] Skipping article #${article.id}: ${suggestionResult.skipReason}`);
+    return { success: true };
+  }
 
-      suggestions.push({
-        id: suggestion.id,
-        type: suggestionResult.action,
-        product: suggestionResult.productStandard,
-        subproduct: suggestionResult.subproductStandard
-      });
+  const sourceArticlesData = suggestionResult.sourceArticles?.map((s: ZendeskSourceArticle) => ({
+    id: s.id,
+    title: s.title,
+    similarityScore: s.similarityScore
+  })) || [];
 
-      console.log(`[Enrichment Agent] Suggestion saved: id=${suggestion.id}, type=${suggestionResult.action}`);
+  const suggestion = await knowledgeSuggestionsStorage.createSuggestion({
+    conversationId: null,
+    externalConversationId: null,
+    suggestionType: "update",
+    name: article.name,
+    productStandard: article.productStandard,
+    subproductStandard: article.subproductStandard,
+    category1: article.category1,
+    category2: article.category2,
+    description: suggestionResult.improvedDescription || article.description,
+    resolution: suggestionResult.improvedResolution || article.resolution,
+    observations: suggestionResult.additionalObservations || article.observations,
+    confidenceScore: suggestionResult.confidenceScore,
+    similarArticleId: article.id,
+    updateReason: suggestionResult.updateReason,
+    status: "pending",
+    conversationHandler: null,
+    rawExtraction: {
+      ...suggestionResult,
+      localArticleId: article.id,
+      sourceArticles: sourceArticlesData,
+      enrichmentSource: "zendesk"
+    }
+  });
+
+  console.log(`[Enrichment Agent] Suggestion saved: id=${suggestion.id} for article #${article.id}`);
+
+  return {
+    success: true,
+    suggestion: {
+      id: suggestion.id,
+      type: "update",
+      localArticleId: article.id,
+      product: article.productStandard || undefined,
+      subproduct: article.subproductStandard || undefined
+    }
+  };
+}
+
+export async function generateEnrichmentSuggestions(params: EnrichmentParams): Promise<EnrichmentResult> {
+  const suggestions: Array<{ id: number; type: string; localArticleId: number; product?: string; subproduct?: string }> = [];
+  const errors: string[] = [];
+
+  for (const article of params.articles) {
+    try {
+      console.log(`[Enrichment Agent] Processing article #${article.id}: ${article.name}`);
+      const result = await processArticle(article, params.config);
+
+      if (!result.success) {
+        errors.push(result.error || `Error processing article #${article.id}`);
+      } else if (result.suggestion) {
+        suggestions.push(result.suggestion);
+      }
+    } catch (error: any) {
+      console.error(`[Enrichment Agent] Error processing article #${article.id}:`, error.message);
+      errors.push(`Article #${article.id}: ${error.message}`);
     }
   }
 
   return {
-    success: true,
+    success: errors.length === 0,
     suggestionsGenerated: suggestions.length,
+    articlesProcessed: params.articles.length,
     suggestions,
-    logId: result.logId
+    errors: errors.length > 0 ? errors : undefined
   };
 }

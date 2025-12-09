@@ -2,12 +2,13 @@ import { Router, type Request, type Response } from "express";
 import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
 import { storage } from "../../../storage.js";
 import { generateEnrichmentSuggestions } from "../services/enrichmentAgentAdapter.js";
+import { knowledgeBaseStorage } from "../storage/knowledgeBaseStorage.js";
 
 const router = Router();
 
 router.post("/api/ai/enrichment/generate", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
-    const { product, subproduct } = req.body;
+    const { product, subproduct, limit = 3 } = req.body;
 
     const config = await storage.getOpenaiApiConfig("enrichment");
     if (!config || !config.enabled) {
@@ -16,9 +17,25 @@ router.post("/api/ai/enrichment/generate", isAuthenticated, requireAuthorizedUse
       });
     }
 
+    const articles = await knowledgeBaseStorage.getAllArticles({
+      productStandard: product,
+      subproductStandard: subproduct,
+      limit: Math.min(limit, 50),
+    });
+
+    if (articles.length === 0) {
+      return res.json({
+        success: true,
+        suggestionsGenerated: 0,
+        suggestions: [],
+        message: "Nenhum artigo encontrado na base local com os filtros aplicados."
+      });
+    }
+
+    console.log(`[Enrichment] Processing ${articles.length} articles from local KB`);
+
     const result = await generateEnrichmentSuggestions({
-      product,
-      subproduct,
+      articles,
       config
     });
 

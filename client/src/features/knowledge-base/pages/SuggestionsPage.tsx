@@ -295,6 +295,7 @@ function EnrichmentPanel() {
   const queryClient = useQueryClient();
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [selectedSubproduct, setSelectedSubproduct] = useState<string>("");
+  const [limit, setLimit] = useState<number>(3);
 
   const { data: products = [] } = useQuery<string[]>({
     queryKey: ["product-catalog-distinct-produtos"],
@@ -308,7 +309,7 @@ function EnrichmentPanel() {
   });
 
   const generateMutation = useMutation({
-    mutationFn: async (params: { product?: string; subproduct?: string }) => {
+    mutationFn: async (params: { product?: string; subproduct?: string; limit: number }) => {
       return apiRequest("POST", "/api/ai/enrichment/generate", params);
     },
     onSuccess: () => {
@@ -320,6 +321,7 @@ function EnrichmentPanel() {
     generateMutation.mutate({
       product: selectedProduct || undefined,
       subproduct: selectedSubproduct || undefined,
+      limit,
     });
   };
 
@@ -369,6 +371,18 @@ function EnrichmentPanel() {
               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-500 pointer-events-none" />
             </div>
           )}
+          
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-purple-700 whitespace-nowrap">Qtd. intenções:</label>
+            <input
+              type="number"
+              min={1}
+              max={50}
+              value={limit}
+              onChange={(e) => setLimit(Math.max(1, Math.min(50, parseInt(e.target.value) || 1)))}
+              className="w-16 bg-white border border-purple-300 rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
           
           <button
             onClick={handleGenerate}
