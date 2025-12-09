@@ -9,11 +9,20 @@ export function getMessageSender(authorType: string, authorName?: string | null)
   
   const name = (authorName || "").toLowerCase();
   
+  // N1ago detection - messages sent by our AI agent
   if (name.includes("n1ago")) {
     return "n1ago";
   }
   
-  if (name.includes("answerbot") || name.includes("zd-answerbot") || authorType === "bot") {
+  // Zendesk bot detection - Answer Bot or app-type messages
+  // The bot often uses the company name (e.g., "iFood Pago") as displayName
+  if (
+    authorType === "bot" ||
+    name.includes("answerbot") || 
+    name.includes("zd-answerbot") ||
+    name === "ifood pago" ||
+    name.includes("pago")
+  ) {
     return "zendeskBot";
   }
   
