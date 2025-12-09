@@ -1,8 +1,7 @@
-import { Link } from "wouter";
-import { MessageCircle, Activity, User, UserCheck, UserX } from "lucide-react";
+import { MessageCircle, UserCheck, UserX, ArrowRight } from "lucide-react";
 import { HandlerBadge, getHandlerInfo } from "../../../shared/components/badges/HandlerBadge";
-import { getUserDisplayName, getActiveConversationsCount, getUserFromGroup } from "../../../lib/userUtils";
-import type { User as UserType, UserGroup } from "../../../types";
+import { getUserDisplayName, getActiveConversationsCount } from "../../../lib/userUtils";
+import type { UserGroup } from "../../../types";
 
 const emotionConfig: Record<number, { label: string; color: string; emoji: string }> = {
   1: { label: "Muito positivo", color: "bg-green-100 text-green-700", emoji: "😊" },
@@ -14,7 +13,6 @@ const emotionConfig: Record<number, { label: string; color: string; emoji: strin
 
 interface UserGroupCardProps {
   group: UserGroup;
-  onViewUser: (user: UserType) => void;
   onViewConversations: (userId: string) => void;
   formatDateTime: (date: string) => string;
 }
@@ -30,7 +28,6 @@ function getLatestHandler(conversations: Array<{ current_handler_name?: string |
 
 export function UserGroupCard({
   group,
-  onViewUser,
   onViewConversations,
   formatDateTime,
 }: UserGroupCardProps) {
@@ -79,34 +76,13 @@ export function UserGroupCard({
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              {group.user_info && (
-                <button
-                  onClick={() => {
-                    const user = getUserFromGroup(group);
-                    if (user) onViewUser(user);
-                  }}
-                  title="Ver detalhes do usuário"
-                  className="p-2 border border-gray-200 text-gray-600 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 rounded-lg transition-colors"
-                >
-                  <User className="w-4 h-4" />
-                </button>
-              )}
-              <button
-                onClick={() => onViewConversations(group.user_id)}
-                title="Ver conversas"
-                className="p-2 border border-gray-200 text-gray-600 hover:text-green-600 hover:border-green-300 hover:bg-green-50 rounded-lg transition-colors"
-              >
-                <MessageCircle className="w-4 h-4" />
-              </button>
-              <Link
-                href={`/events?user=${encodeURIComponent(group.user_id)}`}
-                title="Ver eventos"
-                className="p-2 border border-gray-200 text-gray-600 hover:text-purple-600 hover:border-purple-300 hover:bg-purple-50 rounded-lg transition-colors"
-              >
-                <Activity className="w-4 h-4" />
-              </Link>
-            </div>
+            <button
+              onClick={() => onViewConversations(group.user_id)}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shrink-0"
+            >
+              Ver atendimento
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
 
           {group.conversations.length > 1 && (

@@ -2,12 +2,11 @@ import { useState, useMemo, useEffect } from "react";
 import { useLocation, useSearch, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Users, MessageCircle, Bot, Brain, UserCircle, Settings2 } from "lucide-react";
-import { UserDetailModal } from "../../../shared/components";
 import { LoadingState, EmptyState, Pagination, PageCard, SegmentedTabs } from "../../../shared/components/ui";
 import { useDateFormatters, usePaginatedQuery } from "../../../shared/hooks";
 import { fetchApi } from "../../../lib/queryClient";
 import { FilterBar, UserGroupCard } from "../components";
-import type { User as UserType, UserGroup } from "../../../types";
+import type { UserGroup } from "../../../types";
 
 interface FiltersResponse {
   productStandards: string[];
@@ -24,7 +23,6 @@ const HANDLER_TABS = [
 export function AtendimentosPage() {
   const [, navigate] = useLocation();
   const search = useSearch();
-  const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
 
   const urlParams = new URLSearchParams(search);
   const initialProductStandard = urlParams.get("productStandard") || "";
@@ -138,7 +136,6 @@ export function AtendimentosPage() {
               <UserGroupCard
                 key={group.user_id}
                 group={group}
-                onViewUser={setSelectedUser}
                 onViewConversations={(userId) => navigate(`/atendimentos/${encodeURIComponent(userId)}`)}
                 formatDateTime={formatShortDateTime}
               />
@@ -159,8 +156,6 @@ export function AtendimentosPage() {
           />
         </>
       )}
-
-      {selectedUser !== null && <UserDetailModal user={selectedUser} onClose={() => setSelectedUser(null)} />}
     </PageCard>
   );
 }
