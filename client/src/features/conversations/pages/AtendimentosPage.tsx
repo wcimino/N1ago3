@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
-import { useLocation, useSearch, Link } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Users, MessageCircle, Bot, Brain, UserCircle, Settings2 } from "lucide-react";
-import { LoadingState, EmptyState, Pagination, PageCard, SegmentedTabs } from "../../../shared/components/ui";
+import { LoadingState, EmptyState, Pagination, SegmentedTabs } from "../../../shared/components/ui";
 import { useDateFormatters, usePaginatedQuery } from "../../../shared/hooks";
 import { fetchApi } from "../../../lib/queryClient";
 import { FilterBar, UserGroupCard } from "../components";
+import { RoutingRulesContent } from "../../routing/components/RoutingRulesContent";
 import type { UserGroup } from "../../../types";
 
 interface FiltersResponse {
@@ -20,8 +21,12 @@ const HANDLER_TABS = [
   { id: "n1ago", label: "n1ago", icon: <Brain className="w-4 h-4" /> },
 ];
 
+const CONFIG_TABS = [
+  { id: "routing", label: "Regras de Roteamento", icon: <Settings2 className="w-4 h-4" /> },
+];
+
 export function AtendimentosPage() {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const search = useSearch();
 
   const urlParams = new URLSearchParams(search);
@@ -33,6 +38,8 @@ export function AtendimentosPage() {
   const [intentFilter, setIntentFilter] = useState<string>(initialIntent);
   const [emotionLevelFilter, setEmotionLevelFilter] = useState<string>(initialEmotionLevel);
   const [handlerFilter, setHandlerFilter] = useState<string>("all");
+
+  const isRoutingView = location.includes("/routing");
 
   useEffect(() => {
     const params = new URLSearchParams(search);
@@ -88,76 +95,98 @@ export function AtendimentosPage() {
     setEmotionLevelFilter("");
   };
 
+  const handleConfigTabChange = (tabId: string) => {
+    if (tabId === "routing") {
+      navigate("/atendimentos/routing");
+    }
+  };
+
+  const handleHandlerTabChange = (tabId: string) => {
+    setHandlerFilter(tabId);
+    if (isRoutingView) {
+      navigate("/atendimentos");
+    }
+  };
+
   return (
-    <PageCard 
-      title="Atendimentos" 
-      description="Lista de atendimentos agrupados por usuário"
-      headerRight={
-        <div className="bg-gray-100 p-1 rounded-lg flex gap-1">
-          <Link href="/routing-rules">
-            <button className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 bg-white text-purple-700 shadow-sm">
-              <Settings2 className="w-4 h-4" />
-              Regras de Roteamento
-            </button>
-          </Link>
+    <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="px-4 py-3 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Atendimentos</h2>
+          <p className="text-sm text-gray-500 mt-1">Lista de atendimentos agrupados por usuário</p>
         </div>
-      }
-    >
-      <div className="px-4 py-3 border-b">
-        <SegmentedTabs tabs={HANDLER_TABS} activeTab={handlerFilter} onChange={setHandlerFilter} />
+        <div className="shrink-0">
+          <SegmentedTabs
+            tabs={CONFIG_TABS}
+            activeTab={isRoutingView ? "routing" : ""}
+            onChange={handleConfigTabChange}
+          />
+        </div>
       </div>
 
-      <FilterBar
-        productStandards={filters?.productStandards || []}
-        intents={filters?.intents || []}
-        productStandardFilter={productStandardFilter}
-        intentFilter={intentFilter}
-        emotionLevelFilter={emotionLevelFilter}
-        onProductStandardChange={setProductStandardFilter}
-        onIntentChange={setIntentFilter}
-        onEmotionLevelChange={setEmotionLevelFilter}
-        onClear={clearFilters}
-      />
+      {!isRoutingView && (
+        <div className="px-4 py-3 border-b">
+          <SegmentedTabs tabs={HANDLER_TABS} activeTab={handlerFilter} onChange={handleHandlerTabChange} />
+        </div>
+      )}
 
-      {isLoading ? (
-        <LoadingState />
-      ) : userGroups.length === 0 ? (
-        <EmptyState
-          icon={<MessageCircle className="w-12 h-12 text-gray-300" />}
-          title={hasFilters ? "Nenhum resultado encontrado." : "Nenhuma conversa registrada ainda."}
-          description={
-            hasFilters
-              ? "Tente ajustar os filtros selecionados."
-              : "As conversas serão criadas quando mensagens chegarem via webhook."
-          }
-        />
+      {isRoutingView ? (
+        <RoutingRulesContent />
       ) : (
         <>
-          <div className="divide-y divide-gray-200">
-            {userGroups.map((group) => (
-              <UserGroupCard
-                key={group.user_id}
-                group={group}
-                onViewConversations={(userId) => navigate(`/atendimentos/${encodeURIComponent(userId)}`)}
-                formatDateTime={formatShortDateTime}
-              />
-            ))}
-          </div>
-
-          <Pagination
-            page={page}
-            totalPages={totalPages}
-            showingFrom={showingFrom}
-            showingTo={showingTo}
-            total={total}
-            onPreviousPage={previousPage}
-            onNextPage={nextPage}
-            hasPreviousPage={hasPreviousPage}
-            hasNextPage={hasNextPage}
-            itemLabel="usuários"
+          <FilterBar
+            productStandards={filters?.productStandards || []}
+            intents={filters?.intents || []}
+            productStandardFilter={productStandardFilter}
+            intentFilter={intentFilter}
+            emotionLevelFilter={emotionLevelFilter}
+            onProductStandardChange={setProductStandardFilter}
+            onIntentChange={setIntentFilter}
+            onEmotionLevelChange={setEmotionLevelFilter}
+            onClear={clearFilters}
           />
+
+          {isLoading ? (
+            <LoadingState />
+          ) : userGroups.length === 0 ? (
+            <EmptyState
+              icon={<MessageCircle className="w-12 h-12 text-gray-300" />}
+              title={hasFilters ? "Nenhum resultado encontrado." : "Nenhuma conversa registrada ainda."}
+              description={
+                hasFilters
+                  ? "Tente ajustar os filtros selecionados."
+                  : "As conversas serão criadas quando mensagens chegarem via webhook."
+              }
+            />
+          ) : (
+            <>
+              <div className="divide-y divide-gray-200">
+                {userGroups.map((group) => (
+                  <UserGroupCard
+                    key={group.user_id}
+                    group={group}
+                    onViewConversations={(userId) => navigate(`/atendimentos/${encodeURIComponent(userId)}`)}
+                    formatDateTime={formatShortDateTime}
+                  />
+                ))}
+              </div>
+
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                showingFrom={showingFrom}
+                showingTo={showingTo}
+                total={total}
+                onPreviousPage={previousPage}
+                onNextPage={nextPage}
+                hasPreviousPage={hasPreviousPage}
+                hasNextPage={hasNextPage}
+                itemLabel="usuários"
+              />
+            </>
+          )}
         </>
       )}
-    </PageCard>
+    </div>
   );
 }

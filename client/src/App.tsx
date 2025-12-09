@@ -81,6 +81,7 @@ function AuthenticatedApp() {
           <Route path="/settings/events" component={EventsLayout} />
           <Route path="/settings/events/:rest*" component={EventsLayout} />
           <Route path="/atendimentos" component={AtendimentosPage} />
+          <Route path="/atendimentos/routing" component={AtendimentosPage} />
           <Route path="/atendimentos/:userId">{(params) => <UserConversationsPage params={params} />}</Route>
           <Route path="/settings/maintenance/export" component={ExportPage} />
           <Route path="/settings/maintenance/export/:rest*" component={ExportPage} />
