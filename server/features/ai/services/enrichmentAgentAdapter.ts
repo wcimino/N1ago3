@@ -1,9 +1,11 @@
 import { knowledgeSuggestionsStorage } from "../storage/knowledgeSuggestionsStorage.js";
 import { knowledgeBaseStorage, IntentWithArticle } from "../storage/knowledgeBaseStorage.js";
+import { enrichmentLogStorage } from "../storage/enrichmentLogStorage.js";
 import { callOpenAI, ToolDefinition } from "./openaiApiService.js";
 import { createZendeskKnowledgeBaseTool } from "./aiTools.js";
 import { ENRICHMENT_SYSTEM_PROMPT, ENRICHMENT_USER_PROMPT_TEMPLATE } from "../constants/enrichmentAgentPrompts.js";
-import type { KnowledgeBaseArticle } from "../../../../shared/schema.js";
+import type { KnowledgeBaseArticle, InsertKnowledgeEnrichmentLog } from "../../../../shared/schema.js";
+import { randomUUID } from "crypto";
 
 export interface EnrichmentConfig {
   enabled: boolean;
@@ -210,16 +212,22 @@ function buildSynonymsContext(intentSynonyms: string[], subjectSynonyms: string[
   return context;
 }
 
-async function processIntent(
-  intentWithArticle: IntentWithArticle,
-  config: EnrichmentConfig
-): Promise<{
+interface ProcessIntentResult {
   success: boolean;
   action?: 'create' | 'update' | 'skip';
   suggestion?: { id: number; type: string; intentId: number; articleId?: number; product?: string };
   newArticleId?: number;
   error?: string;
-}> {
+  openaiLogId?: number;
+  outcomeReason?: string;
+  confidenceScore?: number;
+  sourceArticles?: Array<{ id: string; title: string; similarityScore: number }>;
+}
+
+async function processIntent(
+  intentWithArticle: IntentWithArticle,
+  config: EnrichmentConfig
+): Promise<ProcessIntentResult> {
   const { intent, article } = intentWithArticle;
   const userPrompt = buildUserPromptForIntent(intentWithArticle, config);
 
@@ -253,7 +261,9 @@ async function processIntent(
   if (!result.success) {
     return {
       success: false,
-      error: result.error || `Failed to process intent #${intent.id}`
+      error: result.error || `Failed to process intent #${intent.id}`,
+      openaiLogId: result.logId,
+      outcomeReason: result.error || `Failed to process intent #${intent.id}`
     };
   }
 
@@ -261,7 +271,9 @@ async function processIntent(
     return {
       success: true,
       action: 'skip',
-      error: `No suggestion generated for intent #${intent.id}`
+      error: `No suggestion generated for intent #${intent.id}`,
+      openaiLogId: result.logId,
+      outcomeReason: `No suggestion generated for intent #${intent.id}`
     };
   }
 
@@ -269,7 +281,19 @@ async function processIntent(
 
   if (suggestionResult.action === "skip") {
     console.log(`[Enrichment Agent] Skipping intent #${intent.id}: ${suggestionResult.skipReason}`);
-    return { success: true, action: 'skip' };
+    const sourceArticlesData = suggestionResult.sourceArticles?.map((s: ZendeskSourceArticle) => ({
+      id: s.id,
+      title: s.title,
+      similarityScore: s.similarityScore
+    })) || [];
+    return { 
+      success: true, 
+      action: 'skip',
+      openaiLogId: result.logId,
+      outcomeReason: suggestionResult.skipReason,
+      confidenceScore: suggestionResult.confidenceScore,
+      sourceArticles: sourceArticlesData
+    };
   }
 
   const sourceArticlesData = suggestionResult.sourceArticles?.map((s: ZendeskSourceArticle) => ({
@@ -342,7 +366,11 @@ async function processIntent(
       intentId: intent.id,
       articleId: targetArticleId || undefined,
       product: intent.productName
-    }
+    },
+    openaiLogId: result.logId,
+    outcomeReason: suggestionResult.updateReason || suggestionResult.createReason,
+    confidenceScore: suggestionResult.confidenceScore,
+    sourceArticles: sourceArticlesData
   };
 }
 
@@ -352,14 +380,42 @@ export async function generateEnrichmentSuggestions(params: EnrichmentParams): P
   let articlesCreated = 0;
   let articlesUpdated = 0;
   let skipped = 0;
+  
+  const triggerRunId = randomUUID();
+  console.log(`[Enrichment Agent] Starting batch run: ${triggerRunId} with ${params.intentsWithArticles.length} intents`);
 
   for (const intentWithArticle of params.intentsWithArticles) {
+    const { intent, article } = intentWithArticle;
+    
     try {
-      console.log(`[Enrichment Agent] Processing intent #${intentWithArticle.intent.id}: ${intentWithArticle.intent.name} (hasArticle: ${!!intentWithArticle.article})`);
+      console.log(`[Enrichment Agent] Processing intent #${intent.id}: ${intent.name} (hasArticle: ${!!article})`);
       const result = await processIntent(intentWithArticle, params.config);
 
+      const logData: InsertKnowledgeEnrichmentLog = {
+        intentId: intent.id,
+        articleId: result.newArticleId || article?.id || null,
+        action: result.action || 'skip',
+        outcomeReason: result.outcomeReason || result.error,
+        suggestionId: result.suggestion?.id || null,
+        sourceArticles: result.sourceArticles || null,
+        confidenceScore: result.confidenceScore || null,
+        productStandard: intent.productName,
+        outcomePayload: result.suggestion ? {
+          suggestionId: result.suggestion.id,
+          suggestionType: result.suggestion.type,
+          articleId: result.suggestion.articleId,
+          newArticleId: result.newArticleId
+        } : null,
+        openaiLogId: result.openaiLogId || null,
+        triggerRunId,
+        processedAt: new Date()
+      };
+
+      await enrichmentLogStorage.create(logData);
+      console.log(`[Enrichment Agent] Log saved for intent #${intent.id}: action=${result.action}`);
+
       if (!result.success) {
-        errors.push(result.error || `Error processing intent #${intentWithArticle.intent.id}`);
+        errors.push(result.error || `Error processing intent #${intent.id}`);
       } else if (result.action === 'skip') {
         skipped++;
       } else if (result.action === 'create') {
@@ -374,8 +430,29 @@ export async function generateEnrichmentSuggestions(params: EnrichmentParams): P
         }
       }
     } catch (error: any) {
-      console.error(`[Enrichment Agent] Error processing intent #${intentWithArticle.intent.id}:`, error.message);
-      errors.push(`Intent #${intentWithArticle.intent.id}: ${error.message}`);
+      console.error(`[Enrichment Agent] Error processing intent #${intent.id}:`, error.message);
+      errors.push(`Intent #${intent.id}: ${error.message}`);
+      
+      const errorLogData: InsertKnowledgeEnrichmentLog = {
+        intentId: intent.id,
+        articleId: article?.id || null,
+        action: 'skip',
+        outcomeReason: `Processing error: ${error.message}`,
+        suggestionId: null,
+        sourceArticles: null,
+        confidenceScore: null,
+        productStandard: intent.productName,
+        outcomePayload: { error: error.message },
+        openaiLogId: null,
+        triggerRunId,
+        processedAt: new Date()
+      };
+      
+      try {
+        await enrichmentLogStorage.create(errorLogData);
+      } catch (logError: any) {
+        console.error(`[Enrichment Agent] Failed to save error log for intent #${intent.id}:`, logError.message);
+      }
     }
   }
 
