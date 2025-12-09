@@ -87,10 +87,12 @@ export const generalSettingsStorage = {
   },
 
   async getConcatenatedContent(): Promise<string> {
-    const enabledSettings = await this.getAllEnabled();
-    if (enabledSettings.length === 0) return "";
+    const allSettings = await this.getAll();
+    const settingsWithContent = allSettings.filter(s => s.content && s.content.trim().length > 0);
+    
+    if (settingsWithContent.length === 0) return "";
 
-    const sections = enabledSettings.map((setting) => {
+    const sections = settingsWithContent.map((setting) => {
       const label = GENERAL_SETTINGS_LABELS[setting.configType as GeneralSettingType];
       return `## ${label?.title || setting.configType}\n${setting.content}`;
     });

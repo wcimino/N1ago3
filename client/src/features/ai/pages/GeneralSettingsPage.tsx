@@ -32,23 +32,9 @@ export function GeneralSettingsPage() {
 
             return (
               <div key={configType} className="bg-gray-50 rounded-lg p-4 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-medium text-gray-900">{setting.title}</h3>
-                    <p className="text-sm text-gray-500">{setting.description}</p>
-                  </div>
-                  <button
-                    onClick={() => updateSetting(configType, "enabled", !setting.enabled)}
-                    className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${
-                      setting.enabled ? "bg-green-500" : "bg-gray-300"
-                    }`}
-                  >
-                    <span
-                      className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transform transition-transform ${
-                        setting.enabled ? "translate-x-6" : "translate-x-0"
-                      }`}
-                    />
-                  </button>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900">{setting.title}</h3>
+                  <p className="text-sm text-gray-500">{setting.description}</p>
                 </div>
 
                 <textarea
