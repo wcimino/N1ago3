@@ -64,16 +64,22 @@ export function KnowledgeBasePage() {
     intents,
   } = useKnowledgeBase(activeTab);
 
-  const handleAddArticle = (subjectId?: number, intentId?: number, productName?: string) => {
-    if (!intentId || !subjectId) return;
+  const handleAddArticle = (subjectId?: number, intentId?: number, fullPath?: string) => {
+    if (!intentId || !subjectId || !fullPath) return;
     
     const subject = subjects.find(s => s.id === subjectId);
     const intent = intents.find(i => i.id === intentId);
     
     if (subject && intent) {
+      // Parse fullPath to extract product and subproduct
+      // Format: "Produto > Subproduto > Assunto > Intenção" (4 parts) or "Produto > Assunto > Intenção" (3 parts)
+      const parts = fullPath.split(" > ");
+      const productStandard = parts[0] || "";
+      const subproductStandard = parts.length === 4 ? parts[1] : null;
+      
       setPrefilledData({
-        productStandard: productName || "",
-        subproductStandard: null,
+        productStandard,
+        subproductStandard,
         subjectId,
         intentId,
         subjectName: subject.name,

@@ -219,21 +219,26 @@ export function KnowledgeBaseForm({
       }
     }
     
+    const productStandard = prefilledData?.productStandard || formData.productStandard;
+    const subproductStandard = prefilledData?.subproductStandard || null;
+    const subjectId = prefilledData?.subjectId || formData.subjectId;
+    const intentId = prefilledData?.intentId || formData.intentId;
+    
     onSubmit({
       name: formData.name || null,
-      productStandard: formData.productStandard,
-      subproductStandard: null,
+      productStandard,
+      subproductStandard,
       intent: intentValue,
       description: formData.description,
       resolution: formData.resolution,
       observations: formData.observations || null,
-      subjectId: formData.subjectId,
-      intentId: formData.intentId,
+      subjectId,
+      intentId,
     });
   };
 
   const isValid =
-    formData.productStandard.trim() &&
+    (prefilledData?.productStandard || formData.productStandard.trim()) &&
     formData.description.trim() &&
     formData.resolution.trim();
 
@@ -268,10 +273,18 @@ export function KnowledgeBaseForm({
           <div className="flex items-center gap-2 mb-3">
             <span className="text-xs font-medium text-blue-700 uppercase tracking-wide">Classificação</span>
           </div>
-          <div className="flex items-center gap-3 text-sm">
+          <div className="flex items-center gap-3 flex-wrap text-sm">
             <span className="px-2 py-1 bg-white rounded border border-blue-200 text-gray-700 font-medium">
               {prefilledData.productStandard}
             </span>
+            {prefilledData.subproductStandard && (
+              <>
+                <span className="text-blue-400">&gt;</span>
+                <span className="px-2 py-1 bg-purple-100 rounded border border-purple-300 text-purple-700 font-medium">
+                  {prefilledData.subproductStandard}
+                </span>
+              </>
+            )}
             <span className="text-blue-400">&gt;</span>
             <span className="px-2 py-1 bg-blue-100 rounded border border-blue-300 text-blue-700 font-medium">
               {prefilledData.subjectName}

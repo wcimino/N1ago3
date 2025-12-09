@@ -181,6 +181,7 @@ function buildHierarchy(
         fullPath: `${subjectNode.fullPath} > ${intent.name}`,
         children: [],
         articles: [],
+        subjectId: intent.subjectId,
         intentId: intent.id,
       };
       subjectNode.children.push(intentNode);

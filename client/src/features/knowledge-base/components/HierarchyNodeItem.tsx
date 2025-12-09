@@ -57,8 +57,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
           <button
             onClick={(e) => {
               e.stopPropagation();
-              const productName = node.fullPath.split(" > ")[0];
-              onAddArticle(node.subjectId, node.intentId, productName);
+              onAddArticle(node.subjectId, node.intentId, node.fullPath);
             }}
             className="p-1 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
             title="Adicionar artigo"
