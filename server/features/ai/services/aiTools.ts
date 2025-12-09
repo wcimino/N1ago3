@@ -193,6 +193,7 @@ export function createZendeskKnowledgeBaseTool(): ToolDefinition {
       }
       
       const articleList = articles.map(a => ({
+        id: String(a.id),
         title: a.title,
         section: a.sectionName,
         body: a.body ? a.body.substring(0, 500) + (a.body.length > 500 ? "..." : "") : null,
