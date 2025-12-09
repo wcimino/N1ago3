@@ -21,6 +21,8 @@ import openaiStatsRoutes from "../features/ai/routes/openaiStats.js";
 import knowledgeBaseRoutes from "../features/ai/routes/knowledgeBase.js";
 import knowledgeSuggestionsRoutes from "../features/ai/routes/knowledgeSuggestions.js";
 import learningAttemptsRoutes from "../features/ai/routes/learningAttempts.js";
+import knowledgeSubjectsRoutes from "../features/knowledge/routes/knowledgeSubjectsRoutes.js";
+import knowledgeIntentsRoutes from "../features/knowledge/routes/knowledgeIntentsRoutes.js";
 
 import maintenanceRoutes from "../features/maintenance/routes/maintenance.js";
 import { zendeskArticlesRouter } from "../features/zendesk-articles/index.js";
@@ -47,6 +49,8 @@ export function registerRoutes(app: Express) {
   app.use(knowledgeBaseRoutes);
   app.use(knowledgeSuggestionsRoutes);
   app.use(learningAttemptsRoutes);
+  app.use(knowledgeSubjectsRoutes);
+  app.use(knowledgeIntentsRoutes);
   app.use("/api/zendesk-articles", zendeskArticlesRouter);
   app.use(routingRulesRoutes);
   app.use(transferRoutes);
