@@ -52,6 +52,10 @@ export function KnowledgeBasePage() {
     togglePath,
   } = useKnowledgeBase(activeTab);
 
+  const handleAddArticle = (subjectId?: number, intentId?: number, productName?: string) => {
+    setShowForm(true);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="px-4 py-3 border-b flex items-center justify-between">
@@ -189,6 +193,7 @@ export function KnowledgeBasePage() {
                         onToggle={togglePath}
                         onEdit={handleEdit}
                         onDelete={handleDelete}
+                        onAddArticle={handleAddArticle}
                       />
                     ))}
                   </div>

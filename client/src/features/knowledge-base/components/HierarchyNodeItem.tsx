@@ -1,4 +1,4 @@
-import { ChevronRight, ChevronDown, Pencil, Trash2, AlertCircle } from "lucide-react";
+import { ChevronRight, ChevronDown, Pencil, Trash2, AlertCircle, Plus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { LEVEL_LABELS, LEVEL_COLORS } from "../../../lib/productHierarchy";
@@ -19,9 +19,10 @@ interface HierarchyNodeItemProps {
   onToggle: (path: string) => void;
   onEdit: (article: KnowledgeBaseArticle) => void;
   onDelete: (id: number) => void;
+  onAddArticle?: (subjectId?: number, intentId?: number, productName?: string) => void;
 }
 
-export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete }: HierarchyNodeItemProps) {
+export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete, onAddArticle }: HierarchyNodeItemProps) {
   const isExpanded = expandedPaths.has(node.fullPath);
   const hasChildren = node.children.length > 0 || node.articles.length > 0;
   const articleCount = countArticles(node);
@@ -30,7 +31,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
   return (
     <div>
       <div 
-        className={`flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-gray-50 ${hasChildren ? "cursor-pointer" : ""}`}
+        className={`group flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-gray-50 ${hasChildren ? "cursor-pointer" : ""}`}
         style={{ marginLeft: `${depth * 20}px` }}
         onClick={() => hasChildren && onToggle(node.fullPath)}
       >
@@ -51,6 +52,20 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
         </span>
 
         <span className="flex-1 text-sm font-medium text-gray-900">{node.name}</span>
+
+        {onAddArticle && (node.level === "intencao" || node.level === "assunto") && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const productName = node.fullPath.split(" > ")[0];
+              onAddArticle(node.subjectId, node.intentId, productName);
+            }}
+            className="p-1 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+            title="Adicionar artigo"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        )}
 
         {articleCount === 0 ? (
           <span className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-700">
@@ -75,6 +90,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
               onToggle={onToggle}
               onEdit={onEdit}
               onDelete={onDelete}
+              onAddArticle={onAddArticle}
             />
           ))}
           {node.articles.map((article) => (
