@@ -37,6 +37,10 @@ export interface KnowledgeSuggestion {
   rawExtraction: {
     sourceArticles?: SourceArticle[];
     enrichmentSource?: string;
+    intentId?: number;
+    intentName?: string;
+    subjectName?: string;
+    productName?: string;
   } | null;
   createdAt: string;
   updatedAt: string;

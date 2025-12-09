@@ -193,16 +193,16 @@ function SuggestionCard({
             <p className="font-medium">{suggestion.subproductStandard}</p>
           </div>
         )}
-        {suggestion.category1 && (
+        {suggestion.rawExtraction?.subjectName && (
           <div>
-            <span className="text-gray-500">Categoria 1:</span>
-            <p className="font-medium">{suggestion.category1}</p>
+            <span className="text-gray-500">Assunto:</span>
+            <p className="font-medium">{suggestion.rawExtraction.subjectName}</p>
           </div>
         )}
-        {suggestion.category2 && (
+        {suggestion.rawExtraction?.intentName && (
           <div>
-            <span className="text-gray-500">Categoria 2:</span>
-            <p className="font-medium">{suggestion.category2}</p>
+            <span className="text-gray-500">Intenção:</span>
+            <p className="font-medium">{suggestion.rawExtraction.intentName}</p>
           </div>
         )}
       </div>
