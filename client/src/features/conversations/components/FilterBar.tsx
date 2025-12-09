@@ -1,4 +1,4 @@
-import { Filter, X } from "lucide-react";
+import { Filter, X, Search } from "lucide-react";
 
 const EMOTION_OPTIONS = [
   { value: "1", label: "😊 Muito positivo" },
@@ -14,9 +14,11 @@ interface FilterBarProps {
   productStandardFilter: string;
   intentFilter: string;
   emotionLevelFilter: string;
+  clientFilter: string;
   onProductStandardChange: (value: string) => void;
   onIntentChange: (value: string) => void;
   onEmotionLevelChange: (value: string) => void;
+  onClientChange: (value: string) => void;
   onClear: () => void;
 }
 
@@ -26,17 +28,29 @@ export function FilterBar({
   productStandardFilter,
   intentFilter,
   emotionLevelFilter,
+  clientFilter,
   onProductStandardChange,
   onIntentChange,
   onEmotionLevelChange,
+  onClientChange,
   onClear,
 }: FilterBarProps) {
-  const hasFilters = productStandardFilter || intentFilter || emotionLevelFilter;
+  const hasFilters = productStandardFilter || intentFilter || emotionLevelFilter || clientFilter;
 
   return (
     <div className="px-4 py-3 border-b bg-gray-50 flex flex-wrap items-center gap-3">
       <Filter className="w-4 h-4 text-gray-500" />
       <div className="flex flex-wrap items-center gap-2">
+        <div className="relative">
+          <Search className="w-4 h-4 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={clientFilter}
+            onChange={(e) => onClientChange(e.target.value)}
+            placeholder="Buscar cliente..."
+            className="text-sm border border-gray-300 rounded-md pl-8 pr-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
+          />
+        </div>
         <select
           value={productStandardFilter}
           onChange={(e) => onProductStandardChange(e.target.value)}

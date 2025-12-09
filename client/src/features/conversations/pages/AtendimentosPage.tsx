@@ -41,6 +41,15 @@ export function AtendimentosPage() {
   const [intentFilter, setIntentFilter] = useState<string>(initialIntent);
   const [emotionLevelFilter, setEmotionLevelFilter] = useState<string>(initialEmotionLevel);
   const [handlerFilter, setHandlerFilter] = useState<string>("all");
+  const [clientFilterInput, setClientFilterInput] = useState<string>("");
+  const [clientFilterDebounced, setClientFilterDebounced] = useState<string>("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setClientFilterDebounced(clientFilterInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [clientFilterInput]);
 
   const isRoutingView = location.includes("/routing");
   const isFavoritosView = location.includes("/favoritos");
@@ -69,9 +78,10 @@ export function AtendimentosPage() {
     if (intentFilter) params.set("intent", intentFilter);
     if (handlerFilter && handlerFilter !== "all") params.set("handler", handlerFilter);
     if (emotionLevelFilter) params.set("emotionLevel", emotionLevelFilter);
+    if (clientFilterDebounced) params.set("client", clientFilterDebounced);
     const queryString = params.toString();
     return queryString ? `/api/conversations/grouped?${queryString}` : "/api/conversations/grouped";
-  }, [productStandardFilter, intentFilter, handlerFilter, emotionLevelFilter]);
+  }, [productStandardFilter, intentFilter, handlerFilter, emotionLevelFilter, clientFilterDebounced]);
 
   const {
     data: userGroups,
@@ -86,18 +96,19 @@ export function AtendimentosPage() {
     showingFrom,
     showingTo,
   } = usePaginatedQuery<UserGroup>({
-    queryKey: `conversations-grouped-${productStandardFilter}-${intentFilter}-${handlerFilter}-${emotionLevelFilter}`,
+    queryKey: `conversations-grouped-${productStandardFilter}-${intentFilter}-${handlerFilter}-${emotionLevelFilter}-${clientFilterDebounced}`,
     endpoint,
     limit: 20,
     dataKey: "user_groups",
   });
 
-  const hasFilters = productStandardFilter || intentFilter || emotionLevelFilter;
+  const hasFilters = productStandardFilter || intentFilter || emotionLevelFilter || clientFilterInput;
 
   const clearFilters = () => {
     setProductStandardFilter("");
     setIntentFilter("");
     setEmotionLevelFilter("");
+    setClientFilterInput("");
   };
 
   const handleConfigTabChange = (tabId: string) => {
@@ -163,9 +174,11 @@ export function AtendimentosPage() {
             productStandardFilter={productStandardFilter}
             intentFilter={intentFilter}
             emotionLevelFilter={emotionLevelFilter}
+            clientFilter={clientFilterInput}
             onProductStandardChange={setProductStandardFilter}
             onIntentChange={setIntentFilter}
             onEmotionLevelChange={setEmotionLevelFilter}
+            onClientChange={setClientFilterInput}
             onClear={clearFilters}
           />
 

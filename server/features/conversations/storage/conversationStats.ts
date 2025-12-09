@@ -20,7 +20,7 @@ export const conversationStats = {
     };
   },
 
-  async getConversationsGroupedByUser(limit = 50, offset = 0, productStandardFilter?: string, intentFilter?: string, handlerFilter?: string, emotionLevelFilter?: number) {
+  async getConversationsGroupedByUser(limit = 50, offset = 0, productStandardFilter?: string, intentFilter?: string, handlerFilter?: string, emotionLevelFilter?: number, clientFilter?: string) {
     const productCondition = productStandardFilter ? sql`AND lc_filter.last_product_standard = ${productStandardFilter}` : sql``;
     const intentCondition = intentFilter ? sql`AND lc_filter.last_intent = ${intentFilter}` : sql``;
     const emotionCondition = emotionLevelFilter ? sql`AND lc_filter.last_customer_emotion_level = ${emotionLevelFilter}` : sql``;
@@ -33,6 +33,15 @@ export const conversationStats = {
     } else if (handlerFilter === 'n1ago') {
       handlerCondition = sql`AND LOWER(lc_filter.current_handler_name) LIKE '%n1ago%'`;
     }
+
+    const clientSearchPattern = clientFilter ? `%${clientFilter}%` : null;
+    const clientCondition = clientFilter ? sql`AND (
+      lc_filter.user_id ILIKE ${clientSearchPattern}
+      OR lc_filter.profile_given_name ILIKE ${clientSearchPattern}
+      OR lc_filter.profile_surname ILIKE ${clientSearchPattern}
+      OR lc_filter.profile_email ILIKE ${clientSearchPattern}
+      OR CONCAT(lc_filter.profile_given_name, ' ', lc_filter.profile_surname) ILIKE ${clientSearchPattern}
+    )` : sql``;
 
     const userConversations = await db.execute(sql`
       WITH message_count_per_conv AS (
@@ -57,16 +66,20 @@ export const conversationStats = {
           COALESCE(cs.product_standard, cs.product) as last_product_standard,
           cs.intent as last_intent,
           c.current_handler_name,
-          cs.customer_emotion_level as last_customer_emotion_level
+          cs.customer_emotion_level as last_customer_emotion_level,
+          u.profile->>'givenName' as profile_given_name,
+          u.profile->>'surname' as profile_surname,
+          u.profile->>'email' as profile_email
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
         LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
+        LEFT JOIN users u ON c.user_id = u.sunshine_id
         WHERE c.user_id IS NOT NULL
         ORDER BY c.user_id, COALESCE(lm.last_message_at, c.created_at) DESC
       ),
       filtered_users AS (
         SELECT user_id FROM last_conv_filter lc_filter
-        WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition} ${emotionCondition}
+        WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition} ${emotionCondition} ${clientCondition}
       ),
       user_stats AS (
         SELECT 
@@ -143,15 +156,19 @@ export const conversationStats = {
           COALESCE(cs.product_standard, cs.product) as last_product_standard,
           cs.intent as last_intent,
           c.current_handler_name,
-          cs.customer_emotion_level as last_customer_emotion_level
+          cs.customer_emotion_level as last_customer_emotion_level,
+          u.profile->>'givenName' as profile_given_name,
+          u.profile->>'surname' as profile_surname,
+          u.profile->>'email' as profile_email
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
         LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
+        LEFT JOIN users u ON c.user_id = u.sunshine_id
         WHERE c.user_id IS NOT NULL
         ORDER BY c.user_id, COALESCE(lm.last_message_at, c.created_at) DESC
       )
       SELECT COUNT(*) as count FROM last_conv_filter lc_filter
-      WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition} ${emotionCondition}
+      WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition} ${emotionCondition} ${clientCondition}
     `);
 
     return { 
