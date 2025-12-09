@@ -205,7 +205,7 @@ export function HomePage() {
         <div className="bg-white rounded-lg shadow p-5">
           <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-3">
             <Package className="w-4 h-4 text-orange-600" />
-            Produtos Mencionados
+            Produtos
           </h2>
           <ProductsCard productStats={productStats} />
         </div>
@@ -213,7 +213,7 @@ export function HomePage() {
         <div className="bg-white rounded-lg shadow p-5">
           <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-3">
             <Heart className="w-4 h-4 text-pink-600" />
-            Sentimento Atual
+            Sentimentos
           </h2>
           <EmotionsCard emotionStats={emotionStats} />
         </div>
