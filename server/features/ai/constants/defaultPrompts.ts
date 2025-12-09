@@ -1,3 +1,5 @@
+import { ENRICHMENT_SYSTEM_PROMPT, ENRICHMENT_USER_PROMPT_TEMPLATE, ENRICHMENT_RESPONSE_FORMAT } from "./enrichmentAgentPrompts.js";
+
 export const DEFAULT_PROMPTS: Record<string, string> = {
   summary: `Você receberá informações sobre uma conversa de atendimento ao cliente.
 
@@ -68,6 +70,8 @@ Analise a conversa e gere um resumo estruturado em formato JSON com exatamente e
 6. NÃO inclua saudações genéricas como "Olá" no início - vá direto ao ponto
 
 **Responda APENAS com a mensagem sugerida, sem explicações adicionais.**`,
+
+  enrichment: ENRICHMENT_USER_PROMPT_TEMPLATE,
 };
 
 export const DEFAULT_SYSTEM_PROMPTS: Record<string, string> = {
@@ -82,6 +86,7 @@ Sua tarefa é gerar uma resposta profissional, empática e PRECISA para a últim
 - NÃO inclua saudações genéricas como "Olá" no início - vá direto ao ponto
 - NÃO invente procedimentos`,
   learning: "Você é um assistente especializado em extrair conhecimento de conversas de atendimento para criar artigos de base de conhecimento.",
+  enrichment: ENRICHMENT_SYSTEM_PROMPT,
 };
 
 export const DEFAULT_RESPONSE_FORMATS: Record<string, string> = {
@@ -96,6 +101,7 @@ export const DEFAULT_RESPONSE_FORMATS: Record<string, string> = {
   "intent": "contratar ou suporte",
   "confidence": 0-100
 }`,
+  enrichment: ENRICHMENT_RESPONSE_FORMAT,
 };
 
 export const VALID_CONFIG_TYPES = ["summary", "classification", "response", "learning", "enrichment"];
