@@ -54,16 +54,48 @@ export function createKnowledgeBaseTool(): ToolDefinition {
         }
       }
 
-      const articles = await knowledgeBaseStorage.getAllArticles({
-        productStandard: args.product,
-        subjectId: subjectId,
-        intentId: intentId,
-        search: args.keywords
-      });
+      let articles: Array<{
+        productStandard: string;
+        subproductStandard: string | null;
+        intent: string;
+        description: string;
+        resolution: string;
+        relevanceScore: number;
+      }>;
       
-      const limitedArticles = articles.slice(0, 5);
+      if (args.keywords && args.keywords.trim().length > 0) {
+        const searchResults = await knowledgeBaseStorage.searchArticlesWithRelevance(args.keywords, {
+          productStandard: args.product,
+          subjectId: subjectId,
+          intentId: intentId,
+          limit: 5
+        });
+        articles = searchResults.map(a => ({
+          productStandard: a.productStandard,
+          subproductStandard: a.subproductStandard,
+          intent: a.intent,
+          description: a.description,
+          resolution: a.resolution,
+          relevanceScore: a.relevanceScore
+        }));
+      } else {
+        const allArticles = await knowledgeBaseStorage.getAllArticles({
+          productStandard: args.product,
+          subjectId: subjectId,
+          intentId: intentId,
+          limit: 5
+        });
+        articles = allArticles.map(a => ({
+          productStandard: a.productStandard,
+          subproductStandard: a.subproductStandard,
+          intent: a.intent,
+          description: a.description,
+          resolution: a.resolution,
+          relevanceScore: 0
+        }));
+      }
       
-      if (limitedArticles.length === 0) {
+      if (articles.length === 0) {
         const synonymInfo: string[] = [];
         if (args.subject && resolvedSubject && args.subject.toLowerCase() !== resolvedSubject.toLowerCase()) {
           synonymInfo.push(`assunto '${args.subject}' resolvido para '${resolvedSubject}'`);
@@ -82,17 +114,18 @@ export function createKnowledgeBaseTool(): ToolDefinition {
         });
       }
       
-      const articleList = limitedArticles.map(a => ({
+      const articleList = articles.map(a => ({
         product: a.productStandard,
         subproduct: a.subproductStandard,
         subject: resolvedSubject,
         intent: resolvedIntent || a.intent,
         description: a.description,
-        resolution: a.resolution
+        resolution: a.resolution,
+        relevance: a.relevanceScore.toFixed(2)
       }));
       
       return JSON.stringify({
-        message: `Encontrados ${limitedArticles.length} artigos relevantes`,
+        message: `Encontrados ${articles.length} artigos relevantes`,
         articles: articleList,
         resolvedFilters: {
           subject: resolvedSubject,
