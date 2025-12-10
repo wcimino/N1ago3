@@ -141,17 +141,20 @@ export const userStorage = {
 
   async getHourlyAttendances(timezone: string = 'America/Sao_Paulo') {
     const result = await db.execute(sql`
-      WITH hourly_data AS (
+      WITH tz AS (
+        SELECT ${timezone}::text AS name
+      ),
+      hourly_data AS (
         SELECT 
-          date_trunc('hour', e.occurred_at AT TIME ZONE ${timezone}) AS hour_local,
+          date_trunc('hour', e.occurred_at AT TIME ZONE (SELECT name FROM tz)) AS hour_local,
           COUNT(DISTINCT c.id) AS count
         FROM events_standard e
         INNER JOIN conversations c ON e.conversation_id = c.id
         WHERE e.occurred_at >= NOW() - INTERVAL '24 hours'
-        GROUP BY date_trunc('hour', e.occurred_at AT TIME ZONE ${timezone})
+        GROUP BY 1
       ),
       now_local AS (
-        SELECT NOW() AT TIME ZONE ${timezone} AS ts
+        SELECT NOW() AT TIME ZONE (SELECT name FROM tz) AS ts
       ),
       hours_series AS (
         SELECT generate_series(
