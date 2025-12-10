@@ -218,7 +218,9 @@ export const openaiApiLogs = pgTable("openai_api_logs", {
   contextType: text("context_type"),
   contextId: text("context_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  createdAtIdx: index("idx_openai_api_logs_created_at").on(table.createdAt.desc()),
+}));
 
 export const responsesSuggested = pgTable("responses_suggested", {
   id: serial("id").primaryKey(),
