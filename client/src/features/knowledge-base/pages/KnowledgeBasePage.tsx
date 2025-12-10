@@ -6,7 +6,7 @@ import { SuggestionsPage } from "./SuggestionsPage";
 import { LearningAttemptsPage } from "./LearningAttemptsPage";
 import { ZendeskArticlesPage } from "./ZendeskArticlesPage";
 import { SubjectsIntentsPage } from "./SubjectsIntentsPage";
-import { PageHeader, FilterBar } from "../../../shared/components/ui";
+import { PageHeader, FilterBar, StatsBar } from "../../../shared/components/ui";
 import { useKnowledgeBase } from "../hooks/useKnowledgeBase";
 
 const tabs = [
@@ -181,33 +181,30 @@ export function KnowledgeBasePage() {
                   </div>
                 ) : (
                   <>
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="text-xs text-gray-500 flex items-center gap-1">
-                        <span>{catalogStats.productsCount} Produtos</span>
-                        <span className="text-gray-300">|</span>
-                        <span>{catalogStats.subproductsCount} Subprodutos</span>
-                        <span className="text-gray-300">|</span>
-                        <span>{catalogStats.subjectsCount} Assuntos</span>
-                        <span className="text-gray-300">|</span>
-                        <span>{catalogStats.intentsCount} Intenções</span>
-                        <span className="text-gray-300">|</span>
-                        <span>{catalogStats.articlesCount} Artigos</span>
-                        <span className="text-gray-300">|</span>
-                        <span>{catalogStats.embeddingsCount} Embeddings</span>
-                      </div>
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-3">
+                      <StatsBar
+                        stats={[
+                          { value: catalogStats.productsCount, label: "Produtos" },
+                          { value: catalogStats.subproductsCount, label: "Subprodutos" },
+                          { value: catalogStats.subjectsCount, label: "Assuntos" },
+                          { value: catalogStats.intentsCount, label: "Intenções" },
+                          { value: catalogStats.articlesCount, label: "Artigos" },
+                          { value: catalogStats.embeddingsCount, label: "Embeddings" },
+                        ]}
+                      />
                       <button
                         onClick={isAllArticlesExpanded ? collapseAllPaths : expandAllPaths}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
                       >
                         {isAllArticlesExpanded ? (
                           <>
                             <ChevronsDownUp className="w-4 h-4" />
-                            Recolher tudo
+                            <span className="hidden sm:inline">Recolher tudo</span>
                           </>
                         ) : (
                           <>
                             <ChevronsUpDown className="w-4 h-4" />
-                            Expandir tudo
+                            <span className="hidden sm:inline">Expandir tudo</span>
                           </>
                         )}
                       </button>

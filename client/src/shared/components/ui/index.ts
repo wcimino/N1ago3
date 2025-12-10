@@ -21,5 +21,6 @@ export { Pagination } from "./Pagination";
 export { FilterBar } from "./FilterBar";
 export { SegmentedTabs } from "./SegmentedTabs";
 export { Select } from "./Select";
+export { StatsBar } from "./StatsBar";
 export { ToggleSwitch } from "./ToggleSwitch";
 export { TreeView, TreeNodeItem, useTreeExpansion } from "./TreeView";

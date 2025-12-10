@@ -118,7 +118,7 @@ export const conversationStats = {
         SELECT DISTINCT ON (c.user_id)
           c.user_id,
           COALESCE(cs.product_standard, cs.product) as last_product_standard,
-          cs.subproduct_standard as last_subproduct_standard,
+          cs.subproduct as last_subproduct_standard,
           cs.subject as last_subject,
           cs.intent as last_intent,
           cs.customer_emotion_level as last_customer_emotion_level
