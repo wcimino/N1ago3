@@ -79,14 +79,16 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
   const desktopIndent = depth * 20;
   
   return (
-    <div className={isProduct ? "mb-2" : ""}>
+    <div className={(isProduct || isSubproduct) ? "mb-2" : ""}>
       <div 
         className={`
           group rounded-lg transition-colors
           ${hasChildren ? "cursor-pointer" : ""}
           ${isProduct 
             ? "bg-white border border-gray-200 shadow-sm hover:shadow-md p-3 sm:p-4" 
-            : "hover:bg-gray-50 py-2 px-2 sm:px-3"
+            : isSubproduct
+              ? "bg-white border border-gray-200 shadow-sm hover:shadow-md p-3 sm:p-4"
+              : "hover:bg-gray-50 py-2 px-2 sm:px-3"
           }
         `}
         style={{ 
