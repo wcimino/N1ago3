@@ -138,4 +138,40 @@ export const userStorage = {
     
     return newUser;
   },
+
+  async getHourlyAttendances(timezone: string = 'America/Sao_Paulo') {
+    const result = await db.execute(sql`
+      WITH hourly_data AS (
+        SELECT 
+          date_trunc('hour', e.occurred_at AT TIME ZONE ${timezone}) AS hour_start,
+          COUNT(DISTINCT c.id) AS count
+        FROM events_standard e
+        INNER JOIN conversations c ON e.conversation_id = c.id
+        WHERE e.occurred_at >= NOW() - INTERVAL '24 hours'
+        GROUP BY date_trunc('hour', e.occurred_at AT TIME ZONE ${timezone})
+      ),
+      hours_series AS (
+        SELECT generate_series(
+          date_trunc('hour', (NOW() - INTERVAL '23 hours') AT TIME ZONE ${timezone}),
+          date_trunc('hour', NOW() AT TIME ZONE ${timezone}),
+          INTERVAL '1 hour'
+        ) AS hour_start
+      )
+      SELECT 
+        hs.hour_start,
+        EXTRACT(HOUR FROM hs.hour_start)::int AS hour,
+        (hs.hour_start)::date AS date,
+        COALESCE(hd.count, 0)::int AS count
+      FROM hours_series hs
+      LEFT JOIN hourly_data hd ON hs.hour_start = hd.hour_start
+      ORDER BY hs.hour_start
+    `);
+    
+    return result.rows.map((row: any) => ({
+      hourStart: row.hour_start,
+      hour: row.hour,
+      date: row.date,
+      count: Number(row.count),
+    }));
+  },
 };
