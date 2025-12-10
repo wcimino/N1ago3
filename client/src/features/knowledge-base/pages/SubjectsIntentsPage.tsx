@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Tags, ChevronRight, ChevronDown, Plus, Loader2, Pencil, Trash2, X, Check, Tag, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
+import { Tags, ChevronRight, ChevronDown, Plus, Minus, Loader2, Pencil, Trash2, X, Check, Tag, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
 import type { ProductCatalogItem, KnowledgeSubject, KnowledgeIntent } from "../../../types";
 import { buildProductTreeWithSubjects, type ProductNodeWithSubjects } from "../../../lib/productHierarchy";
 
@@ -390,171 +390,213 @@ export function SubjectsIntentsPage() {
     </div>
   );
 
-  const renderProductNodeWithSubjects = (node: ProductNodeWithSubjects, depth: number = 0): React.ReactNode => {
+  const renderProductNodeWithSubjects = (node: ProductNodeWithSubjects, depth: number = 0, parentName?: string): React.ReactNode => {
     const isExpanded = expandedProducts.has(node.id);
     const hasChildren = node.children.length > 0 || node.subjects.length > 0;
-    const paddingLeft = depth * 20;
     const showAddSubjectForm = formState.type === "addSubject" && formState.productId === node.id;
     const stats = getNodeStats(node);
+    const isSubproduct = depth > 0;
+    const displayName = isSubproduct && parentName ? `${parentName} > ${node.name}` : node.name;
 
-    const statsText = [];
-    if (stats.subproductCount > 0) statsText.push(`${stats.subproductCount} subproduto${stats.subproductCount > 1 ? 's' : ''}`);
-    if (stats.subjectCount > 0) statsText.push(`${stats.subjectCount} assunto${stats.subjectCount > 1 ? 's' : ''}`);
-    if (stats.intentCount > 0) statsText.push(`${stats.intentCount} intenç${stats.intentCount > 1 ? 'ões' : 'ão'}`);
-    if (stats.synonymCount > 0) statsText.push(`${stats.synonymCount} sinônimo${stats.synonymCount > 1 ? 's' : ''}`);
+    const statsItems = [];
+    if (stats.subproductCount > 0) statsItems.push(`${stats.subproductCount} subproduto${stats.subproductCount > 1 ? 's' : ''}`);
+    if (stats.subjectCount > 0) statsItems.push(`${stats.subjectCount} assunto${stats.subjectCount > 1 ? 's' : ''}`);
+    if (stats.intentCount > 0) statsItems.push(`${stats.intentCount} intenç${stats.intentCount > 1 ? 'ões' : 'ão'}`);
+    if (stats.synonymCount > 0) statsItems.push(`${stats.synonymCount} sinônimo${stats.synonymCount > 1 ? 's' : ''}`);
 
     return (
-      <div key={node.id}>
-        <div 
-          className="group flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded cursor-pointer border-l-4 border-gray-400"
-          style={{ paddingLeft: `${paddingLeft}px` }}
-          onClick={() => toggleProduct(node.id)}
-        >
-          {hasChildren ? (
-            isExpanded ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronRight className="w-4 h-4 text-gray-500" />
-          ) : (
-            <span className="w-4" />
-          )}
-          <span className="font-medium text-gray-700">{node.name}</span>
-          <span className="text-xs text-gray-400 ml-2">
-            {statsText.join(', ')}
-          </span>
-          <button
-            onClick={(e) => startAddSubject(node.id, e)}
-            className="ml-auto p-1 opacity-0 group-hover:opacity-100 text-blue-600 hover:bg-blue-100 rounded transition-opacity"
-            title="Adicionar assunto"
+      <div key={node.id} className="mb-2">
+        <div className="bg-white border border-gray-200 shadow-sm hover:shadow-md rounded-lg p-3 sm:p-4 group">
+          <div 
+            className={`flex items-start gap-2 sm:gap-3 ${hasChildren ? "cursor-pointer" : ""}`}
+            onClick={() => hasChildren && toggleProduct(node.id)}
           >
-            <Plus className="w-4 h-4" />
-          </button>
+            {hasChildren ? (
+              <button 
+                className="p-0.5 rounded hover:bg-gray-200 mt-0.5 shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleProduct(node.id);
+                }}
+              >
+                {isExpanded ? (
+                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-gray-500" />
+                )}
+              </button>
+            ) : (
+              <div className="w-5 shrink-0" />
+            )}
+
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span className={`font-medium text-gray-900 break-words ${isSubproduct ? "text-sm" : "text-base"}`}>
+                  {displayName}
+                </span>
+                {statsItems.map((item, idx) => (
+                  <span key={idx} className="hidden md:inline-flex items-center whitespace-nowrap text-xs text-gray-500">
+                    {item}
+                  </span>
+                ))}
+              </div>
+              <div className="flex md:hidden flex-wrap items-center gap-2 mt-1.5 text-xs text-gray-500">
+                {statsItems.map((item, idx) => (
+                  <span key={idx} className="whitespace-nowrap">{item}</span>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={(e) => startAddSubject(node.id, e)}
+              className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0"
+              title="Adicionar assunto"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+
+          {isExpanded && (node.subjects.length > 0 || showAddSubjectForm) && (
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              {showAddSubjectForm && renderInlineForm(0, "bg-blue-50")}
+              
+              {node.subjects.map(subject => {
+                const subjectIntents = getIntentsForSubject(subject.id);
+                const isSubjectExpanded = expandedSubjects.has(subject.id);
+                const isEditingThisSubject = formState.type === "editSubject" && formState.subject.id === subject.id;
+                const showAddIntentForm = formState.type === "addIntent" && formState.subjectId === subject.id;
+                const hasIntents = subjectIntents.length > 0;
+                
+                return (
+                  <div key={`subject-${subject.id}`}>
+                    {isEditingThisSubject ? (
+                      renderInlineForm(0, "bg-blue-50")
+                    ) : (
+                      <div 
+                        className={`group flex items-center gap-2 py-2 px-2 hover:bg-gray-50 rounded ${hasIntents ? "cursor-pointer" : ""}`}
+                        onClick={() => hasIntents && toggleSubject(subject.id)}
+                      >
+                        {hasIntents ? (
+                          <button 
+                            className="p-0.5 rounded hover:bg-gray-200 shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleSubject(subject.id);
+                            }}
+                          >
+                            {isSubjectExpanded ? (
+                              <Minus className="w-4 h-4 text-gray-500" />
+                            ) : (
+                              <Plus className="w-4 h-4 text-gray-500" />
+                            )}
+                          </button>
+                        ) : (
+                          <div className="w-5 shrink-0" />
+                        )}
+                        <span className="text-sm font-medium text-gray-900">{subject.name}</span>
+                        <span className="text-xs text-gray-500">
+                          {subjectIntents.length} {subjectIntents.length === 1 ? 'intenção' : 'intenções'}
+                        </span>
+                        {subject.synonyms.length > 0 && (
+                          <span className="text-xs text-purple-500">
+                            ({subject.synonyms.length} sinônimos)
+                          </span>
+                        )}
+                        <div className="flex items-center gap-1 ml-auto sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => openSynonymsSubject(subject, e)}
+                            className="p-1 text-purple-600 hover:bg-purple-100 rounded"
+                            title="Gerenciar sinônimos"
+                          >
+                            <Tag className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => startAddIntent(subject.id, e)}
+                            className="p-1 text-green-600 hover:bg-green-100 rounded"
+                            title="Adicionar intenção"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => startEditSubject(subject, e)}
+                            className="p-1 text-gray-600 hover:bg-gray-200 rounded"
+                            title="Editar assunto"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => handleDelete("subject", subject.id, e)}
+                            className="p-1 text-red-600 hover:bg-red-100 rounded"
+                            title="Excluir assunto"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {isSubjectExpanded && (
+                      <div className="ml-5">
+                        {showAddIntentForm && renderInlineForm(0, "bg-green-50")}
+                        
+                        {subjectIntents.map(intent => {
+                          const isEditingThisIntent = formState.type === "editIntent" && formState.intent.id === intent.id;
+                          
+                          return isEditingThisIntent ? (
+                            <div key={`intent-${intent.id}`}>
+                              {renderInlineForm(0, "bg-green-50")}
+                            </div>
+                          ) : (
+                            <div 
+                              key={`intent-${intent.id}`}
+                              className="group flex items-center gap-2 py-2 px-2 hover:bg-gray-50 rounded"
+                            >
+                              <div className="w-5 shrink-0" />
+                              <span className="text-sm text-gray-700">{intent.name}</span>
+                              {intent.synonyms.length > 0 && (
+                                <span className="text-xs text-purple-500">
+                                  ({intent.synonyms.length} sinônimos)
+                                </span>
+                              )}
+                              <div className="flex items-center gap-1 ml-auto sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={(e) => openSynonymsIntent(intent, e)}
+                                  className="p-1 text-purple-600 hover:bg-purple-100 rounded"
+                                  title="Gerenciar sinônimos"
+                                >
+                                  <Tag className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={(e) => startEditIntent(intent, e)}
+                                  className="p-1 text-gray-600 hover:bg-gray-200 rounded"
+                                  title="Editar intenção"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={(e) => handleDelete("intent", intent.id, e)}
+                                  className="p-1 text-red-600 hover:bg-red-100 rounded"
+                                  title="Excluir intenção"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
         
-        {isExpanded && (
-          <>
-            {showAddSubjectForm && renderInlineForm(paddingLeft + 20, "bg-blue-50")}
-            
-            {node.subjects.map(subject => {
-              const subjectIntents = getIntentsForSubject(subject.id);
-              const isSubjectExpanded = expandedSubjects.has(subject.id);
-              const isEditingThisSubject = formState.type === "editSubject" && formState.subject.id === subject.id;
-              const showAddIntentForm = formState.type === "addIntent" && formState.subjectId === subject.id;
-              
-              return (
-                <div key={`subject-${subject.id}`}>
-                  {isEditingThisSubject ? (
-                    renderInlineForm(paddingLeft + 20, "bg-blue-50")
-                  ) : (
-                    <div 
-                      className="group flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded cursor-pointer border-l-4 border-blue-400"
-                      style={{ paddingLeft: `${paddingLeft + 20}px` }}
-                      onClick={() => toggleSubject(subject.id)}
-                    >
-                      {subjectIntents.length > 0 ? (
-                        isSubjectExpanded ? <ChevronDown className="w-4 h-4 text-blue-400" /> : <ChevronRight className="w-4 h-4 text-blue-400" />
-                      ) : (
-                        <span className="w-4" />
-                      )}
-                      <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-blue-100 text-blue-700 rounded">Assunto</span>
-                      <span className="font-medium text-blue-700">{subject.name}</span>
-                      {subject.synonyms.length > 0 && (
-                        <span className="text-xs text-gray-400">
-                          ({subject.synonyms.length} sinônimos)
-                        </span>
-                      )}
-                      <span className="text-xs text-gray-400 ml-auto mr-2">
-                        {subjectIntents.length} intenções
-                      </span>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={(e) => openSynonymsSubject(subject, e)}
-                          className="p-1 text-purple-600 hover:bg-purple-100 rounded"
-                          title="Gerenciar sinônimos"
-                        >
-                          <Tag className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => startAddIntent(subject.id, e)}
-                          className="p-1 text-green-600 hover:bg-green-100 rounded"
-                          title="Adicionar intenção"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => startEditSubject(subject, e)}
-                          className="p-1 text-gray-600 hover:bg-gray-200 rounded"
-                          title="Editar assunto"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => handleDelete("subject", subject.id, e)}
-                          className="p-1 text-red-600 hover:bg-red-100 rounded"
-                          title="Excluir assunto"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {isSubjectExpanded && (
-                    <>
-                      {showAddIntentForm && renderInlineForm(paddingLeft + 40, "bg-green-50")}
-                      
-                      {subjectIntents.map(intent => {
-                        const isEditingThisIntent = formState.type === "editIntent" && formState.intent.id === intent.id;
-                        
-                        return isEditingThisIntent ? (
-                          <div key={`intent-${intent.id}`}>
-                            {renderInlineForm(paddingLeft + 40, "bg-green-50")}
-                          </div>
-                        ) : (
-                          <div 
-                            key={`intent-${intent.id}`}
-                            className="group flex items-center gap-2 py-1.5 px-2 hover:bg-gray-50 rounded border-l-4 border-green-400"
-                            style={{ paddingLeft: `${paddingLeft + 40}px` }}
-                          >
-                            <span className="w-4" />
-                            <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-green-100 text-green-700 rounded">Intenção</span>
-                            <span className="text-green-700">{intent.name}</span>
-                            {intent.synonyms.length > 0 && (
-                              <span className="text-xs text-gray-400">
-                                ({intent.synonyms.length} sinônimos)
-                              </span>
-                            )}
-                            <div className="flex items-center gap-1 ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button
-                                onClick={(e) => openSynonymsIntent(intent, e)}
-                                className="p-1 text-purple-600 hover:bg-purple-100 rounded"
-                                title="Gerenciar sinônimos"
-                              >
-                                <Tag className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={(e) => startEditIntent(intent, e)}
-                                className="p-1 text-gray-600 hover:bg-gray-200 rounded"
-                                title="Editar intenção"
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={(e) => handleDelete("intent", intent.id, e)}
-                                className="p-1 text-red-600 hover:bg-red-100 rounded"
-                                title="Excluir intenção"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </>
-                  )}
-                </div>
-              );
-            })}
-            
-            {node.children.map(child => renderProductNodeWithSubjects(child, depth + 1))}
-          </>
+        {isExpanded && node.children.length > 0 && (
+          <div className="mt-2 ml-4">
+            {node.children.map(child => renderProductNodeWithSubjects(child, depth + 1, node.name))}
+          </div>
         )}
       </div>
     );
@@ -570,21 +612,7 @@ export function SubjectsIntentsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded bg-gray-200 border border-gray-300"></span>
-            <span className="text-xs text-gray-600">Produto</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded bg-blue-100 border border-blue-300"></span>
-            <span className="text-xs text-gray-600">Assunto</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded bg-green-100 border border-green-300"></span>
-            <span className="text-xs text-gray-600">Intenção</span>
-          </div>
-        </div>
+      <div className="flex items-center justify-end mb-3">
         
         {productTree.length > 0 && (
           <button
