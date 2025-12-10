@@ -222,20 +222,19 @@ function OpenAIStatsCard({ openaiStats }: { openaiStats: OpenAIStatsResponse | u
               };
               const isFirst = index === 0;
               const isLast = index === displayItems.length - 1;
-              const showLabel = item.percentage >= 18;
               
               return (
                 <div 
                   key={item.request_type}
-                  className={`h-full ${config.bg} flex items-center justify-center relative ${isFirst ? 'rounded-l-lg' : ''} ${isLast ? 'rounded-r-lg' : ''}`}
+                  className={`h-full ${config.bg} flex items-center justify-center relative group cursor-pointer ${isFirst ? 'rounded-l-lg' : ''} ${isLast ? 'rounded-r-lg' : ''}`}
                   style={{ width: `${item.percentage}%` }}
-                  title={`${config.label}: $${item.cost.toFixed(2)} (${Math.round(item.percentage)}%)`}
                 >
-                  {showLabel && (
-                    <span className="text-[10px] font-medium text-white truncate px-1">
-                      ${item.cost.toFixed(2)}
-                    </span>
-                  )}
+                  <span className="text-[10px] font-medium text-white whitespace-nowrap overflow-hidden px-0.5">
+                    {item.percentage >= 15 ? `$${item.cost.toFixed(2)}` : ''}
+                  </span>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                    {config.label}: ${item.cost.toFixed(2)}
+                  </div>
                 </div>
               );
             })}
