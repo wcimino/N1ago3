@@ -353,16 +353,8 @@ async function generateEmbeddingsForNewOrOutdatedArticles(): Promise<void> {
           categoryName: article.categoryName,
         });
         
-        const contentHash = ZendeskArticlesStorage.generateContentHash({
-          title: article.title,
-          body: article.body,
-          sectionName: article.sectionName,
-          categoryName: article.categoryName,
-        });
-        
         await ZendeskArticlesStorage.upsertEmbedding({
           articleId: article.id,
-          contentHash,
           embedding,
         });
         

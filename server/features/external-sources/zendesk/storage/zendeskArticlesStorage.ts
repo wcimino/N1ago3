@@ -1,4 +1,4 @@
-import { db } from "../../../../db.js";
+import { db, pool } from "../../../../db.js";
 import { zendeskArticles, zendeskArticleEmbeddings, type ZendeskArticle, type ZendeskArticleEmbedding } from "../../../../../shared/schema.js";
 import { eq, ilike, or, sql, desc, and, isNull, type SQL } from "drizzle-orm";
 import crypto from "crypto";
@@ -272,7 +272,6 @@ export async function getArticlesPendingEmbedding(limit: number = 1): Promise<Ze
 
 export async function upsertEmbedding(params: {
   articleId: number;
-  contentHash: string;
   embedding: number[];
   modelUsed?: string;
   tokensUsed?: number;
@@ -280,26 +279,39 @@ export async function upsertEmbedding(params: {
 }): Promise<void> {
   const embeddingString = `[${params.embedding.join(',')}]`;
   
-  await db.execute(sql`
-    INSERT INTO zendesk_article_embeddings (article_id, content_hash, embedding_vector, model_used, tokens_used, openai_log_id, created_at, updated_at)
-    VALUES (
-      ${params.articleId},
-      ${params.contentHash},
-      ${embeddingString}::vector,
-      ${params.modelUsed || 'text-embedding-3-small'},
-      ${params.tokensUsed || null},
-      ${params.openaiLogId || null},
-      NOW(),
-      NOW()
-    )
-    ON CONFLICT (article_id) DO UPDATE SET
-      content_hash = EXCLUDED.content_hash,
-      embedding_vector = EXCLUDED.embedding_vector,
-      model_used = EXCLUDED.model_used,
-      tokens_used = EXCLUDED.tokens_used,
-      openai_log_id = EXCLUDED.openai_log_id,
-      updated_at = NOW()
-  `);
+  try {
+    const result = await pool.query(`
+      INSERT INTO zendesk_article_embeddings (article_id, content_hash, embedding_vector, model_used, tokens_used, openai_log_id, created_at, updated_at)
+      SELECT 
+        $1,
+        md5(COALESCE(a.title, '') || COALESCE(a.body, '') || COALESCE(a.section_name, '') || COALESCE(a.category_name, '')),
+        $2::vector,
+        $3,
+        $4,
+        $5,
+        NOW(),
+        NOW()
+      FROM zendesk_articles a
+      WHERE a.id = $1
+      ON CONFLICT (article_id) DO UPDATE SET
+        content_hash = EXCLUDED.content_hash,
+        embedding_vector = EXCLUDED.embedding_vector,
+        model_used = EXCLUDED.model_used,
+        tokens_used = EXCLUDED.tokens_used,
+        openai_log_id = EXCLUDED.openai_log_id,
+        updated_at = NOW()
+      RETURNING id
+    `, [
+      params.articleId,
+      embeddingString,
+      params.modelUsed || 'text-embedding-3-small',
+      params.tokensUsed || null,
+      params.openaiLogId || null
+    ]);
+  } catch (error) {
+    console.error(`[ZendeskArticles] Failed to upsert embedding for article ${params.articleId}:`, error);
+    throw error;
+  }
 }
 
 export async function getArticlesWithEmbedding(): Promise<Array<ZendeskArticle & { embeddingData: ZendeskArticleEmbedding }>> {
