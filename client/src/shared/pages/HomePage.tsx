@@ -215,9 +215,9 @@ export function HomePage() {
     refetchInterval: 30000,
   });
 
-  const { data: hourlyStats, isLoading: hourlyLoading } = useQuery<{ hour: number; isCurrentHour: boolean; isPast: boolean; todayCount: number; lastWeekCount: number }[]>({
+  const { data: hourlyStats, isLoading: hourlyLoading } = useQuery<{ hour: number; isCurrentHour: boolean; isPast: boolean; todayCount: number; yesterdayCount: number }[]>({
     queryKey: ["hourly-stats", timezone],
-    queryFn: () => fetchApi<{ hour: number; isCurrentHour: boolean; isPast: boolean; todayCount: number; lastWeekCount: number }[]>(`/api/conversations/hourly-stats?timezone=${encodeURIComponent(timezone)}`),
+    queryFn: () => fetchApi<{ hour: number; isCurrentHour: boolean; isPast: boolean; todayCount: number; yesterdayCount: number }[]>(`/api/conversations/hourly-stats?timezone=${encodeURIComponent(timezone)}`),
     refetchInterval: 60000,
   });
 

@@ -155,11 +155,11 @@ export const userStorage = {
       today_start AS (
         SELECT DATE_TRUNC('day', (SELECT ts FROM now_local)) AS ts
       ),
-      last_week_same_day_start AS (
-        SELECT (SELECT ts FROM today_start) - INTERVAL '7 days' AS ts
+      yesterday_start AS (
+        SELECT (SELECT ts FROM today_start) - INTERVAL '1 day' AS ts
       ),
-      last_week_same_day_end AS (
-        SELECT (SELECT ts FROM today_start) - INTERVAL '6 days' AS ts
+      yesterday_end AS (
+        SELECT (SELECT ts FROM today_start) AS ts
       ),
       hours_series AS (
         SELECT generate_series(0, 23) AS hour
@@ -177,14 +177,14 @@ export const userStorage = {
           AND (e.occurred_at AT TIME ZONE (SELECT name FROM tz)) < (SELECT ts FROM today_end)
         GROUP BY 1
       ),
-      last_week_data AS (
+      yesterday_data AS (
         SELECT 
           EXTRACT(HOUR FROM e.occurred_at AT TIME ZONE (SELECT name FROM tz))::int AS hour,
           COUNT(DISTINCT c.id) AS count
         FROM events_standard e
         INNER JOIN conversations c ON e.conversation_id = c.id
-        WHERE (e.occurred_at AT TIME ZONE (SELECT name FROM tz)) >= (SELECT ts FROM last_week_same_day_start)
-          AND (e.occurred_at AT TIME ZONE (SELECT name FROM tz)) < (SELECT ts FROM last_week_same_day_end)
+        WHERE (e.occurred_at AT TIME ZONE (SELECT name FROM tz)) >= (SELECT ts FROM yesterday_start)
+          AND (e.occurred_at AT TIME ZONE (SELECT name FROM tz)) < (SELECT ts FROM yesterday_end)
         GROUP BY 1
       )
       SELECT 
@@ -192,10 +192,10 @@ export const userStorage = {
         (hs.hour = (SELECT hour FROM current_hour)) AS is_current_hour,
         (hs.hour <= (SELECT hour FROM current_hour)) AS is_past,
         COALESCE(td.count, 0)::int AS today_count,
-        COALESCE(lwd.count, 0)::int AS last_week_count
+        COALESCE(yd.count, 0)::int AS yesterday_count
       FROM hours_series hs
       LEFT JOIN today_data td ON hs.hour = td.hour
-      LEFT JOIN last_week_data lwd ON hs.hour = lwd.hour
+      LEFT JOIN yesterday_data yd ON hs.hour = yd.hour
       ORDER BY hs.hour
     `);
     
@@ -204,7 +204,7 @@ export const userStorage = {
       isCurrentHour: row.is_current_hour,
       isPast: row.is_past,
       todayCount: Number(row.today_count),
-      lastWeekCount: Number(row.last_week_count),
+      yesterdayCount: Number(row.yesterday_count),
     }));
   },
 };
