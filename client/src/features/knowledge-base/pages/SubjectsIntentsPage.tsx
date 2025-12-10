@@ -456,8 +456,8 @@ export function SubjectsIntentsPage() {
             </button>
           </div>
 
-          {isExpanded && (node.subjects.length > 0 || showAddSubjectForm) && (
-            <div className="mt-3 pt-3 border-t border-gray-100">
+          {isExpanded && (
+            <div className={node.subjects.length > 0 || showAddSubjectForm ? "mt-3 pt-3 border-t border-gray-100" : ""}>
               {showAddSubjectForm && renderInlineForm(0, "bg-blue-50")}
               
               {node.subjects.map(subject => {
