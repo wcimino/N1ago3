@@ -52,6 +52,7 @@ export function PageHeader({
             tabs={secondaryTabs}
             activeTab={secondaryActiveTab}
             onChange={onSecondaryTabChange}
+            iconOnlyMobile
           />
         </div>
       )}

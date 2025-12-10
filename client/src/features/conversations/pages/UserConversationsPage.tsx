@@ -197,6 +197,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                   tabs={contentTabs}
                   activeTab={contentTab}
                   onChange={(tab) => setContentTab(tab as ContentTab)}
+                  iconOnlyMobile
                 />
               </div>
 
