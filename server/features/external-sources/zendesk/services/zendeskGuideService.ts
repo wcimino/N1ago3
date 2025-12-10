@@ -310,6 +310,8 @@ export async function getLastSyncInfo(): Promise<{ lastSyncAt: Date | null; arti
 }
 
 async function generateEmbeddingsForNewOrOutdatedArticles(): Promise<void> {
+  console.log("[ZendeskGuide] generateEmbeddingsForNewOrOutdatedArticles called, isProcessing:", getIsEmbeddingProcessing());
+  
   if (getIsEmbeddingProcessing()) {
     console.log("[ZendeskGuide] Embedding generation already in progress, skipping...");
     return;

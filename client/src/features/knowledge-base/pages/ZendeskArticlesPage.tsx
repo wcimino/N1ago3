@@ -324,7 +324,7 @@ export function ZendeskArticlesPage() {
         </div>
       )}
       
-      {embeddingProgress && embeddingProgress.pending > 0 && (
+      {embeddingProgress && embeddingProgress.isProcessing && embeddingProgress.pending > 0 && (
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
           <div className="flex items-center gap-2 text-blue-700 font-medium mb-2">
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -340,6 +340,19 @@ export function ZendeskArticlesPage() {
           <div className="mt-2 text-blue-600 text-xs">
             {embeddingProgress.completed} de {embeddingProgress.total} artigos processados
             {embeddingProgress.outdated > 0 && ` (${embeddingProgress.outdated} desatualizados)`}
+          </div>
+        </div>
+      )}
+      
+      {embeddingProgress && !embeddingProgress.isProcessing && embeddingProgress.pending > 0 && (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm">
+          <div className="flex items-center gap-2 text-amber-700 font-medium">
+            <AlertCircle className="w-4 h-4" />
+            <Sparkles className="w-4 h-4" />
+            {embeddingProgress.pending} artigos aguardando embeddings
+          </div>
+          <div className="mt-1 text-amber-600 text-xs">
+            Clique em "Sincronizar" para gerar os embeddings automaticamente
           </div>
         </div>
       )}
