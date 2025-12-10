@@ -26,6 +26,7 @@ export interface IntentWithArticle {
     subjectName: string;
     subjectSynonyms: string[];
     productName: string;
+    subproductName: string | null;
   };
   article: KnowledgeBaseArticle | null;
 }
@@ -365,6 +366,7 @@ export const knowledgeBaseStorage = {
           subjectName: intent.subjectName,
           subjectSynonyms: intent.subjectSynonyms || [],
           productName: intent.productName,
+          subproductName: intent.subproductName,
         },
         article,
       });

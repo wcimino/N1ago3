@@ -41,7 +41,7 @@ export async function processEnrichmentPayload(
     const newArticle = await knowledgeBaseStorage.createArticle({
       name: payload.name || intent.name,
       productStandard: intent.productName,
-      subproductStandard: null,
+      subproductStandard: intent.subproductName,
       category1: null,
       category2: null,
       subjectId: intent.subjectId,
@@ -64,7 +64,7 @@ export async function processEnrichmentPayload(
     suggestionType: payload.action,
     name: payload.name || article?.name || intent.name,
     productStandard: intent.productName,
-    subproductStandard: null,
+    subproductStandard: intent.subproductName,
     category1: null,
     category2: null,
     description: payload.description || article?.description,
@@ -81,6 +81,7 @@ export async function processEnrichmentPayload(
       intentName: intent.name,
       subjectName: intent.subjectName,
       productName: intent.productName,
+      subproductName: intent.subproductName,
       enrichmentSource: "zendesk",
       newArticleId,
       logId
