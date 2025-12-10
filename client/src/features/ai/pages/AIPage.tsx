@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { FileText, Tags, MessageSquare, GraduationCap, Wrench, Settings, Lightbulb } from "lucide-react";
-import { SegmentedTabs } from "../../../shared/components/ui";
+import { PageHeader } from "../../../shared/components/ui";
 import { OpenaiSummaryConfigPage } from "./OpenaiSummaryConfigPage";
 import { ClassificationConfigPage } from "./ClassificationConfigPage";
 import { ResponseConfigPage } from "./ResponseConfigPage";
@@ -52,28 +52,15 @@ export function AIPage() {
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="px-4 py-3 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">Configuração de IA</h2>
-        </div>
-        <div className="shrink-0">
-          <SegmentedTabs
-            tabs={utilityTabs}
-            activeTab={isUtilityTab ? activeTab : ""}
-            onChange={handleTabChange}
-            iconOnlyMobile
-          />
-        </div>
-      </div>
-
-      <div className="px-4 py-3 border-b">
-        <SegmentedTabs
-          tabs={agentTabs}
-          activeTab={!isUtilityTab ? activeTab : ""}
-          onChange={handleTabChange}
-          iconOnlyMobile
-        />
-      </div>
+      <PageHeader
+        title="Configuração de IA"
+        primaryTabs={utilityTabs}
+        primaryActiveTab={isUtilityTab ? activeTab : ""}
+        onPrimaryTabChange={handleTabChange}
+        secondaryTabs={agentTabs}
+        secondaryActiveTab={!isUtilityTab ? activeTab : ""}
+        onSecondaryTabChange={handleTabChange}
+      />
 
       <div className="p-4">
         {activeTab === "general" && <GeneralSettingsPage />}

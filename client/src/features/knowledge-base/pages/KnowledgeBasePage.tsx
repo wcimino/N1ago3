@@ -6,7 +6,7 @@ import { SuggestionsPage } from "./SuggestionsPage";
 import { LearningAttemptsPage } from "./LearningAttemptsPage";
 import { ZendeskArticlesPage } from "./ZendeskArticlesPage";
 import { SubjectsIntentsPage } from "./SubjectsIntentsPage";
-import { SegmentedTabs, FilterBar } from "../../../shared/components/ui";
+import { PageHeader, FilterBar } from "../../../shared/components/ui";
 import { useKnowledgeBase } from "../hooks/useKnowledgeBase";
 
 const tabs = [
@@ -107,20 +107,17 @@ export function KnowledgeBasePage() {
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="px-4 py-3 border-b flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <BookOpen className="w-5 h-5" />
-            Base de Conhecimento
-          </h2>
-        </div>
-        <SegmentedTabs
-          tabs={baseTabs}
-          activeTab={activeBaseTab}
-          onChange={setActiveBaseTab}
-          iconOnlyMobile
-        />
-      </div>
+      <PageHeader
+        title="Base de Conhecimento"
+        icon={<BookOpen className="w-5 h-5" />}
+        primaryTabs={baseTabs}
+        primaryActiveTab={activeBaseTab}
+        onPrimaryTabChange={setActiveBaseTab}
+        secondaryTabs={tabs}
+        secondaryActiveTab={activeTab}
+        onSecondaryTabChange={setActiveTab}
+        showSecondaryTabs={activeBaseTab !== "zendesk"}
+      />
 
       {activeBaseTab === "zendesk" ? (
         <div className="p-4">
@@ -128,14 +125,6 @@ export function KnowledgeBasePage() {
         </div>
       ) : (
         <>
-          <div className="px-4 py-3 border-b">
-            <SegmentedTabs
-              tabs={tabs}
-              activeTab={activeTab}
-              onChange={setActiveTab}
-              iconOnlyMobile
-            />
-          </div>
 
           {activeTab === "processing" ? (
             <div className="p-4">

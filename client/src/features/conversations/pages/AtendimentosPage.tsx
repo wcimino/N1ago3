@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Users, MessageCircle, Bot, Brain, UserCircle, Settings2, Star } from "lucide-react";
-import { LoadingState, EmptyState, Pagination, SegmentedTabs } from "../../../shared/components/ui";
+import { LoadingState, EmptyState, Pagination, PageHeader } from "../../../shared/components/ui";
 import { useDateFormatters, usePaginatedQuery } from "../../../shared/hooks";
 import { fetchApi } from "../../../lib/queryClient";
 import { FilterBar, UserGroupCard } from "../components";
@@ -142,25 +142,16 @@ export function AtendimentosPage() {
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="px-4 py-3 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">Atendimentos</h2>
-        </div>
-        <div className="shrink-0">
-          <SegmentedTabs
-            tabs={CONFIG_TABS}
-            activeTab={getActiveConfigTab()}
-            onChange={handleConfigTabChange}
-            iconOnlyMobile
-          />
-        </div>
-      </div>
-
-      {!isRoutingView && (
-        <div className="px-4 py-3 border-b">
-          <SegmentedTabs tabs={HANDLER_TABS} activeTab={getActiveHandlerTab()} onChange={handleHandlerTabChange} />
-        </div>
-      )}
+      <PageHeader
+        title="Atendimentos"
+        primaryTabs={CONFIG_TABS}
+        primaryActiveTab={getActiveConfigTab()}
+        onPrimaryTabChange={handleConfigTabChange}
+        secondaryTabs={HANDLER_TABS}
+        secondaryActiveTab={getActiveHandlerTab()}
+        onSecondaryTabChange={handleHandlerTabChange}
+        showSecondaryTabs={!isRoutingView}
+      />
 
       {isRoutingView ? (
         <RoutingRulesContent />

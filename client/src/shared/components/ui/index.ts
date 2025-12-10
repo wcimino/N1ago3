@@ -16,6 +16,7 @@ export { Modal, ModalField, ModalGrid, ModalCodeBlock } from "./Modal";
 export { ModernSelect } from "./ModernSelect";
 export { PageCard } from "./PageCard";
 export type { PageCardProps } from "./PageCard";
+export { PageHeader } from "./PageHeader";
 export { Pagination } from "./Pagination";
 export { FilterBar } from "./FilterBar";
 export { SegmentedTabs } from "./SegmentedTabs";
