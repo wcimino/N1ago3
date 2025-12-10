@@ -152,25 +152,50 @@ export const userStorage = {
       current_hour AS (
         SELECT EXTRACT(HOUR FROM (SELECT ts FROM now_local))::int AS hour
       ),
+      today_start AS (
+        SELECT DATE_TRUNC('day', (SELECT ts FROM now_local)) AS ts
+      ),
+      last_week_same_day_start AS (
+        SELECT (SELECT ts FROM today_start) - INTERVAL '7 days' AS ts
+      ),
+      last_week_same_day_end AS (
+        SELECT (SELECT ts FROM today_start) - INTERVAL '6 days' AS ts
+      ),
       hours_series AS (
         SELECT generate_series(0, 23) AS hour
       ),
-      hourly_data AS (
+      today_end AS (
+        SELECT (SELECT ts FROM today_start) + INTERVAL '1 day' AS ts
+      ),
+      today_data AS (
         SELECT 
           EXTRACT(HOUR FROM e.occurred_at AT TIME ZONE (SELECT name FROM tz))::int AS hour,
           COUNT(DISTINCT c.id) AS count
         FROM events_standard e
         INNER JOIN conversations c ON e.conversation_id = c.id
-        WHERE e.occurred_at >= NOW() - INTERVAL '24 hours'
+        WHERE (e.occurred_at AT TIME ZONE (SELECT name FROM tz)) >= (SELECT ts FROM today_start)
+          AND (e.occurred_at AT TIME ZONE (SELECT name FROM tz)) < (SELECT ts FROM today_end)
+        GROUP BY 1
+      ),
+      last_week_data AS (
+        SELECT 
+          EXTRACT(HOUR FROM e.occurred_at AT TIME ZONE (SELECT name FROM tz))::int AS hour,
+          COUNT(DISTINCT c.id) AS count
+        FROM events_standard e
+        INNER JOIN conversations c ON e.conversation_id = c.id
+        WHERE (e.occurred_at AT TIME ZONE (SELECT name FROM tz)) >= (SELECT ts FROM last_week_same_day_start)
+          AND (e.occurred_at AT TIME ZONE (SELECT name FROM tz)) < (SELECT ts FROM last_week_same_day_end)
         GROUP BY 1
       )
       SELECT 
         hs.hour,
         (hs.hour = (SELECT hour FROM current_hour)) AS is_current_hour,
         (hs.hour <= (SELECT hour FROM current_hour)) AS is_past,
-        COALESCE(hd.count, 0)::int AS count
+        COALESCE(td.count, 0)::int AS today_count,
+        COALESCE(lwd.count, 0)::int AS last_week_count
       FROM hours_series hs
-      LEFT JOIN hourly_data hd ON hs.hour = hd.hour
+      LEFT JOIN today_data td ON hs.hour = td.hour
+      LEFT JOIN last_week_data lwd ON hs.hour = lwd.hour
       ORDER BY hs.hour
     `);
     
@@ -178,7 +203,8 @@ export const userStorage = {
       hour: row.hour,
       isCurrentHour: row.is_current_hour,
       isPast: row.is_past,
-      count: Number(row.count),
+      todayCount: Number(row.today_count),
+      lastWeekCount: Number(row.last_week_count),
     }));
   },
 };

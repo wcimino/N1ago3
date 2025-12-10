@@ -2,7 +2,8 @@ interface HourlyDataPoint {
   hour: number;
   isCurrentHour: boolean;
   isPast: boolean;
-  count: number;
+  todayCount: number;
+  lastWeekCount: number;
 }
 
 interface HourlyBarChartProps {
@@ -31,26 +32,29 @@ export function HourlyBarChart({ data, isLoading }: HourlyBarChartProps) {
     );
   }
 
-  const maxCount = Math.max(...data.map(d => d.count), 1);
-  const total = data.reduce((sum, d) => sum + d.count, 0);
+  const maxCount = Math.max(...data.map(d => Math.max(d.todayCount, d.lastWeekCount)), 1);
+  const todayTotal = data.reduce((sum, d) => sum + d.todayCount, 0);
+  const lastWeekTotal = data.reduce((sum, d) => sum + d.lastWeekCount, 0);
 
   const chartHeight = 80;
 
   return (
     <div className="space-y-2 w-full">
-      <div className="flex items-center justify-center">
-        <span className="text-sm font-semibold text-gray-900">Total: {formatNumber(total)}</span>
+      <div className="flex items-center justify-center gap-4">
+        <span className="text-sm font-semibold text-gray-900">Hoje: {formatNumber(todayTotal)}</span>
+        <span className="text-sm text-gray-500">Semana passada: {formatNumber(lastWeekTotal)}</span>
       </div>
       
       <div className="flex items-end gap-px w-full" style={{ height: `${chartHeight}px` }}>
         {data.map((point) => {
-          const barHeight = maxCount > 0 ? (point.count / maxCount) * chartHeight : 0;
+          const todayBarHeight = maxCount > 0 ? (point.todayCount / maxCount) * chartHeight : 0;
+          const lastWeekBarHeight = maxCount > 0 ? (point.lastWeekCount / maxCount) * chartHeight : 0;
           
-          let barColor = 'bg-gray-200';
+          let todayBarColor = 'bg-blue-300';
           if (point.isCurrentHour) {
-            barColor = 'bg-blue-500';
-          } else if (point.isPast) {
-            barColor = 'bg-blue-300';
+            todayBarColor = 'bg-blue-500';
+          } else if (!point.isPast) {
+            todayBarColor = 'bg-blue-100';
           }
           
           return (
@@ -58,13 +62,21 @@ export function HourlyBarChart({ data, isLoading }: HourlyBarChartProps) {
               key={point.hour}
               className="flex-1 flex flex-col justify-end items-center group relative"
             >
-              <div
-                className={`w-full rounded-t transition-all ${barColor} hover:opacity-80`}
-                style={{ height: `${Math.max(barHeight, 2)}px` }}
-              />
+              <div className="flex items-end gap-[1px] w-full h-full">
+                <div
+                  className="flex-1 bg-gray-300 rounded-t transition-all hover:opacity-80"
+                  style={{ height: `${Math.max(lastWeekBarHeight, 2)}px` }}
+                />
+                <div
+                  className={`flex-1 rounded-t transition-all ${todayBarColor} hover:opacity-80`}
+                  style={{ height: `${Math.max(todayBarHeight, 2)}px` }}
+                />
+              </div>
               <div className="absolute bottom-full mb-1 hidden group-hover:block z-10">
                 <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap">
-                  {point.hour}h: {formatNumber(point.count)}
+                  <div>{point.hour}h</div>
+                  <div>Hoje: {formatNumber(point.todayCount)}</div>
+                  <div>Sem. passada: {formatNumber(point.lastWeekCount)}</div>
                 </div>
               </div>
             </div>
@@ -79,8 +91,8 @@ export function HourlyBarChart({ data, isLoading }: HourlyBarChartProps) {
       
       <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
         <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-sm bg-gray-200"></div>
-          <span>Ontem</span>
+          <div className="w-2 h-2 rounded-sm bg-gray-300"></div>
+          <span>Semana passada</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-sm bg-blue-300"></div>
