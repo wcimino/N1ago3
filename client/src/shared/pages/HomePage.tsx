@@ -179,12 +179,23 @@ function OpenAIStatsCard({ openaiStats }: { openaiStats: OpenAIStatsResponse | u
     return <p className="text-sm text-gray-400 italic">Nenhum dado ainda</p>;
   }
 
-  const breakdownWithPercent = (stats.breakdown || []).map(item => ({
+  const MIN_PERCENT_THRESHOLD = 5;
+  const breakdownRaw = (stats.breakdown || []).map(item => ({
     ...item,
     percentage: stats.estimated_cost > 0 
       ? (item.cost / stats.estimated_cost) * 100 
       : 0
   }));
+
+  const mainItems = breakdownRaw.filter(item => item.percentage >= MIN_PERCENT_THRESHOLD);
+  const otherItems = breakdownRaw.filter(item => item.percentage < MIN_PERCENT_THRESHOLD);
+  
+  const othersCost = otherItems.reduce((sum, item) => sum + item.cost, 0);
+  const othersPercentage = otherItems.reduce((sum, item) => sum + item.percentage, 0);
+  
+  const displayItems = otherItems.length > 0 && othersPercentage > 0
+    ? [...mainItems, { request_type: 'others', cost: othersCost, calls: 0, percentage: othersPercentage }]
+    : mainItems;
   
   return (
     <div className="flex flex-col items-center text-center">
@@ -200,37 +211,47 @@ function OpenAIStatsCard({ openaiStats }: { openaiStats: OpenAIStatsResponse | u
           <p className="text-lg font-semibold text-violet-600">{formatNumber(stats.total_tokens)}</p>
         </div>
       </div>
-      {breakdownWithPercent.length > 0 && (
+      {displayItems.length > 0 && (
         <div className="mt-4 pt-4 border-t border-gray-100 w-full">
-          <div className="h-3 w-full rounded-full overflow-hidden flex">
-            {breakdownWithPercent.map((item) => {
+          <div className="h-7 w-full rounded-lg overflow-hidden flex shadow-inner">
+            {displayItems.map((item, index) => {
               const config = REQUEST_TYPE_CONFIG[item.request_type] || { 
-                label: item.request_type, 
+                label: item.request_type === 'others' ? 'Outros' : item.request_type, 
                 bg: 'bg-gray-400',
                 text: 'text-gray-600'
               };
+              const isFirst = index === 0;
+              const isLast = index === displayItems.length - 1;
+              const showLabel = item.percentage >= 12;
+              
               return (
                 <div 
                   key={item.request_type}
-                  className={`h-full ${config.bg} first:rounded-l-full last:rounded-r-full`}
+                  className={`h-full ${config.bg} flex items-center justify-center relative ${isFirst ? 'rounded-l-lg' : ''} ${isLast ? 'rounded-r-lg' : ''}`}
                   style={{ width: `${item.percentage}%` }}
                   title={`${config.label}: $${item.cost.toFixed(2)} (${Math.round(item.percentage)}%)`}
-                />
+                >
+                  {showLabel && (
+                    <span className="text-[10px] font-medium text-white truncate px-1">
+                      {config.label}
+                    </span>
+                  )}
+                </div>
               );
             })}
           </div>
-          <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 justify-center">
-            {breakdownWithPercent.map((item) => {
+          <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 justify-center">
+            {displayItems.map((item) => {
               const config = REQUEST_TYPE_CONFIG[item.request_type] || { 
-                label: item.request_type, 
+                label: item.request_type === 'others' ? 'Outros' : item.request_type, 
                 bg: 'bg-gray-400',
                 text: 'text-gray-600'
               };
               return (
-                <div key={item.request_type} className="flex items-center gap-1.5">
-                  <div className={`w-2.5 h-2.5 rounded-sm ${config.bg}`} />
-                  <span className={`text-xs ${config.text}`}>
-                    {config.label} <span className="text-gray-400">${item.cost.toFixed(2)}</span>
+                <div key={item.request_type} className="flex items-center gap-1">
+                  <div className={`w-2 h-2 rounded-sm ${config.bg}`} />
+                  <span className="text-[10px] text-gray-500">
+                    {config.label} ${item.cost.toFixed(2)}
                   </span>
                 </div>
               );
