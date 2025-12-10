@@ -6,7 +6,7 @@ import { HierarchyNodeItem } from "../components/HierarchyNodeItem";
 import { SuggestionsPage } from "./SuggestionsPage";
 import { LearningAttemptsPage } from "./LearningAttemptsPage";
 import { ZendeskArticlesPage } from "./ZendeskArticlesPage";
-import { PageHeader, FilterBar, StatsBar } from "../../../shared/components/ui";
+import { PageHeader, FilterBar, StatsBar, InputModal } from "../../../shared/components/ui";
 import { useKnowledgeBase } from "../hooks/useKnowledgeBase";
 
 const tabs = [
@@ -29,10 +29,21 @@ interface PrefilledArticleData {
   intentName: string;
 }
 
+interface InputModalState {
+  isOpen: boolean;
+  type: "subject" | "intent" | null;
+  targetId: number | null;
+}
+
 export function KnowledgeBasePage() {
   const [activeTab, setActiveTab] = useState("articles");
   const [activeBaseTab, setActiveBaseTab] = useState("internal");
   const [prefilledData, setPrefilledData] = useState<PrefilledArticleData | null>(null);
+  const [inputModal, setInputModal] = useState<InputModalState>({
+    isOpen: false,
+    type: null,
+    targetId: null,
+  });
   const queryClient = useQueryClient();
   
   const {
@@ -136,17 +147,23 @@ export function KnowledgeBasePage() {
   });
 
   const handleAddSubject = (productId: number) => {
-    const name = prompt("Nome do novo assunto:");
-    if (name?.trim()) {
-      createSubjectMutation.mutate({ productCatalogId: productId, name: name.trim() });
-    }
+    setInputModal({ isOpen: true, type: "subject", targetId: productId });
   };
 
   const handleAddIntent = (subjectId: number) => {
-    const name = prompt("Nome da nova intenção:");
-    if (name?.trim()) {
-      createIntentMutation.mutate({ subjectId, name: name.trim() });
+    setInputModal({ isOpen: true, type: "intent", targetId: subjectId });
+  };
+
+  const handleInputModalConfirm = (name: string) => {
+    if (inputModal.type === "subject" && inputModal.targetId) {
+      createSubjectMutation.mutate({ productCatalogId: inputModal.targetId, name });
+    } else if (inputModal.type === "intent" && inputModal.targetId) {
+      createIntentMutation.mutate({ subjectId: inputModal.targetId, name });
     }
+  };
+
+  const handleInputModalClose = () => {
+    setInputModal({ isOpen: false, type: null, targetId: null });
   };
 
   return (
@@ -272,6 +289,15 @@ export function KnowledgeBasePage() {
           )}
         </>
       )}
+
+      <InputModal
+        isOpen={inputModal.isOpen}
+        onClose={handleInputModalClose}
+        onConfirm={handleInputModalConfirm}
+        title={inputModal.type === "subject" ? "Novo Assunto" : "Nova Intenção"}
+        placeholder={inputModal.type === "subject" ? "Nome do assunto..." : "Nome da intenção..."}
+        confirmLabel="Criar"
+      />
     </div>
   );
 }

@@ -10,6 +10,7 @@ export { EmptyState } from "./EmptyState";
 export { ExpandableSearchTool } from "./ExpandableSearchTool";
 export { ImageLightbox } from "./ImageLightbox";
 export { Input } from "./Input";
+export { InputModal } from "./InputModal";
 export { LoadingSpinner, LoadingState } from "./LoadingSpinner";
 export { MessageBubble } from "./MessageBubble";
 export { Modal, ModalField, ModalGrid, ModalCodeBlock } from "./Modal";
