@@ -8,12 +8,13 @@ interface StatsCardProps {
   linkTo?: string;
   linkText?: string;
   badge?: string;
+  className?: string;
   children: ReactNode;
 }
 
-export function StatsCard({ title, icon, linkTo, linkText = "Ver", badge, children }: StatsCardProps) {
+export function StatsCard({ title, icon, linkTo, linkText = "Ver", badge, className, children }: StatsCardProps) {
   return (
-    <div className="bg-white rounded-lg shadow p-5 flex flex-col h-full">
+    <div className={`bg-white rounded-lg shadow p-5 flex flex-col h-full ${className || ''}`}>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
           {icon}

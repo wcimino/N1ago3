@@ -147,21 +147,15 @@ export const userStorage = {
       now_local AS (
         SELECT NOW() AT TIME ZONE (SELECT name FROM tz) AS ts
       ),
-      current_hour_ts AS (
-        SELECT date_trunc('hour', (SELECT ts FROM now_local)) AS hour_ts
+      current_hour AS (
+        SELECT EXTRACT(HOUR FROM (SELECT ts FROM now_local))::int AS hour
       ),
       hours_series AS (
-        SELECT 
-          generate_series(
-            (SELECT hour_ts FROM current_hour_ts) - INTERVAL '23 hours',
-            (SELECT hour_ts FROM current_hour_ts),
-            INTERVAL '1 hour'
-          ) AS hour_local,
-          generate_series(0, 23) AS hour_index
+        SELECT generate_series(0, 23) AS hour
       ),
       hourly_data AS (
         SELECT 
-          date_trunc('hour', e.occurred_at AT TIME ZONE (SELECT name FROM tz)) AS hour_local,
+          EXTRACT(HOUR FROM e.occurred_at AT TIME ZONE (SELECT name FROM tz))::int AS hour,
           COUNT(DISTINCT c.id) AS count
         FROM events_standard e
         INNER JOIN conversations c ON e.conversation_id = c.id
@@ -169,21 +163,19 @@ export const userStorage = {
         GROUP BY 1
       )
       SELECT 
-        hs.hour_local,
-        hs.hour_index,
-        EXTRACT(HOUR FROM hs.hour_local)::int AS hour_of_day,
-        (hs.hour_local = (SELECT hour_ts FROM current_hour_ts)) AS is_current_hour,
+        hs.hour,
+        (hs.hour = (SELECT hour FROM current_hour)) AS is_current_hour,
+        (hs.hour <= (SELECT hour FROM current_hour)) AS is_past,
         COALESCE(hd.count, 0)::int AS count
       FROM hours_series hs
-      LEFT JOIN hourly_data hd ON hs.hour_local = hd.hour_local
-      ORDER BY hs.hour_index
+      LEFT JOIN hourly_data hd ON hs.hour = hd.hour
+      ORDER BY hs.hour
     `);
     
     return result.rows.map((row: any) => ({
-      hourStart: row.hour_local,
-      hourIndex: row.hour_index,
-      hourOfDay: row.hour_of_day,
+      hour: row.hour,
       isCurrentHour: row.is_current_hour,
+      isPast: row.is_past,
       count: Number(row.count),
     }));
   },

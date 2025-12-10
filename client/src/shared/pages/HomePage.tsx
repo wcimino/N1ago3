@@ -215,9 +215,9 @@ export function HomePage() {
     refetchInterval: 30000,
   });
 
-  const { data: hourlyStats, isLoading: hourlyLoading } = useQuery<{ hourStart: string; hour: number; date: string; todayDate: string; currentHour: number; count: number }[]>({
+  const { data: hourlyStats, isLoading: hourlyLoading } = useQuery<{ hour: number; isCurrentHour: boolean; isPast: boolean; count: number }[]>({
     queryKey: ["hourly-stats", timezone],
-    queryFn: () => fetchApi<{ hourStart: string; hour: number; date: string; todayDate: string; currentHour: number; count: number }[]>(`/api/conversations/hourly-stats?timezone=${encodeURIComponent(timezone)}`),
+    queryFn: () => fetchApi<{ hour: number; isCurrentHour: boolean; isPast: boolean; count: number }[]>(`/api/conversations/hourly-stats?timezone=${encodeURIComponent(timezone)}`),
     refetchInterval: 60000,
   });
 
@@ -281,6 +281,7 @@ export function HomePage() {
           title="Atendimentos por Hora"
           icon={<Clock className="w-4 h-4 text-cyan-600" />}
           badge="24h"
+          className="lg:col-span-2"
         >
           <HourlyBarChart data={hourlyStats || []} isLoading={hourlyLoading} />
         </StatsCard>
