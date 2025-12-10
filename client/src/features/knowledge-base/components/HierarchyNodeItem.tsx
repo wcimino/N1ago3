@@ -10,6 +10,20 @@ interface NodeStats {
   articleCount: number;
 }
 
+const LEVEL_LABELS: Record<string, string> = {
+  produto: "Produto",
+  subproduto: "Subproduto",
+  assunto: "Assunto",
+  intencao: "Intenção",
+};
+
+const LEVEL_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  produto: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
+  subproduto: { bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200" },
+  assunto: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
+  intencao: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
+};
+
 function getNodeStats(node: HierarchyNode): NodeStats {
   let subproductCount = 0;
   let subjectCount = 0;
@@ -187,7 +201,10 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
             )}
           </div>
 
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
+            <span className={`inline-flex px-2 py-0.5 text-xs rounded border whitespace-nowrap ${LEVEL_COLORS[node.level]?.bg || "bg-gray-50"} ${LEVEL_COLORS[node.level]?.text || "text-gray-700"} ${LEVEL_COLORS[node.level]?.border || "border-gray-200"}`}>
+              {LEVEL_LABELS[node.level] || node.level}
+            </span>
             {onAddArticle && node.level === "intencao" && (
               <button
                 onClick={(e) => {
