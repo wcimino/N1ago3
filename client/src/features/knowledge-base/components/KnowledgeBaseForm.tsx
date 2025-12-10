@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Save, X, FileText, Tag, MessageSquare, CheckCircle, StickyNote, Sparkles, Loader2, Check, XCircle, ArrowRight } from "lucide-react";
 import { ModernSelect } from "@/shared/components/ui";
 import { DiffPreview } from "./DiffView";
-import { SuggestionTypeBadge, StatusBadge, ConfidenceBadge } from "./SuggestionBadges";
+import { SuggestionTypeBadge, StatusBadge, ConfidenceBadge, QualityFlags } from "./SuggestionBadges";
 import { SourceArticlesBadge } from "./SourceArticlesBadge";
 import type { KnowledgeSubject, KnowledgeIntent, ProductCatalogItem } from "../../../types";
 import type { KnowledgeBaseArticle, KnowledgeBaseFormData } from "../hooks/useKnowledgeBase";
@@ -430,6 +430,8 @@ export function KnowledgeBaseForm({
             </div>
           )}
 
+          <QualityFlags flags={improvementSuggestion.qualityFlags} />
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
             {improvementSuggestion.productStandard && (
               <div>
@@ -465,20 +467,20 @@ export function KnowledgeBaseForm({
             
             <DiffPreview
               label="Situação"
-              before={formData.description}
+              before={initialData?.description || ""}
               after={improvementSuggestion.description}
             />
             
             <DiffPreview
               label="Solução"
-              before={formData.resolution}
+              before={initialData?.resolution || ""}
               after={improvementSuggestion.resolution}
             />
             
-            {(formData.observations || improvementSuggestion.observations) && (
+            {(initialData?.observations || improvementSuggestion.observations) && (
               <DiffPreview
                 label="Observações"
-                before={formData.observations}
+                before={initialData?.observations || ""}
                 after={improvementSuggestion.observations}
               />
             )}
@@ -493,7 +495,7 @@ export function KnowledgeBaseForm({
               className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700"
             >
               <Check className="w-4 h-4" />
-              Aprovar
+              Aplicar
             </button>
             <button
               type="button"
@@ -501,7 +503,7 @@ export function KnowledgeBaseForm({
               className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
             >
               <X className="w-4 h-4" />
-              Rejeitar
+              Descartar
             </button>
           </div>
         </div>
