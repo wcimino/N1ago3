@@ -267,7 +267,19 @@ function buildHierarchy(
     }
   }
   
-  return Array.from(productNodes.values()).sort((a, b) => a.name.localeCompare(b.name));
+  const sortNodeRecursively = (node: HierarchyNode): void => {
+    node.children.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+    node.articles.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR'));
+    for (const child of node.children) {
+      sortNodeRecursively(child);
+    }
+  };
+
+  const result = Array.from(productNodes.values()).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  for (const node of result) {
+    sortNodeRecursively(node);
+  }
+  return result;
 }
 
 export function useKnowledgeBase(activeTab: string) {
