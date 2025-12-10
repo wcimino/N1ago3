@@ -498,8 +498,8 @@ export function SubjectsIntentsPage() {
                           {subjectIntents.length} {subjectIntents.length === 1 ? 'intenção' : 'intenções'}
                         </span>
                         {subject.synonyms.length > 0 && (
-                          <span className="text-xs text-purple-500">
-                            ({subject.synonyms.length} sinônimos)
+                          <span className="text-xs text-gray-500">
+                            ({subject.synonyms.length} {subject.synonyms.length === 1 ? 'sinônimo' : 'sinônimos'})
                           </span>
                         )}
                         <div className="flex items-center gap-1 ml-auto sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
@@ -554,8 +554,8 @@ export function SubjectsIntentsPage() {
                               <div className="w-5 shrink-0" />
                               <span className="text-sm text-gray-700">{intent.name}</span>
                               {intent.synonyms.length > 0 && (
-                                <span className="text-xs text-purple-500">
-                                  ({intent.synonyms.length} sinônimos)
+                                <span className="text-xs text-gray-500">
+                                  ({intent.synonyms.length} {intent.synonyms.length === 1 ? 'sinônimo' : 'sinônimos'})
                                 </span>
                               )}
                               <div className="flex items-center gap-1 ml-auto sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
