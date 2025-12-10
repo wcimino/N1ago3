@@ -29,6 +29,7 @@ The React frontend provides a real-time dashboard for events and conversations, 
 *   **User Management:** Secure authentication and authorization with domain and user-list restrictions.
 *   **Extensibility:** Designed for easy integration of new communication channels.
 *   **AI Integrations:** Includes Conversation Summaries, Product Classification, API Logging, and Configurable Triggers.
+*   **Four-Field Classification System:** Classifies conversations using hierarchical fields (Product → Subproduct → Subject → Intent). Uses two sequential AI tools: `search_product_catalog` (finds product/subproduct) and `search_subject_and_intent` (finds subject/intent based on product). Configurable via `use_subject_intent_tool` flag.
 *   **Structured Conversation Summary:** Displays AI-generated summaries with specific fields (`client_request`, `agent_actions`, `current_status`, `important_info`) parsed from JSON responses.
 *   **Automatic Routing Rules:** Manages conversation routing to `n1ago`, `human`, or `bot` based on predefined rules in `routing_rules` table, using atomic slot consumption and Zendesk Switchboard API for control transfer.
 *   **AutoPilot - Automatic Response Sending:** Automatically sends suggested responses under specific conditions (conversation assigned to n1ago, last message from client, no newer messages, `in_response_to` matches).
