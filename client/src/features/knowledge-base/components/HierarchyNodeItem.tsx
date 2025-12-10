@@ -97,7 +97,13 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
       >
         <div className="flex items-start gap-2 sm:gap-3">
           {hasChildren ? (
-            <button className="p-0.5 rounded hover:bg-gray-200 mt-0.5 shrink-0">
+            <button 
+              className="p-0.5 rounded hover:bg-gray-200 mt-0.5 shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle(node.fullPath);
+              }}
+            >
               {useNestedStyle ? (
                 isExpanded ? (
                   <Minus className="w-4 h-4 text-gray-500" />
