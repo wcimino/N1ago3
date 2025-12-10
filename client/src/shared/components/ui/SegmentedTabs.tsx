@@ -27,7 +27,7 @@ export function SegmentedTabs({ tabs, activeTab, onChange, className = "", iconO
           }`}
         >
           {tab.icon}
-          <span className={iconOnlyMobile ? "hidden sm:inline" : ""}>{tab.label}</span>
+          <span className={iconOnlyMobile ? "hidden md:inline" : ""}>{tab.label}</span>
         </button>
       ))}
     </div>
