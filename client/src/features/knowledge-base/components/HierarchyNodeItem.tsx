@@ -254,6 +254,18 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 <Plus className="w-4 h-4" />
               </button>
             )}
+            {isIntencao && node.articles.length > 0 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(node.articles[0]);
+                }}
+                className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-opacity"
+                title="Editar artigo"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+            )}
             <span className={`inline-flex px-2 py-0.5 text-xs rounded border whitespace-nowrap ${LEVEL_COLORS[node.level]?.bg || "bg-gray-50"} ${LEVEL_COLORS[node.level]?.text || "text-gray-700"} ${LEVEL_COLORS[node.level]?.border || "border-gray-200"}`}>
               {LEVEL_LABELS[node.level] || node.level}
             </span>
