@@ -36,7 +36,6 @@ export function KnowledgeBaseForm({
   const [formData, setFormData] = useState({
     name: "",
     productStandard: "",
-    intent: "",
     description: "",
     resolution: "",
     internalActions: "",
@@ -104,7 +103,6 @@ export function KnowledgeBaseForm({
       setFormData({
         name: initialData.name || "",
         productStandard: initialData.productStandard,
-        intent: initialData.intent || "",
         description: initialData.description,
         resolution: initialData.resolution,
         internalActions: initialData.internalActions || "",
@@ -117,7 +115,6 @@ export function KnowledgeBaseForm({
       setFormData({
         name: "",
         productStandard: prefilledData.productStandard,
-        intent: prefilledData.intentName,
         description: "",
         resolution: "",
         internalActions: "",
@@ -130,7 +127,6 @@ export function KnowledgeBaseForm({
       setFormData({
         name: "",
         productStandard: "",
-        intent: "",
         description: "",
         resolution: "",
         internalActions: "",
@@ -175,14 +171,6 @@ export function KnowledgeBaseForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    let intentValue = formData.intent || "Outros";
-    if (formData.intentId) {
-      const selectedIntent = allIntents.find(i => i.id === formData.intentId);
-      if (selectedIntent) {
-        intentValue = selectedIntent.name;
-      }
-    }
-    
     const productStandard = prefilledData?.productStandard || formData.productStandard;
     const subproductStandard = prefilledData?.subproductStandard || null;
     const subjectId = prefilledData?.subjectId || formData.subjectId;
@@ -192,7 +180,6 @@ export function KnowledgeBaseForm({
       name: formData.name || null,
       productStandard,
       subproductStandard,
-      intent: intentValue,
       description: formData.description,
       resolution: formData.resolution,
       internalActions: formData.internalActions || null,

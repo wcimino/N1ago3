@@ -256,7 +256,6 @@ export const usersStandard = pgTable("users_standard", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
-  emailIdx: uniqueIndex("idx_users_standard_email").on(table.email),
   cpfIdx: index("idx_users_standard_cpf").on(table.cpf),
   sourceIdx: index("idx_users_standard_source").on(table.source),
 }));
@@ -341,11 +340,8 @@ export const knowledgeBase = pgTable("knowledge_base", {
   name: text("name"),
   productStandard: text("product_standard").notNull(),
   subproductStandard: text("subproduct_standard"),
-  category1: text("category1"),
-  category2: text("category2"),
   subjectId: integer("subject_id"),
   intentId: integer("intent_id"),
-  intent: text("intent").notNull(),
   description: text("description").notNull(),
   resolution: text("resolution").notNull(),
   internalActions: text("internal_actions"),
@@ -354,8 +350,6 @@ export const knowledgeBase = pgTable("knowledge_base", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   productIdx: index("idx_knowledge_base_product").on(table.productStandard),
-  intentIdx: index("idx_knowledge_base_intent").on(table.intent),
-  category1Idx: index("idx_knowledge_base_category1").on(table.category1),
   subjectIdx: index("idx_knowledge_base_subject").on(table.subjectId),
   intentIdIdx: index("idx_knowledge_base_intent_id").on(table.intentId),
 }));
@@ -397,8 +391,6 @@ export const knowledgeSuggestions = pgTable("knowledge_suggestions", {
   name: text("name"),
   productStandard: text("product_standard"),
   subproductStandard: text("subproduct_standard"),
-  category1: text("category1"),
-  category2: text("category2"),
   
   description: text("description"),
   resolution: text("resolution"),

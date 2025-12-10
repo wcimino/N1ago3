@@ -106,7 +106,6 @@ function buildKnowledgeBaseTool(): ToolDefinition {
     handler: async (args: { product: string; intent?: string; keywords?: string[] }) => {
       const results = await knowledgeBaseService.findRelatedArticles(
         args.product,
-        args.intent,
         args.keywords || [],
         { limit: 3, minScore: 20 }
       );
@@ -118,7 +117,6 @@ function buildKnowledgeBaseTool(): ToolDefinition {
       return results.map((r, i) => `
 ### Artigo ${i + 1}: ${r.article.name || 'Sem nome'} (ID: ${r.article.id})
 - **Produto:** ${r.article.productStandard}
-- **Intenção:** ${r.article.intent}
 - **Problema:** ${r.article.description}
 - **Resolução:** ${r.article.resolution}
 ${r.article.observations ? `- **Observações:** ${r.article.observations}` : ''}`).join("\n\n");

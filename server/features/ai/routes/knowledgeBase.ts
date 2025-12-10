@@ -9,11 +9,10 @@ const router = Router();
 
 router.get("/api/knowledge/articles", async (req, res) => {
   try {
-    const { search, productStandard, intent, subjectId, intentId } = req.query;
+    const { search, productStandard, subjectId, intentId } = req.query;
     const articles = await knowledgeBaseStorage.getAllArticles({
       search: search as string | undefined,
       productStandard: productStandard as string | undefined,
-      intent: intent as string | undefined,
       subjectId: subjectId ? parseInt(subjectId as string) : undefined,
       intentId: intentId ? parseInt(intentId as string) : undefined,
     });
@@ -26,11 +25,8 @@ router.get("/api/knowledge/articles", async (req, res) => {
 
 router.get("/api/knowledge/articles/filters", async (req, res) => {
   try {
-    const [products, intents] = await Promise.all([
-      knowledgeBaseStorage.getDistinctProducts(),
-      knowledgeBaseStorage.getDistinctIntents(),
-    ]);
-    res.json({ products, intents });
+    const products = await knowledgeBaseStorage.getDistinctProducts();
+    res.json({ products });
   } catch (error) {
     console.error("Error fetching filters:", error);
     res.status(500).json({ error: "Failed to fetch filters" });
@@ -58,7 +54,7 @@ router.post("/api/knowledge/articles", async (req, res) => {
   try {
     const data: InsertKnowledgeBaseArticle = req.body;
     
-    if (!data.productStandard || !data.intent || !data.description || !data.resolution) {
+    if (!data.productStandard || !data.description || !data.resolution) {
       return res.status(400).json({ error: "Missing required fields" });
     }
     
@@ -112,7 +108,7 @@ router.delete("/api/knowledge/articles/:id", async (req, res) => {
 
 router.get("/api/knowledge/search", isAuthenticated, requireAuthorizedUser, async (req, res) => {
   try {
-    const { product, intent, keywords, limit } = req.query;
+    const { product, keywords, limit } = req.query;
 
     const keywordsArray = keywords 
       ? (keywords as string).split(",").map(k => k.trim()).filter(k => k.length > 0)
@@ -120,7 +116,6 @@ router.get("/api/knowledge/search", isAuthenticated, requireAuthorizedUser, asyn
 
     const results = await knowledgeBaseService.findRelatedArticles(
       product as string | undefined,
-      intent as string | undefined,
       keywordsArray,
       { limit: parseInt(limit as string) || 10 }
     );
@@ -128,7 +123,7 @@ router.get("/api/knowledge/search", isAuthenticated, requireAuthorizedUser, asyn
     res.json({
       results,
       total: results.length,
-      query: { product, intent, keywords: keywordsArray },
+      query: { product, keywords: keywordsArray },
     });
   } catch (error) {
     console.error("Error searching knowledge base:", error);
@@ -156,26 +151,6 @@ router.get("/api/knowledge/search/product", isAuthenticated, requireAuthorizedUs
   }
 });
 
-router.get("/api/knowledge/search/category", isAuthenticated, requireAuthorizedUser, async (req, res) => {
-  try {
-    const { category1, category2, limit } = req.query;
-
-    if (!category1) {
-      return res.status(400).json({ error: "Query parameter 'category1' is required" });
-    }
-
-    const results = await knowledgeBaseService.searchByCategory(
-      category1 as string,
-      category2 as string | undefined,
-      { limit: parseInt(limit as string) || 10 }
-    );
-
-    res.json({ results, total: results.length });
-  } catch (error) {
-    console.error("Error searching by category:", error);
-    res.status(500).json({ error: "Failed to search by category" });
-  }
-});
 
 router.get("/api/knowledge/search/keywords", isAuthenticated, requireAuthorizedUser, async (req, res) => {
   try {

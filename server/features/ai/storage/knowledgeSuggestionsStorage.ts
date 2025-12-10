@@ -69,9 +69,6 @@ export const knowledgeSuggestionsStorage = {
       .values({
         productStandard: suggestion.productStandard || "Não classificado",
         subproductStandard: suggestion.subproductStandard,
-        category1: suggestion.category1,
-        category2: suggestion.category2,
-        intent: suggestion.category1 || "Geral",
         description: suggestion.description || "",
         resolution: suggestion.resolution || "",
         internalActions: suggestion.internalActions || null,

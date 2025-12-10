@@ -53,7 +53,6 @@ function buildSearchKnowledgeBaseTool(): ToolDefinition {
     handler: async (args: { product: string; category?: string; keywords?: string[] }) => {
       const results = await knowledgeBaseService.findRelatedArticles(
         args.product,
-        args.category,
         args.keywords || [],
         { limit: 5, minScore: 20 }
       );
@@ -66,7 +65,6 @@ function buildSearchKnowledgeBaseTool(): ToolDefinition {
 ### Artigo ${i + 1} (ID: ${r.article.id}, Score: ${r.relevanceScore})
 - Produto: ${r.article.productStandard}
 - Subproduto: ${r.article.subproductStandard || "N/A"}
-- Categoria: ${r.article.category1 || "N/A"}${r.article.category2 ? ` / ${r.article.category2}` : ""}
 - Descrição: ${r.article.description}
 - Resolução: ${r.article.resolution}
 - Observações: ${r.article.observations || "N/A"}
@@ -281,8 +279,6 @@ export async function extractKnowledgeWithAgent(
     name: suggestionResult.name,
     productStandard: suggestionResult.productStandard,
     subproductStandard: suggestionResult.subproductStandard,
-    category1: suggestionResult.category1,
-    category2: suggestionResult.category2,
     description: suggestionResult.description,
     resolution: suggestionResult.resolution,
     observations: suggestionResult.observations,

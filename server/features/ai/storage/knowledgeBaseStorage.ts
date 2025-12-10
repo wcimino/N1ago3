@@ -36,9 +36,6 @@ export const knowledgeBaseStorage = {
     search?: string;
     productStandard?: string;
     subproductStandard?: string;
-    category1?: string;
-    category2?: string;
-    intent?: string;
     subjectId?: number;
     intentId?: number;
     limit?: number;
@@ -52,9 +49,6 @@ export const knowledgeBaseStorage = {
           ilike(knowledgeBase.name, searchPattern),
           ilike(knowledgeBase.productStandard, searchPattern),
           ilike(knowledgeBase.subproductStandard, searchPattern),
-          ilike(knowledgeBase.category1, searchPattern),
-          ilike(knowledgeBase.category2, searchPattern),
-          ilike(knowledgeBase.intent, searchPattern),
           ilike(knowledgeBase.description, searchPattern),
           ilike(knowledgeBase.resolution, searchPattern)
         )!
@@ -67,18 +61,6 @@ export const knowledgeBaseStorage = {
 
     if (filters?.subproductStandard) {
       conditions.push(eq(knowledgeBase.subproductStandard, filters.subproductStandard));
-    }
-
-    if (filters?.category1) {
-      conditions.push(eq(knowledgeBase.category1, filters.category1));
-    }
-
-    if (filters?.category2) {
-      conditions.push(eq(knowledgeBase.category2, filters.category2));
-    }
-
-    if (filters?.intent) {
-      conditions.push(eq(knowledgeBase.intent, filters.intent));
     }
 
     if (filters?.subjectId) {
@@ -139,7 +121,6 @@ export const knowledgeBaseStorage = {
     const likeConditions = searchTerms.slice(0, 3).flatMap(term => [
       ilike(knowledgeBase.description, `%${term}%`),
       ilike(knowledgeBase.resolution, `%${term}%`),
-      ilike(knowledgeBase.intent, `%${term}%`),
       ilike(knowledgeBase.name, `%${term}%`)
     ]).filter((c): c is SQL => c !== undefined);
     
@@ -147,7 +128,6 @@ export const knowledgeBaseStorage = {
       to_tsvector('portuguese', 
         COALESCE(${knowledgeBase.description}, '') || ' ' || 
         COALESCE(${knowledgeBase.resolution}, '') || ' ' ||
-        COALESCE(${knowledgeBase.intent}, '') || ' ' ||
         COALESCE(${knowledgeBase.name}, '')
       )
       @@ plainto_tsquery('portuguese', ${normalizedSearch})
@@ -165,11 +145,8 @@ export const knowledgeBaseStorage = {
         name: knowledgeBase.name,
         productStandard: knowledgeBase.productStandard,
         subproductStandard: knowledgeBase.subproductStandard,
-        category1: knowledgeBase.category1,
-        category2: knowledgeBase.category2,
         subjectId: knowledgeBase.subjectId,
         intentId: knowledgeBase.intentId,
-        intent: knowledgeBase.intent,
         description: knowledgeBase.description,
         resolution: knowledgeBase.resolution,
         internalActions: knowledgeBase.internalActions,
@@ -181,14 +158,12 @@ export const knowledgeBaseStorage = {
             ts_rank_cd(
               setweight(to_tsvector('portuguese', COALESCE(${knowledgeBase.description}, '')), 'A') ||
               setweight(to_tsvector('portuguese', COALESCE(${knowledgeBase.resolution}, '')), 'A') ||
-              setweight(to_tsvector('portuguese', COALESCE(${knowledgeBase.intent}, '')), 'B') ||
               setweight(to_tsvector('portuguese', COALESCE(${knowledgeBase.name}, '')), 'B'),
               plainto_tsquery('portuguese', ${normalizedSearch})
             ), 0
           ) * 10 +
           CASE WHEN LOWER(${knowledgeBase.description}) ILIKE ${'%' + firstTerm + '%'} THEN 5 ELSE 0 END +
-          CASE WHEN LOWER(${knowledgeBase.resolution}) ILIKE ${'%' + firstTerm + '%'} THEN 5 ELSE 0 END +
-          CASE WHEN LOWER(${knowledgeBase.intent}) ILIKE ${'%' + firstTerm + '%'} THEN 3 ELSE 0 END
+          CASE WHEN LOWER(${knowledgeBase.resolution}) ILIKE ${'%' + firstTerm + '%'} THEN 5 ELSE 0 END
         )`.as('relevance_score'),
       })
       .from(knowledgeBase)
@@ -272,32 +247,11 @@ export const knowledgeBaseStorage = {
     return results.map(r => r.productStandard);
   },
 
-  async getDistinctIntents(): Promise<string[]> {
-    const results = await db.selectDistinct({ intent: knowledgeBase.intent })
-      .from(knowledgeBase)
-      .orderBy(knowledgeBase.intent);
-    return results.map(r => r.intent);
-  },
-
   async getDistinctSubproducts(): Promise<string[]> {
     const results = await db.selectDistinct({ subproductStandard: knowledgeBase.subproductStandard })
       .from(knowledgeBase)
       .orderBy(knowledgeBase.subproductStandard);
     return results.filter(r => r.subproductStandard).map(r => r.subproductStandard!);
-  },
-
-  async getDistinctCategories1(): Promise<string[]> {
-    const results = await db.selectDistinct({ category1: knowledgeBase.category1 })
-      .from(knowledgeBase)
-      .orderBy(knowledgeBase.category1);
-    return results.filter(r => r.category1).map(r => r.category1!);
-  },
-
-  async getDistinctCategories2(): Promise<string[]> {
-    const results = await db.selectDistinct({ category2: knowledgeBase.category2 })
-      .from(knowledgeBase)
-      .orderBy(knowledgeBase.category2);
-    return results.filter(r => r.category2).map(r => r.category2!);
   },
 
   async getIntentsWithArticles(filters?: {
@@ -496,11 +450,8 @@ export const knowledgeBaseStorage = {
         a.name,
         a.product_standard as "productStandard",
         a.subproduct_standard as "subproductStandard",
-        a.category1,
-        a.category2,
         a.subject_id as "subjectId",
         a.intent_id as "intentId",
-        a.intent,
         a.description,
         a.resolution,
         a.observations,
@@ -537,11 +488,8 @@ export const knowledgeBaseStorage = {
       name: row.name,
       productStandard: row.productStandard,
       subproductStandard: row.subproductStandard,
-      category1: row.category1,
-      category2: row.category2,
       subjectId: row.subjectId,
       intentId: row.intentId,
-      intent: row.intent,
       description: row.description,
       resolution: row.resolution,
       observations: row.observations,
@@ -605,11 +553,8 @@ export interface SemanticSearchResult {
   name: string | null;
   productStandard: string;
   subproductStandard: string | null;
-  category1: string | null;
-  category2: string | null;
   subjectId: number | null;
   intentId: number | null;
-  intent: string;
   description: string;
   resolution: string;
   observations: string | null;

@@ -34,40 +34,6 @@ export const knowledgeBaseService = {
     }));
   },
 
-  async searchByCategory(
-    category1: string,
-    category2?: string,
-    options: SearchOptions = {}
-  ): Promise<SearchResult[]> {
-    const { limit = 10 } = options;
-
-    const conditions = [ilike(knowledgeBase.category1, `%${category1}%`)];
-    if (category2) {
-      conditions.push(ilike(knowledgeBase.category2, `%${category2}%`));
-    }
-
-    const articles = await db.select()
-      .from(knowledgeBase)
-      .where(and(...conditions))
-      .orderBy(desc(knowledgeBase.updatedAt))
-      .limit(limit);
-
-    return articles.map(article => {
-      const matchedFields = ["category1"];
-      let score = 50;
-      
-      if (article.category1?.toLowerCase() === category1.toLowerCase()) {
-        score += 25;
-      }
-      if (category2 && article.category2?.toLowerCase() === category2.toLowerCase()) {
-        score += 25;
-        matchedFields.push("category2");
-      }
-
-      return { article, relevanceScore: score, matchedFields };
-    });
-  },
-
   async searchByKeywords(
     keywords: string[],
     options: SearchOptions = {}
@@ -119,7 +85,6 @@ export const knowledgeBaseService = {
 
   async findRelatedArticles(
     product?: string,
-    intent?: string,
     descriptionKeywords?: string[],
     options: SearchOptions = {}
   ): Promise<SearchResult[]> {
@@ -141,17 +106,6 @@ export const knowledgeBaseService = {
                    product.toLowerCase().includes(article.productStandard.toLowerCase())) {
           score += 20;
           matchedFields.push("productStandard");
-        }
-      }
-
-      if (intent && article.intent) {
-        if (article.intent.toLowerCase() === intent.toLowerCase()) {
-          score += 30;
-          matchedFields.push("intent");
-        } else if (article.intent.toLowerCase().includes(intent.toLowerCase()) ||
-                   intent.toLowerCase().includes(article.intent.toLowerCase())) {
-          score += 15;
-          matchedFields.push("intent");
         }
       }
 
@@ -213,7 +167,6 @@ export const knowledgeBaseService = {
       const article = r.article;
       return `**Artigo ${i + 1}** (ID: ${article.id}, Relevância: ${r.relevanceScore}%)
 - Produto: ${article.productStandard || "N/A"}
-- Categoria: ${article.category1 || "N/A"}${article.category2 ? ` / ${article.category2}` : ""}
 - Descrição: ${article.description || "N/A"}
 - Resolução: ${article.resolution || "N/A"}
 - Observações: ${article.observations || "N/A"}`;

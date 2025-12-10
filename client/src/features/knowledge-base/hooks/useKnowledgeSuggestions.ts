@@ -14,8 +14,6 @@ export interface KnowledgeSuggestion {
   suggestionType: "create" | "update";
   productStandard: string | null;
   subproductStandard: string | null;
-  category1: string | null;
-  category2: string | null;
   description: string | null;
   resolution: string | null;
   internalActions: string | null;

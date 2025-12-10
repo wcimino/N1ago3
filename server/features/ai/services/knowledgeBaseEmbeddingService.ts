@@ -23,7 +23,6 @@ export async function generateEmbedding(text: string): Promise<{ embedding: numb
 export async function generateArticleEmbedding(article: {
   productStandard: string;
   subproductStandard?: string | null;
-  intent: string;
   description: string;
   resolution: string;
 }): Promise<{ embedding: number[]; logId: number; tokensUsed: number | null }> {
@@ -35,7 +34,6 @@ export async function generateArticleEmbedding(article: {
     parts.push(`Subproduto: ${article.subproductStandard}`);
   }
   
-  parts.push(`Intenção: ${article.intent}`);
   parts.push(`Descrição: ${article.description}`);
   parts.push(`Resolução: ${article.resolution}`);
 
@@ -46,14 +44,12 @@ export async function generateArticleEmbedding(article: {
 export function generateContentHash(article: {
   productStandard: string;
   subproductStandard?: string | null;
-  intent: string;
   description: string;
   resolution: string;
 }): string {
   const content = [
     article.productStandard || '',
     article.subproductStandard || '',
-    article.intent || '',
     article.description || '',
     article.resolution || '',
   ].join('');

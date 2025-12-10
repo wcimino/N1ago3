@@ -10,7 +10,6 @@ export interface KnowledgeBaseArticle {
   name: string | null;
   productStandard: string;
   subproductStandard: string | null;
-  intent: string;
   description: string;
   resolution: string;
   internalActions: string | null;
@@ -25,7 +24,6 @@ export interface KnowledgeBaseFormData {
   name: string | null;
   productStandard: string;
   subproductStandard: string | null;
-  intent: string;
   description: string;
   resolution: string;
   internalActions: string | null;

@@ -7,9 +7,6 @@ interface KnowledgeBaseArticle {
   id: number;
   productStandard: string;
   subproductStandard: string | null;
-  category1?: string | null;
-  category2?: string | null;
-  intent: string;
   description: string;
   resolution: string;
   internalActions?: string | null;
@@ -33,8 +30,6 @@ export function KnowledgeBaseCard({ article, onEdit, onDelete }: KnowledgeBaseCa
     locale: ptBR,
   });
 
-  const categories = [article.category1, article.category2].filter(Boolean).join(" / ");
-
   return (
     <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
       <div 
@@ -56,11 +51,6 @@ export function KnowledgeBaseCard({ article, onEdit, onDelete }: KnowledgeBaseCa
                 </>
               )}
             </div>
-            {categories && (
-              <div className="text-sm text-gray-600 mt-1">
-                {categories}
-              </div>
-            )}
             {!isExpanded && (
               <div className="text-xs text-gray-400 mt-1.5">
                 Atualizado há {timeAgo}

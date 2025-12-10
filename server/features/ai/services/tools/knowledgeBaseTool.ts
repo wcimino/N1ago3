@@ -54,14 +54,16 @@ export function createKnowledgeBaseTool(): ToolDefinition {
         }
       }
 
-      let articles: Array<{
+      interface ArticleWithRelevance {
         productStandard: string;
         subproductStandard: string | null;
-        intent: string;
+        intentId: number | null;
         description: string;
         resolution: string;
         relevanceScore: number;
-      }>;
+      }
+
+      let articles: ArticleWithRelevance[];
       
       if (args.keywords && args.keywords.trim().length > 0) {
         const hasEmbeddings = await knowledgeBaseStorage.hasEmbeddings();
@@ -83,7 +85,7 @@ export function createKnowledgeBaseTool(): ToolDefinition {
             articles = semanticResults.map(a => ({
               productStandard: a.productStandard,
               subproductStandard: a.subproductStandard,
-              intent: a.intent,
+              intentId: a.intentId,
               description: a.description,
               resolution: a.resolution,
               relevanceScore: a.similarity
@@ -104,7 +106,7 @@ export function createKnowledgeBaseTool(): ToolDefinition {
               .map(a => ({
                 productStandard: a.productStandard,
                 subproductStandard: a.subproductStandard,
-                intent: a.intent,
+                intentId: a.intentId,
                 description: a.description,
                 resolution: a.resolution,
                 relevanceScore: a.relevanceScore
@@ -124,7 +126,7 @@ export function createKnowledgeBaseTool(): ToolDefinition {
             .map(a => ({
               productStandard: a.productStandard,
               subproductStandard: a.subproductStandard,
-              intent: a.intent,
+              intentId: a.intentId,
               description: a.description,
               resolution: a.resolution,
               relevanceScore: a.relevanceScore
@@ -140,7 +142,7 @@ export function createKnowledgeBaseTool(): ToolDefinition {
         articles = allArticles.map(a => ({
           productStandard: a.productStandard,
           subproductStandard: a.subproductStandard,
-          intent: a.intent,
+          intentId: a.intentId,
           description: a.description,
           resolution: a.resolution,
           relevanceScore: 0
@@ -166,14 +168,23 @@ export function createKnowledgeBaseTool(): ToolDefinition {
         });
       }
       
-      const articleList = articles.map(a => ({
-        product: a.productStandard,
-        subproduct: a.subproductStandard,
-        subject: resolvedSubject,
-        intent: resolvedIntent || a.intent,
-        description: a.description,
-        resolution: a.resolution,
-        relevance: a.relevanceScore.toFixed(2)
+      const articleList = await Promise.all(articles.map(async (a) => {
+        let intentName = resolvedIntent;
+        if (!intentName && a.intentId) {
+          const intent = await knowledgeIntentsStorage.getById(a.intentId);
+          if (intent) {
+            intentName = intent.name;
+          }
+        }
+        return {
+          product: a.productStandard,
+          subproduct: a.subproductStandard,
+          subject: resolvedSubject,
+          intent: intentName || null,
+          description: a.description,
+          resolution: a.resolution,
+          relevance: a.relevanceScore.toFixed(2)
+        };
       }));
       
       return JSON.stringify({
