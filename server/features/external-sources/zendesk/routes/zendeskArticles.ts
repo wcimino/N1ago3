@@ -258,6 +258,23 @@ router.get("/embeddings/logs", async (req, res) => {
   }
 });
 
+router.get("/by-zendesk-id/:zendeskId", async (req, res) => {
+  try {
+    const { zendeskId } = req.params;
+    const article = await ZendeskArticlesStorage.getArticleByZendeskId(zendeskId);
+    
+    if (!article) {
+      res.status(404).json({ error: "Article not found" });
+      return;
+    }
+    
+    res.json(article);
+  } catch (error) {
+    console.error("[ZendeskArticles] Error fetching article by Zendesk ID:", error);
+    res.status(500).json({ error: "Failed to fetch article" });
+  }
+});
+
 router.get("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
