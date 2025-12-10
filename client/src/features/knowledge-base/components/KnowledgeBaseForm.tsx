@@ -1,10 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Save, X, FileText, Tag, MessageSquare, CheckCircle, StickyNote, Sparkles, Loader2, Check, XCircle, ArrowRight } from "lucide-react";
+import { Save, X, FileText, Tag, MessageSquare, CheckCircle, StickyNote, Sparkles, Loader2, XCircle, Check } from "lucide-react";
 import { ModernSelect } from "@/shared/components/ui";
-import { DiffPreview } from "./DiffView";
-import { SuggestionTypeBadge, StatusBadge, ConfidenceBadge, QualityFlags } from "./SuggestionBadges";
-import { SourceArticlesBadge } from "./SourceArticlesBadge";
+import { SuggestionCardBase } from "./SuggestionCardBase";
 import type { KnowledgeSubject, KnowledgeIntent, ProductCatalogItem } from "../../../types";
 import type { KnowledgeBaseArticle, KnowledgeBaseFormData } from "../hooks/useKnowledgeBase";
 import type { KnowledgeSuggestion } from "../hooks/useKnowledgeSuggestions";
@@ -410,103 +408,38 @@ export function KnowledgeBaseForm({
         />
       </div>
 
-      {improvementSuggestion && (
-        <div className="bg-white border rounded-lg p-4 space-y-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <SuggestionTypeBadge type={improvementSuggestion.suggestionType} targetArticleId={improvementSuggestion.similarArticleId} />
-              <StatusBadge status={improvementSuggestion.status} />
-              <ConfidenceBadge score={improvementSuggestion.confidenceScore} />
-            </div>
-            <span className="text-xs text-gray-500">
-              {new Date(improvementSuggestion.createdAt).toLocaleDateString("pt-BR")}
-            </span>
-          </div>
-          
-          {improvementSuggestion.updateReason && (
-            <div className="bg-orange-50 border border-orange-200 rounded-md p-2">
-              <span className="text-xs font-medium text-orange-800">Motivo da atualização:</span>
-              <p className="text-sm text-orange-700 mt-1">{improvementSuggestion.updateReason}</p>
+      {improvementSuggestion && initialData && (
+        <SuggestionCardBase
+          suggestion={improvementSuggestion}
+          originalArticle={{
+            id: initialData.id,
+            description: initialData.description,
+            resolution: initialData.resolution,
+            observations: initialData.observations,
+          }}
+          showRejectionReason={false}
+          alwaysShowActions={true}
+          renderActions={() => (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleApplySuggestion}
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700"
+              >
+                <Check className="w-4 h-4" />
+                Aplicar
+              </button>
+              <button
+                type="button"
+                onClick={handleDiscardSuggestion}
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
+              >
+                <X className="w-4 h-4" />
+                Descartar
+              </button>
             </div>
           )}
-
-          <QualityFlags flags={improvementSuggestion.qualityFlags} />
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-            {improvementSuggestion.productStandard && (
-              <div>
-                <span className="text-gray-500">Produto:</span>
-                <p className="font-medium">{improvementSuggestion.productStandard}</p>
-              </div>
-            )}
-            <div>
-              <span className="text-gray-500">Subproduto:</span>
-              <p className={improvementSuggestion.subproductStandard ? "font-medium" : "text-gray-400 italic"}>
-                {improvementSuggestion.subproductStandard || "(vazio)"}
-              </p>
-            </div>
-            {improvementSuggestion.rawExtraction?.subjectName && (
-              <div>
-                <span className="text-gray-500">Assunto:</span>
-                <p className="font-medium">{improvementSuggestion.rawExtraction.subjectName}</p>
-              </div>
-            )}
-            {improvementSuggestion.rawExtraction?.intentName && (
-              <div>
-                <span className="text-gray-500">Intenção:</span>
-                <p className="font-medium">{improvementSuggestion.rawExtraction.intentName}</p>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-4 border-t border-b py-3 my-2">
-            <div className="flex items-center gap-2 text-xs text-gray-600">
-              <ArrowRight className="w-4 h-4" />
-              <span>Comparação: Artigo #{initialData?.id} → Sugestão de melhoria</span>
-            </div>
-            
-            <DiffPreview
-              label="Situação"
-              before={initialData?.description || ""}
-              after={improvementSuggestion.description}
-            />
-            
-            <DiffPreview
-              label="Solução"
-              before={initialData?.resolution || ""}
-              after={improvementSuggestion.resolution}
-            />
-            
-            {(initialData?.observations || improvementSuggestion.observations) && (
-              <DiffPreview
-                label="Observações"
-                before={initialData?.observations || ""}
-                after={improvementSuggestion.observations}
-              />
-            )}
-          </div>
-
-          <SourceArticlesBadge rawExtraction={improvementSuggestion.rawExtraction} />
-
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleApplySuggestion}
-              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700"
-            >
-              <Check className="w-4 h-4" />
-              Aplicar
-            </button>
-            <button
-              type="button"
-              onClick={handleDiscardSuggestion}
-              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
-            >
-              <X className="w-4 h-4" />
-              Descartar
-            </button>
-          </div>
-        </div>
+        />
       )}
 
       {improvementError && (
