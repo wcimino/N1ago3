@@ -1,4 +1,4 @@
-import { ChevronRight, ChevronDown, Pencil, Trash2, AlertCircle, Plus, Minus, FileText } from "lucide-react";
+import { ChevronRight, ChevronDown, Pencil, Trash2, AlertCircle, Plus, Minus, FileText, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { HierarchyNode, KnowledgeBaseArticle } from "../hooks/useKnowledgeBase";
@@ -76,10 +76,12 @@ interface HierarchyNodeItemProps {
   onAddArticle?: (subjectId?: number, intentId?: number, productName?: string) => void;
   onAddSubject?: (productId: number) => void;
   onAddIntent?: (subjectId: number) => void;
+  onDeleteSubject?: (subjectId: number, subjectName: string, hasArticles: boolean) => void;
+  onDeleteIntent?: (intentId: number, intentName: string, hasArticles: boolean) => void;
   parentName?: string;
 }
 
-export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete, onAddArticle, onAddSubject, onAddIntent, parentName }: HierarchyNodeItemProps) {
+export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete, onAddArticle, onAddSubject, onAddIntent, onDeleteSubject, onDeleteIntent, parentName }: HierarchyNodeItemProps) {
   const isProduct = node.level === "produto";
   const isSubproduct = node.level === "subproduto";
   const isAssunto = node.level === "assunto";
@@ -242,6 +244,18 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 <Plus className="w-4 h-4" />
               </button>
             )}
+            {onDeleteSubject && isAssunto && node.subjectId && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteSubject(node.subjectId!, node.name, stats.articleCount > 0);
+                }}
+                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-opacity"
+                title="Excluir assunto"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
             {onAddArticle && isIntencao && stats.articleCount === 0 && (
               <button
                 onClick={(e) => {
@@ -266,6 +280,18 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 <Pencil className="w-4 h-4" />
               </button>
             )}
+            {onDeleteIntent && isIntencao && node.intentId && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteIntent(node.intentId!, node.name, stats.articleCount > 0);
+                }}
+                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-opacity"
+                title="Excluir intenção"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
             <span className={`inline-flex px-2 py-0.5 text-xs rounded border whitespace-nowrap ${LEVEL_COLORS[node.level]?.bg || "bg-gray-50"} ${LEVEL_COLORS[node.level]?.text || "text-gray-700"} ${LEVEL_COLORS[node.level]?.border || "border-gray-200"}`}>
               {LEVEL_LABELS[node.level] || node.level}
             </span>
@@ -286,6 +312,8 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 onAddArticle={onAddArticle}
                 onAddSubject={onAddSubject}
                 onAddIntent={onAddIntent}
+                onDeleteSubject={onDeleteSubject}
+                onDeleteIntent={onDeleteIntent}
               />
             ))}
             {node.articles.map((article) => (
@@ -313,6 +341,8 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 onAddArticle={onAddArticle}
                 onAddSubject={onAddSubject}
                 onAddIntent={onAddIntent}
+                onDeleteSubject={onDeleteSubject}
+                onDeleteIntent={onDeleteIntent}
                 parentName={node.name}
               />
             ))}
@@ -334,6 +364,8 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
               onAddArticle={onAddArticle}
               onAddSubject={onAddSubject}
               onAddIntent={onAddIntent}
+              onDeleteSubject={onDeleteSubject}
+              onDeleteIntent={onDeleteIntent}
             />
           ))}
           {node.articles.map((article) => (

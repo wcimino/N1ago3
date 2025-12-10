@@ -7,6 +7,7 @@ import { SuggestionsPage } from "./SuggestionsPage";
 import { LearningAttemptsPage } from "./LearningAttemptsPage";
 import { ZendeskArticlesPage } from "./ZendeskArticlesPage";
 import { PageHeader, FilterBar, StatsBar, InputModal } from "../../../shared/components/ui";
+import { ConfirmModal } from "../../../shared/components/ui/ConfirmModal";
 import { useKnowledgeBase } from "../hooks/useKnowledgeBase";
 
 const tabs = [
@@ -35,6 +36,14 @@ interface InputModalState {
   targetId: number | null;
 }
 
+interface ConfirmModalState {
+  isOpen: boolean;
+  type: "subject" | "intent" | null;
+  id: number | null;
+  name: string;
+  hasArticles: boolean;
+}
+
 export function KnowledgeBasePage() {
   const [activeTab, setActiveTab] = useState("articles");
   const [activeBaseTab, setActiveBaseTab] = useState("internal");
@@ -43,6 +52,13 @@ export function KnowledgeBasePage() {
     isOpen: false,
     type: null,
     targetId: null,
+  });
+  const [confirmModal, setConfirmModal] = useState<ConfirmModalState>({
+    isOpen: false,
+    type: null,
+    id: null,
+    name: "",
+    hasArticles: false,
   });
   const queryClient = useQueryClient();
   
@@ -146,6 +162,29 @@ export function KnowledgeBasePage() {
     },
   });
 
+  const deleteSubjectMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/knowledge/subjects/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete subject");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/subjects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/intents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/articles"] });
+    },
+  });
+
+  const deleteIntentMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/knowledge/intents/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete intent");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/intents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/articles"] });
+    },
+  });
+
   const handleAddSubject = (productId: number) => {
     setInputModal({ isOpen: true, type: "subject", targetId: productId });
   };
@@ -164,6 +203,26 @@ export function KnowledgeBasePage() {
 
   const handleInputModalClose = () => {
     setInputModal({ isOpen: false, type: null, targetId: null });
+  };
+
+  const handleDeleteSubject = (subjectId: number, subjectName: string, hasArticles: boolean) => {
+    setConfirmModal({ isOpen: true, type: "subject", id: subjectId, name: subjectName, hasArticles });
+  };
+
+  const handleDeleteIntent = (intentId: number, intentName: string, hasArticles: boolean) => {
+    setConfirmModal({ isOpen: true, type: "intent", id: intentId, name: intentName, hasArticles });
+  };
+
+  const handleConfirmDelete = () => {
+    if (confirmModal.type === "subject" && confirmModal.id) {
+      deleteSubjectMutation.mutate(confirmModal.id);
+    } else if (confirmModal.type === "intent" && confirmModal.id) {
+      deleteIntentMutation.mutate(confirmModal.id);
+    }
+  };
+
+  const handleConfirmModalClose = () => {
+    setConfirmModal({ isOpen: false, type: null, id: null, name: "", hasArticles: false });
   };
 
   return (
@@ -279,6 +338,8 @@ export function KnowledgeBasePage() {
                           onAddArticle={handleAddArticle}
                           onAddSubject={handleAddSubject}
                           onAddIntent={handleAddIntent}
+                          onDeleteSubject={handleDeleteSubject}
+                          onDeleteIntent={handleDeleteIntent}
                         />
                       ))}
                     </div>
@@ -297,6 +358,20 @@ export function KnowledgeBasePage() {
         title={inputModal.type === "subject" ? "Novo Assunto" : "Nova Intenção"}
         placeholder={inputModal.type === "subject" ? "Nome do assunto..." : "Nome da intenção..."}
         confirmLabel="Criar"
+      />
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={handleConfirmModalClose}
+        onConfirm={handleConfirmDelete}
+        title={confirmModal.type === "subject" ? "Excluir Assunto" : "Excluir Intenção"}
+        message={
+          confirmModal.type === "subject"
+            ? `Tem certeza que deseja excluir o assunto "${confirmModal.name}"?${confirmModal.hasArticles ? " Todas as intenções e artigos associados também serão excluídos." : ""}`
+            : `Tem certeza que deseja excluir a intenção "${confirmModal.name}"?${confirmModal.hasArticles ? " O artigo associado também será excluído." : ""}`
+        }
+        confirmLabel="Excluir"
+        variant="danger"
       />
     </div>
   );
