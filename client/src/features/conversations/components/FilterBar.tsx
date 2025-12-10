@@ -39,8 +39,8 @@ export function FilterBar({
     <GenericFilterBar
       filters={[
         { type: "search", value: clientFilter, onChange: onClientChange, placeholder: "Buscar..." },
-        { type: "select", value: productStandardFilter, onChange: onProductStandardChange, placeholder: "Produtos", placeholderMobile: "Prod.", options: productStandards },
-        { type: "select", value: intentFilter, onChange: onIntentChange, placeholder: "Intenções", placeholderMobile: "Int.", options: intents },
+        { type: "select", value: productStandardFilter, onChange: onProductStandardChange, placeholder: "Produtos", options: productStandards },
+        { type: "select", value: intentFilter, onChange: onIntentChange, placeholder: "Intenções", options: intents },
         { type: "select", value: emotionLevelFilter, onChange: onEmotionLevelChange, placeholder: "Emoção", options: EMOTION_OPTIONS },
       ]}
       onClear={onClear}
