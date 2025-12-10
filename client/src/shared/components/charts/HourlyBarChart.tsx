@@ -34,16 +34,17 @@ export function HourlyBarChart({ data, isLoading }: HourlyBarChartProps) {
   const maxCount = Math.max(...data.map(d => d.count), 1);
   const total = data.reduce((sum, d) => sum + d.count, 0);
 
+  const chartHeight = 80;
+
   return (
     <div className="space-y-2 w-full">
       <div className="flex items-center justify-center">
         <span className="text-sm font-semibold text-gray-900">Total: {formatNumber(total)}</span>
       </div>
       
-      <div className="overflow-x-auto">
-        <div className="flex items-end gap-0.5 h-28" style={{ minWidth: '500px' }}>
+      <div className="flex items-end gap-px w-full" style={{ height: `${chartHeight}px` }}>
         {data.map((point) => {
-          const heightPercent = maxCount > 0 ? (point.count / maxCount) * 100 : 0;
+          const barHeight = maxCount > 0 ? (point.count / maxCount) * chartHeight : 0;
           
           let barColor = 'bg-gray-200';
           if (point.isCurrentHour) {
@@ -55,11 +56,11 @@ export function HourlyBarChart({ data, isLoading }: HourlyBarChartProps) {
           return (
             <div
               key={point.hour}
-              className="flex-1 flex flex-col items-center group relative"
+              className="flex-1 flex flex-col justify-end items-center group relative"
             >
               <div
                 className={`w-full rounded-t transition-all ${barColor} hover:opacity-80`}
-                style={{ height: `${Math.max(heightPercent, 2)}%`, minHeight: '2px' }}
+                style={{ height: `${Math.max(barHeight, 2)}px` }}
               />
               <div className="absolute bottom-full mb-1 hidden group-hover:block z-10">
                 <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap">
@@ -69,12 +70,11 @@ export function HourlyBarChart({ data, isLoading }: HourlyBarChartProps) {
             </div>
           );
         })}
-        </div>
-        
-        <div className="flex justify-between text-[10px] text-gray-400" style={{ minWidth: '500px' }}>
-          <span>0h</span>
-          <span>23h</span>
-        </div>
+      </div>
+      
+      <div className="flex justify-between text-[10px] text-gray-400">
+        <span>0h</span>
+        <span>23h</span>
       </div>
       
       <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
