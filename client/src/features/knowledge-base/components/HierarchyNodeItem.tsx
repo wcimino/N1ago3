@@ -1,7 +1,6 @@
 import { ChevronRight, ChevronDown, Pencil, Trash2, AlertCircle, Plus, Minus, FileText } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { LEVEL_LABELS, LEVEL_COLORS } from "../../../lib/productHierarchy";
 import type { HierarchyNode, KnowledgeBaseArticle } from "../hooks/useKnowledgeBase";
 
 interface NodeStats {
@@ -61,14 +60,14 @@ interface HierarchyNodeItemProps {
   onEdit: (article: KnowledgeBaseArticle) => void;
   onDelete: (id: number) => void;
   onAddArticle?: (subjectId?: number, intentId?: number, productName?: string) => void;
+  parentName?: string;
 }
 
-export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete, onAddArticle }: HierarchyNodeItemProps) {
+export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete, onAddArticle, parentName }: HierarchyNodeItemProps) {
   const isExpanded = expandedPaths.has(node.fullPath);
   const hasChildren = node.children.length > 0 || node.articles.length > 0;
   const stats = getNodeStats(node);
   const statBadges = getStatBadges(stats, node.level);
-  const colors = LEVEL_COLORS[node.level];
   const isProduct = node.level === "produto";
   const isSubproduct = node.level === "subproduto";
   const isAssunto = node.level === "assunto";
@@ -119,11 +118,10 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
 
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-              <span className={`px-2 py-0.5 text-xs rounded border shrink-0 ${colors.bg} ${colors.text} ${colors.border}`}>
-                {LEVEL_LABELS[node.level]}
-              </span>
-              
-              <span className={`font-medium text-gray-900 break-words ${isProduct ? "text-base" : "text-sm"}`}>
+              <span className={`font-medium text-gray-900 break-words ${(isProduct || isSubproduct) ? "text-base" : "text-sm"}`}>
+                {isSubproduct && parentName && (
+                  <span className="text-gray-500">{parentName} &gt; </span>
+                )}
                 {node.name}
               </span>
 
@@ -235,6 +233,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onAddArticle={onAddArticle}
+                parentName={node.name}
               />
             ))}
           </div>
