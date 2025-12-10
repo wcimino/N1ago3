@@ -6,6 +6,8 @@ export const classificationStorage = {
   async getConversationClassification(conversationId: number): Promise<{
     product: string | null;
     productStandard: string | null;
+    subproduct: string | null;
+    subject: string | null;
     intent: string | null;
     confidence: number | null;
   } | null> {
@@ -13,6 +15,8 @@ export const classificationStorage = {
       .select({
         product: conversationsSummary.product,
         productStandard: conversationsSummary.productStandard,
+        subproduct: conversationsSummary.subproduct,
+        subject: conversationsSummary.subject,
         intent: conversationsSummary.intent,
         confidence: conversationsSummary.confidence,
       })
@@ -25,11 +29,19 @@ export const classificationStorage = {
 
   async updateConversationClassification(
     conversationId: number, 
-    data: { product: string | null; intent: string | null; confidence: number | null }
+    data: { 
+      product: string | null; 
+      subproduct?: string | null;
+      subject?: string | null;
+      intent: string | null; 
+      confidence: number | null 
+    }
   ): Promise<void> {
     await db.update(conversationsSummary)
       .set({
         product: data.product,
+        subproduct: data.subproduct ?? null,
+        subject: data.subject ?? null,
         intent: data.intent,
         confidence: data.confidence,
         classifiedAt: new Date(),

@@ -15,6 +15,7 @@ export interface OpenaiApiConfigResponse {
   model_name: string;
   use_knowledge_base_tool: boolean;
   use_product_catalog_tool: boolean;
+  use_subject_intent_tool: boolean;
   use_zendesk_knowledge_base_tool: boolean;
   use_general_settings: boolean;
   created_at?: string;
@@ -31,6 +32,7 @@ export interface OpenaiApiConfigState {
   modelName: string;
   useKnowledgeBaseTool: boolean;
   useProductCatalogTool: boolean;
+  useSubjectIntentTool: boolean;
   useZendeskKnowledgeBaseTool: boolean;
   useGeneralSettings: boolean;
   hasChanges: boolean;
@@ -46,6 +48,7 @@ export interface OpenaiApiConfigActions {
   toggleAuthorType: (authorType: string) => void;
   setUseKnowledgeBaseTool: (value: boolean) => void;
   setUseProductCatalogTool: (value: boolean) => void;
+  setUseSubjectIntentTool: (value: boolean) => void;
   setUseZendeskKnowledgeBaseTool: (value: boolean) => void;
   setUseGeneralSettings: (value: boolean) => void;
   save: () => void;
@@ -71,6 +74,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
   const [modelName, setModelNameState] = useState("gpt-4o-mini");
   const [useKnowledgeBaseTool, setUseKnowledgeBaseToolState] = useState(false);
   const [useProductCatalogTool, setUseProductCatalogToolState] = useState(false);
+  const [useSubjectIntentTool, setUseSubjectIntentToolState] = useState(false);
   const [useZendeskKnowledgeBaseTool, setUseZendeskKnowledgeBaseToolState] = useState(false);
   const [useGeneralSettings, setUseGeneralSettingsState] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -96,6 +100,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       setModelNameState(config.model_name);
       setUseKnowledgeBaseToolState(config.use_knowledge_base_tool ?? false);
       setUseProductCatalogToolState(config.use_product_catalog_tool ?? false);
+      setUseSubjectIntentToolState(config.use_subject_intent_tool ?? false);
       setUseZendeskKnowledgeBaseToolState(config.use_zendesk_knowledge_base_tool ?? false);
       setUseGeneralSettingsState(config.use_general_settings ?? false);
       setHasChanges(false);
@@ -114,6 +119,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
         model_name: modelName,
         use_knowledge_base_tool: useKnowledgeBaseTool,
         use_product_catalog_tool: useProductCatalogTool,
+        use_subject_intent_tool: useSubjectIntentTool,
         use_zendesk_knowledge_base_tool: useZendeskKnowledgeBaseTool,
         use_general_settings: useGeneralSettings,
       });
@@ -179,6 +185,11 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
     markChanged();
   }, [markChanged]);
 
+  const setUseSubjectIntentTool = useCallback((value: boolean) => {
+    setUseSubjectIntentToolState(value);
+    markChanged();
+  }, [markChanged]);
+
   const setUseZendeskKnowledgeBaseTool = useCallback((value: boolean) => {
     setUseZendeskKnowledgeBaseToolState(value);
     markChanged();
@@ -204,6 +215,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       modelName,
       useKnowledgeBaseTool,
       useProductCatalogTool,
+      useSubjectIntentTool,
       useZendeskKnowledgeBaseTool,
       useGeneralSettings,
       hasChanges,
@@ -218,6 +230,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       toggleAuthorType,
       setUseKnowledgeBaseTool,
       setUseProductCatalogTool,
+      setUseSubjectIntentTool,
       setUseZendeskKnowledgeBaseTool,
       setUseGeneralSettings,
       save,

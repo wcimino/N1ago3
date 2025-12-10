@@ -32,18 +32,19 @@ Analise a conversa e gere um resumo estruturado em formato JSON com exatamente e
 **INSTRUÇÕES:**
 1. Use a ferramenta search_product_catalog para buscar os produtos válidos no catálogo
 2. Identifique qual produto do catálogo melhor corresponde ao assunto da conversa
-3. O campo "product" deve ser exatamente um dos valores retornados pelo catálogo (use o fullName)
-4. A intenção deve ser APENAS "contratar" ou "suporte":
-   - "contratar" - cliente quer adquirir, ativar, simular ou contratar produto/serviço novo
-   - "suporte" - qualquer outro atendimento (dúvidas, problemas, cancelamentos, reclamações)
+3. Use a ferramenta search_subject_and_intent para buscar os assuntos disponíveis para o produto
+4. Use search_subject_and_intent novamente com o assunto encontrado para listar as intenções válidas
+5. Classifique com os 4 campos: product, subproduct, subject e intent
 
 **Mensagens da conversa:**
 {{MENSAGENS}}
 
-**Após buscar no catálogo, responda no formato JSON:**
+**Após buscar no catálogo e na base de conhecimento, responda no formato JSON:**
 {
   "product": "fullName exato do catálogo",
-  "intent": "contratar ou suporte",
+  "subproduct": "subproduto se existir, ou null",
+  "subject": "assunto da base de conhecimento",
+  "intent": "intenção da base de conhecimento",
   "confidence": número de 0 a 100
 }`,
 
@@ -98,7 +99,9 @@ export const DEFAULT_RESPONSE_FORMATS: Record<string, string> = {
 }`,
   classification: `{
   "product": "Nome do produto do catálogo",
-  "intent": "contratar ou suporte",
+  "subproduct": "Subproduto ou null",
+  "subject": "Assunto da base de conhecimento",
+  "intent": "Intenção da base de conhecimento",
   "confidence": 0-100
 }`,
   enrichment: ENRICHMENT_RESPONSE_FORMAT,

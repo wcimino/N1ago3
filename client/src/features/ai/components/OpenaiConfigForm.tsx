@@ -28,6 +28,7 @@ export interface OpenaiConfigFormProps {
   recommendedModel?: string;
   showKnowledgeBaseTool?: boolean;
   showProductCatalogTool?: boolean;
+  showSubjectIntentTool?: boolean;
   showZendeskKnowledgeBaseTool?: boolean;
   children?: ReactNode;
 }
@@ -46,6 +47,7 @@ export function OpenaiConfigForm({
   recommendedModel = "gpt-4o-mini",
   showKnowledgeBaseTool = false,
   showProductCatalogTool = false,
+  showSubjectIntentTool = false,
   showZendeskKnowledgeBaseTool = false,
   children,
 }: OpenaiConfigFormProps) {
@@ -121,15 +123,15 @@ export function OpenaiConfigForm({
             </select>
           </div>
 
-          {(showKnowledgeBaseTool || showProductCatalogTool || showZendeskKnowledgeBaseTool) && (
+          {(showKnowledgeBaseTool || showProductCatalogTool || showSubjectIntentTool || showZendeskKnowledgeBaseTool) && (
             <CollapsibleSection
               title="Ferramentas de IA"
               description="Habilite ferramentas que o modelo pode usar para buscar informações"
               defaultOpen={false}
               badge={
-                (state.useKnowledgeBaseTool || state.useProductCatalogTool || state.useZendeskKnowledgeBaseTool) && (
+                (state.useKnowledgeBaseTool || state.useProductCatalogTool || state.useSubjectIntentTool || state.useZendeskKnowledgeBaseTool) && (
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    {[state.useKnowledgeBaseTool, state.useProductCatalogTool, state.useZendeskKnowledgeBaseTool].filter(Boolean).length} ativa{[state.useKnowledgeBaseTool, state.useProductCatalogTool, state.useZendeskKnowledgeBaseTool].filter(Boolean).length > 1 ? 's' : ''}
+                    {[state.useKnowledgeBaseTool, state.useProductCatalogTool, state.useSubjectIntentTool, state.useZendeskKnowledgeBaseTool].filter(Boolean).length} ativa{[state.useKnowledgeBaseTool, state.useProductCatalogTool, state.useSubjectIntentTool, state.useZendeskKnowledgeBaseTool].filter(Boolean).length > 1 ? 's' : ''}
                   </span>
                 )
               }
@@ -149,6 +151,14 @@ export function OpenaiConfigForm({
                     sublabel="Permite buscar classificações no catálogo de produtos"
                     checked={state.useProductCatalogTool}
                     onChange={() => actions.setUseProductCatalogTool(!state.useProductCatalogTool)}
+                  />
+                )}
+                {showSubjectIntentTool && (
+                  <CheckboxListItem
+                    label="Usar Assuntos e Intenções"
+                    sublabel="Permite buscar assuntos e intenções válidos para classificação"
+                    checked={state.useSubjectIntentTool}
+                    onChange={() => actions.setUseSubjectIntentTool(!state.useSubjectIntentTool)}
                   />
                 )}
                 {showZendeskKnowledgeBaseTool && (

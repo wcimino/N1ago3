@@ -14,6 +14,8 @@ export interface ClassificationPayload {
 
 export interface ClassificationResult {
   product: string | null;
+  subproduct: string | null;
+  subject: string | null;
   intent: string | null;
   confidence: number | null;
   success: boolean;
@@ -32,17 +34,22 @@ const DEFAULT_CLASSIFICATION_PROMPT = `Você é um assistente especializado em c
 {{MENSAGENS}}
 
 ## Sua Tarefa
-Classifique a conversa identificando:
-1. **Produto**: O produto financeiro mencionado (Antecipação, Repasse, Conta Digital, Cartão, Pix, Empréstimo, Maquinona, etc)
-2. **Intenção**: O que o cliente quer (Dúvida, Solicitação, Reclamação, Cancelamento, Suporte técnico, etc)
-3. **Confiança**: Seu nível de certeza na classificação (0-100)
+Classifique a conversa identificando os 4 campos:
 
-Use APENAS os produtos que existem no catálogo. Se não identificar claramente, use "Outros".`;
+1. **Produto**: Use a ferramenta search_product_catalog para buscar produtos válidos. Use o fullName exato.
+2. **Subproduto**: Se o produto tiver subproduto, inclua-o. Caso contrário, deixe null.
+3. **Assunto**: Use a ferramenta search_subject_and_intent para encontrar assuntos válidos para o produto.
+4. **Intenção**: Use search_subject_and_intent com o assunto encontrado para listar as intenções válidas.
+5. **Confiança**: Seu nível de certeza na classificação (0-100)
+
+Use APENAS os valores que existem no catálogo e na base de conhecimento. Se não identificar claramente, use null.`;
 
 const DEFAULT_CLASSIFICATION_RESPONSE_FORMAT = `Responda em JSON válido:
 {
-  "product": "Nome do produto",
-  "intent": "Intenção do cliente",
+  "product": "fullName do catálogo",
+  "subproduct": "subproduto ou null",
+  "subject": "assunto da base de conhecimento",
+  "intent": "intenção da base de conhecimento",
   "confidence": 85
 }`;
 
@@ -54,7 +61,8 @@ export async function classifyConversation(
   conversationId?: number,
   externalConversationId?: string,
   useKnowledgeBaseTool: boolean = false,
-  useProductCatalogTool: boolean = false
+  useProductCatalogTool: boolean = false,
+  useSubjectIntentTool: boolean = false
 ): Promise<ClassificationResult> {
   const messagesContext = formatMessagesContext(payload.last20Messages);
 
@@ -81,13 +89,16 @@ export async function classifyConversation(
     toolFlags: {
       useKnowledgeBaseTool,
       useProductCatalogTool,
+      useSubjectIntentTool,
     },
-    maxIterations: 3,
+    maxIterations: 5,
   });
 
   if (!result.success || !result.responseContent) {
     return {
       product: null,
+      subproduct: null,
+      subject: null,
       intent: null,
       confidence: null,
       success: false,
@@ -110,6 +121,8 @@ export async function classifyConversation(
     
     return {
       product: parsed.product || null,
+      subproduct: parsed.subproduct || null,
+      subject: parsed.subject || null,
       intent: parsed.intent || null,
       confidence: confidenceValue,
       success: true,
@@ -119,6 +132,8 @@ export async function classifyConversation(
     console.error(`[Classification Adapter] Failed to parse response: ${parseError.message}`);
     return {
       product: null,
+      subproduct: null,
+      subject: null,
       intent: null,
       confidence: null,
       success: false,
@@ -136,7 +151,8 @@ export async function classifyAndSave(
   conversationId: number,
   externalConversationId: string | null,
   useKnowledgeBaseTool: boolean = false,
-  useProductCatalogTool: boolean = false
+  useProductCatalogTool: boolean = false,
+  useSubjectIntentTool: boolean = false
 ): Promise<ClassificationResult> {
   const result = await classifyConversation(
     payload,
@@ -146,17 +162,20 @@ export async function classifyAndSave(
     conversationId,
     externalConversationId || undefined,
     useKnowledgeBaseTool,
-    useProductCatalogTool
+    useProductCatalogTool,
+    useSubjectIntentTool
   );
 
   if (result.success && result.product) {
     await storage.updateConversationClassification(conversationId, {
       product: result.product,
+      subproduct: result.subproduct,
+      subject: result.subject,
       intent: result.intent,
       confidence: result.confidence,
     });
 
-    console.log(`[Classification Adapter] Classification saved for conversation ${conversationId}: ${result.product}/${result.intent} (${result.confidence}%), logId: ${result.logId}`);
+    console.log(`[Classification Adapter] Classification saved for conversation ${conversationId}: ${result.product}/${result.subproduct}/${result.subject}/${result.intent} (${result.confidence}%), logId: ${result.logId}`);
   }
 
   return result;

@@ -81,11 +81,12 @@ export async function classifyConversationProduct(event: EventStandard): Promise
       event.conversationId,
       event.externalConversationId,
       config.useKnowledgeBaseTool ?? false,
-      config.useProductCatalogTool ?? false
+      config.useProductCatalogTool ?? false,
+      config.useSubjectIntentTool ?? false
     );
 
     if (result.success) {
-      console.log(`[Classification Orchestrator] Classification saved for conversation ${event.conversationId}: ${result.product}/${result.intent}`);
+      console.log(`[Classification Orchestrator] Classification saved for conversation ${event.conversationId}: ${result.product}/${result.subproduct}/${result.subject}/${result.intent}`);
     } else {
       console.error(`[Classification Orchestrator] Failed to classify conversation ${event.conversationId}: ${result.error}`);
     }
