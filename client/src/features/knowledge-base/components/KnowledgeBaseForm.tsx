@@ -285,7 +285,56 @@ export function KnowledgeBaseForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-4">
+      {improvementSuggestion && initialData && (
+        <SuggestionCardBase
+          suggestion={improvementSuggestion}
+          originalArticle={{
+            id: initialData.id,
+            description: initialData.description,
+            resolution: initialData.resolution,
+            observations: initialData.observations,
+          }}
+          showRejectionReason={false}
+          alwaysShowActions={true}
+          renderActions={() => (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleApplySuggestion}
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700"
+              >
+                <Check className="w-4 h-4" />
+                Aplicar
+              </button>
+              <button
+                type="button"
+                onClick={handleDiscardSuggestion}
+                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
+              >
+                <X className="w-4 h-4" />
+                Descartar
+              </button>
+            </div>
+          )}
+        />
+      )}
+
+      {improvementError && (
+        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <XCircle className="w-4 h-4 shrink-0" />
+          {improvementError}
+        </div>
+      )}
+
+      {improvementMessage && !improvementSuggestion && (
+        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm">
+          <Sparkles className="w-4 h-4 shrink-0" />
+          {improvementMessage}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2 sm:col-span-1">
           <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
@@ -408,54 +457,6 @@ export function KnowledgeBaseForm({
         />
       </div>
 
-      {improvementSuggestion && initialData && (
-        <SuggestionCardBase
-          suggestion={improvementSuggestion}
-          originalArticle={{
-            id: initialData.id,
-            description: initialData.description,
-            resolution: initialData.resolution,
-            observations: initialData.observations,
-          }}
-          showRejectionReason={false}
-          alwaysShowActions={true}
-          renderActions={() => (
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={handleApplySuggestion}
-                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700"
-              >
-                <Check className="w-4 h-4" />
-                Aplicar
-              </button>
-              <button
-                type="button"
-                onClick={handleDiscardSuggestion}
-                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
-              >
-                <X className="w-4 h-4" />
-                Descartar
-              </button>
-            </div>
-          )}
-        />
-      )}
-
-      {improvementError && (
-        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          <XCircle className="w-4 h-4 shrink-0" />
-          {improvementError}
-        </div>
-      )}
-
-      {improvementMessage && !improvementSuggestion && (
-        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm">
-          <Sparkles className="w-4 h-4 shrink-0" />
-          {improvementMessage}
-        </div>
-      )}
-
       <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
         {initialData && (
           <button
@@ -495,6 +496,7 @@ export function KnowledgeBaseForm({
           {isLoading ? "Salvando..." : "Salvar Artigo"}
         </button>
       </div>
-    </form>
+      </form>
+    </div>
   );
 }
