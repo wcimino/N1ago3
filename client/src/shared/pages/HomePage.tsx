@@ -7,8 +7,23 @@ import { useTimezone } from "../../contexts/TimezoneContext";
 import type { UsersStatsResponse, StatsResponse, ProductStatsResponse, EmotionStatsResponse } from "../../types";
 
 interface OpenAIStatsResponse {
-  last_24h: { total_calls: number; total_tokens: number; estimated_cost: number };
+  last_24h: { 
+    total_calls: number; 
+    total_tokens: number; 
+    estimated_cost: number;
+    breakdown: Array<{ request_type: string; calls: number; cost: number }>;
+  };
 }
+
+const REQUEST_TYPE_LABELS: Record<string, string> = {
+  'response': 'Sugestão de resposta',
+  'summary': 'Resumo',
+  'classification': 'Classificação',
+  'enrichment_agent': 'Enriquecimento',
+  'learning': 'Aprendizado',
+  'learning_agent': 'Agente de aprendizado',
+  'embedding_generation': 'Embeddings',
+};
 
 const emotionConfig: Record<number, { label: string; color: string; bgColor: string; emoji: string }> = {
   0: { label: "Sem classificação", color: "text-gray-400", bgColor: "bg-gray-100", emoji: "❓" },
@@ -178,6 +193,24 @@ function OpenAIStatsCard({ openaiStats }: { openaiStats: OpenAIStatsResponse | u
           <p className="text-lg font-semibold text-violet-600">{formatNumber(stats.total_tokens)}</p>
         </div>
       </div>
+      {stats.breakdown && stats.breakdown.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-gray-100 w-full">
+          <p className="text-xs text-gray-500 mb-2">Custo por tipo</p>
+          <div className="space-y-1.5">
+            {stats.breakdown.map((item) => (
+              <div key={item.request_type} className="flex justify-between items-center text-sm">
+                <span className="text-gray-600 truncate">
+                  {REQUEST_TYPE_LABELS[item.request_type] || item.request_type}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400">{item.calls}x</span>
+                  <span className="font-medium text-gray-800">${item.cost.toFixed(2)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

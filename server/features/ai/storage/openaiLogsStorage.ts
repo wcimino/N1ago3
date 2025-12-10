@@ -122,7 +122,12 @@ export const openaiLogsStorage = {
   },
 
   async getOpenaiApiStats(timezone: string = "America/Sao_Paulo"): Promise<{
-    last_24h: { total_calls: number; total_tokens: number; estimated_cost: number };
+    last_24h: { 
+      total_calls: number; 
+      total_tokens: number; 
+      estimated_cost: number;
+      breakdown: Array<{ request_type: string; calls: number; cost: number }>;
+    };
   }> {
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -133,19 +138,22 @@ export const openaiLogsStorage = {
       'gpt-4-turbo': { input: 10.00 / 1_000_000, output: 30.00 / 1_000_000 },
       'gpt-4': { input: 30.00 / 1_000_000, output: 60.00 / 1_000_000 },
       'gpt-3.5-turbo': { input: 0.50 / 1_000_000, output: 1.50 / 1_000_000 },
+      'text-embedding-3-small': { input: 0.02 / 1_000_000, output: 0 },
     };
 
     const last24hLogs = await db.select({
       modelName: openaiApiLogs.modelName,
+      requestType: openaiApiLogs.requestType,
       tokensPrompt: openaiApiLogs.tokensPrompt,
       tokensCompletion: openaiApiLogs.tokensCompletion,
     })
       .from(openaiApiLogs)
       .where(gte(openaiApiLogs.createdAt, twentyFourHoursAgo));
 
-    function calculateStats(logs: { modelName: string; tokensPrompt: number | null; tokensCompletion: number | null }[]) {
+    function calculateStats(logs: { modelName: string; requestType: string; tokensPrompt: number | null; tokensCompletion: number | null }[]) {
       let totalTokens = 0;
       let estimatedCost = 0;
+      const breakdownMap: Record<string, { calls: number; cost: number }> = {};
 
       for (const log of logs) {
         const prompt = log.tokensPrompt || 0;
@@ -153,13 +161,29 @@ export const openaiLogsStorage = {
         totalTokens += prompt + completion;
 
         const pricing = MODEL_PRICING[log.modelName] || MODEL_PRICING['gpt-4o-mini'];
-        estimatedCost += (prompt * pricing.input) + (completion * pricing.output);
+        const logCost = (prompt * pricing.input) + (completion * pricing.output);
+        estimatedCost += logCost;
+
+        if (!breakdownMap[log.requestType]) {
+          breakdownMap[log.requestType] = { calls: 0, cost: 0 };
+        }
+        breakdownMap[log.requestType].calls += 1;
+        breakdownMap[log.requestType].cost += logCost;
       }
+
+      const breakdown = Object.entries(breakdownMap)
+        .map(([request_type, data]) => ({
+          request_type,
+          calls: data.calls,
+          cost: Math.round(data.cost * 100) / 100,
+        }))
+        .sort((a, b) => b.cost - a.cost);
 
       return {
         total_calls: logs.length,
         total_tokens: totalTokens,
         estimated_cost: Math.round(estimatedCost * 100) / 100,
+        breakdown,
       };
     }
 
