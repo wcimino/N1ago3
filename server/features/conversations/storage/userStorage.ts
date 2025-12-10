@@ -144,22 +144,26 @@ export const userStorage = {
       WITH tz AS (
         SELECT ${timezone}::text AS name
       ),
+      now_local AS (
+        SELECT NOW() AT TIME ZONE (SELECT name FROM tz) AS ts
+      ),
+      today_start AS (
+        SELECT date_trunc('day', (SELECT ts FROM now_local)) AS start_ts
+      ),
       hourly_data AS (
         SELECT 
           date_trunc('hour', e.occurred_at AT TIME ZONE (SELECT name FROM tz)) AS hour_local,
           COUNT(DISTINCT c.id) AS count
         FROM events_standard e
         INNER JOIN conversations c ON e.conversation_id = c.id
-        WHERE e.occurred_at >= NOW() - INTERVAL '24 hours'
+        WHERE e.occurred_at AT TIME ZONE (SELECT name FROM tz) >= (SELECT start_ts FROM today_start)
+          AND e.occurred_at AT TIME ZONE (SELECT name FROM tz) < (SELECT start_ts FROM today_start) + INTERVAL '1 day'
         GROUP BY 1
-      ),
-      now_local AS (
-        SELECT NOW() AT TIME ZONE (SELECT name FROM tz) AS ts
       ),
       hours_series AS (
         SELECT generate_series(
-          date_trunc('hour', (SELECT ts FROM now_local) - INTERVAL '23 hours'),
-          date_trunc('hour', (SELECT ts FROM now_local)),
+          (SELECT start_ts FROM today_start),
+          (SELECT start_ts FROM today_start) + INTERVAL '23 hours',
           INTERVAL '1 hour'
         ) AS hour_local
       )
@@ -167,7 +171,7 @@ export const userStorage = {
         hs.hour_local,
         EXTRACT(HOUR FROM hs.hour_local)::int AS hour,
         (hs.hour_local)::date AS date,
-        (date_trunc('hour', (SELECT ts FROM now_local)))::date AS today_date,
+        ((SELECT ts FROM now_local))::date AS today_date,
         EXTRACT(HOUR FROM (SELECT ts FROM now_local))::int AS current_hour,
         COALESCE(hd.count, 0)::int AS count
       FROM hours_series hs

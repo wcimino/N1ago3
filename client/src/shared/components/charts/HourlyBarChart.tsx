@@ -41,9 +41,8 @@ export function HourlyBarChart({ data, isLoading }: HourlyBarChartProps) {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-500">Últimas 24h por hora</span>
-        <span className="text-sm font-semibold text-gray-900">{formatNumber(total)} total</span>
+      <div className="flex items-center justify-end">
+        <span className="text-sm font-semibold text-gray-900">Total: {formatNumber(total)}</span>
       </div>
       
       <div className="flex items-end gap-0.5 h-24">
@@ -51,11 +50,12 @@ export function HourlyBarChart({ data, isLoading }: HourlyBarChartProps) {
           const heightPercent = maxCount > 0 ? (point.count / maxCount) * 100 : 0;
           const isToday = point.date === todayDate;
           const isCurrentHour = isToday && point.hour === currentHour;
+          const isPast = point.hour < currentHour;
           
-          let barColor = 'bg-gray-300';
+          let barColor = 'bg-gray-200';
           if (isCurrentHour) {
             barColor = 'bg-blue-500';
-          } else if (isToday) {
+          } else if (isPast) {
             barColor = 'bg-blue-300';
           }
           
@@ -79,18 +79,18 @@ export function HourlyBarChart({ data, isLoading }: HourlyBarChartProps) {
       </div>
       
       <div className="flex justify-between text-[10px] text-gray-400">
-        <span>{data[0]?.hour}h</span>
-        <span>{data[data.length - 1]?.hour}h</span>
+        <span>0h</span>
+        <span>23h</span>
       </div>
       
       <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
         <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-sm bg-gray-300"></div>
-          <span>Ontem</span>
+          <div className="w-2 h-2 rounded-sm bg-gray-200"></div>
+          <span>Futuro</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-sm bg-blue-300"></div>
-          <span>Hoje</span>
+          <span>Passado</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-sm bg-blue-500"></div>
