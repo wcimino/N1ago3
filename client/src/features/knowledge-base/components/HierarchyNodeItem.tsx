@@ -219,7 +219,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
             <span className={`inline-flex px-2 py-0.5 text-xs rounded border whitespace-nowrap ${LEVEL_COLORS[node.level]?.bg || "bg-gray-50"} ${LEVEL_COLORS[node.level]?.text || "text-gray-700"} ${LEVEL_COLORS[node.level]?.border || "border-gray-200"}`}>
               {LEVEL_LABELS[node.level] || node.level}
             </span>
-            {onAddArticle && node.level === "intencao" && (
+            {onAddArticle && node.level === "intencao" && stats.articleCount === 0 && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
