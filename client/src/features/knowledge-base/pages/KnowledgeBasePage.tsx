@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, BookOpen, X, Lightbulb, BarChart3, Cloud, Database, Tags, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
 import { KnowledgeBaseForm } from "../components/KnowledgeBaseForm";
 import { HierarchyNodeItem } from "../components/HierarchyNodeItem";
@@ -34,6 +35,7 @@ export function KnowledgeBasePage() {
   const [activeTab, setActiveTab] = useState("articles");
   const [activeBaseTab, setActiveBaseTab] = useState("internal");
   const [prefilledData, setPrefilledData] = useState<PrefilledArticleData | null>(null);
+  const queryClient = useQueryClient();
   
   const {
     isLoading,
@@ -103,6 +105,50 @@ export function KnowledgeBasePage() {
   const handleCancelForm = () => {
     handleCancel();
     setPrefilledData(null);
+  };
+
+  const createSubjectMutation = useMutation({
+    mutationFn: async (data: { productCatalogId: number; name: string }) => {
+      const res = await fetch("/api/knowledge/subjects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create subject");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/subjects"] });
+    },
+  });
+
+  const createIntentMutation = useMutation({
+    mutationFn: async (data: { subjectId: number; name: string }) => {
+      const res = await fetch("/api/knowledge/intents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create intent");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/intents"] });
+    },
+  });
+
+  const handleAddSubject = (productId: number) => {
+    const name = prompt("Nome do novo assunto:");
+    if (name?.trim()) {
+      createSubjectMutation.mutate({ productCatalogId: productId, name: name.trim() });
+    }
+  };
+
+  const handleAddIntent = (subjectId: number) => {
+    const name = prompt("Nome da nova intenção:");
+    if (name?.trim()) {
+      createIntentMutation.mutate({ subjectId, name: name.trim() });
+    }
   };
 
   return (
@@ -220,6 +266,8 @@ export function KnowledgeBasePage() {
                           onEdit={handleEdit}
                           onDelete={handleDelete}
                           onAddArticle={handleAddArticle}
+                          onAddSubject={handleAddSubject}
+                          onAddIntent={handleAddIntent}
                         />
                       ))}
                     </div>

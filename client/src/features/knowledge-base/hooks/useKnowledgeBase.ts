@@ -44,6 +44,7 @@ export interface HierarchyNode {
   fullPath: string;
   children: HierarchyNode[];
   articles: KnowledgeBaseArticle[];
+  productId?: number;
   subjectId?: number;
   intentId?: number;
 }
@@ -65,7 +66,13 @@ function buildHierarchy(
         fullPath: product.produto,
         children: [],
         articles: [],
+        productId: product.id,
       });
+    } else {
+      const existingNode = productNodes.get(product.produto)!;
+      if (!existingNode.productId) {
+        existingNode.productId = product.id;
+      }
     }
     
     if (product.subproduto) {
@@ -78,9 +85,15 @@ function buildHierarchy(
           fullPath: `${product.produto} > ${product.subproduto}`,
           children: [],
           articles: [],
+          productId: product.id,
         };
         subproductNodes.set(subprodKey, subprodNode);
         prodNode.children.push(subprodNode);
+      } else {
+        const existingSubprod = subproductNodes.get(subprodKey)!;
+        if (!existingSubprod.productId) {
+          existingSubprod.productId = product.id;
+        }
       }
     }
   }
@@ -97,8 +110,11 @@ function buildHierarchy(
         fullPath: product.produto,
         children: [],
         articles: [],
+        productId: product.id,
       };
       productNodes.set(product.produto, prodNode);
+    } else if (!prodNode.productId) {
+      prodNode.productId = product.id;
     }
     
     let parentNode: HierarchyNode = prodNode;
@@ -114,9 +130,12 @@ function buildHierarchy(
           fullPath: `${product.produto} > ${product.subproduto}`,
           children: [],
           articles: [],
+          productId: product.id,
         };
         subproductNodes.set(subprodKey, subprodNode);
         prodNode.children.push(subprodNode);
+      } else if (!subprodNode.productId) {
+        subprodNode.productId = product.id;
       }
       parentNode = subprodNode;
       basePath = `${product.produto} > ${product.subproduto}`;

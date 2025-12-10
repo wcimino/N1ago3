@@ -74,10 +74,12 @@ interface HierarchyNodeItemProps {
   onEdit: (article: KnowledgeBaseArticle) => void;
   onDelete: (id: number) => void;
   onAddArticle?: (subjectId?: number, intentId?: number, productName?: string) => void;
+  onAddSubject?: (productId: number) => void;
+  onAddIntent?: (subjectId: number) => void;
   parentName?: string;
 }
 
-export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete, onAddArticle, parentName }: HierarchyNodeItemProps) {
+export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete, onAddArticle, onAddSubject, onAddIntent, parentName }: HierarchyNodeItemProps) {
   const isProduct = node.level === "produto";
   const isSubproduct = node.level === "subproduto";
   const isAssunto = node.level === "assunto";
@@ -219,7 +221,31 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
             <span className={`inline-flex px-2 py-0.5 text-xs rounded border whitespace-nowrap ${LEVEL_COLORS[node.level]?.bg || "bg-gray-50"} ${LEVEL_COLORS[node.level]?.text || "text-gray-700"} ${LEVEL_COLORS[node.level]?.border || "border-gray-200"}`}>
               {LEVEL_LABELS[node.level] || node.level}
             </span>
-            {onAddArticle && node.level === "intencao" && stats.articleCount === 0 && (
+            {onAddSubject && (isProduct || isSubproduct) && node.productId && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddSubject(node.productId!);
+                }}
+                className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                title="Adicionar assunto"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            )}
+            {onAddIntent && isAssunto && node.subjectId && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddIntent(node.subjectId!);
+                }}
+                className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                title="Adicionar intenção"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            )}
+            {onAddArticle && isIntencao && stats.articleCount === 0 && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -246,6 +272,8 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onAddArticle={onAddArticle}
+                onAddSubject={onAddSubject}
+                onAddIntent={onAddIntent}
               />
             ))}
             {node.articles.map((article) => (
@@ -271,6 +299,8 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onAddArticle={onAddArticle}
+                onAddSubject={onAddSubject}
+                onAddIntent={onAddIntent}
                 parentName={node.name}
               />
             ))}
@@ -290,6 +320,8 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
               onEdit={onEdit}
               onDelete={onDelete}
               onAddArticle={onAddArticle}
+              onAddSubject={onAddSubject}
+              onAddIntent={onAddIntent}
             />
           ))}
           {node.articles.map((article) => (
