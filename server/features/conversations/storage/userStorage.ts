@@ -169,22 +169,22 @@ export const userStorage = {
       ),
       today_data AS (
         SELECT 
-          EXTRACT(HOUR FROM e.occurred_at AT TIME ZONE (SELECT name FROM tz))::int AS hour,
+          EXTRACT(HOUR FROM (e.occurred_at AT TIME ZONE 'UTC') AT TIME ZONE (SELECT name FROM tz))::int AS hour,
           COUNT(DISTINCT c.id) AS count
         FROM events_standard e
         INNER JOIN conversations c ON e.conversation_id = c.id
-        WHERE (e.occurred_at AT TIME ZONE (SELECT name FROM tz)) >= (SELECT ts FROM today_start)
-          AND (e.occurred_at AT TIME ZONE (SELECT name FROM tz)) < (SELECT ts FROM today_end)
+        WHERE ((e.occurred_at AT TIME ZONE 'UTC') AT TIME ZONE (SELECT name FROM tz)) >= (SELECT ts FROM today_start)
+          AND ((e.occurred_at AT TIME ZONE 'UTC') AT TIME ZONE (SELECT name FROM tz)) < (SELECT ts FROM today_end)
         GROUP BY 1
       ),
       yesterday_data AS (
         SELECT 
-          EXTRACT(HOUR FROM e.occurred_at AT TIME ZONE (SELECT name FROM tz))::int AS hour,
+          EXTRACT(HOUR FROM (e.occurred_at AT TIME ZONE 'UTC') AT TIME ZONE (SELECT name FROM tz))::int AS hour,
           COUNT(DISTINCT c.id) AS count
         FROM events_standard e
         INNER JOIN conversations c ON e.conversation_id = c.id
-        WHERE (e.occurred_at AT TIME ZONE (SELECT name FROM tz)) >= (SELECT ts FROM yesterday_start)
-          AND (e.occurred_at AT TIME ZONE (SELECT name FROM tz)) < (SELECT ts FROM yesterday_end)
+        WHERE ((e.occurred_at AT TIME ZONE 'UTC') AT TIME ZONE (SELECT name FROM tz)) >= (SELECT ts FROM yesterday_start)
+          AND ((e.occurred_at AT TIME ZONE 'UTC') AT TIME ZONE (SELECT name FROM tz)) < (SELECT ts FROM yesterday_end)
         GROUP BY 1
       )
       SELECT 

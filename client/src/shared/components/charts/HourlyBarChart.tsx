@@ -98,10 +98,6 @@ export function HourlyBarChart({ data, isLoading }: HourlyBarChartProps) {
           <div className="w-2 h-2 rounded-sm bg-blue-300"></div>
           <span>Hoje</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-sm bg-blue-500"></div>
-          <span>Hora atual</span>
-        </div>
       </div>
     </div>
   );
