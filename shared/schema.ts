@@ -449,6 +449,8 @@ export const zendeskArticles = pgTable("zendesk_articles", {
   labelNames: json("label_names").$type<string[]>(),
   zendeskCreatedAt: timestamp("zendesk_created_at"),
   zendeskUpdatedAt: timestamp("zendesk_updated_at"),
+  embedding: text("embedding"),
+  embeddingUpdatedAt: timestamp("embedding_updated_at"),
   syncedAt: timestamp("synced_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

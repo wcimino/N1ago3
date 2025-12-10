@@ -4,6 +4,7 @@ import { ZendeskArticlesStorage } from "../../zendesk-articles/storage/zendeskAr
 import { ZendeskArticleStatisticsStorage } from "../../zendesk-articles/storage/zendeskArticleStatisticsStorage.js";
 import { knowledgeSubjectsStorage } from "../../knowledge/storage/knowledgeSubjectsStorage.js";
 import { knowledgeIntentsStorage } from "../../knowledge/storage/knowledgeIntentsStorage.js";
+import { generateEmbedding } from "../../zendesk-articles/services/embeddingService.js";
 import type { ToolDefinition } from "./openaiApiService.js";
 
 // Threshold mínimo de relevância para resultados de busca (5%)
@@ -196,13 +197,13 @@ export function createProductCatalogTool(): ToolDefinition {
 export function createZendeskKnowledgeBaseTool(): ToolDefinition {
   return {
     name: "search_knowledge_base_zendesk",
-    description: "Busca artigos na base de conhecimento do Zendesk (Help Center). Use para encontrar artigos de ajuda, FAQs e documentação pública. A busca é inteligente e encontra os artigos mais relevantes baseado nas palavras-chave.",
+    description: "Busca artigos na base de conhecimento do Zendesk (Help Center) usando busca semântica inteligente. Use para encontrar artigos de ajuda, FAQs e documentação pública. A busca entende o significado da sua consulta e encontra os artigos mais relevantes.",
     parameters: {
       type: "object",
       properties: {
         keywords: {
           type: "string",
-          description: "Palavras-chave para buscar no título e conteúdo dos artigos. Pode ser uma frase ou múltiplas palavras."
+          description: "Descreva o que você está buscando. Pode ser uma pergunta, palavras-chave ou uma frase descrevendo o problema/tema."
         },
         section: {
           type: "string",
@@ -212,26 +213,90 @@ export function createZendeskKnowledgeBaseTool(): ToolDefinition {
       required: []
     },
     handler: async (args: { keywords?: string; section?: string }) => {
-      let articles;
+      let articles: Array<{
+        id: number;
+        zendeskId: string;
+        title: string;
+        body: string | null;
+        sectionName: string | null;
+        htmlUrl: string | null;
+        similarity: number;
+      }> = [];
       
       if (args.keywords && args.keywords.trim().length > 0) {
-        const searchResults = await ZendeskArticlesStorage.searchArticlesWithRelevance(
-          args.keywords,
-          {
-            sectionId: args.section,
-            limit: 10 // Busca mais para filtrar pelo threshold
+        const stats = await ZendeskArticlesStorage.getEmbeddingStats();
+        
+        if (stats.withEmbedding > 0) {
+          try {
+            const queryEmbedding = await generateEmbedding(args.keywords);
+            const semanticResults = await ZendeskArticlesStorage.searchBySimilarity(
+              queryEmbedding,
+              { limit: 5 }
+            );
+            
+            articles = semanticResults.map(a => ({
+              id: a.id,
+              zendeskId: a.zendeskId,
+              title: a.title,
+              body: a.body,
+              sectionName: a.sectionName,
+              htmlUrl: a.htmlUrl,
+              similarity: a.similarity,
+            }));
+            
+            console.log(`[Zendesk KB Tool] Semantic search found ${articles.length} articles`);
+          } catch (error) {
+            console.error("[Zendesk KB Tool] Semantic search failed, falling back to full-text:", error);
+            const searchResults = await ZendeskArticlesStorage.searchArticlesWithRelevance(
+              args.keywords,
+              { sectionId: args.section, limit: 10 }
+            );
+            articles = searchResults
+              .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
+              .slice(0, 5)
+              .map(a => ({
+                id: a.id,
+                zendeskId: a.zendeskId,
+                title: a.title,
+                body: a.body,
+                sectionName: a.sectionName,
+                htmlUrl: a.htmlUrl,
+                similarity: Math.round(a.relevanceScore * 100),
+              }));
           }
-        );
-        // Filtra artigos abaixo do threshold de relevância
-        articles = searchResults
-          .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
-          .slice(0, 5); // Limita a 5 após filtro
+        } else {
+          console.log("[Zendesk KB Tool] No embeddings available, using full-text search");
+          const searchResults = await ZendeskArticlesStorage.searchArticlesWithRelevance(
+            args.keywords,
+            { sectionId: args.section, limit: 10 }
+          );
+          articles = searchResults
+            .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
+            .slice(0, 5)
+            .map(a => ({
+              id: a.id,
+              zendeskId: a.zendeskId,
+              title: a.title,
+              body: a.body,
+              sectionName: a.sectionName,
+              htmlUrl: a.htmlUrl,
+              similarity: Math.round(a.relevanceScore * 100),
+            }));
+        }
       } else {
         const allArticles = await ZendeskArticlesStorage.getAllArticles({
           sectionId: args.section,
           limit: 5
         });
-        articles = allArticles.map(a => ({ ...a, relevanceScore: 0 }));
+        articles = allArticles.map(a => ({
+          id: a.id,
+          zendeskId: a.zendeskId,
+          title: a.title,
+          body: a.body,
+          sectionName: a.sectionName,
+          htmlUrl: a.htmlUrl,
+          similarity: 0,
+        }));
       }
       
       if (articles.length === 0) {
@@ -251,16 +316,17 @@ export function createZendeskKnowledgeBaseTool(): ToolDefinition {
       }
       
       const articleList = articles.map(a => ({
-        id: String(a.id),
+        id: a.zendeskId,
+        internalId: a.id,
         title: a.title,
         section: a.sectionName,
-        relevance: a.relevanceScore.toFixed(2),
+        relevance: a.similarity,
         body: a.body ? a.body.substring(0, 500) + (a.body.length > 500 ? "..." : "") : null,
         url: a.htmlUrl
       }));
       
       return JSON.stringify({
-        message: `Encontrados ${articles.length} artigos mais relevantes do Zendesk`,
+        message: `Encontrados ${articles.length} artigos mais relevantes do Zendesk (busca semântica)`,
         articles: articleList
       });
     }

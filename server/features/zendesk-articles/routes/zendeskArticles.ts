@@ -2,6 +2,7 @@ import { Router } from "express";
 import { ZendeskGuideService } from "../services/zendeskGuideService.js";
 import { ZendeskArticlesStorage } from "../storage/zendeskArticlesStorage.js";
 import { ZendeskArticleStatisticsStorage } from "../storage/zendeskArticleStatisticsStorage.js";
+import { batchGenerateEmbeddings, generateEmbedding, stringToEmbedding, cosineSimilarity, embeddingToString } from "../services/embeddingService.js";
 
 const router = Router();
 
@@ -129,6 +130,116 @@ router.post("/sync", async (_req, res) => {
       error: errorMessage,
       type: isConfigError ? "configuration" : "sync_error"
     });
+  }
+});
+
+router.get("/embeddings/stats", async (_req, res) => {
+  try {
+    const stats = await ZendeskArticlesStorage.getEmbeddingStats();
+    res.json(stats);
+  } catch (error) {
+    console.error("[ZendeskArticles] Error fetching embedding stats:", error);
+    res.status(500).json({ error: "Failed to fetch embedding stats" });
+  }
+});
+
+router.post("/embeddings/generate", async (req, res) => {
+  try {
+    const { limit = 100 } = req.body;
+    
+    console.log(`[ZendeskArticles] Starting embedding generation for up to ${limit} articles...`);
+    
+    const articles = await ZendeskArticlesStorage.getArticlesWithoutEmbedding(limit);
+    
+    if (articles.length === 0) {
+      res.json({
+        success: true,
+        message: "All articles already have embeddings",
+        processed: 0,
+        errors: [],
+      });
+      return;
+    }
+    
+    console.log(`[ZendeskArticles] Generating embeddings for ${articles.length} articles...`);
+    
+    const result = await batchGenerateEmbeddings(
+      articles,
+      async (id, embedding) => {
+        await ZendeskArticlesStorage.updateEmbedding(id, embedding);
+      },
+      { batchSize: 5, delayMs: 200 }
+    );
+    
+    console.log(`[ZendeskArticles] Embedding generation complete: ${result.processed} processed, ${result.errors.length} errors`);
+    
+    res.json({
+      success: result.success,
+      message: `Generated embeddings for ${result.processed} articles`,
+      processed: result.processed,
+      errors: result.errors,
+    });
+  } catch (error) {
+    console.error("[ZendeskArticles] Error generating embeddings:", error);
+    res.status(500).json({ error: "Failed to generate embeddings" });
+  }
+});
+
+router.post("/search/semantic", async (req, res) => {
+  try {
+    const { query, limit = 5 } = req.body;
+    
+    if (!query || typeof query !== "string") {
+      res.status(400).json({ error: "Query is required" });
+      return;
+    }
+    
+    console.log(`[ZendeskArticles] Semantic search for: "${query}"`);
+    
+    const queryEmbedding = await generateEmbedding(query);
+    
+    const articlesWithEmbedding = await ZendeskArticlesStorage.getArticlesWithEmbedding();
+    
+    if (articlesWithEmbedding.length === 0) {
+      res.json({
+        message: "No articles with embeddings found. Please generate embeddings first.",
+        articles: [],
+      });
+      return;
+    }
+    
+    const articlesWithSimilarity = articlesWithEmbedding.map((article) => {
+      const articleEmbedding = stringToEmbedding(article.embedding);
+      const similarity = cosineSimilarity(queryEmbedding, articleEmbedding);
+      return {
+        ...article,
+        similarity,
+        embedding: undefined,
+      };
+    });
+    
+    articlesWithSimilarity.sort((a, b) => b.similarity - a.similarity);
+    
+    const topArticles = articlesWithSimilarity.slice(0, limit).map((a) => ({
+      id: a.id,
+      zendeskId: a.zendeskId,
+      title: a.title,
+      body: a.body ? a.body.substring(0, 500) + (a.body.length > 500 ? "..." : "") : null,
+      sectionName: a.sectionName,
+      categoryName: a.categoryName,
+      htmlUrl: a.htmlUrl,
+      similarity: Math.round(a.similarity * 100),
+    }));
+    
+    console.log(`[ZendeskArticles] Found ${topArticles.length} relevant articles`);
+    
+    res.json({
+      message: `Found ${topArticles.length} relevant articles`,
+      articles: topArticles,
+    });
+  } catch (error) {
+    console.error("[ZendeskArticles] Error in semantic search:", error);
+    res.status(500).json({ error: "Failed to perform semantic search" });
   }
 });
 

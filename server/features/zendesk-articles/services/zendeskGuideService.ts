@@ -1,6 +1,7 @@
 import { db } from "../../../db.js";
 import { zendeskArticles } from "../../../../shared/schema.js";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, desc } from "drizzle-orm";
+import { generateArticleEmbedding, embeddingToString } from "./embeddingService.js";
 
 const ZENDESK_SUBDOMAINS = ["movilepay", "centralajudaifp"];
 
@@ -283,6 +284,12 @@ export async function syncArticles(): Promise<SyncResult> {
   result.success = result.errors.length === 0 || result.articlesTotal > 0;
   console.log(`[ZendeskGuide] Total sync complete: ${result.articlesCreated} created, ${result.articlesUpdated} updated across ${ZENDESK_SUBDOMAINS.length} subdomains`);
   
+  if (result.articlesCreated > 0 || result.articlesUpdated > 0) {
+    generateEmbeddingsForNewArticles().catch((err) => {
+      console.error("[ZendeskGuide] Background embedding generation failed:", err);
+    });
+  }
+  
   return result;
 }
 
@@ -303,7 +310,63 @@ export async function getLastSyncInfo(): Promise<{ lastSyncAt: Date | null; arti
   };
 }
 
+async function generateEmbeddingsForNewArticles(): Promise<void> {
+  console.log("[ZendeskGuide] Starting background embedding generation for new articles...");
+  
+  const articlesWithoutEmbedding = await db
+    .select({
+      id: zendeskArticles.id,
+      title: zendeskArticles.title,
+      body: zendeskArticles.body,
+      sectionName: zendeskArticles.sectionName,
+      categoryName: zendeskArticles.categoryName,
+    })
+    .from(zendeskArticles)
+    .where(sql`${zendeskArticles.embedding} IS NULL`)
+    .orderBy(desc(zendeskArticles.zendeskUpdatedAt))
+    .limit(50);
+  
+  if (articlesWithoutEmbedding.length === 0) {
+    console.log("[ZendeskGuide] All articles already have embeddings");
+    return;
+  }
+  
+  console.log(`[ZendeskGuide] Generating embeddings for ${articlesWithoutEmbedding.length} articles...`);
+  
+  let processed = 0;
+  let errors = 0;
+  
+  for (const article of articlesWithoutEmbedding) {
+    try {
+      const embedding = await generateArticleEmbedding({
+        title: article.title,
+        body: article.body,
+        sectionName: article.sectionName,
+        categoryName: article.categoryName,
+      });
+      
+      await db
+        .update(zendeskArticles)
+        .set({
+          embedding: embeddingToString(embedding),
+          embeddingUpdatedAt: new Date(),
+        })
+        .where(eq(zendeskArticles.id, article.id));
+      
+      processed++;
+      
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    } catch (err) {
+      console.error(`[ZendeskGuide] Failed to generate embedding for article ${article.id}:`, err);
+      errors++;
+    }
+  }
+  
+  console.log(`[ZendeskGuide] Background embedding generation complete: ${processed} processed, ${errors} errors`);
+}
+
 export const ZendeskGuideService = {
   syncArticles,
   getLastSyncInfo,
+  generateEmbeddingsForNewArticles,
 };
