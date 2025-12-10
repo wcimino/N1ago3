@@ -82,7 +82,6 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
       <div 
         className={`
           group rounded-lg transition-colors
-          ${hasChildren ? "cursor-pointer" : ""}
           ${isProduct 
             ? "bg-white border border-gray-200 shadow-sm hover:shadow-md p-3 sm:p-4" 
             : isSubproduct
@@ -93,9 +92,11 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
         style={{ 
           marginLeft: `max(${mobileIndent}px, min(${desktopIndent}px, calc(${mobileIndent}px + (${desktopIndent - mobileIndent}px) * ((100vw - 320px) / 400))))` 
         }}
-        onClick={() => hasChildren && onToggle(node.fullPath)}
       >
-        <div className="flex items-start gap-2 sm:gap-3">
+        <div 
+          className={`flex items-start gap-2 sm:gap-3 ${hasChildren ? "cursor-pointer" : ""}`}
+          onClick={() => hasChildren && onToggle(node.fullPath)}
+        >
           {hasChildren ? (
             <button 
               className="p-0.5 rounded hover:bg-gray-200 mt-0.5 shrink-0"
