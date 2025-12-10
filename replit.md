@@ -69,14 +69,17 @@ All features (enrichment, AutoPilot, knowledge-base) consume these centralized s
     - `embedding_vector` (pgvector vector(1536))
     - `model_used`, `tokens_used`, `openai_log_id`
 *   HNSW index for accurate cosine similarity search
-*   On re-sync: compare `content_hash` to detect changed articles and regenerate embeddings
+*   Automatic embedding generation on sync via `generateEmbeddingsForNewOrOutdatedArticles()`
+*   Processes articles 1 by 1 in continuous loop until all pending are done
+*   Tracks real processing state via `isEmbeddingProcessing` flag
+*   Skips failed articles to prevent infinite loops, stops after 5 consecutive errors
 
 **RAG (Retrieval Augmented Generation):**
 *   Semantic search using OpenAI embeddings (`text-embedding-3-small`)
 *   pgvector extension with HNSW index for accurate results
 *   `searchBySimilarity()` joins articles with embeddings table
 *   Endpoints:
-    - `/api/zendesk-articles/embeddings/generate` for batch processing
+    - `/api/zendesk-articles/embeddings/progress` for real-time processing status
     - `/api/zendesk-articles/embeddings/logs` for monitoring failures
     - `/api/zendesk-articles/search/semantic` for semantic search
 *   `createZendeskKnowledgeBaseTool()` uses semantic search with fallback to full-text
