@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronRight, UserPlus } from "lucide-react";
 import { apiRequest, fetchApi } from "../../../lib/queryClient";
 import { LoadingState, EmptyState, LoadingSpinner } from "../../../shared/components";
 import { useDateFormatters } from "../../../shared/hooks";
 import type { AuthorizedUser } from "../../../types";
 
 export function AccessControlTab() {
+  const [showForm, setShowForm] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [newName, setNewName] = useState("");
   const [error, setError] = useState("");
@@ -57,48 +58,63 @@ export function AccessControlTab() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gray-50 rounded-lg p-4">
-        <h3 className="text-md font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Plus className="w-5 h-5" />
-          Adicionar Usuário Autorizado
-        </h3>
+      <div className="bg-gray-50 rounded-lg overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowForm(!showForm)}
+          className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-100 transition-colors"
+        >
+          <span className="text-md font-semibold text-gray-900 flex items-center gap-2">
+            <UserPlus className="w-5 h-5" />
+            + Usuário
+          </span>
+          {showForm ? (
+            <ChevronDown className="w-5 h-5 text-gray-500" />
+          ) : (
+            <ChevronRight className="w-5 h-5 text-gray-500" />
+          )}
+        </button>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-              <input
-                type="email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="usuario@ifood.com.br"
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-              <input
-                type="text"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="Nome do usuário"
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
+        {showForm && (
+          <div className="px-4 pb-4 border-t border-gray-200 pt-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                  <input
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="usuario@ifood.com.br"
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                  <input
+                    type="text"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder="Nome do usuário"
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {error && <p className="text-sm text-red-600">{error}</p>}
+
+              <button
+                type="submit"
+                disabled={addMutation.isPending}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {addMutation.isPending ? <LoadingSpinner size="sm" /> : <Plus className="w-4 h-4" />}
+                Adicionar
+              </button>
+            </form>
           </div>
-
-          {error && <p className="text-sm text-red-600">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={addMutation.isPending}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            {addMutation.isPending ? <LoadingSpinner size="sm" /> : <Plus className="w-4 h-4" />}
-            Adicionar
-          </button>
-        </form>
+        )}
       </div>
 
       <div>
