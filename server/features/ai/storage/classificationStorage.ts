@@ -61,16 +61,10 @@ export const classificationStorage = {
       .where(gte(eventsStandard.occurredAt, since));
 
     // Count distinct conversations (atendimentos) that had activity in the period grouped by product
-    // Logic:
-    // - "Sem classificação" = no summary exists at all OR summary exists but no product
-    // - "Sem mapeamento" = summary exists with product but no productStandard
-    // - Otherwise show the productStandard value
-    const productCaseExpr = sql<string>`CASE 
-      WHEN ${conversationsSummary.conversationId} IS NULL THEN 'Sem classificação'
-      WHEN ${conversationsSummary.productStandard} IS NOT NULL THEN ${conversationsSummary.productStandard}
-      WHEN ${conversationsSummary.product} IS NOT NULL THEN 'Sem mapeamento'
-      ELSE 'Sem classificação'
-    END`;
+    // Uses COALESCE(product_standard, product) to match /atendimentos page logic
+    // - Shows product_standard if available, otherwise shows product
+    // - "Sem classificação" only when neither product nor product_standard exists
+    const productCaseExpr = sql<string>`COALESCE(${conversationsSummary.productStandard}, ${conversationsSummary.product}, 'Sem classificação')`;
     
     const results = await db
       .select({
