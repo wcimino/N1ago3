@@ -76,18 +76,14 @@ export function SummaryCard({
             </div>
 
             <div className="flex flex-wrap gap-1">
-              {summary?.product && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded-full text-[10px] font-medium">
-                  <Package className="w-2.5 h-2.5" />
-                  {summary.product}
-                </span>
-              )}
-              {summary?.intent && (
-                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${INTENT_COLORS[summary.intent] || INTENT_COLORS.outros}`}>
-                  <Target className="w-2.5 h-2.5" />
-                  {INTENT_LABELS[summary.intent] || summary.intent}
-                </span>
-              )}
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded-full text-[10px] font-medium">
+                <Package className="w-2.5 h-2.5" />
+                {summary?.product || "(vazio)"} {">"} {summary?.subproduct || "(vazio)"}
+              </span>
+              <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${INTENT_COLORS[summary?.intent || "outros"] || INTENT_COLORS.outros}`}>
+                <Target className="w-2.5 h-2.5" />
+                {summary?.subject || "(vazio)"} {">"} {INTENT_LABELS[summary?.intent || ""] || summary?.intent || "(vazio)"}
+              </span>
               {summary?.confidence !== null && summary?.confidence !== undefined && (
                 <span className="inline-flex items-center px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded-full text-[10px]">
                   {summary.confidence}%
@@ -142,18 +138,14 @@ export function SummaryCard({
       {summary ? (
         <>
           <div className="flex flex-wrap gap-1.5 mb-2">
-            {summary.product && (
-              <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
-                <Package className="w-3 h-3" />
-                {summary.product}
-              </div>
-            )}
-            {summary.intent && (
-              <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${INTENT_COLORS[summary.intent] || INTENT_COLORS.outros}`}>
-                <Target className="w-3 h-3" />
-                {INTENT_LABELS[summary.intent] || summary.intent}
-              </div>
-            )}
+            <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+              <Package className="w-3 h-3" />
+              {summary.product || "(vazio)"} {">"} {summary.subproduct || "(vazio)"}
+            </div>
+            <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${INTENT_COLORS[summary.intent || "outros"] || INTENT_COLORS.outros}`}>
+              <Target className="w-3 h-3" />
+              {summary.subject || "(vazio)"} {">"} {INTENT_LABELS[summary.intent || ""] || summary.intent || "(vazio)"}
+            </div>
             {summary.confidence !== null && (
               <div className="inline-flex items-center px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs">
                 {summary.confidence}%

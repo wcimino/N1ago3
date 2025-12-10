@@ -2,6 +2,8 @@ import { Sparkles, User, Headphones, Clock, Info } from "lucide-react";
 
 interface SummaryData {
   product?: string | null;
+  subproduct?: string | null;
+  subject?: string | null;
   intent?: string | null;
   confidence?: number | null;
   text?: string | null;
@@ -63,38 +65,38 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
               <h3 className="font-semibold text-purple-900">Resumo da Conversa</h3>
             </div>
             
-            <div className="flex flex-wrap gap-2 mb-4">
-              {summary.product && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">Produto:</span>
-                  <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
-                    {summary.product}
-                  </span>
-                </div>
-              )}
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500 min-w-[70px]">Produto:</span>
+                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-sm font-medium">
+                  {summary.product || "(vazio)"} {">"} {summary.subproduct || "(vazio)"}
+                </span>
+              </div>
               
-              {summary.intent && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">Intenção:</span>
-                  <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                    {summary.intent}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500 min-w-[70px]">Intenção:</span>
+                <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-sm font-medium">
+                  {summary.subject || "(vazio)"} {">"} {summary.intent || "(vazio)"}
+                </span>
+                {summary.confidence !== null && summary.confidence !== undefined && (
+                  <span className="text-sm text-gray-500">
+                    {summary.confidence}%
                   </span>
-                  {summary.confidence !== null && summary.confidence !== undefined && (
-                    <span className="text-sm text-gray-500">
-                      {summary.confidence}%
-                    </span>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
               
-              {summary.customer_emotion_level && emotionConfig[summary.customer_emotion_level] && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">Sentimento:</span>
-                  <span className={`px-2 py-0.5 rounded-full text-sm font-medium ${emotionConfig[summary.customer_emotion_level].color}`}>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500 min-w-[70px]">Sentimento:</span>
+                {summary.customer_emotion_level && emotionConfig[summary.customer_emotion_level] ? (
+                  <span className={`px-2 py-0.5 rounded text-sm font-medium ${emotionConfig[summary.customer_emotion_level].color}`}>
                     {emotionConfig[summary.customer_emotion_level].emoji} {emotionConfig[summary.customer_emotion_level].label}
                   </span>
-                </div>
-              )}
+                ) : (
+                  <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-sm font-medium">
+                    (vazio)
+                  </span>
+                )}
+              </div>
             </div>
 
             {hasStructuredData ? (
