@@ -233,7 +233,7 @@ function OpenAIStatsCard({ openaiStats }: { openaiStats: OpenAIStatsResponse | u
                 >
                   {showLabel && (
                     <span className="text-[10px] font-medium text-white truncate px-1">
-                      {config.label}
+                      ${item.cost.toFixed(2)}
                     </span>
                   )}
                 </div>
@@ -251,7 +251,7 @@ function OpenAIStatsCard({ openaiStats }: { openaiStats: OpenAIStatsResponse | u
                 <div key={item.request_type} className="flex items-center gap-1">
                   <div className={`w-2 h-2 rounded-sm ${config.bg}`} />
                   <span className="text-[10px] text-gray-500">
-                    {config.label} ${item.cost.toFixed(2)}
+                    {config.label}
                   </span>
                 </div>
               );
