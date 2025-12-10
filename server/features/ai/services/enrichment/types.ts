@@ -39,6 +39,7 @@ export interface OpenAIPayload {
   name?: string;
   description?: string;
   resolution?: string;
+  internalActions?: string;
   observations?: string;
   createReason?: string;
   updateReason?: string;

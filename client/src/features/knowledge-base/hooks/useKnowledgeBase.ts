@@ -13,6 +13,7 @@ export interface KnowledgeBaseArticle {
   intent: string;
   description: string;
   resolution: string;
+  internalActions: string | null;
   observations: string | null;
   subjectId: number | null;
   intentId: number | null;
@@ -27,6 +28,7 @@ export interface KnowledgeBaseFormData {
   intent: string;
   description: string;
   resolution: string;
+  internalActions: string | null;
   observations: string | null;
   subjectId: number | null;
   intentId: number | null;

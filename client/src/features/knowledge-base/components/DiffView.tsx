@@ -47,18 +47,27 @@ interface DiffPreviewProps {
   label: string;
   before: string | null;
   after: string | null;
+  variant?: "default" | "internal";
 }
 
-export function DiffPreview({ label, before, after }: DiffPreviewProps) {
+export function DiffPreview({ label, before, after, variant = "default" }: DiffPreviewProps) {
   if (!before && !after) return null;
   
   const hasChange = before !== after;
   
+  const labelClass = variant === "internal" 
+    ? "text-xs font-medium text-orange-600" 
+    : "text-xs font-medium text-gray-700";
+  
+  const containerClass = variant === "internal"
+    ? "text-sm p-3 rounded border bg-orange-50 border-orange-200 text-orange-800"
+    : "text-sm p-3 rounded border bg-gray-50 border-gray-200 text-gray-700";
+  
   if (!hasChange) {
     return (
       <div className="space-y-2">
-        <span className="text-xs font-medium text-gray-700">{label}:</span>
-        <div className="text-sm p-3 rounded border bg-gray-50 border-gray-200 text-gray-700">
+        <span className={labelClass}>{label}:</span>
+        <div className={containerClass}>
           {before || <span className="text-gray-400 italic">Sem conteúdo</span>}
         </div>
       </div>
@@ -69,8 +78,8 @@ export function DiffPreview({ label, before, after }: DiffPreviewProps) {
   
   return (
     <div className="space-y-2">
-      <span className="text-xs font-medium text-gray-700">{label}:</span>
-      <div className="text-sm p-3 rounded border bg-gray-50 border-gray-200 text-gray-700 leading-relaxed">
+      <span className={labelClass}>{label}:</span>
+      <div className={`${containerClass} leading-relaxed`}>
         {diffTokens.map((token, idx) => {
           if (token.type === 'removed') {
             return (

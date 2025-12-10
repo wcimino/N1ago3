@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Save, X, FileText, Tag, MessageSquare, CheckCircle, StickyNote, Sparkles, Loader2, XCircle, Check } from "lucide-react";
+import { Save, X, FileText, Tag, MessageSquare, CheckCircle, StickyNote, Sparkles, Loader2, XCircle, Check, Settings } from "lucide-react";
 import { ModernSelect } from "@/shared/components/ui";
 import { SuggestionCardBase } from "./SuggestionCardBase";
 import type { KnowledgeSubject, KnowledgeIntent, ProductCatalogItem } from "../../../types";
@@ -39,6 +39,7 @@ export function KnowledgeBaseForm({
     intent: "",
     description: "",
     resolution: "",
+    internalActions: "",
     observations: "",
     subjectId: null as number | null,
     intentId: null as number | null,
@@ -106,6 +107,7 @@ export function KnowledgeBaseForm({
         intent: initialData.intent || "",
         description: initialData.description,
         resolution: initialData.resolution,
+        internalActions: initialData.internalActions || "",
         observations: initialData.observations || "",
         subjectId: initialData.subjectId,
         intentId: initialData.intentId,
@@ -118,6 +120,7 @@ export function KnowledgeBaseForm({
         intent: prefilledData.intentName,
         description: "",
         resolution: "",
+        internalActions: "",
         observations: "",
         subjectId: prefilledData.subjectId,
         intentId: prefilledData.intentId,
@@ -130,6 +133,7 @@ export function KnowledgeBaseForm({
         intent: "",
         description: "",
         resolution: "",
+        internalActions: "",
         observations: "",
         subjectId: null,
         intentId: null,
@@ -191,6 +195,7 @@ export function KnowledgeBaseForm({
       intent: intentValue,
       description: formData.description,
       resolution: formData.resolution,
+      internalActions: formData.internalActions || null,
       observations: formData.observations || null,
       subjectId,
       intentId,
@@ -264,6 +269,7 @@ export function KnowledgeBaseForm({
       ...prev,
       description: improvementSuggestion.description || prev.description,
       resolution: improvementSuggestion.resolution || prev.resolution,
+      internalActions: improvementSuggestion.internalActions || prev.internalActions,
       observations: improvementSuggestion.observations || prev.observations,
     }));
     setImprovementSuggestion(null);
@@ -386,26 +392,44 @@ export function KnowledgeBaseForm({
             onChange={handleChange}
             rows={4}
             className="w-full px-3 py-2 text-sm border border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none transition-colors bg-green-50"
-            placeholder="Descreva como resolver o problema..."
+            placeholder="Orientações para comunicar ao cliente..."
             required
           />
         </div>
       </div>
 
-      <div>
-        <label className="flex items-center gap-1.5 text-xs font-medium text-gray-400 mb-1.5">
-          <StickyNote className="w-3.5 h-3.5" />
-          Observações
-          <span className="text-xs font-normal">(opcional)</span>
-        </label>
-        <textarea
-          name="observations"
-          value={formData.observations}
-          onChange={handleChange}
-          rows={2}
-          className="w-full px-3 py-2 text-sm border border-gray-100 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 resize-none transition-colors bg-gray-50"
-          placeholder="Informações adicionais, links úteis, casos especiais..."
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="flex items-center gap-1.5 text-xs font-medium text-orange-700 mb-1.5">
+            <Settings className="w-3.5 h-3.5" />
+            Ações Internas
+            <span className="text-xs font-normal text-orange-500">(não compartilhar com cliente)</span>
+          </label>
+          <textarea
+            name="internalActions"
+            value={formData.internalActions}
+            onChange={handleChange}
+            rows={3}
+            className="w-full px-3 py-2 text-sm border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none transition-colors bg-orange-50"
+            placeholder="Ações internas do agente: acessar sistemas, verificar informações no backoffice, etc..."
+          />
+        </div>
+
+        <div>
+          <label className="flex items-center gap-1.5 text-xs font-medium text-gray-400 mb-1.5">
+            <StickyNote className="w-3.5 h-3.5" />
+            Observações
+            <span className="text-xs font-normal">(opcional)</span>
+          </label>
+          <textarea
+            name="observations"
+            value={formData.observations}
+            onChange={handleChange}
+            rows={3}
+            className="w-full px-3 py-2 text-sm border border-gray-100 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 resize-none transition-colors bg-gray-50"
+            placeholder="Informações adicionais, links úteis, casos especiais..."
+          />
+        </div>
       </div>
 
       {improvementSuggestion && initialData && (
@@ -415,6 +439,7 @@ export function KnowledgeBaseForm({
             id: initialData.id,
             description: initialData.description,
             resolution: initialData.resolution,
+            internalActions: initialData.internalActions,
             observations: initialData.observations,
           }}
           showRejectionReason={false}

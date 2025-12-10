@@ -49,6 +49,7 @@ export async function processEnrichmentPayload(
       intent: intent.name,
       description: payload.description || "",
       resolution: payload.resolution || "",
+      internalActions: payload.internalActions || null,
       observations: payload.observations || null,
     });
     
@@ -69,6 +70,7 @@ export async function processEnrichmentPayload(
     category2: null,
     description: payload.description || article?.description,
     resolution: payload.resolution || article?.resolution,
+    internalActions: payload.internalActions || article?.internalActions,
     observations: payload.observations || article?.observations,
     confidenceScore: payload.confidenceScore,
     similarArticleId: targetArticleId,

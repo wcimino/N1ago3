@@ -8,6 +8,7 @@ interface OriginalArticle {
   id: number;
   description: string | null;
   resolution: string | null;
+  internalActions?: string | null;
   observations?: string | null;
 }
 
@@ -109,6 +110,15 @@ export function SuggestionCardBase({
               after={suggestion.resolution}
             />
 
+            {(originalArticle.internalActions || suggestion.internalActions) && (
+              <DiffPreview
+                label="Ações Internas"
+                before={originalArticle.internalActions || ""}
+                after={suggestion.internalActions}
+                variant="internal"
+              />
+            )}
+
             {(originalArticle.observations || suggestion.observations) && (
               <DiffPreview
                 label="Observações"
@@ -138,6 +148,13 @@ export function SuggestionCardBase({
             <div>
               <span className="text-xs text-gray-500">Solução:</span>
               <p className="text-sm mt-1 bg-green-50 p-2 rounded">{suggestion.resolution}</p>
+            </div>
+          )}
+
+          {suggestion.internalActions && (
+            <div>
+              <span className="text-xs text-orange-600">Ações Internas:</span>
+              <p className="text-sm mt-1 bg-orange-50 p-2 rounded text-orange-800">{suggestion.internalActions}</p>
             </div>
           )}
 

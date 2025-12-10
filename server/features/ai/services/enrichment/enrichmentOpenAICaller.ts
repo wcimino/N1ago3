@@ -32,7 +32,11 @@ function buildCreateEnrichmentSuggestionTool(intentWithArticle: IntentWithArticl
         },
         resolution: {
           type: "string",
-          description: "Resolução com verbos no infinitivo (obrigatório se action=create ou update)"
+          description: "Orientações para comunicar ao cliente - verbos no infinitivo (obrigatório se action=create ou update)"
+        },
+        internalActions: {
+          type: "string",
+          description: "Ações internas do agente em sistemas internos - NÃO comunicar ao cliente (opcional, mas recomendado)"
         },
         observations: {
           type: "string",
@@ -145,6 +149,7 @@ function buildUserPromptForIntent(intentWithArticle: IntentWithArticle, config: 
       .replace(/\{\{artigo_nome\}\}/gi, article.name || intent.name)
       .replace(/\{\{descricao\}\}/gi, article.description || "Sem descrição")
       .replace(/\{\{resolucao\}\}/gi, article.resolution || "Sem resolução")
+      .replace(/\{\{acoes_internas\}\}/gi, article.internalActions || "Sem ações internas")
       .replace(/\{\{observacoes\}\}/gi, article.observations || "Sem observações");
   } else {
     prompt = prompt
@@ -237,6 +242,7 @@ export async function callOpenAIForIntent(
     name: toolResult.name,
     description: toolResult.description,
     resolution: toolResult.resolution,
+    internalActions: toolResult.internalActions,
     observations: toolResult.observations,
     createReason: toolResult.createReason,
     updateReason: toolResult.updateReason,

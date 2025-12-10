@@ -172,6 +172,7 @@ export const knowledgeBaseStorage = {
         intent: knowledgeBase.intent,
         description: knowledgeBase.description,
         resolution: knowledgeBase.resolution,
+        internalActions: knowledgeBase.internalActions,
         observations: knowledgeBase.observations,
         createdAt: knowledgeBase.createdAt,
         updatedAt: knowledgeBase.updatedAt,

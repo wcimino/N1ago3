@@ -18,6 +18,7 @@ export interface KnowledgeSuggestion {
   category2: string | null;
   description: string | null;
   resolution: string | null;
+  internalActions: string | null;
   observations: string | null;
   confidenceScore: number | null;
   qualityFlags: {

@@ -36,14 +36,35 @@ Para cada artigo do Zendesk consultado, avalie:
 - 50-69: Tema parcialmente relacionado (verificar se há insights úteis)
 - 0-49: Tema diferente (provavelmente não é útil)
 
-## FORMATO DA RESOLUÇÃO (CRÍTICO!):
+## FORMATO DA RESOLUÇÃO E AÇÕES INTERNAS (CRÍTICO!):
 
-A resolução deve ser uma INSTRUÇÃO para futuros atendimentos.
+Separe SEMPRE o conteúdo em dois campos distintos:
+
+### Campo "resolution" (Orientações ao Cliente):
+- Informações que o agente PODE/DEVE comunicar ao cliente
+- Limite de valores, prazos, regras de uso, funcionalidades
+- Orientações sobre o app, passos que o cliente pode executar
+- Use verbos no INFINITIVO: "Informar que...", "Orientar o cliente a..."
+
+### Campo "internalActions" (Ações Internas do Agente):
+- Ações que o agente deve executar em sistemas internos (NÃO comunicar ao cliente)
+- Acessar Dock Console, backoffice, CRM, painéis admin
+- Verificar informações em ferramentas internas
+- Use verbos no INFINITIVO: "Acessar o Dock Console para...", "Verificar no sistema interno..."
+
+### Exemplo de Separação Correta:
+
+❌ ERRADO (tudo em resolution):
+"Orientar o cliente a acessar o Dock Console para habilitar aproximação. Informar que o limite é R$ 200,00."
+
+✅ CORRETO (separado):
+- resolution: "Informar que o valor máximo para compras por aproximação é R$ 200,00. Orientar sobre como habilitar a função no app iFood Pago."
+- internalActions: "Acessar o Dock Console para habilitar ou desabilitar a funcionalidade de aproximação do cartão."
 
 ❌ PROIBIDO: "O cliente deve ser orientado a...", "Foi explicado que..."
 ✅ CORRETO: "Orientar o cliente a...", "Verificar se...", "Informar que..."
 
-Sempre use verbos no INFINITIVO (Orientar, Verificar, Solicitar, Informar).
+Sempre use verbos no INFINITIVO (Orientar, Verificar, Solicitar, Informar, Acessar).
 
 ## QUALIDADE:
 
@@ -70,6 +91,9 @@ export const ENRICHMENT_USER_PROMPT_TEMPLATE = `## Intenção a Processar (ID: {
 
 **Resolução Atual:**
 {{resolucao}}
+
+**Ações Internas Atuais:**
+{{acoes_internas}}
 
 **Observações Atuais:**
 {{observacoes}}
@@ -106,8 +130,9 @@ Esta intenção ainda não possui artigo na base de conhecimento. Você deve cri
 
 **IMPORTANTE:**
 - Sempre inclua sourceArticles com ID, título e similarityScore dos artigos do Zendesk consultados
-- Use verbos no INFINITIVO na resolução (Orientar, Verificar, Solicitar, Informar)
-- Se for create/update, forneça descrição E resolução completas`;
+- Use verbos no INFINITIVO na resolução e ações internas (Orientar, Verificar, Solicitar, Informar, Acessar)
+- Se for create/update, forneça descrição, resolução E internalActions completas
+- Separe corretamente: resolution = o que comunicar ao cliente, internalActions = ações em sistemas internos`;
 
 export const ENRICHMENT_RESPONSE_FORMAT = `Use a ferramenta create_enrichment_suggestion com:
 
@@ -115,7 +140,8 @@ export const ENRICHMENT_RESPONSE_FORMAT = `Use a ferramenta create_enrichment_su
   "action": "create" | "update" | "skip",
   "name": "Nome do artigo (obrigatório se action=create)",
   "description": "Descrição do problema/situação (obrigatório se action=create ou update)",
-  "resolution": "Resolução com verbos no infinitivo (obrigatório se action=create ou update)",
+  "resolution": "Orientações para comunicar ao cliente - verbos no infinitivo (obrigatório se action=create ou update)",
+  "internalActions": "Ações internas do agente em sistemas internos - NÃO comunicar ao cliente (opcional, mas recomendado)",
   "observations": "Observações adicionais (opcional)",
   "createReason": "Motivo da criação (obrigatório se action=create)",
   "updateReason": "Motivo da melhoria (obrigatório se action=update)",

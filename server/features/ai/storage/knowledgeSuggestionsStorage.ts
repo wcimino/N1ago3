@@ -74,6 +74,7 @@ export const knowledgeSuggestionsStorage = {
         intent: suggestion.category1 || "Geral",
         description: suggestion.description || "",
         resolution: suggestion.resolution || "",
+        internalActions: suggestion.internalActions || null,
         observations: suggestion.observations 
           ? `${suggestion.observations}\n\n[Fonte: Extraído de conversa]`
           : "[Fonte: Extraído de conversa]",
@@ -115,6 +116,7 @@ export const knowledgeSuggestionsStorage = {
       .set({
         description: suggestion.description || undefined,
         resolution: suggestion.resolution || undefined,
+        internalActions: suggestion.internalActions || undefined,
         observations: suggestion.observations || undefined,
         updatedAt: new Date(),
       })

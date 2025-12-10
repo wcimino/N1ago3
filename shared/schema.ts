@@ -348,6 +348,7 @@ export const knowledgeBase = pgTable("knowledge_base", {
   intent: text("intent").notNull(),
   description: text("description").notNull(),
   resolution: text("resolution").notNull(),
+  internalActions: text("internal_actions"),
   observations: text("observations"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -401,6 +402,7 @@ export const knowledgeSuggestions = pgTable("knowledge_suggestions", {
   
   description: text("description"),
   resolution: text("resolution"),
+  internalActions: text("internal_actions"),
   observations: text("observations"),
   
   confidenceScore: integer("confidence_score"),

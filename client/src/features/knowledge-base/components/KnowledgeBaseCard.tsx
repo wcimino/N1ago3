@@ -12,6 +12,7 @@ interface KnowledgeBaseArticle {
   intent: string;
   description: string;
   resolution: string;
+  internalActions?: string | null;
   observations: string | null;
   createdAt: string;
   updatedAt: string;
@@ -156,6 +157,19 @@ export function KnowledgeBaseCard({ article, onEdit, onDelete }: KnowledgeBaseCa
               </p>
             </div>
           </div>
+
+          {article.internalActions && (
+            <div>
+              <h4 className="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-2">
+                Ações Internas
+              </h4>
+              <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
+                <p className="text-sm text-orange-800 whitespace-pre-wrap">
+                  {article.internalActions}
+                </p>
+              </div>
+            </div>
+          )}
 
           {article.observations && (
             <div>
