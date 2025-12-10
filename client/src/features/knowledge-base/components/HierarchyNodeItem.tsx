@@ -1,4 +1,4 @@
-import { ChevronRight, ChevronDown, Pencil, Trash2, AlertCircle, Plus, FileText } from "lucide-react";
+import { ChevronRight, ChevronDown, Pencil, Trash2, AlertCircle, Plus, Minus, FileText } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { LEVEL_LABELS, LEVEL_COLORS } from "../../../lib/productHierarchy";
@@ -71,6 +71,9 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
   const colors = LEVEL_COLORS[node.level];
   const isProduct = node.level === "produto";
   const isSubproduct = node.level === "subproduto";
+  const isAssunto = node.level === "assunto";
+  const isIntencao = node.level === "intencao";
+  const useNestedStyle = isAssunto || isIntencao;
   
   const mobileIndent = depth * 12;
   const desktopIndent = depth * 20;
@@ -94,10 +97,18 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
         <div className="flex items-start gap-2 sm:gap-3">
           {hasChildren ? (
             <button className="p-0.5 rounded hover:bg-gray-200 mt-0.5 shrink-0">
-              {isExpanded ? (
-                <ChevronDown className="w-4 h-4 text-gray-500" />
+              {useNestedStyle ? (
+                isExpanded ? (
+                  <Minus className="w-4 h-4 text-gray-500" />
+                ) : (
+                  <Plus className="w-4 h-4 text-gray-500" />
+                )
               ) : (
-                <ChevronRight className="w-4 h-4 text-gray-500" />
+                isExpanded ? (
+                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-gray-500" />
+                )
               )}
             </button>
           ) : (
@@ -113,6 +124,22 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
               <span className={`font-medium text-gray-900 break-words ${isProduct ? "text-base" : "text-sm"}`}>
                 {node.name}
               </span>
+
+              {(isProduct || isSubproduct) && (
+                <>
+                  {statBadges.map((badge, idx) => (
+                    <span key={idx} className="hidden md:inline-flex items-center whitespace-nowrap text-xs text-gray-500">
+                      <span className="font-medium text-gray-700">{badge.count}</span>&nbsp;{badge.label}
+                    </span>
+                  ))}
+                  {stats.articleCount > 0 && (
+                    <span className="hidden md:inline-flex items-center gap-1 whitespace-nowrap text-xs text-emerald-600">
+                      <FileText className="w-3 h-3" />
+                      <span className="font-medium">{stats.articleCount}</span> {stats.articleCount === 1 ? "artigo" : "artigos"}
+                    </span>
+                  )}
+                </>
+              )}
 
               {stats.articleCount === 0 && (
                 <span className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0 sm:hidden">
@@ -130,7 +157,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
             </div>
 
             {(isProduct || isSubproduct) && (statBadges.length > 0 || stats.articleCount > 0) && (
-              <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-gray-500">
+              <div className="flex md:hidden flex-wrap items-center gap-2 mt-1.5 text-xs text-gray-500">
                 {statBadges.map((badge, idx) => (
                   <span key={idx} className="whitespace-nowrap">
                     <span className="font-medium text-gray-700">{badge.count}</span> {badge.label}
