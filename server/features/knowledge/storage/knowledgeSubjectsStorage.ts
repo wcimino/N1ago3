@@ -1,6 +1,6 @@
 import { db } from "../../../db.js";
-import { knowledgeSubjects, ifoodProducts } from "../../../../shared/schema.js";
-import { eq, desc, ilike, or, and, sql, type SQL } from "drizzle-orm";
+import { knowledgeSubjects, ifoodProducts, knowledgeIntents, knowledgeBase } from "../../../../shared/schema.js";
+import { eq, desc, ilike, or, and, sql, inArray, type SQL } from "drizzle-orm";
 import type { KnowledgeSubject, InsertKnowledgeSubject } from "../../../../shared/schema.js";
 
 export const knowledgeSubjectsStorage = {
@@ -87,6 +87,23 @@ export const knowledgeSubjectsStorage = {
   },
 
   async delete(id: number): Promise<boolean> {
+    const intentsToDelete = await db.select({ id: knowledgeIntents.id })
+      .from(knowledgeIntents)
+      .where(eq(knowledgeIntents.subjectId, id));
+    
+    const intentIds = intentsToDelete.map(i => i.id);
+    
+    if (intentIds.length > 0) {
+      await db.delete(knowledgeBase)
+        .where(inArray(knowledgeBase.intentId, intentIds));
+    }
+    
+    await db.delete(knowledgeBase)
+      .where(eq(knowledgeBase.subjectId, id));
+    
+    await db.delete(knowledgeIntents)
+      .where(eq(knowledgeIntents.subjectId, id));
+    
     const result = await db.delete(knowledgeSubjects)
       .where(eq(knowledgeSubjects.id, id))
       .returning();

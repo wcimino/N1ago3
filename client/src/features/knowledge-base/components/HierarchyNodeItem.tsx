@@ -92,9 +92,9 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
   const statBadges = getStatBadges(stats, node.level);
   const useNestedStyle = isAssunto || isIntencao;
   
-  const effectiveDepth = depth + (isIntencao ? 1 : 0);
-  const mobileIndent = effectiveDepth * 16;
-  const desktopIndent = effectiveDepth * 24;
+  const depthIndent = depth * 20;
+  const intentExtra = isIntencao ? 28 : 0;
+  const indentPx = depthIndent + intentExtra;
   
   return (
     <div className={(isProduct || isSubproduct) ? "mb-2" : ""}>
@@ -108,9 +108,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
               : "hover:bg-gray-50 py-2 px-2 sm:px-3"
           }
         `}
-        style={{ 
-          marginLeft: `max(${mobileIndent}px, min(${desktopIndent}px, calc(${mobileIndent}px + (${desktopIndent - mobileIndent}px) * ((100vw - 320px) / 400))))` 
-        }}
+        style={{ marginLeft: indentPx }}
       >
         <div 
           className={`flex items-start gap-2 sm:gap-3 ${hasChildren ? "cursor-pointer" : ""}`}

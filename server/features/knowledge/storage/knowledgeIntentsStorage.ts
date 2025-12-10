@@ -1,5 +1,5 @@
 import { db } from "../../../db.js";
-import { knowledgeIntents, knowledgeSubjects } from "../../../../shared/schema.js";
+import { knowledgeIntents, knowledgeSubjects, knowledgeBase } from "../../../../shared/schema.js";
 import { eq, desc, ilike, or, and, sql, type SQL } from "drizzle-orm";
 import type { KnowledgeIntent, InsertKnowledgeIntent } from "../../../../shared/schema.js";
 
@@ -87,6 +87,9 @@ export const knowledgeIntentsStorage = {
   },
 
   async delete(id: number): Promise<boolean> {
+    await db.delete(knowledgeBase)
+      .where(eq(knowledgeBase.intentId, id));
+    
     const result = await db.delete(knowledgeIntents)
       .where(eq(knowledgeIntents.id, id))
       .returning();
