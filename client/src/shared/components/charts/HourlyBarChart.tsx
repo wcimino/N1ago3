@@ -80,15 +80,15 @@ export function HourlyBarChart({ data, isLoading }: HourlyBarChartProps) {
       <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-sm bg-gray-200"></div>
-          <span>Futuro</span>
+          <span>Ontem</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-sm bg-blue-300"></div>
-          <span>Passado</span>
+          <span>Hoje</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-sm bg-blue-500"></div>
-          <span>Agora</span>
+          <span>Hora atual</span>
         </div>
       </div>
     </div>
