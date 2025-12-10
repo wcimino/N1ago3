@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
-import { FileText, Tags, MessageSquare, GraduationCap, Wrench, Settings, Lightbulb } from "lucide-react";
+import { FileText, Tags, MessageSquare, GraduationCap, Wrench, Settings, Lightbulb, Sparkles } from "lucide-react";
 import { PageHeader } from "../../../shared/components/ui";
 import { OpenaiSummaryConfigPage } from "./OpenaiSummaryConfigPage";
 import { ClassificationConfigPage } from "./ClassificationConfigPage";
@@ -54,6 +54,7 @@ export function AIPage() {
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <PageHeader
         title="Configuração de IA"
+        icon={<Sparkles className="w-5 h-5" />}
         primaryTabs={utilityTabs}
         primaryActiveTab={isUtilityTab ? activeTab : ""}
         onPrimaryTabChange={handleTabChange}

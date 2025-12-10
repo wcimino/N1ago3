@@ -56,7 +56,7 @@ function AuthenticatedApp() {
               </NavLink>
               <NavLink href="/ai">
                 <Sparkles className="w-4 h-4" />
-                <span className="hidden sm:inline">AI</span>
+                <span className="hidden sm:inline">Configurações de IA</span>
               </NavLink>
               <NavLink href="/knowledge-base">
                 <BookOpen className="w-4 h-4" />
