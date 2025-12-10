@@ -1,10 +1,10 @@
 import { knowledgeBaseStorage } from "../storage/knowledgeBaseStorage.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
-import { ZendeskArticlesStorage } from "../../zendesk-articles/storage/zendeskArticlesStorage.js";
-import { ZendeskArticleStatisticsStorage } from "../../zendesk-articles/storage/zendeskArticleStatisticsStorage.js";
+import { ZendeskArticlesStorage } from "../../external-sources/zendesk/storage/zendeskArticlesStorage.js";
+import { ZendeskArticleStatisticsStorage } from "../../external-sources/zendesk/storage/zendeskArticleStatisticsStorage.js";
 import { knowledgeSubjectsStorage } from "../../knowledge/storage/knowledgeSubjectsStorage.js";
 import { knowledgeIntentsStorage } from "../../knowledge/storage/knowledgeIntentsStorage.js";
-import { generateEmbedding } from "../../zendesk-articles/services/embeddingService.js";
+import { generateEmbedding } from "../../external-sources/zendesk/services/embeddingService.js";
 import type { ToolDefinition } from "./openaiApiService.js";
 
 // Threshold mínimo de relevância para resultados de busca (5%)
@@ -228,7 +228,7 @@ export function createZendeskKnowledgeBaseTool(): ToolDefinition {
         
         if (stats.withEmbedding > 0) {
           try {
-            const queryEmbedding = await generateEmbedding(args.keywords);
+            const { embedding: queryEmbedding } = await generateEmbedding(args.keywords);
             const semanticResults = await ZendeskArticlesStorage.searchBySimilarity(
               queryEmbedding,
               { limit: 5 }

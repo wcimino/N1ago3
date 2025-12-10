@@ -1,6 +1,7 @@
-import { db } from "../../../db.js";
-import { zendeskArticles, type ZendeskArticle } from "../../../../shared/schema.js";
-import { eq, ilike, or, sql, desc, and, type SQL } from "drizzle-orm";
+import { db } from "../../../../db.js";
+import { zendeskArticles, zendeskArticleEmbeddings, type ZendeskArticle, type ZendeskArticleEmbedding } from "../../../../../shared/schema.js";
+import { eq, ilike, or, sql, desc, and, isNull, type SQL } from "drizzle-orm";
+import crypto from "crypto";
 
 export interface ArticleFilters {
   search?: string;
@@ -240,55 +241,131 @@ export async function getDistinctSubdomains(): Promise<Array<{ subdomain: string
   );
 }
 
-export async function getArticlesWithoutEmbedding(limit: number = 100): Promise<ZendeskArticle[]> {
-  return db
-    .select()
-    .from(zendeskArticles)
-    .where(sql`${zendeskArticles.embedding} IS NULL`)
-    .orderBy(desc(zendeskArticles.zendeskUpdatedAt))
-    .limit(limit);
+export function generateContentHash(article: {
+  title: string;
+  body: string | null;
+  sectionName?: string | null;
+  categoryName?: string | null;
+}): string {
+  const content = [
+    article.title || '',
+    article.body || '',
+    article.sectionName || '',
+    article.categoryName || '',
+  ].join('');
+  return crypto.createHash('md5').update(content).digest('hex');
 }
 
-export async function updateEmbedding(id: number, embedding: string): Promise<void> {
+export async function getArticlesWithoutEmbedding(limit: number = 100): Promise<ZendeskArticle[]> {
+  const results = await db.execute(sql`
+    SELECT a.* 
+    FROM zendesk_articles a
+    LEFT JOIN zendesk_article_embeddings e ON a.id = e.article_id
+    WHERE e.id IS NULL
+    ORDER BY a.zendesk_updated_at DESC
+    LIMIT ${limit}
+  `);
+  
+  return results.rows as unknown as ZendeskArticle[];
+}
+
+export async function getArticlesWithChangedContent(limit: number = 100): Promise<ZendeskArticle[]> {
+  const results = await db.execute(sql`
+    SELECT a.* 
+    FROM zendesk_articles a
+    INNER JOIN zendesk_article_embeddings e ON a.id = e.article_id
+    WHERE e.content_hash != md5(COALESCE(a.title, '') || COALESCE(a.body, '') || COALESCE(a.section_name, '') || COALESCE(a.category_name, ''))
+    ORDER BY a.zendesk_updated_at DESC
+    LIMIT ${limit}
+  `);
+  
+  return results.rows as unknown as ZendeskArticle[];
+}
+
+export async function upsertEmbedding(params: {
+  articleId: number;
+  contentHash: string;
+  embedding: number[];
+  modelUsed?: string;
+  tokensUsed?: number;
+  openaiLogId?: number;
+}): Promise<void> {
+  const embeddingString = `[${params.embedding.join(',')}]`;
+  
   await db.execute(sql`
-    UPDATE zendesk_articles 
-    SET 
-      embedding = ${embedding},
-      embedding_vector = ${embedding}::vector,
-      embedding_updated_at = NOW(),
+    INSERT INTO zendesk_article_embeddings (article_id, content_hash, embedding_vector, model_used, tokens_used, openai_log_id, created_at, updated_at)
+    VALUES (
+      ${params.articleId},
+      ${params.contentHash},
+      ${embeddingString}::vector,
+      ${params.modelUsed || 'text-embedding-3-small'},
+      ${params.tokensUsed || null},
+      ${params.openaiLogId || null},
+      NOW(),
+      NOW()
+    )
+    ON CONFLICT (article_id) DO UPDATE SET
+      content_hash = EXCLUDED.content_hash,
+      embedding_vector = EXCLUDED.embedding_vector,
+      model_used = EXCLUDED.model_used,
+      tokens_used = EXCLUDED.tokens_used,
+      openai_log_id = EXCLUDED.openai_log_id,
       updated_at = NOW()
-    WHERE id = ${id}
   `);
 }
 
-export async function getArticlesWithEmbedding(): Promise<Array<ZendeskArticle & { embedding: string }>> {
-  const results = await db
-    .select()
-    .from(zendeskArticles)
-    .where(sql`${zendeskArticles.embedding} IS NOT NULL`);
+export async function updateEmbedding(id: number, embedding: string): Promise<void> {
+  const article = await getArticleById(id);
+  if (!article) return;
   
-  return results.filter((r): r is ZendeskArticle & { embedding: string } => 
-    r.embedding !== null
-  );
+  const contentHash = generateContentHash(article);
+  const embeddingArray = JSON.parse(embedding) as number[];
+  
+  await upsertEmbedding({
+    articleId: id,
+    contentHash,
+    embedding: embeddingArray,
+  });
+}
+
+export async function getArticlesWithEmbedding(): Promise<Array<ZendeskArticle & { embeddingData: ZendeskArticleEmbedding }>> {
+  const results = await db.execute(sql`
+    SELECT 
+      a.*,
+      e.id as embedding_id,
+      e.content_hash,
+      e.model_used,
+      e.tokens_used,
+      e.openai_log_id,
+      e.created_at as embedding_created_at,
+      e.updated_at as embedding_updated_at
+    FROM zendesk_articles a
+    INNER JOIN zendesk_article_embeddings e ON a.id = e.article_id
+  `);
+  
+  return results.rows as unknown as Array<ZendeskArticle & { embeddingData: ZendeskArticleEmbedding }>;
 }
 
 export async function getEmbeddingStats(): Promise<{
   total: number;
   withEmbedding: number;
   withoutEmbedding: number;
+  outdated: number;
 }> {
-  const [result] = await db
-    .select({
-      total: sql<number>`count(*)::int`,
-      withEmbedding: sql<number>`count(CASE WHEN ${zendeskArticles.embedding} IS NOT NULL THEN 1 END)::int`,
-      withoutEmbedding: sql<number>`count(CASE WHEN ${zendeskArticles.embedding} IS NULL THEN 1 END)::int`,
-    })
-    .from(zendeskArticles);
+  const [result] = await db.execute(sql`
+    SELECT 
+      (SELECT count(*)::int FROM zendesk_articles) as total,
+      (SELECT count(*)::int FROM zendesk_article_embeddings) as with_embedding,
+      (SELECT count(*)::int FROM zendesk_articles a LEFT JOIN zendesk_article_embeddings e ON a.id = e.article_id WHERE e.id IS NULL) as without_embedding,
+      (SELECT count(*)::int FROM zendesk_articles a INNER JOIN zendesk_article_embeddings e ON a.id = e.article_id WHERE e.content_hash != md5(COALESCE(a.title, '') || COALESCE(a.body, '') || COALESCE(a.section_name, '') || COALESCE(a.category_name, ''))) as outdated
+  `).then(r => r.rows);
   
+  const stats = result as any;
   return {
-    total: result?.total ?? 0,
-    withEmbedding: result?.withEmbedding ?? 0,
-    withoutEmbedding: result?.withoutEmbedding ?? 0,
+    total: stats?.total ?? 0,
+    withEmbedding: stats?.with_embedding ?? 0,
+    withoutEmbedding: stats?.without_embedding ?? 0,
+    outdated: stats?.outdated ?? 0,
   };
 }
 
@@ -313,17 +390,18 @@ export async function searchBySimilarity(
   
   const results = await db.execute(sql`
     SELECT 
-      id,
-      zendesk_id as "zendeskId",
-      title,
-      body,
-      section_name as "sectionName",
-      category_name as "categoryName",
-      html_url as "htmlUrl",
-      ROUND((1 - (embedding_vector <=> ${embeddingString}::vector)) * 100) as similarity
-    FROM zendesk_articles
-    WHERE embedding_vector IS NOT NULL
-    ORDER BY embedding_vector <=> ${embeddingString}::vector
+      a.id,
+      a.zendesk_id as "zendeskId",
+      a.title,
+      a.body,
+      a.section_name as "sectionName",
+      a.category_name as "categoryName",
+      a.html_url as "htmlUrl",
+      ROUND((1 - (e.embedding_vector <=> ${embeddingString}::vector)) * 100) as similarity
+    FROM zendesk_articles a
+    INNER JOIN zendesk_article_embeddings e ON a.id = e.article_id
+    WHERE e.embedding_vector IS NOT NULL
+    ORDER BY e.embedding_vector <=> ${embeddingString}::vector
     LIMIT ${limit}
   `);
   
@@ -348,8 +426,11 @@ export const ZendeskArticlesStorage = {
   getDistinctSubdomains,
   getArticleCount,
   getArticlesWithoutEmbedding,
+  getArticlesWithChangedContent,
   updateEmbedding,
+  upsertEmbedding,
   getArticlesWithEmbedding,
   getEmbeddingStats,
   searchBySimilarity,
+  generateContentHash,
 };

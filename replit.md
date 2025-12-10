@@ -16,7 +16,7 @@ The system employs a decoupled frontend (React, TypeScript, Vite, Tailwind CSS, 
 
 *   **Standardized Event Architecture:** Ingests events from various sources, normalizing them into a `StandardEvent` format using dedicated webhook endpoints, an `EventBus`, an `Event Processor` with `Adapters`, and a `Polling Worker` for retries.
 *   **Authentication System:** Uses Replit Auth (Google Login) with an Access Control List (ACL) based on email domains and an `authorized_users` table.
-*   **AI-Powered Features:** Supports multiple AI capabilities (summarization, classification, response generation) via a unified architecture with a shared `openai_api_config` table, configurable triggers, and lazy OpenAI client initialization. All OpenAI calls are logged.
+*   **AI-Powered Features:** Supports multiple AI capabilities (summarization, classification, response generation) via a unified architecture with centralized OpenAI services, configurable triggers, and automatic logging of all API calls.
 
 **UI/UX Decisions:**
 
@@ -43,20 +43,48 @@ The React frontend provides a real-time dashboard for events and conversations, 
 *   **Idempotent Event Creation:** `saveStandardEvent` handles unique constraint violations by returning existing events, and all downstream orchestrators are idempotent to prevent duplicate processing.
 *   **Modular AI Tools and Prompts:** Centralized tool definitions and prompt variables for AI agents, using a standardized 2-field configuration (`promptSystem`, `responseFormat`) and `promptUtils.ts` for variable substitution.
 *   **Enrichment Agent Modular Architecture:** Refactored into a sequential pipeline (`enrichmentOpenAICaller`, `enrichmentRunLogger`, `enrichmentRunProcessor`, `enrichmentOrchestrator`) to ensure robust logging of AI enrichment attempts.
-*   **RAG (Retrieval Augmented Generation) for Zendesk Articles:** Semantic search using OpenAI embeddings (`text-embedding-3-small`) stored in PostgreSQL with pgvector extension. Articles are vectorized and searched by cosine similarity using HNSW index for accurate knowledge base retrieval. Key components:
-    - `embeddingService.ts`: Generates embeddings for article content with logging
-    - `zendeskArticlesStorage.ts`: Contains `searchBySimilarity()` using pgvector native operators
-    - Automatic embedding generation during Zendesk sync
-    - Endpoint `/api/zendesk-articles/embeddings/generate` for batch processing
-    - Endpoint `/api/zendesk-articles/embeddings/logs` for monitoring generation failures
-    - Endpoint `/api/zendesk-articles/search/semantic` for semantic search
-    - `createZendeskKnowledgeBaseTool()` uses semantic search when embeddings are available, with fallback to full-text search
-    - `embedding_generation_logs` table for monitoring embedding generation success/failure rates
+
+## OpenAI Services Architecture
+
+Centralized OpenAI services in `shared/services/openai/`:
+*   **openaiService.ts:** Wrapper with `chat()`, `chatWithTools()`, and `embedding()` methods
+*   **openaiLogger.ts:** Automatic logging of all OpenAI calls to `openai_api_logs` table
+*   **Lazy initialization:** OpenAI client created on first use, API key validated
+*   **correlationId support:** For end-to-end tracing across features
+
+All features (enrichment, AutoPilot, knowledge-base) consume these centralized services.
+
+## External Sources & Knowledge Base Architecture
+
+**Concept:**
+*   **External Sources** (`server/features/external-sources/`): Replicas of external data (e.g., Zendesk articles) synced manually
+*   **Knowledge Base** (internal): Generated knowledge from external sources and internal content
+
+**Zendesk Articles** (`server/features/external-sources/zendesk/`):
+*   `zendesk_articles` table: Raw data from Zendesk Help Center
+*   `zendesk_article_embeddings` table: Separate table for embeddings with:
+    - `article_id` (FK to zendesk_articles)
+    - `content_hash` (MD5 hash for change detection)
+    - `embedding_vector` (pgvector vector(1536))
+    - `model_used`, `tokens_used`, `openai_log_id`
+*   HNSW index for accurate cosine similarity search
+*   On re-sync: compare `content_hash` to detect changed articles and regenerate embeddings
+
+**RAG (Retrieval Augmented Generation):**
+*   Semantic search using OpenAI embeddings (`text-embedding-3-small`)
+*   pgvector extension with HNSW index for accurate results
+*   `searchBySimilarity()` joins articles with embeddings table
+*   Endpoints:
+    - `/api/zendesk-articles/embeddings/generate` for batch processing
+    - `/api/zendesk-articles/embeddings/logs` for monitoring failures
+    - `/api/zendesk-articles/search/semantic` for semantic search
+*   `createZendeskKnowledgeBaseTool()` uses semantic search with fallback to full-text
+*   `embedding_generation_logs` table for monitoring success/failure rates
 
 ## External Dependencies
 
 *   **Zendesk Sunshine Conversations:** Webhook source.
-*   **PostgreSQL/Neon:** Database.
+*   **PostgreSQL/Neon:** Database with pgvector extension.
 *   **Replit Auth:** User authentication.
 *   **Passport.js:** Authentication sessions.
 *   **Express.js:** Backend framework.
@@ -68,3 +96,4 @@ The React frontend provides a real-time dashboard for events and conversations, 
 *   **Lucide React:** Icons.
 *   **date-fns:** Date utilities.
 *   **wouter:** React routing.
+*   **OpenAI API:** AI capabilities (chat, embeddings).

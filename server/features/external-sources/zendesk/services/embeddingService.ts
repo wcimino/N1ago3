@@ -1,11 +1,6 @@
-import OpenAI from "openai";
-import { db } from "../../../db.js";
-import { embeddingGenerationLogs } from "../../../../shared/schema.js";
-
-const openai = new OpenAI();
-
-const EMBEDDING_MODEL = "text-embedding-3-small";
-const MAX_TOKENS = 8191;
+import { embedding } from "../../../../../shared/services/openai/index.js";
+import { db } from "../../../../db.js";
+import { embeddingGenerationLogs } from "../../../../../shared/schema.js";
 
 export async function logEmbeddingGeneration(params: {
   articleId: number;
@@ -13,6 +8,7 @@ export async function logEmbeddingGeneration(params: {
   status: "success" | "error";
   errorMessage?: string;
   processingTimeMs?: number;
+  openaiLogId?: number;
 }): Promise<void> {
   try {
     await db.insert(embeddingGenerationLogs).values({
@@ -32,24 +28,21 @@ function stripHtmlTags(html: string | null): string {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-function truncateText(text: string, maxChars: number = 30000): string {
-  if (text.length <= maxChars) return text;
-  return text.substring(0, maxChars) + "...";
-}
-
-export async function generateEmbedding(text: string): Promise<number[]> {
-  const cleanText = truncateText(text.trim());
-  
-  if (!cleanText) {
-    throw new Error("Cannot generate embedding for empty text");
-  }
-
-  const response = await openai.embeddings.create({
-    model: EMBEDDING_MODEL,
-    input: cleanText,
+export async function generateEmbedding(text: string): Promise<{ embedding: number[]; logId: number }> {
+  const result = await embedding({
+    requestType: "embedding_generation",
+    input: text,
+    contextType: "zendesk_article",
   });
 
-  return response.data[0].embedding;
+  if (!result.success || !result.embedding) {
+    throw new Error(result.error || "Failed to generate embedding");
+  }
+
+  return {
+    embedding: result.embedding,
+    logId: result.logId,
+  };
 }
 
 export async function generateArticleEmbedding(article: {
@@ -57,7 +50,7 @@ export async function generateArticleEmbedding(article: {
   body: string | null;
   sectionName?: string | null;
   categoryName?: string | null;
-}): Promise<number[]> {
+}): Promise<{ embedding: number[]; logId: number }> {
   const parts: string[] = [];
   
   if (article.categoryName) {
@@ -141,8 +134,8 @@ export async function batchGenerateEmbeddings(
       batch.map(async (article) => {
         const startTime = Date.now();
         try {
-          const embedding = await generateArticleEmbedding(article);
-          const embeddingStr = embeddingToString(embedding);
+          const { embedding: embeddingVector, logId } = await generateArticleEmbedding(article);
+          const embeddingStr = embeddingToString(embeddingVector);
           await updateFn(article.id, embeddingStr);
           processed++;
           
@@ -151,6 +144,7 @@ export async function batchGenerateEmbeddings(
             zendeskId: article.zendeskId,
             status: "success",
             processingTimeMs: Date.now() - startTime,
+            openaiLogId: logId,
           });
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error);

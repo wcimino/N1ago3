@@ -1,7 +1,8 @@
-import { db } from "../../../db.js";
-import { zendeskArticles } from "../../../../shared/schema.js";
+import { db } from "../../../../db.js";
+import { zendeskArticles } from "../../../../../shared/schema.js";
 import { eq, sql, and, desc } from "drizzle-orm";
-import { generateArticleEmbedding, embeddingToString } from "./embeddingService.js";
+import { generateArticleEmbedding } from "./embeddingService.js";
+import { ZendeskArticlesStorage } from "../storage/zendeskArticlesStorage.js";
 
 const ZENDESK_SUBDOMAINS = ["movilepay", "centralajudaifp"];
 
@@ -313,18 +314,7 @@ export async function getLastSyncInfo(): Promise<{ lastSyncAt: Date | null; arti
 async function generateEmbeddingsForNewArticles(): Promise<void> {
   console.log("[ZendeskGuide] Starting background embedding generation for new articles...");
   
-  const articlesWithoutEmbedding = await db
-    .select({
-      id: zendeskArticles.id,
-      title: zendeskArticles.title,
-      body: zendeskArticles.body,
-      sectionName: zendeskArticles.sectionName,
-      categoryName: zendeskArticles.categoryName,
-    })
-    .from(zendeskArticles)
-    .where(sql`${zendeskArticles.embedding} IS NULL`)
-    .orderBy(desc(zendeskArticles.zendeskUpdatedAt))
-    .limit(50);
+  const articlesWithoutEmbedding = await ZendeskArticlesStorage.getArticlesWithoutEmbedding(50);
   
   if (articlesWithoutEmbedding.length === 0) {
     console.log("[ZendeskGuide] All articles already have embeddings");
@@ -338,20 +328,25 @@ async function generateEmbeddingsForNewArticles(): Promise<void> {
   
   for (const article of articlesWithoutEmbedding) {
     try {
-      const embedding = await generateArticleEmbedding({
+      const { embedding } = await generateArticleEmbedding({
         title: article.title,
         body: article.body,
         sectionName: article.sectionName,
         categoryName: article.categoryName,
       });
       
-      await db
-        .update(zendeskArticles)
-        .set({
-          embedding: embeddingToString(embedding),
-          embeddingUpdatedAt: new Date(),
-        })
-        .where(eq(zendeskArticles.id, article.id));
+      const contentHash = ZendeskArticlesStorage.generateContentHash({
+        title: article.title,
+        body: article.body,
+        sectionName: article.sectionName,
+        categoryName: article.categoryName,
+      });
+      
+      await ZendeskArticlesStorage.upsertEmbedding({
+        articleId: article.id,
+        contentHash,
+        embedding,
+      });
       
       processed++;
       

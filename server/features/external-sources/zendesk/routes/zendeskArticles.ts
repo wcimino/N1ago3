@@ -3,8 +3,8 @@ import { ZendeskGuideService } from "../services/zendeskGuideService.js";
 import { ZendeskArticlesStorage } from "../storage/zendeskArticlesStorage.js";
 import { ZendeskArticleStatisticsStorage } from "../storage/zendeskArticleStatisticsStorage.js";
 import { batchGenerateEmbeddings, generateEmbedding } from "../services/embeddingService.js";
-import { db } from "../../../db.js";
-import { embeddingGenerationLogs } from "../../../../shared/schema.js";
+import { db } from "../../../../db.js";
+import { embeddingGenerationLogs } from "../../../../../shared/schema.js";
 import { desc, sql, eq } from "drizzle-orm";
 
 const router = Router();
@@ -199,7 +199,7 @@ router.post("/search/semantic", async (req, res) => {
     
     console.log(`[ZendeskArticles] Semantic search for: "${query}"`);
     
-    const queryEmbedding = await generateEmbedding(query);
+    const { embedding: queryEmbedding } = await generateEmbedding(query);
     
     const results = await ZendeskArticlesStorage.searchBySimilarity(queryEmbedding, { limit });
     

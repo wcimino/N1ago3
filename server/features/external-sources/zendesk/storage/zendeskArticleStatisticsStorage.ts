@@ -1,5 +1,5 @@
-import { db } from "../../../db.js";
-import { zendeskArticlesStatistics, zendeskArticles, type InsertZendeskArticleStatistic } from "../../../../shared/schema.js";
+import { db } from "../../../../db.js";
+import { zendeskArticlesStatistics, zendeskArticles, type InsertZendeskArticleStatistic } from "../../../../../shared/schema.js";
 import { eq, sql, desc, and, gte, lte, type SQL } from "drizzle-orm";
 
 export interface StatisticsFilters {

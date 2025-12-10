@@ -463,6 +463,21 @@ export const zendeskArticles = pgTable("zendesk_articles", {
   helpCenterSubdomainIdx: index("idx_zendesk_articles_help_center_subdomain").on(table.helpCenterSubdomain),
 }));
 
+export const zendeskArticleEmbeddings = pgTable("zendesk_article_embeddings", {
+  id: serial("id").primaryKey(),
+  articleId: integer("article_id").notNull().references(() => zendeskArticles.id, { onDelete: "cascade" }),
+  contentHash: text("content_hash").notNull(),
+  embeddingVector: text("embedding_vector"),
+  modelUsed: text("model_used").notNull().default("text-embedding-3-small"),
+  tokensUsed: integer("tokens_used"),
+  openaiLogId: integer("openai_log_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  articleIdUnique: uniqueIndex("idx_zendesk_article_embeddings_article_id").on(table.articleId),
+  contentHashIdx: index("idx_zendesk_article_embeddings_content_hash").on(table.contentHash),
+}));
+
 // Types
 export type AuthUser = typeof authUsers.$inferSelect;
 export type UpsertAuthUser = typeof authUsers.$inferInsert;
@@ -531,6 +546,9 @@ export type LearningAttemptResult = "suggestion_created" | "insufficient_message
 
 export type ZendeskArticle = typeof zendeskArticles.$inferSelect;
 export type InsertZendeskArticle = Omit<typeof zendeskArticles.$inferInsert, "id" | "createdAt" | "updatedAt" | "syncedAt">;
+
+export type ZendeskArticleEmbedding = typeof zendeskArticleEmbeddings.$inferSelect;
+export type InsertZendeskArticleEmbedding = Omit<typeof zendeskArticleEmbeddings.$inferInsert, "id" | "createdAt" | "updatedAt">;
 
 // Knowledge Subjects - Assuntos vinculados a produtos
 export const knowledgeSubjects = pgTable("knowledge_subjects", {

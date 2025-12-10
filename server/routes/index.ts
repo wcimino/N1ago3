@@ -27,7 +27,7 @@ import knowledgeSubjectsRoutes from "../features/knowledge/routes/knowledgeSubje
 import knowledgeIntentsRoutes from "../features/knowledge/routes/knowledgeIntentsRoutes.js";
 
 import maintenanceRoutes from "../features/maintenance/routes/maintenance.js";
-import { zendeskArticlesRouter } from "../features/zendesk-articles/index.js";
+import { zendeskArticlesRouter } from "../features/external-sources/zendesk/index.js";
 import routingRulesRoutes from "../features/routing/routes/routing.js";
 import transferRoutes from "../features/routing/routes/transfer.js";
 import favoritesRoutes from "../features/favorites/routes/favorites.js";
