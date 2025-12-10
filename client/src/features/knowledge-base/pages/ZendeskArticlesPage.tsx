@@ -282,6 +282,11 @@ export function ZendeskArticlesPage() {
           )}
           <span className="text-gray-300">|</span>
           <span>{syncInfo?.articleCount ?? 0} artigos</span>
+          <span className="text-gray-300">|</span>
+          <span className="flex items-center gap-1">
+            <Sparkles className="w-3 h-3 text-purple-500" />
+            {embeddingProgress?.completed ?? 0} embeddings
+          </span>
         </div>
         
         <button
