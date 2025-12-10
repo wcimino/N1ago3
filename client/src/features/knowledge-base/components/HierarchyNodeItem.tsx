@@ -92,8 +92,9 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
   const statBadges = getStatBadges(stats, node.level);
   const useNestedStyle = isAssunto || isIntencao;
   
-  const mobileIndent = depth * 12;
-  const desktopIndent = depth * 20;
+  const baseIndent = isIntencao ? 20 : 0;
+  const mobileIndent = baseIndent + depth * 12;
+  const desktopIndent = baseIndent + depth * 20;
   
   return (
     <div className={(isProduct || isSubproduct) ? "mb-2" : ""}>
