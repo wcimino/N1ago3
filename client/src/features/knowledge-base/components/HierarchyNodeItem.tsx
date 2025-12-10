@@ -162,22 +162,36 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 </>
               )}
 
-              {!isProduct && !isSubproduct && stats.articleCount > 0 && (
+              {isAssunto && stats.articleCount > 0 && (
                 <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-emerald-600">
                   <FileText className="w-3 h-3" />
                   <span className="font-medium">{stats.articleCount}</span> {stats.articleCount === 1 ? "artigo" : "artigos"}
                 </span>
               )}
 
-              {stats.articleCount === 0 && (
+              {isIntencao && stats.articleCount > 0 && (
+                <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-emerald-600">
+                  <FileText className="w-3 h-3" />
+                  Com artigo
+                </span>
+              )}
+
+              {isAssunto && stats.articleCount === 0 && (
                 <span className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0 sm:hidden">
                   <AlertCircle className="w-3 h-3" />
                   <span>0</span>
                 </span>
               )}
 
-              {stats.articleCount === 0 && (
+              {isAssunto && stats.articleCount === 0 && (
                 <span className="hidden sm:flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
+                  <AlertCircle className="w-3 h-3" />
+                  Sem artigos
+                </span>
+              )}
+
+              {isIntencao && stats.articleCount === 0 && (
+                <span className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
                   <AlertCircle className="w-3 h-3" />
                   Sem artigos
                 </span>
