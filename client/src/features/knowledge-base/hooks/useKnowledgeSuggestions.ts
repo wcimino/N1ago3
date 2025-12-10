@@ -70,6 +70,8 @@ export function useKnowledgeSuggestions(status?: string) {
   const statsQuery = useQuery<SuggestionStats>({
     queryKey: ["knowledge-suggestions-stats"],
     queryFn: () => fetchApi<SuggestionStats>("/api/knowledge/suggestions/stats"),
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const approveMutation = useMutation({
