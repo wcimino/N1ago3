@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { MessageCircle, Activity, Package, AlertCircle, Heart, Sparkles, Clock } from "lucide-react";
+import { MessageCircle, Activity, Package, AlertCircle, Heart, Sparkles, Clock, FileText, Tags, Zap, BookOpen, Brain, Database } from "lucide-react";
 import { fetchApi } from "../../lib/queryClient";
 import { DonutChart, HourlyBarChart, StatsCard, StatsTableHeader, StatsRow } from "../components";
 import { useTimezone } from "../../contexts/TimezoneContext";
@@ -15,14 +15,14 @@ interface OpenAIStatsResponse {
   };
 }
 
-const REQUEST_TYPE_LABELS: Record<string, string> = {
-  'response': 'Sugestão de resposta',
-  'summary': 'Resumo',
-  'classification': 'Classificação',
-  'enrichment_agent': 'Enriquecimento',
-  'learning': 'Aprendizado',
-  'learning_agent': 'Agente de aprendizado',
-  'embedding_generation': 'Embeddings',
+const REQUEST_TYPE_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
+  'response': { label: 'Sugestão', icon: MessageCircle, color: 'text-blue-500' },
+  'summary': { label: 'Resumo', icon: FileText, color: 'text-emerald-500' },
+  'classification': { label: 'Classificação', icon: Tags, color: 'text-violet-500' },
+  'enrichment_agent': { label: 'Enriquecimento', icon: Zap, color: 'text-amber-500' },
+  'learning': { label: 'Aprendizado', icon: BookOpen, color: 'text-pink-500' },
+  'learning_agent': { label: 'Agente', icon: Brain, color: 'text-indigo-500' },
+  'embedding_generation': { label: 'Embeddings', icon: Database, color: 'text-gray-500' },
 };
 
 const emotionConfig: Record<number, { label: string; color: string; bgColor: string; emoji: string }> = {
@@ -178,6 +178,8 @@ function OpenAIStatsCard({ openaiStats }: { openaiStats: OpenAIStatsResponse | u
   if (!stats) {
     return <p className="text-sm text-gray-400 italic">Nenhum dado ainda</p>;
   }
+
+  const maxCost = stats.breakdown?.length > 0 ? Math.max(...stats.breakdown.map(b => b.cost)) : 0;
   
   return (
     <div className="flex flex-col items-center text-center">
@@ -195,19 +197,44 @@ function OpenAIStatsCard({ openaiStats }: { openaiStats: OpenAIStatsResponse | u
       </div>
       {stats.breakdown && stats.breakdown.length > 0 && (
         <div className="mt-4 pt-4 border-t border-gray-100 w-full">
-          <p className="text-xs text-gray-500 mb-2">Custo por tipo</p>
-          <div className="space-y-1.5">
-            {stats.breakdown.map((item) => (
-              <div key={item.request_type} className="flex justify-between items-center text-sm">
-                <span className="text-gray-600 truncate">
-                  {REQUEST_TYPE_LABELS[item.request_type] || item.request_type}
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400">{item.calls}x</span>
-                  <span className="font-medium text-gray-800">${item.cost.toFixed(2)}</span>
+          <p className="text-xs text-gray-500 mb-3 text-left">Custo por tipo</p>
+          <div className="space-y-2.5">
+            {stats.breakdown.map((item) => {
+              const config = REQUEST_TYPE_CONFIG[item.request_type] || { 
+                label: item.request_type, 
+                icon: Sparkles, 
+                color: 'text-gray-500' 
+              };
+              const Icon = config.icon;
+              const percentage = stats.estimated_cost > 0 
+                ? Math.round((item.cost / stats.estimated_cost) * 100) 
+                : 0;
+              const barWidth = maxCost > 0 ? (item.cost / maxCost) * 100 : 0;
+              
+              return (
+                <div key={item.request_type} className="text-left">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <Icon className={`w-3.5 h-3.5 ${config.color}`} />
+                      <span className="text-sm text-gray-700">{config.label}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400">{formatNumber(item.calls)}x</span>
+                      <span className="text-sm font-semibold text-gray-800">${item.cost.toFixed(2)}</span>
+                      <span className="text-xs text-gray-400 w-8 text-right">{percentage}%</span>
+                    </div>
+                  </div>
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        barWidth > 66 ? 'bg-violet-500' : barWidth > 33 ? 'bg-violet-400' : 'bg-violet-300'
+                      }`}
+                      style={{ width: `${barWidth}%` }}
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
