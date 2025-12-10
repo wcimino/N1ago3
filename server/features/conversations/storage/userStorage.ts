@@ -147,8 +147,17 @@ export const userStorage = {
       now_local AS (
         SELECT NOW() AT TIME ZONE (SELECT name FROM tz) AS ts
       ),
-      today_start AS (
-        SELECT date_trunc('day', (SELECT ts FROM now_local)) AS start_ts
+      current_hour_ts AS (
+        SELECT date_trunc('hour', (SELECT ts FROM now_local)) AS hour_ts
+      ),
+      hours_series AS (
+        SELECT 
+          generate_series(
+            (SELECT hour_ts FROM current_hour_ts) - INTERVAL '23 hours',
+            (SELECT hour_ts FROM current_hour_ts),
+            INTERVAL '1 hour'
+          ) AS hour_local,
+          generate_series(0, 23) AS hour_index
       ),
       hourly_data AS (
         SELECT 
@@ -156,35 +165,25 @@ export const userStorage = {
           COUNT(DISTINCT c.id) AS count
         FROM events_standard e
         INNER JOIN conversations c ON e.conversation_id = c.id
-        WHERE e.occurred_at AT TIME ZONE (SELECT name FROM tz) >= (SELECT start_ts FROM today_start)
-          AND e.occurred_at AT TIME ZONE (SELECT name FROM tz) < (SELECT start_ts FROM today_start) + INTERVAL '1 day'
+        WHERE e.occurred_at >= NOW() - INTERVAL '24 hours'
         GROUP BY 1
-      ),
-      hours_series AS (
-        SELECT generate_series(
-          (SELECT start_ts FROM today_start),
-          (SELECT start_ts FROM today_start) + INTERVAL '23 hours',
-          INTERVAL '1 hour'
-        ) AS hour_local
       )
       SELECT 
         hs.hour_local,
-        EXTRACT(HOUR FROM hs.hour_local)::int AS hour,
-        (hs.hour_local)::date AS date,
-        ((SELECT ts FROM now_local))::date AS today_date,
-        EXTRACT(HOUR FROM (SELECT ts FROM now_local))::int AS current_hour,
+        hs.hour_index,
+        EXTRACT(HOUR FROM hs.hour_local)::int AS hour_of_day,
+        (hs.hour_local = (SELECT hour_ts FROM current_hour_ts)) AS is_current_hour,
         COALESCE(hd.count, 0)::int AS count
       FROM hours_series hs
       LEFT JOIN hourly_data hd ON hs.hour_local = hd.hour_local
-      ORDER BY hs.hour_local
+      ORDER BY hs.hour_index
     `);
     
     return result.rows.map((row: any) => ({
       hourStart: row.hour_local,
-      hour: row.hour,
-      date: row.date,
-      todayDate: row.today_date,
-      currentHour: row.current_hour,
+      hourIndex: row.hour_index,
+      hourOfDay: row.hour_of_day,
+      isCurrentHour: row.is_current_hour,
       count: Number(row.count),
     }));
   },
