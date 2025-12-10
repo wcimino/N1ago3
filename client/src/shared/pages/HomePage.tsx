@@ -1,10 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { MessageCircle, Activity, Package, AlertCircle, Heart, Sparkles } from "lucide-react";
+import { MessageCircle, Activity, Package, AlertCircle, Heart, Sparkles, Clock } from "lucide-react";
 import { fetchApi } from "../../lib/queryClient";
-import { DonutChart, StatsCard, StatsTableHeader, StatsRow } from "../components";
+import { DonutChart, HourlyBarChart, StatsCard, StatsTableHeader, StatsRow } from "../components";
 import { useTimezone } from "../../contexts/TimezoneContext";
 import type { UsersStatsResponse, StatsResponse, ProductStatsResponse, EmotionStatsResponse } from "../../types";
+
+interface HourlyStatsResponse {
+  hourStart: string;
+  hour: number;
+  date: string;
+  count: number;
+}[]
 
 interface OpenAIStatsResponse {
   last_24h: { total_calls: number; total_tokens: number; estimated_cost: number };
