@@ -35,6 +35,13 @@ export function mapMessageEvents(payload: any, root: any, source: string): Stand
     const authorId = author.userId || author.appId;
     const authorName = isN1agoIntegration(author.appId) ? "N1ago" : author.displayName;
 
+    const hasActions = Array.isArray(content.actions) && content.actions.length > 0;
+    const contentPayload = content.type !== "text" 
+      ? content 
+      : hasActions 
+        ? { actions: content.actions } 
+        : null;
+
     events.push({
       eventType: "message",
       eventSubtype: content.type || "text",
@@ -46,7 +53,7 @@ export function mapMessageEvents(payload: any, root: any, source: string): Stand
       authorId,
       authorName,
       contentText: content.text,
-      contentPayload: content.type !== "text" ? content : null,
+      contentPayload,
       occurredAt: message.received ? new Date(message.received) : new Date(),
       channelType: "chat",
       metadata: message.metadata,

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ClipboardList, CheckCircle2 } from "lucide-react";
+import { ClipboardList, CheckCircle2, ExternalLink } from "lucide-react";
 import { getAuthorColor, isCustomerMessage, getMessageSender } from "../../../lib/messageUtils";
 import { useDateFormatters } from "../../hooks";
 import type { Message, ImagePayload } from "../../../types";
@@ -18,6 +18,17 @@ interface FormPayload {
 interface FormResponsePayload {
   textFallback?: string;
   fields?: FormField[];
+}
+
+interface MessageAction {
+  text: string;
+  uri?: string;
+  type: "link" | "reply" | "postback" | "webview" | string;
+  payload?: string;
+}
+
+interface ActionsPayload {
+  actions: MessageAction[];
 }
 
 interface MessageBubbleProps {
@@ -50,6 +61,47 @@ function isValidFormResponsePayload(payload: unknown): payload is FormResponsePa
   if (!payload || typeof payload !== "object") return false;
   const p = payload as Record<string, unknown>;
   return Array.isArray(p.fields) || typeof p.textFallback === "string";
+}
+
+function isValidActionsPayload(payload: unknown): payload is ActionsPayload {
+  if (!payload || typeof payload !== "object") return false;
+  const p = payload as Record<string, unknown>;
+  return Array.isArray(p.actions) && p.actions.length > 0;
+}
+
+function isValidActionUri(uri: string | undefined): boolean {
+  if (!uri) return false;
+  const allowedSchemes = ["https:", "http:", "mailto:", "tel:", "whatsapp:"];
+  try {
+    const url = new URL(uri);
+    return allowedSchemes.includes(url.protocol);
+  } catch {
+    return uri.startsWith("/");
+  }
+}
+
+function ActionsContent({ actions }: { actions: MessageAction[] }) {
+  return (
+    <div className="flex flex-wrap gap-2 mt-2">
+      {actions.map((action, idx) => {
+        const safeUri = isValidActionUri(action.uri) ? action.uri : undefined;
+        if (!safeUri) return null;
+        
+        return (
+          <a
+            key={idx}
+            href={safeUri}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+          >
+            <ExternalLink className="w-3 h-3" />
+            <span>{action.text}</span>
+          </a>
+        );
+      })}
+    </div>
+  );
 }
 
 function FormContent({ payload }: { payload: FormPayload }) {
@@ -155,10 +207,16 @@ export function MessageBubble({ message, onImageClick, currentHandlerName }: Mes
       }
     }
 
+    const parsed = safeParsePayload<ActionsPayload>(message.content_payload);
+    const hasActions = isValidActionsPayload(parsed);
+
     return (
-      <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">
-        {message.content_text || `[${message.content_type}]`}
-      </p>
+      <div>
+        <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">
+          {message.content_text || `[${message.content_type}]`}
+        </p>
+        {hasActions && <ActionsContent actions={parsed.actions} />}
+      </div>
     );
   };
 
