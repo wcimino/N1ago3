@@ -198,9 +198,9 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
           </div>
         </div>
 
-        {isExpanded && (isProduct || isSubproduct) && (
+        {isExpanded && (isProduct || isSubproduct) && (node.children.filter(c => c.level !== "subproduto").length > 0 || node.articles.length > 0) && (
           <div className="mt-3 pt-3 border-t border-gray-100">
-            {node.children.map((child) => (
+            {node.children.filter(c => c.level !== "subproduto").map((child) => (
               <HierarchyNodeItem
                 key={child.fullPath}
                 node={child}
@@ -219,6 +219,22 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 depth={0}
                 onEdit={onEdit}
                 onDelete={onDelete}
+              />
+            ))}
+          </div>
+        )}
+        {isExpanded && isProduct && node.children.filter(c => c.level === "subproduto").length > 0 && (
+          <div className="mt-3">
+            {node.children.filter(c => c.level === "subproduto").map((child) => (
+              <HierarchyNodeItem
+                key={child.fullPath}
+                node={child}
+                depth={0}
+                expandedPaths={expandedPaths}
+                onToggle={onToggle}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onAddArticle={onAddArticle}
               />
             ))}
           </div>
