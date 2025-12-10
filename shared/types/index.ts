@@ -7,3 +7,4 @@ export * from "./webhooks.js";
 export * from "./config.js";
 export * from "./products.js";
 export * from "./adapters.js";
+export * from "./knowledge.js";

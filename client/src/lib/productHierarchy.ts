@@ -105,3 +105,60 @@ export function countNodesInTree(node: ProductTreeNode): number {
   }
   return count;
 }
+
+export interface ProductNodeWithSubjects {
+  id: number;
+  name: string;
+  fullPath: string;
+  children: ProductNodeWithSubjects[];
+  subjects: Array<{ id: number; productCatalogId: number; name: string; synonyms: string[]; productName?: string | null }>;
+}
+
+export function buildProductTreeWithSubjects<
+  P extends { id: number; produto: string; subproduto: string | null; fullName: string },
+  S extends { id: number; productCatalogId: number; name: string; synonyms: string[]; productName?: string | null }
+>(products: P[], subjects: S[]): ProductNodeWithSubjects[] {
+  const rootNodes = new Map<string, ProductNodeWithSubjects>();
+  
+  const rootProducts = products.filter(p => !p.subproduto);
+  const subProducts = products.filter(p => p.subproduto);
+  
+  for (const p of rootProducts) {
+    rootNodes.set(p.produto, {
+      id: p.id,
+      name: p.produto,
+      fullPath: p.fullName,
+      children: [],
+      subjects: subjects.filter(s => s.productCatalogId === p.id),
+    });
+  }
+  
+  for (const p of subProducts) {
+    let parentNode = rootNodes.get(p.produto);
+    
+    if (!parentNode) {
+      parentNode = {
+        id: -1,
+        name: p.produto,
+        fullPath: p.produto,
+        children: [],
+        subjects: [],
+      };
+      rootNodes.set(p.produto, parentNode);
+    }
+    
+    parentNode.children.push({
+      id: p.id,
+      name: p.subproduto!,
+      fullPath: p.fullName,
+      children: [],
+      subjects: subjects.filter(s => s.productCatalogId === p.id),
+    });
+  }
+  
+  for (const node of rootNodes.values()) {
+    node.children.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  
+  return [...rootNodes.values()].sort((a, b) => a.name.localeCompare(b.name));
+}

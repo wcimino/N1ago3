@@ -1,83 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tags, ChevronRight, ChevronDown, Plus, Loader2, Pencil, Trash2, X, Check, Tag, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
-
-interface ProductCatalogItem {
-  id: number;
-  produto: string;
-  subproduto: string | null;
-  fullName: string;
-}
-
-interface KnowledgeSubject {
-  id: number;
-  productCatalogId: number;
-  name: string;
-  synonyms: string[];
-  productName?: string | null;
-}
-
-interface KnowledgeIntent {
-  id: number;
-  subjectId: number;
-  name: string;
-  synonyms: string[];
-  subjectName?: string | null;
-}
-
-interface ProductNode {
-  id: number;
-  name: string;
-  fullPath: string;
-  children: ProductNode[];
-  subjects: KnowledgeSubject[];
-}
-
-function buildProductTree(products: ProductCatalogItem[], subjects: KnowledgeSubject[]): ProductNode[] {
-  const rootNodes = new Map<string, ProductNode>();
-  
-  const rootProducts = products.filter(p => !p.subproduto);
-  const subProducts = products.filter(p => p.subproduto);
-  
-  for (const p of rootProducts) {
-    rootNodes.set(p.produto, {
-      id: p.id,
-      name: p.produto,
-      fullPath: p.fullName,
-      children: [],
-      subjects: subjects.filter(s => s.productCatalogId === p.id),
-    });
-  }
-  
-  for (const p of subProducts) {
-    let parentNode = rootNodes.get(p.produto);
-    
-    if (!parentNode) {
-      parentNode = {
-        id: -1,
-        name: p.produto,
-        fullPath: p.produto,
-        children: [],
-        subjects: [],
-      };
-      rootNodes.set(p.produto, parentNode);
-    }
-    
-    parentNode.children.push({
-      id: p.id,
-      name: p.subproduto!,
-      fullPath: p.fullName,
-      children: [],
-      subjects: subjects.filter(s => s.productCatalogId === p.id),
-    });
-  }
-  
-  for (const node of rootNodes.values()) {
-    node.children.sort((a, b) => a.name.localeCompare(b.name));
-  }
-  
-  return [...rootNodes.values()].sort((a, b) => a.name.localeCompare(b.name));
-}
+import type { ProductCatalogItem, KnowledgeSubject, KnowledgeIntent } from "../../../types";
+import { buildProductTreeWithSubjects, type ProductNodeWithSubjects } from "../../../lib/productHierarchy";
 
 type FormState = 
   | { type: "none" }
@@ -216,7 +141,7 @@ export function SubjectsIntentsPage() {
   });
 
   const isLoading = productsLoading || subjectsLoading || intentsLoading;
-  const productTree = buildProductTree(products, subjects);
+  const productTree = buildProductTreeWithSubjects(products, subjects);
 
   const allProductIds = useMemo(() => {
     const ids = new Set<number>();
@@ -256,7 +181,7 @@ export function SubjectsIntentsPage() {
     return count;
   }, [subjects, intents]);
 
-  const getNodeStats = (node: ProductNode) => {
+  const getNodeStats = (node: ProductNodeWithSubjects) => {
     let subproductCount = node.children.length;
     let subjectCount = node.subjects.length;
     let intentCount = 0;
@@ -465,7 +390,7 @@ export function SubjectsIntentsPage() {
     </div>
   );
 
-  const renderProductNode = (node: ProductNode, depth: number = 0): React.ReactNode => {
+  const renderProductNodeWithSubjects = (node: ProductNodeWithSubjects, depth: number = 0): React.ReactNode => {
     const isExpanded = expandedProducts.has(node.id);
     const hasChildren = node.children.length > 0 || node.subjects.length > 0;
     const paddingLeft = depth * 20;
@@ -628,7 +553,7 @@ export function SubjectsIntentsPage() {
               );
             })}
             
-            {node.children.map(child => renderProductNode(child, depth + 1))}
+            {node.children.map(child => renderProductNodeWithSubjects(child, depth + 1))}
           </>
         )}
       </div>
@@ -689,7 +614,7 @@ export function SubjectsIntentsPage() {
         </div>
       ) : (
         <div className="border rounded-lg p-3 flex-1 overflow-y-auto min-h-0">
-          {productTree.map(node => renderProductNode(node))}
+          {productTree.map(node => renderProductNodeWithSubjects(node))}
         </div>
       )}
 

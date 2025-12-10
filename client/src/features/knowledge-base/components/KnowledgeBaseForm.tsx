@@ -2,56 +2,10 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Save, X, FileText, Tag, MessageSquare, CheckCircle, StickyNote } from "lucide-react";
 import { ModernSelect } from "@/shared/components/ui";
+import type { KnowledgeSubject, KnowledgeIntent, ProductCatalogItem } from "../../../types";
+import type { KnowledgeBaseArticle, KnowledgeBaseFormData } from "../hooks/useKnowledgeBase";
 
-interface KnowledgeBaseArticle {
-  id: number;
-  name: string | null;
-  productStandard: string;
-  subproductStandard: string | null;
-  intent: string;
-  description: string;
-  resolution: string;
-  observations: string | null;
-  subjectId: number | null;
-  intentId: number | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface KnowledgeBaseFormData {
-  name: string | null;
-  productStandard: string;
-  subproductStandard: string | null;
-  intent: string;
-  description: string;
-  resolution: string;
-  observations: string | null;
-  subjectId: number | null;
-  intentId: number | null;
-}
-
-interface KnowledgeSubject {
-  id: number;
-  productCatalogId: number;
-  name: string;
-  synonyms: string[];
-  productName?: string | null;
-}
-
-interface KnowledgeIntent {
-  id: number;
-  subjectId: number;
-  name: string;
-  synonyms: string[];
-  subjectName?: string | null;
-}
-
-interface CatalogProduct {
-  id: number;
-  produto: string;
-  subproduto: string | null;
-  fullName: string;
-}
+type CatalogProduct = ProductCatalogItem;
 
 interface PrefilledArticleData {
   productStandard: string;

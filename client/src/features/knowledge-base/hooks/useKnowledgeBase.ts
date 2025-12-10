@@ -1,6 +1,9 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ProductLevelType } from "../../../lib/productHierarchy";
+import type { KnowledgeSubject, KnowledgeIntent, ProductCatalogItem } from "../../../types";
+
+export type CatalogProduct = ProductCatalogItem;
 
 export interface KnowledgeBaseArticle {
   id: number;
@@ -33,28 +36,7 @@ interface Filters {
   products: string[];
 }
 
-export interface CatalogProduct {
-  id: number;
-  produto: string;
-  subproduto: string | null;
-  fullName: string;
-}
-
-export interface KnowledgeSubject {
-  id: number;
-  productCatalogId: number;
-  name: string;
-  synonyms: string[];
-  productName?: string | null;
-}
-
-export interface KnowledgeIntent {
-  id: number;
-  subjectId: number;
-  name: string;
-  synonyms: string[];
-  subjectName?: string | null;
-}
+export type { KnowledgeSubject, KnowledgeIntent };
 
 export interface HierarchyNode {
   name: string;

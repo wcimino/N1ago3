@@ -11,3 +11,4 @@ export type {
   OpenaiApiConfigActions, 
   UseOpenaiApiConfigReturn 
 } from "./useOpenaiApiConfig";
+export { useCrudMutations } from "./useCrudMutations";
