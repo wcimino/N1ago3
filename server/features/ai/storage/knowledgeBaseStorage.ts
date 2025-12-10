@@ -185,6 +185,18 @@ export const knowledgeBaseStorage = {
   },
 
   async createArticle(data: InsertKnowledgeBaseArticle): Promise<KnowledgeBaseArticle> {
+    // Validação: apenas 1 artigo por intenção
+    if (data.intentId) {
+      const existingArticle = await db.select({ id: knowledgeBase.id })
+        .from(knowledgeBase)
+        .where(eq(knowledgeBase.intentId, data.intentId))
+        .limit(1);
+      
+      if (existingArticle.length > 0) {
+        throw new Error(`Já existe um artigo associado à intenção ${data.intentId}. Apenas 1 artigo por intenção é permitido.`);
+      }
+    }
+    
     const [article] = await db.insert(knowledgeBase)
       .values(data)
       .returning();
@@ -195,6 +207,21 @@ export const knowledgeBaseStorage = {
   },
 
   async updateArticle(id: number, data: Partial<InsertKnowledgeBaseArticle>): Promise<KnowledgeBaseArticle | null> {
+    // Validação: apenas 1 artigo por intenção (ao mudar intentId)
+    if (data.intentId !== undefined && data.intentId !== null) {
+      const existingArticle = await db.select({ id: knowledgeBase.id })
+        .from(knowledgeBase)
+        .where(and(
+          eq(knowledgeBase.intentId, data.intentId),
+          sql`${knowledgeBase.id} != ${id}`
+        ))
+        .limit(1);
+      
+      if (existingArticle.length > 0) {
+        throw new Error(`Já existe um artigo associado à intenção ${data.intentId}. Apenas 1 artigo por intenção é permitido.`);
+      }
+    }
+    
     const [article] = await db.update(knowledgeBase)
       .set({
         ...data,

@@ -241,7 +241,6 @@ async function findSimilarArticle(extraction: ExtractedKnowledge): Promise<{ art
 
   const results = await knowledgeBaseService.findRelatedArticles(
     extraction.productStandard || undefined,
-    undefined,
     descriptionKeywords,
     { limit: 1, minScore: 40 }
   );
