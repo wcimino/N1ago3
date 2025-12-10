@@ -367,8 +367,8 @@ export function KnowledgeBasePage() {
         title={confirmModal.type === "subject" ? "Excluir Assunto" : "Excluir Intenção"}
         message={
           confirmModal.type === "subject"
-            ? `Tem certeza que deseja excluir o assunto "${confirmModal.name}"?${confirmModal.hasArticles ? " Todas as intenções e artigos associados também serão excluídos." : ""}`
-            : `Tem certeza que deseja excluir a intenção "${confirmModal.name}"?${confirmModal.hasArticles ? " O artigo associado também será excluído." : ""}`
+            ? `Tem certeza que deseja excluir o assunto "${confirmModal.name}"?${confirmModal.hasArticles ? "\n\nTodas as intenções e artigos associados também serão excluídos." : ""}`
+            : `Tem certeza que deseja excluir a intenção:\n\n"${confirmModal.name}"${confirmModal.hasArticles ? "\n\nO artigo associado também será excluído." : ""}`
         }
         confirmLabel="Excluir"
         variant="danger"

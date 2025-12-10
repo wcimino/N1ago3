@@ -51,7 +51,7 @@ export function ConfirmModal({
             </Dialog.Close>
           </div>
 
-          <p className="text-gray-600 text-sm leading-relaxed mb-6">
+          <p className="text-gray-600 text-sm leading-relaxed mb-6 whitespace-pre-line">
             {message}
           </p>
 
