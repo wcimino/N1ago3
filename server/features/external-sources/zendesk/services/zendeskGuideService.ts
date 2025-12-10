@@ -1,7 +1,7 @@
 import { db } from "../../../../db.js";
 import { zendeskArticles } from "../../../../../shared/schema.js";
 import { eq, sql, and, desc } from "drizzle-orm";
-import { generateArticleEmbedding } from "./embeddingService.js";
+import { generateArticleEmbedding, getIsEmbeddingProcessing, setIsEmbeddingProcessing } from "./embeddingService.js";
 import { ZendeskArticlesStorage } from "../storage/zendeskArticlesStorage.js";
 
 const ZENDESK_SUBDOMAINS = ["movilepay", "centralajudaifp"];
@@ -285,11 +285,9 @@ export async function syncArticles(): Promise<SyncResult> {
   result.success = result.errors.length === 0 || result.articlesTotal > 0;
   console.log(`[ZendeskGuide] Total sync complete: ${result.articlesCreated} created, ${result.articlesUpdated} updated across ${ZENDESK_SUBDOMAINS.length} subdomains`);
   
-  if (result.articlesCreated > 0 || result.articlesUpdated > 0) {
-    generateEmbeddingsForNewArticles().catch((err) => {
-      console.error("[ZendeskGuide] Background embedding generation failed:", err);
-    });
-  }
+  generateEmbeddingsForNewOrOutdatedArticles().catch((err) => {
+    console.error("[ZendeskGuide] Background embedding generation failed:", err);
+  });
   
   return result;
 }
@@ -311,50 +309,79 @@ export async function getLastSyncInfo(): Promise<{ lastSyncAt: Date | null; arti
   };
 }
 
-async function generateEmbeddingsForNewArticles(): Promise<void> {
-  console.log("[ZendeskGuide] Starting background embedding generation for new articles...");
-  
-  const articlesWithoutEmbedding = await ZendeskArticlesStorage.getArticlesWithoutEmbedding(50);
-  
-  if (articlesWithoutEmbedding.length === 0) {
-    console.log("[ZendeskGuide] All articles already have embeddings");
+async function generateEmbeddingsForNewOrOutdatedArticles(): Promise<void> {
+  if (getIsEmbeddingProcessing()) {
+    console.log("[ZendeskGuide] Embedding generation already in progress, skipping...");
     return;
   }
   
-  console.log(`[ZendeskGuide] Generating embeddings for ${articlesWithoutEmbedding.length} articles...`);
+  setIsEmbeddingProcessing(true);
+  console.log("[ZendeskGuide] Starting background embedding generation for new/outdated articles...");
   
   let processed = 0;
   let errors = 0;
+  const failedArticleIds = new Set<number>();
+  const MAX_CONSECUTIVE_ERRORS = 5;
+  let consecutiveErrors = 0;
   
-  for (const article of articlesWithoutEmbedding) {
-    try {
-      const { embedding } = await generateArticleEmbedding({
-        title: article.title,
-        body: article.body,
-        sectionName: article.sectionName,
-        categoryName: article.categoryName,
-      });
+  try {
+    while (true) {
+      const pendingArticles = await ZendeskArticlesStorage.getArticlesPendingEmbedding(10);
+      const article = pendingArticles.find(a => !failedArticleIds.has(a.id));
       
-      const contentHash = ZendeskArticlesStorage.generateContentHash({
-        title: article.title,
-        body: article.body,
-        sectionName: article.sectionName,
-        categoryName: article.categoryName,
-      });
+      if (!article) {
+        if (failedArticleIds.size > 0) {
+          console.log(`[ZendeskGuide] Finished processing. ${failedArticleIds.size} articles failed and were skipped.`);
+        } else {
+          console.log("[ZendeskGuide] All articles have up-to-date embeddings");
+        }
+        break;
+      }
       
-      await ZendeskArticlesStorage.upsertEmbedding({
-        articleId: article.id,
-        contentHash,
-        embedding,
-      });
+      if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+        console.error(`[ZendeskGuide] Too many consecutive errors (${MAX_CONSECUTIVE_ERRORS}), stopping embedding generation`);
+        break;
+      }
       
-      processed++;
-      
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    } catch (err) {
-      console.error(`[ZendeskGuide] Failed to generate embedding for article ${article.id}:`, err);
-      errors++;
+      try {
+        const { embedding } = await generateArticleEmbedding({
+          title: article.title,
+          body: article.body,
+          sectionName: article.sectionName,
+          categoryName: article.categoryName,
+        });
+        
+        const contentHash = ZendeskArticlesStorage.generateContentHash({
+          title: article.title,
+          body: article.body,
+          sectionName: article.sectionName,
+          categoryName: article.categoryName,
+        });
+        
+        await ZendeskArticlesStorage.upsertEmbedding({
+          articleId: article.id,
+          contentHash,
+          embedding,
+        });
+        
+        processed++;
+        consecutiveErrors = 0;
+        
+        if (processed % 10 === 0) {
+          console.log(`[ZendeskGuide] Embedding progress: ${processed} articles processed`);
+        }
+        
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      } catch (err) {
+        console.error(`[ZendeskGuide] Failed to generate embedding for article ${article.id}:`, err);
+        failedArticleIds.add(article.id);
+        errors++;
+        consecutiveErrors++;
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
     }
+  } finally {
+    setIsEmbeddingProcessing(false);
   }
   
   console.log(`[ZendeskGuide] Background embedding generation complete: ${processed} processed, ${errors} errors`);
@@ -363,5 +390,5 @@ async function generateEmbeddingsForNewArticles(): Promise<void> {
 export const ZendeskGuideService = {
   syncArticles,
   getLastSyncInfo,
-  generateEmbeddingsForNewArticles,
+  generateEmbeddingsForNewOrOutdatedArticles,
 };

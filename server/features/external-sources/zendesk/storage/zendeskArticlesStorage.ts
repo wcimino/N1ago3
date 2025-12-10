@@ -256,25 +256,13 @@ export function generateContentHash(article: {
   return crypto.createHash('md5').update(content).digest('hex');
 }
 
-export async function getArticlesWithoutEmbedding(limit: number = 100): Promise<ZendeskArticle[]> {
+export async function getArticlesPendingEmbedding(limit: number = 1): Promise<ZendeskArticle[]> {
   const results = await db.execute(sql`
     SELECT a.* 
     FROM zendesk_articles a
     LEFT JOIN zendesk_article_embeddings e ON a.id = e.article_id
-    WHERE e.id IS NULL
-    ORDER BY a.zendesk_updated_at DESC
-    LIMIT ${limit}
-  `);
-  
-  return results.rows as unknown as ZendeskArticle[];
-}
-
-export async function getArticlesWithChangedContent(limit: number = 100): Promise<ZendeskArticle[]> {
-  const results = await db.execute(sql`
-    SELECT a.* 
-    FROM zendesk_articles a
-    INNER JOIN zendesk_article_embeddings e ON a.id = e.article_id
-    WHERE e.content_hash != md5(COALESCE(a.title, '') || COALESCE(a.body, '') || COALESCE(a.section_name, '') || COALESCE(a.category_name, ''))
+    WHERE e.id IS NULL 
+       OR e.content_hash != md5(COALESCE(a.title, '') || COALESCE(a.body, '') || COALESCE(a.section_name, '') || COALESCE(a.category_name, ''))
     ORDER BY a.zendesk_updated_at DESC
     LIMIT ${limit}
   `);
@@ -312,20 +300,6 @@ export async function upsertEmbedding(params: {
       openai_log_id = EXCLUDED.openai_log_id,
       updated_at = NOW()
   `);
-}
-
-export async function updateEmbedding(id: number, embedding: string): Promise<void> {
-  const article = await getArticleById(id);
-  if (!article) return;
-  
-  const contentHash = generateContentHash(article);
-  const embeddingArray = JSON.parse(embedding) as number[];
-  
-  await upsertEmbedding({
-    articleId: id,
-    contentHash,
-    embedding: embeddingArray,
-  });
 }
 
 export async function getArticlesWithEmbedding(): Promise<Array<ZendeskArticle & { embeddingData: ZendeskArticleEmbedding }>> {
@@ -425,9 +399,7 @@ export const ZendeskArticlesStorage = {
   getDistinctSections,
   getDistinctSubdomains,
   getArticleCount,
-  getArticlesWithoutEmbedding,
-  getArticlesWithChangedContent,
-  updateEmbedding,
+  getArticlesPendingEmbedding,
   upsertEmbedding,
   getArticlesWithEmbedding,
   getEmbeddingStats,

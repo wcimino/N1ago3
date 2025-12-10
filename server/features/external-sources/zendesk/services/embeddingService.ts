@@ -2,6 +2,16 @@ import { embedding } from "../../../../../shared/services/openai/index.js";
 import { db } from "../../../../db.js";
 import { embeddingGenerationLogs } from "../../../../../shared/schema.js";
 
+let isEmbeddingProcessing = false;
+
+export function getIsEmbeddingProcessing(): boolean {
+  return isEmbeddingProcessing;
+}
+
+export function setIsEmbeddingProcessing(value: boolean): void {
+  isEmbeddingProcessing = value;
+}
+
 export async function logEmbeddingGeneration(params: {
   articleId: number;
   zendeskId?: string;
@@ -103,73 +113,3 @@ export function cosineSimilarity(a: number[], b: number[]): number {
   return dotProduct / (normA * normB);
 }
 
-export interface BatchEmbeddingResult {
-  success: boolean;
-  processed: number;
-  errors: string[];
-}
-
-export async function batchGenerateEmbeddings(
-  articles: Array<{
-    id: number;
-    zendeskId?: string;
-    title: string;
-    body: string | null;
-    sectionName?: string | null;
-    categoryName?: string | null;
-  }>,
-  updateFn: (id: number, embedding: string) => Promise<void>,
-  options?: { batchSize?: number; delayMs?: number }
-): Promise<BatchEmbeddingResult> {
-  const batchSize = options?.batchSize || 10;
-  const delayMs = options?.delayMs || 100;
-  
-  let processed = 0;
-  const errors: string[] = [];
-
-  for (let i = 0; i < articles.length; i += batchSize) {
-    const batch = articles.slice(i, i + batchSize);
-    
-    await Promise.all(
-      batch.map(async (article) => {
-        const startTime = Date.now();
-        try {
-          const { embedding: embeddingVector, logId } = await generateArticleEmbedding(article);
-          const embeddingStr = embeddingToString(embeddingVector);
-          await updateFn(article.id, embeddingStr);
-          processed++;
-          
-          await logEmbeddingGeneration({
-            articleId: article.id,
-            zendeskId: article.zendeskId,
-            status: "success",
-            processingTimeMs: Date.now() - startTime,
-            openaiLogId: logId,
-          });
-        } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : String(error);
-          console.error(`Failed to generate embedding for article ${article.id}: ${errorMsg}`);
-          errors.push(`Article ${article.id}: ${errorMsg}`);
-          
-          await logEmbeddingGeneration({
-            articleId: article.id,
-            zendeskId: article.zendeskId,
-            status: "error",
-            errorMessage: errorMsg,
-            processingTimeMs: Date.now() - startTime,
-          });
-        }
-      })
-    );
-
-    if (i + batchSize < articles.length && delayMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-    }
-  }
-
-  return {
-    success: errors.length === 0,
-    processed,
-    errors,
-  };
-}

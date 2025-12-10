@@ -2,7 +2,7 @@ import { Router } from "express";
 import { ZendeskGuideService } from "../services/zendeskGuideService.js";
 import { ZendeskArticlesStorage } from "../storage/zendeskArticlesStorage.js";
 import { ZendeskArticleStatisticsStorage } from "../storage/zendeskArticleStatisticsStorage.js";
-import { batchGenerateEmbeddings, generateEmbedding } from "../services/embeddingService.js";
+import { generateEmbedding, getIsEmbeddingProcessing } from "../services/embeddingService.js";
 import { db } from "../../../../db.js";
 import { embeddingGenerationLogs } from "../../../../../shared/schema.js";
 import { desc, sql, eq } from "drizzle-orm";
@@ -150,7 +150,7 @@ router.get("/embeddings/progress", async (_req, res) => {
   try {
     const stats = await ZendeskArticlesStorage.getEmbeddingStats();
     const pending = stats.withoutEmbedding + stats.outdated;
-    const isProcessing = pending > 0;
+    const isProcessing = getIsEmbeddingProcessing();
     
     res.json({
       total: stats.total,
@@ -164,48 +164,6 @@ router.get("/embeddings/progress", async (_req, res) => {
   } catch (error) {
     console.error("[ZendeskArticles] Error fetching embedding progress:", error);
     res.status(500).json({ error: "Failed to fetch embedding progress" });
-  }
-});
-
-router.post("/embeddings/generate", async (req, res) => {
-  try {
-    const { limit = 100 } = req.body;
-    
-    console.log(`[ZendeskArticles] Starting embedding generation for up to ${limit} articles...`);
-    
-    const articles = await ZendeskArticlesStorage.getArticlesWithoutEmbedding(limit);
-    
-    if (articles.length === 0) {
-      res.json({
-        success: true,
-        message: "All articles already have embeddings",
-        processed: 0,
-        errors: [],
-      });
-      return;
-    }
-    
-    console.log(`[ZendeskArticles] Generating embeddings for ${articles.length} articles...`);
-    
-    const result = await batchGenerateEmbeddings(
-      articles,
-      async (id, embedding) => {
-        await ZendeskArticlesStorage.updateEmbedding(id, embedding);
-      },
-      { batchSize: 5, delayMs: 200 }
-    );
-    
-    console.log(`[ZendeskArticles] Embedding generation complete: ${result.processed} processed, ${result.errors.length} errors`);
-    
-    res.json({
-      success: result.success,
-      message: `Generated embeddings for ${result.processed} articles`,
-      processed: result.processed,
-      errors: result.errors,
-    });
-  } catch (error) {
-    console.error("[ZendeskArticles] Error generating embeddings:", error);
-    res.status(500).json({ error: "Failed to generate embeddings" });
   }
 });
 
