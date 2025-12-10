@@ -3,21 +3,8 @@ import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth
 import { storage } from "../../../storage.js";
 import { generateEnrichmentSuggestions, type EnrichmentConfig } from "../services/enrichment/index.js";
 import { knowledgeBaseStorage } from "../storage/knowledgeBaseStorage.js";
-import { ENRICHMENT_SYSTEM_PROMPT, ENRICHMENT_USER_PROMPT_TEMPLATE, ENRICHMENT_RESPONSE_FORMAT } from "../constants/enrichmentAgentPrompts.js";
 
 const router = Router();
-
-function getDefaultEnrichmentConfig(): EnrichmentConfig {
-  return {
-    enabled: false,
-    promptSystem: ENRICHMENT_SYSTEM_PROMPT,
-    promptTemplate: ENRICHMENT_USER_PROMPT_TEMPLATE,
-    responseFormat: ENRICHMENT_RESPONSE_FORMAT,
-    modelName: "gpt-4o-mini",
-    useKnowledgeBaseTool: false,
-    useZendeskKnowledgeBaseTool: true,
-  };
-}
 
 router.post("/api/ai/enrichment/generate", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
@@ -25,20 +12,33 @@ router.post("/api/ai/enrichment/generate", isAuthenticated, requireAuthorizedUse
 
     const dbConfig = await storage.getOpenaiApiConfig("enrichment");
     
-    // Use database config if exists, otherwise use default config
-    // This allows manual execution even before the config is saved to database
-    const config: EnrichmentConfig = dbConfig ? {
+    if (!dbConfig) {
+      return res.status(404).json({ 
+        error: "Enrichment configuration not found in database. Please configure the enrichment prompts first." 
+      });
+    }
+    
+    if (!dbConfig.promptTemplate || !dbConfig.promptTemplate.trim()) {
+      return res.status(400).json({ 
+        error: "Enrichment prompt template is not configured. Please set the prompt template in the enrichment configuration." 
+      });
+    }
+    
+    if (!dbConfig.promptSystem || !dbConfig.promptSystem.trim()) {
+      return res.status(400).json({ 
+        error: "Enrichment system prompt is not configured. Please set the system prompt in the enrichment configuration." 
+      });
+    }
+
+    const config: EnrichmentConfig = {
       enabled: dbConfig.enabled,
-      promptSystem: dbConfig.promptSystem || ENRICHMENT_SYSTEM_PROMPT,
-      promptTemplate: dbConfig.promptTemplate || ENRICHMENT_USER_PROMPT_TEMPLATE,
-      responseFormat: dbConfig.responseFormat || ENRICHMENT_RESPONSE_FORMAT,
+      promptSystem: dbConfig.promptSystem,
+      promptTemplate: dbConfig.promptTemplate,
+      responseFormat: dbConfig.responseFormat || null,
       modelName: dbConfig.modelName || "gpt-4o-mini",
       useKnowledgeBaseTool: dbConfig.useKnowledgeBaseTool || false,
       useZendeskKnowledgeBaseTool: dbConfig.useZendeskKnowledgeBaseTool ?? true,
-    } : getDefaultEnrichmentConfig();
-    
-    // Note: Manual execution works even if config.enabled is false
-    // The enabled flag controls automatic triggers only
+    };
 
     let intentsWithArticles;
 
@@ -85,7 +85,7 @@ router.post("/api/ai/enrichment/generate", isAuthenticated, requireAuthorizedUse
     res.json(result);
   } catch (error: any) {
     console.error("[Enrichment] Error generating suggestions:", error.message);
-    res.status(500).json({ error: "Failed to generate enrichment suggestions" });
+    res.status(500).json({ error: error.message || "Failed to generate enrichment suggestions" });
   }
 });
 

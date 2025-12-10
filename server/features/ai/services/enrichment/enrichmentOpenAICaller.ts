@@ -1,6 +1,5 @@
 import { callOpenAI, ToolDefinition } from "../openaiApiService.js";
 import { createZendeskKnowledgeBaseTool } from "../aiTools.js";
-import { ENRICHMENT_SYSTEM_PROMPT, ENRICHMENT_USER_PROMPT_TEMPLATE } from "../../constants/enrichmentAgentPrompts.js";
 import type { IntentWithArticle } from "../../storage/knowledgeBaseStorage.js";
 import type { EnrichmentConfig, OpenAIPayload } from "./types.js";
 
@@ -100,13 +99,13 @@ function buildSynonymsContext(intentSynonyms: string[], subjectSynonyms: string[
   return context;
 }
 
-function buildUserPromptForIntent(intentWithArticle: IntentWithArticle, config: EnrichmentConfig): string {
+function buildUserPromptForIntent(intentWithArticle: IntentWithArticle, promptTemplate: string): string {
   const { intent, article } = intentWithArticle;
   const hasArticle = !!article;
   const hasIntentSynonyms = intent.synonyms && intent.synonyms.length > 0;
   const hasSubjectSynonyms = intent.subjectSynonyms && intent.subjectSynonyms.length > 0;
   
-  let prompt = config.promptTemplate || ENRICHMENT_USER_PROMPT_TEMPLATE;
+  let prompt = promptTemplate;
   
   let intentSynonymsSubstituted = false;
   let subjectSynonymsSubstituted = false;
@@ -175,7 +174,16 @@ export async function callOpenAIForIntent(
   config: EnrichmentConfig
 ): Promise<OpenAIPayload> {
   const { intent } = intentWithArticle;
-  const userPrompt = buildUserPromptForIntent(intentWithArticle, config);
+  
+  if (!config.promptTemplate || !config.promptTemplate.trim()) {
+    throw new Error("Enrichment prompt template is required. Please configure it in the database.");
+  }
+  
+  if (!config.promptSystem || !config.promptSystem.trim()) {
+    throw new Error("Enrichment system prompt is required. Please configure it in the database.");
+  }
+
+  const userPrompt = buildUserPromptForIntent(intentWithArticle, config.promptTemplate);
 
   const tools: ToolDefinition[] = [
     buildCreateEnrichmentSuggestionTool(intentWithArticle)
@@ -196,7 +204,7 @@ export async function callOpenAIForIntent(
   const result = await callOpenAI({
     requestType: "enrichment_agent",
     modelName: config.modelName,
-    promptSystem: config.promptSystem || ENRICHMENT_SYSTEM_PROMPT,
+    promptSystem: config.promptSystem,
     promptUser: userPrompt,
     tools,
     maxTokens: 4096,

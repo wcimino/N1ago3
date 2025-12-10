@@ -41,74 +41,6 @@ export interface LearningResult {
   error?: string;
 }
 
-const PROMPT_SYSTEM = `Você é um especialista em criar artigos de base de conhecimento a partir de conversas de atendimento ao cliente.
-Responda sempre em JSON válido.`;
-
-const PROMPT_SYSTEM_WITH_CATALOG = `Você é um especialista em criar artigos de base de conhecimento a partir de conversas de atendimento ao cliente.
-
-## PROCESSO OBRIGATÓRIO:
-1. Analise a conversa e identifique o tema/problema
-2. Use a ferramenta search_product_catalog para encontrar a classificação correta de produto
-3. Retorne o artigo usando EXATAMENTE os valores do catálogo
-
-## REGRAS DE CLASSIFICAÇÃO:
-- Use APENAS valores que existem no catálogo de produtos
-- Se não encontrar correspondência exata, escolha o mais próximo
-- Se realmente não houver correspondência, use null
-
-Responda sempre em JSON válido.`;
-
-const DEFAULT_PROMPT = `## REGRAS IMPORTANTES:
-
-### 1. UM ASSUNTO POR ARTIGO
-- Cada artigo deve tratar de APENAS UM tema/problema específico
-- Se a conversa menciona múltiplos assuntos, escolha o PRINCIPAL que foi resolvido
-- NÃO misture temas diferentes no mesmo artigo
-
-### 2. SOLUÇÃO COMO INSTRUÇÃO FUTURA (CRÍTICO!)
-A solução é uma INSTRUÇÃO para futuros atendimentos. NÃO é um relato do que aconteceu na conversa.
-
-REGRA DE OURO: NUNCA use verbos no passado. SEMPRE use INFINITIVO ou IMPERATIVO.
-
-❌ PROIBIDO (narrativa do passado):
-- "Cliente foi orientado a..." → ERRADO
-- "Foi explicado ao cliente que..." → ERRADO
-
-✅ CORRETO (instrução para o futuro):
-- "Orientar o cliente a..." → CERTO
-- "Explicar ao cliente que..." → CERTO
-
-### 3. QUALIDADE:
-- isComplete = false: se a solução for genérica
-- isUncertain = true: se não conseguir extrair detalhes específicos
-- possibleError = true: se a orientação parecer incorreta
-- needsReview = true: se faltar informação importante
-
-Retorne APENAS um JSON válido:
-{
-  "productStandard": "produto principal",
-  "subproductStandard": "subproduto ou null",
-  "description": "descrição do problema",
-  "resolution": "PASSO A PASSO com instruções específicas",
-  "observations": "exceções ou detalhes adicionais",
-  "confidenceScore": 0-100,
-  "qualityFlags": {
-    "isComplete": true/false,
-    "isUncertain": true/false,
-    "possibleError": true/false,
-    "needsReview": true/false
-  }
-}
-
-CONVERSA:
-{{MENSAGENS}}
-
-RESUMO DA CONVERSA:
-{{RESUMO}}
-
-ARTIGOS RELACIONADOS NA BASE DE CONHECIMENTO:
-{{ARTIGOS_RELACIONADOS}}`;
-
 function buildProductCatalogTool(): ToolDefinition {
   return {
     name: "search_product_catalog",
@@ -152,16 +84,25 @@ function buildProductCatalogTool(): ToolDefinition {
 export async function extractKnowledge(
   payload: LearningPayload,
   promptTemplate: string,
+  promptSystem: string,
   modelName: string = "gpt-4o-mini",
   conversationId?: number,
   externalConversationId?: string,
   useProductCatalogTool: boolean = false
 ): Promise<LearningResult> {
+  if (!promptTemplate || !promptTemplate.trim()) {
+    throw new Error("Learning prompt template is required. Please configure it in the database.");
+  }
+  
+  if (!promptSystem || !promptSystem.trim()) {
+    throw new Error("Learning system prompt is required. Please configure it in the database.");
+  }
+
   const messagesContext = payload.messages
     .map(m => `[${m.authorType}${m.authorName ? ` - ${m.authorName}` : ''}]: ${m.contentText || '(sem texto)'}`)
     .join('\n');
 
-  const promptUser = (promptTemplate || DEFAULT_PROMPT)
+  const promptUser = promptTemplate
     .replace('{{MENSAGENS}}', messagesContext || 'Nenhuma mensagem.')
     .replace('{{RESUMO}}', payload.currentSummary || 'Nenhum resumo disponível.')
     .replace('{{ARTIGOS_RELACIONADOS}}', payload.relatedArticles || 'Nenhum artigo relacionado encontrado.');
@@ -179,8 +120,6 @@ export async function extractKnowledge(
     };
     tools.push(catalogTool);
   }
-
-  const promptSystem = useProductCatalogTool ? PROMPT_SYSTEM_WITH_CATALOG : PROMPT_SYSTEM;
 
   const result = await callOpenAI({
     requestType: "learning",
@@ -257,6 +196,7 @@ async function findSimilarArticle(extraction: ExtractedKnowledge): Promise<{ art
 export async function extractAndSaveKnowledge(
   payload: LearningPayload,
   promptTemplate: string,
+  promptSystem: string,
   modelName: string,
   conversationId: number,
   externalConversationId: string | null,
@@ -265,6 +205,7 @@ export async function extractAndSaveKnowledge(
   const result = await extractKnowledge(
     payload,
     promptTemplate,
+    promptSystem,
     modelName,
     conversationId,
     externalConversationId || undefined,

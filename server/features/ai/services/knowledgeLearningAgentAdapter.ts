@@ -4,7 +4,6 @@ import { callOpenAI, ToolDefinition } from "./openaiApiService.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 import { createZendeskKnowledgeBaseTool } from "./aiTools.js";
 import { replacePromptVariables, formatMessagesContext } from "./promptUtils.js";
-import { DEFAULT_AGENT_SYSTEM_PROMPT, AGENT_SYSTEM_PROMPT_WITH_CATALOG } from "../constants/learningAgentPrompts.js";
 
 export interface AgentLearningPayload {
   messages: Array<{
@@ -174,9 +173,8 @@ function buildCreateSuggestionTool(): ToolDefinition {
   };
 }
 
-function buildUserPrompt(payload: AgentLearningPayload, promptSystem: string | null, responseFormat: string | null, useProductCatalogTool: boolean): string {
+function buildUserPrompt(payload: AgentLearningPayload, promptSystem: string, responseFormat: string | null): string {
   const messagesContext = formatMessagesContext(payload.messages);
-  const defaultPrompt = useProductCatalogTool ? AGENT_SYSTEM_PROMPT_WITH_CATALOG : DEFAULT_AGENT_SYSTEM_PROMPT;
   
   const variables = {
     resumo: payload.currentSummary,
@@ -186,8 +184,7 @@ function buildUserPrompt(payload: AgentLearningPayload, promptSystem: string | n
     handler: payload.conversationHandler,
   };
   
-  const basePrompt = promptSystem || defaultPrompt;
-  const promptWithVars = replacePromptVariables(basePrompt, variables);
+  const promptWithVars = replacePromptVariables(promptSystem, variables);
   
   let fullPrompt = promptWithVars;
   if (responseFormat) {
@@ -208,7 +205,11 @@ export async function extractKnowledgeWithAgent(
   useProductCatalogTool: boolean = false,
   useZendeskKnowledgeBaseTool: boolean = false
 ): Promise<AgentLearningResult> {
-  const userPrompt = buildUserPrompt(payload, promptSystem, responseFormat, useProductCatalogTool);
+  if (!promptSystem || !promptSystem.trim()) {
+    throw new Error("Learning agent system prompt is required. Please configure it in the database.");
+  }
+
+  const userPrompt = buildUserPrompt(payload, promptSystem, responseFormat);
 
   const tools: ToolDefinition[] = [
     buildSearchKnowledgeBaseTool(),
