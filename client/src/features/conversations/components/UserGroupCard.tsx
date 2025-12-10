@@ -122,12 +122,12 @@ export function UserGroupCard({
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
             {group.last_product_standard && (
               <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {group.last_product_standard}
+                {group.last_product_standard}{group.last_subproduct_standard ? ` > ${group.last_subproduct_standard}` : ''}
               </span>
             )}
-            {group.last_intent && (
+            {(group.last_subject || group.last_intent) && (
               <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                {group.last_intent}
+                {group.last_subject ? `${group.last_subject}${group.last_intent ? ` > ${group.last_intent}` : ''}` : group.last_intent}
               </span>
             )}
             <div className="flex items-center gap-1">

@@ -35,6 +35,8 @@ router.get("/api/conversations/grouped", isAuthenticated, requireAuthorizedUser,
         first_activity: group.first_activity,
         conversations: group.conversations,
         last_product_standard: group.last_product_standard || null,
+        last_subproduct_standard: group.last_subproduct_standard || null,
+        last_subject: group.last_subject || null,
         last_intent: group.last_intent || null,
         last_customer_emotion_level: group.last_customer_emotion_level || null,
         user_info: user ? {
