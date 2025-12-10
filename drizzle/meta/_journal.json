@@ -8,6 +8,13 @@
       "when": 1765299861726,
       "tag": "0000_numerous_earthquake",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1765334174726,
+      "tag": "0001_lame_gamma_corps",
+      "breakpoints": true
     }
   ]
 }

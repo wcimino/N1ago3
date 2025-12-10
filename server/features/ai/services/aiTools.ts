@@ -4,7 +4,8 @@ import { ZendeskArticlesStorage } from "../../external-sources/zendesk/storage/z
 import { ZendeskArticleStatisticsStorage } from "../../external-sources/zendesk/storage/zendeskArticleStatisticsStorage.js";
 import { knowledgeSubjectsStorage } from "../../knowledge/storage/knowledgeSubjectsStorage.js";
 import { knowledgeIntentsStorage } from "../../knowledge/storage/knowledgeIntentsStorage.js";
-import { generateEmbedding } from "../../external-sources/zendesk/services/embeddingService.js";
+import { generateEmbedding as generateZendeskEmbedding } from "../../external-sources/zendesk/services/embeddingService.js";
+import { generateEmbedding as generateKBEmbedding } from "./knowledgeBaseEmbeddingService.js";
 import type { ToolDefinition } from "./openaiApiService.js";
 
 // Threshold mínimo de relevância para resultados de busca (5%)
@@ -70,24 +71,72 @@ export function createKnowledgeBaseTool(): ToolDefinition {
       }>;
       
       if (args.keywords && args.keywords.trim().length > 0) {
-        const searchResults = await knowledgeBaseStorage.searchArticlesWithRelevance(args.keywords, {
-          productStandard: args.product,
-          subjectId: subjectId,
-          intentId: intentId,
-          limit: 10 // Busca mais para filtrar pelo threshold
-        });
-        // Filtra artigos abaixo do threshold de relevância
-        articles = searchResults
-          .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
-          .slice(0, 5) // Limita a 5 após filtro
-          .map(a => ({
-            productStandard: a.productStandard,
-            subproductStandard: a.subproductStandard,
-            intent: a.intent,
-            description: a.description,
-            resolution: a.resolution,
-            relevanceScore: a.relevanceScore
-          }));
+        const hasEmbeddings = await knowledgeBaseStorage.hasEmbeddings();
+        
+        if (hasEmbeddings) {
+          try {
+            console.log("[KB Tool] Using semantic search with embeddings");
+            const { embedding: queryEmbedding } = await generateKBEmbedding(args.keywords);
+            const semanticResults = await knowledgeBaseStorage.searchBySimilarity(
+              queryEmbedding,
+              {
+                productStandard: args.product,
+                subjectId: subjectId,
+                intentId: intentId,
+                limit: 5
+              }
+            );
+            
+            articles = semanticResults.map(a => ({
+              productStandard: a.productStandard,
+              subproductStandard: a.subproductStandard,
+              intent: a.intent,
+              description: a.description,
+              resolution: a.resolution,
+              relevanceScore: a.similarity
+            }));
+            
+            console.log(`[KB Tool] Semantic search found ${articles.length} articles`);
+          } catch (error) {
+            console.error("[KB Tool] Semantic search failed, falling back to full-text:", error);
+            const searchResults = await knowledgeBaseStorage.searchArticlesWithRelevance(args.keywords, {
+              productStandard: args.product,
+              subjectId: subjectId,
+              intentId: intentId,
+              limit: 10
+            });
+            articles = searchResults
+              .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
+              .slice(0, 5)
+              .map(a => ({
+                productStandard: a.productStandard,
+                subproductStandard: a.subproductStandard,
+                intent: a.intent,
+                description: a.description,
+                resolution: a.resolution,
+                relevanceScore: a.relevanceScore
+              }));
+          }
+        } else {
+          console.log("[KB Tool] No embeddings available, using full-text search");
+          const searchResults = await knowledgeBaseStorage.searchArticlesWithRelevance(args.keywords, {
+            productStandard: args.product,
+            subjectId: subjectId,
+            intentId: intentId,
+            limit: 10
+          });
+          articles = searchResults
+            .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
+            .slice(0, 5)
+            .map(a => ({
+              productStandard: a.productStandard,
+              subproductStandard: a.subproductStandard,
+              intent: a.intent,
+              description: a.description,
+              resolution: a.resolution,
+              relevanceScore: a.relevanceScore
+            }));
+        }
       } else {
         const allArticles = await knowledgeBaseStorage.getAllArticles({
           productStandard: args.product,
@@ -228,7 +277,7 @@ export function createZendeskKnowledgeBaseTool(): ToolDefinition {
         
         if (stats.withEmbedding > 0) {
           try {
-            const { embedding: queryEmbedding } = await generateEmbedding(args.keywords);
+            const { embedding: queryEmbedding } = await generateZendeskEmbedding(args.keywords);
             const semanticResults = await ZendeskArticlesStorage.searchBySimilarity(
               queryEmbedding,
               { limit: 5 }

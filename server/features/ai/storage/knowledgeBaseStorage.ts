@@ -1,7 +1,8 @@
 import { db } from "../../../db.js";
-import { knowledgeBase, knowledgeIntents, knowledgeSubjects, ifoodProducts } from "../../../../shared/schema.js";
+import { knowledgeBase, knowledgeBaseEmbeddings, knowledgeIntents, knowledgeSubjects, ifoodProducts } from "../../../../shared/schema.js";
 import { eq, desc, asc, ilike, or, and, isNull, sql, type SQL } from "drizzle-orm";
-import type { KnowledgeBaseArticle, InsertKnowledgeBaseArticle, KnowledgeIntent } from "../../../../shared/schema.js";
+import type { KnowledgeBaseArticle, InsertKnowledgeBaseArticle, KnowledgeIntent, KnowledgeBaseEmbedding } from "../../../../shared/schema.js";
+import { generateContentHash, generateArticleEmbedding, embeddingToString } from "../services/knowledgeBaseEmbeddingService.js";
 
 export interface SearchArticleResult extends KnowledgeBaseArticle {
   relevanceScore: number;
@@ -210,6 +211,9 @@ export const knowledgeBaseStorage = {
     const [article] = await db.insert(knowledgeBase)
       .values(data)
       .returning();
+    
+    this.generateAndSaveEmbeddingAsync(article);
+    
     return article;
   },
 
@@ -221,7 +225,35 @@ export const knowledgeBaseStorage = {
       })
       .where(eq(knowledgeBase.id, id))
       .returning();
+    
+    if (article) {
+      this.generateAndSaveEmbeddingAsync(article);
+    }
+    
     return article || null;
+  },
+
+  generateAndSaveEmbeddingAsync(article: KnowledgeBaseArticle): void {
+    (async () => {
+      try {
+        console.log(`[KnowledgeBase Embedding] Generating embedding for article ${article.id}...`);
+        const { embedding, logId, tokensUsed } = await generateArticleEmbedding(article);
+        const contentHash = generateContentHash(article);
+        
+        await this.upsertEmbedding({
+          articleId: article.id,
+          contentHash,
+          embedding,
+          modelUsed: 'text-embedding-3-small',
+          tokensUsed,
+          openaiLogId: logId,
+        });
+        
+        console.log(`[KnowledgeBase Embedding] Embedding generated and saved for article ${article.id}`);
+      } catch (error) {
+        console.error(`[KnowledgeBase Embedding] Failed to generate embedding for article ${article.id}:`, error);
+      }
+    })();
   },
 
   async deleteArticle(id: number): Promise<boolean> {
@@ -340,4 +372,202 @@ export const knowledgeBaseStorage = {
 
     return results;
   },
+
+  async upsertEmbedding(params: {
+    articleId: number;
+    contentHash: string;
+    embedding: number[];
+    modelUsed?: string;
+    tokensUsed?: number | null;
+    openaiLogId?: number;
+  }): Promise<void> {
+    const embeddingString = `[${params.embedding.join(',')}]`;
+    
+    await db.execute(sql`
+      INSERT INTO knowledge_base_embeddings (article_id, content_hash, embedding_vector, model_used, tokens_used, openai_log_id, created_at, updated_at)
+      VALUES (
+        ${params.articleId},
+        ${params.contentHash},
+        ${embeddingString}::vector,
+        ${params.modelUsed || 'text-embedding-3-small'},
+        ${params.tokensUsed || null},
+        ${params.openaiLogId || null},
+        NOW(),
+        NOW()
+      )
+      ON CONFLICT (article_id) DO UPDATE SET
+        content_hash = EXCLUDED.content_hash,
+        embedding_vector = EXCLUDED.embedding_vector,
+        model_used = EXCLUDED.model_used,
+        tokens_used = EXCLUDED.tokens_used,
+        openai_log_id = EXCLUDED.openai_log_id,
+        updated_at = NOW()
+    `);
+  },
+
+  async getArticlesWithoutEmbedding(limit: number = 100): Promise<KnowledgeBaseArticle[]> {
+    const results = await db.execute(sql`
+      SELECT a.* 
+      FROM knowledge_base a
+      LEFT JOIN knowledge_base_embeddings e ON a.id = e.article_id
+      WHERE e.id IS NULL
+      ORDER BY a.updated_at DESC
+      LIMIT ${limit}
+    `);
+    
+    return results.rows as unknown as KnowledgeBaseArticle[];
+  },
+
+  async getArticlesWithChangedContent(limit: number = 100): Promise<KnowledgeBaseArticle[]> {
+    const results = await db.execute(sql`
+      SELECT a.* 
+      FROM knowledge_base a
+      INNER JOIN knowledge_base_embeddings e ON a.id = e.article_id
+      WHERE e.content_hash != md5(
+        COALESCE(a.product_standard, '') || 
+        COALESCE(a.subproduct_standard, '') || 
+        COALESCE(a.intent, '') || 
+        COALESCE(a.description, '') || 
+        COALESCE(a.resolution, '')
+      )
+      ORDER BY a.updated_at DESC
+      LIMIT ${limit}
+    `);
+    
+    return results.rows as unknown as KnowledgeBaseArticle[];
+  },
+
+  async getEmbeddingStats(): Promise<{
+    total: number;
+    withEmbedding: number;
+    withoutEmbedding: number;
+    outdated: number;
+  }> {
+    const [result] = await db.execute(sql`
+      SELECT 
+        (SELECT count(*)::int FROM knowledge_base) as total,
+        (SELECT count(*)::int FROM knowledge_base_embeddings) as with_embedding,
+        (SELECT count(*)::int FROM knowledge_base a LEFT JOIN knowledge_base_embeddings e ON a.id = e.article_id WHERE e.id IS NULL) as without_embedding,
+        (SELECT count(*)::int FROM knowledge_base a INNER JOIN knowledge_base_embeddings e ON a.id = e.article_id 
+         WHERE e.content_hash != md5(
+           COALESCE(a.product_standard, '') || 
+           COALESCE(a.subproduct_standard, '') || 
+           COALESCE(a.intent, '') || 
+           COALESCE(a.description, '') || 
+           COALESCE(a.resolution, '')
+         )) as outdated
+    `).then(r => r.rows);
+    
+    const stats = result as any;
+    return {
+      total: stats?.total ?? 0,
+      withEmbedding: stats?.with_embedding ?? 0,
+      withoutEmbedding: stats?.without_embedding ?? 0,
+      outdated: stats?.outdated ?? 0,
+    };
+  },
+
+  async getEmbeddingByArticleId(articleId: number): Promise<KnowledgeBaseEmbedding | null> {
+    const [embedding] = await db.select()
+      .from(knowledgeBaseEmbeddings)
+      .where(eq(knowledgeBaseEmbeddings.articleId, articleId));
+    return embedding || null;
+  },
+
+  async searchBySimilarity(
+    queryEmbedding: number[],
+    options: { 
+      productStandard?: string;
+      subjectId?: number;
+      intentId?: number;
+      limit?: number;
+    } = {}
+  ): Promise<SemanticSearchResult[]> {
+    const { limit = 5 } = options;
+    
+    const embeddingString = `[${queryEmbedding.join(',')}]`;
+    
+    let query = `
+      SELECT 
+        a.id,
+        a.name,
+        a.product_standard as "productStandard",
+        a.subproduct_standard as "subproductStandard",
+        a.category1,
+        a.category2,
+        a.subject_id as "subjectId",
+        a.intent_id as "intentId",
+        a.intent,
+        a.description,
+        a.resolution,
+        a.observations,
+        a.created_at as "createdAt",
+        a.updated_at as "updatedAt",
+        ROUND((1 - (e.embedding_vector::vector <=> '${embeddingString}'::vector)) * 100) as similarity
+      FROM knowledge_base a
+      INNER JOIN knowledge_base_embeddings e ON a.id = e.article_id
+      WHERE e.embedding_vector IS NOT NULL
+    `;
+    
+    const conditions: string[] = [];
+    
+    if (options.productStandard) {
+      conditions.push(`a.product_standard = '${options.productStandard.replace(/'/g, "''")}'`);
+    }
+    if (options.subjectId) {
+      conditions.push(`a.subject_id = ${options.subjectId}`);
+    }
+    if (options.intentId) {
+      conditions.push(`a.intent_id = ${options.intentId}`);
+    }
+    
+    if (conditions.length > 0) {
+      query += ` AND ${conditions.join(' AND ')}`;
+    }
+    
+    query += ` ORDER BY e.embedding_vector::vector <=> '${embeddingString}'::vector LIMIT ${limit}`;
+    
+    const results = await db.execute(sql.raw(query));
+    
+    return (results.rows as unknown as SemanticSearchResult[]).map(row => ({
+      id: row.id,
+      name: row.name,
+      productStandard: row.productStandard,
+      subproductStandard: row.subproductStandard,
+      category1: row.category1,
+      category2: row.category2,
+      subjectId: row.subjectId,
+      intentId: row.intentId,
+      intent: row.intent,
+      description: row.description,
+      resolution: row.resolution,
+      observations: row.observations,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      similarity: Number(row.similarity),
+    }));
+  },
+
+  async hasEmbeddings(): Promise<boolean> {
+    const stats = await this.getEmbeddingStats();
+    return stats.withEmbedding > 0;
+  },
 };
+
+export interface SemanticSearchResult {
+  id: number;
+  name: string | null;
+  productStandard: string;
+  subproductStandard: string | null;
+  category1: string | null;
+  category2: string | null;
+  subjectId: number | null;
+  intentId: number | null;
+  intent: string;
+  description: string;
+  resolution: string;
+  observations: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  similarity: number;
+}

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { knowledgeBaseStorage } from "../../../storage/index.js";
 import { knowledgeBaseService } from "../services/knowledgeBaseService.js";
+import { batchGenerateEmbeddings, generateArticleEmbedding, generateContentHash } from "../services/knowledgeBaseEmbeddingService.js";
 import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
 import type { InsertKnowledgeBaseArticle } from "../../../../shared/schema.js";
 
@@ -195,6 +196,109 @@ router.get("/api/knowledge/search/keywords", isAuthenticated, requireAuthorizedU
   } catch (error) {
     console.error("Error searching by keywords:", error);
     res.status(500).json({ error: "Failed to search by keywords" });
+  }
+});
+
+router.get("/api/knowledge/embeddings/stats", async (req, res) => {
+  try {
+    const stats = await knowledgeBaseStorage.getEmbeddingStats();
+    res.json(stats);
+  } catch (error) {
+    console.error("Error fetching embedding stats:", error);
+    res.status(500).json({ error: "Failed to fetch embedding stats" });
+  }
+});
+
+router.post("/api/knowledge/embeddings/generate", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+  try {
+    const { limit = 50, includeOutdated = true } = req.body;
+    
+    const articlesWithoutEmbedding = await knowledgeBaseStorage.getArticlesWithoutEmbedding(limit);
+    
+    let articlesToProcess = [...articlesWithoutEmbedding];
+    
+    if (includeOutdated) {
+      const outdatedArticles = await knowledgeBaseStorage.getArticlesWithChangedContent(limit);
+      const existingIds = new Set(articlesToProcess.map(a => a.id));
+      for (const article of outdatedArticles) {
+        if (!existingIds.has(article.id)) {
+          articlesToProcess.push(article);
+        }
+      }
+    }
+    
+    articlesToProcess = articlesToProcess.slice(0, limit);
+    
+    if (articlesToProcess.length === 0) {
+      return res.json({
+        message: "No articles need embedding generation",
+        processed: 0,
+        total: 0,
+      });
+    }
+    
+    const result = await batchGenerateEmbeddings(
+      articlesToProcess,
+      async (articleId, embeddingStr, contentHash, logId, tokensUsed) => {
+        const embeddingArray = JSON.parse(embeddingStr) as number[];
+        await knowledgeBaseStorage.upsertEmbedding({
+          articleId,
+          contentHash,
+          embedding: embeddingArray,
+          modelUsed: 'text-embedding-3-small',
+          tokensUsed,
+          openaiLogId: logId,
+        });
+      },
+      { batchSize: 5, delayMs: 200 }
+    );
+    
+    res.json({
+      message: result.success 
+        ? `Successfully generated embeddings for ${result.processed} articles` 
+        : `Processed ${result.processed} articles with ${result.errors.length} errors`,
+      processed: result.processed,
+      total: articlesToProcess.length,
+      errors: result.errors.slice(0, 10),
+    });
+  } catch (error) {
+    console.error("Error generating embeddings:", error);
+    res.status(500).json({ error: "Failed to generate embeddings" });
+  }
+});
+
+router.post("/api/knowledge/embeddings/regenerate/:id", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Invalid ID" });
+    }
+    
+    const article = await knowledgeBaseStorage.getArticleById(id);
+    if (!article) {
+      return res.status(404).json({ error: "Article not found" });
+    }
+    
+    const { embedding, logId, tokensUsed } = await generateArticleEmbedding(article);
+    const contentHash = generateContentHash(article);
+    
+    await knowledgeBaseStorage.upsertEmbedding({
+      articleId: article.id,
+      contentHash,
+      embedding,
+      modelUsed: 'text-embedding-3-small',
+      tokensUsed,
+      openaiLogId: logId,
+    });
+    
+    res.json({
+      message: `Successfully regenerated embedding for article ${id}`,
+      articleId: id,
+      tokensUsed,
+    });
+  } catch (error) {
+    console.error("Error regenerating embedding:", error);
+    res.status(500).json({ error: "Failed to regenerate embedding" });
   }
 });
 

@@ -354,6 +354,21 @@ export const knowledgeBase = pgTable("knowledge_base", {
   intentIdIdx: index("idx_knowledge_base_intent_id").on(table.intentId),
 }));
 
+export const knowledgeBaseEmbeddings = pgTable("knowledge_base_embeddings", {
+  id: serial("id").primaryKey(),
+  articleId: integer("article_id").notNull().references(() => knowledgeBase.id, { onDelete: "cascade" }),
+  contentHash: text("content_hash").notNull(),
+  embeddingVector: text("embedding_vector"),
+  modelUsed: text("model_used").notNull().default("text-embedding-3-small"),
+  tokensUsed: integer("tokens_used"),
+  openaiLogId: integer("openai_log_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  articleIdUnique: uniqueIndex("idx_knowledge_base_embeddings_article_id").on(table.articleId),
+  contentHashIdx: index("idx_knowledge_base_embeddings_content_hash").on(table.contentHash),
+}));
+
 export const ifoodProducts = pgTable("products_catalog", {
   id: serial("id").primaryKey(),
   produto: text("produto").notNull(),
@@ -529,6 +544,9 @@ export type InsertUserStandardHasOrganizationStandard = Omit<typeof userStandard
 
 export type KnowledgeBaseArticle = typeof knowledgeBase.$inferSelect;
 export type InsertKnowledgeBaseArticle = Omit<typeof knowledgeBase.$inferInsert, "id" | "createdAt" | "updatedAt">;
+
+export type KnowledgeBaseEmbedding = typeof knowledgeBaseEmbeddings.$inferSelect;
+export type InsertKnowledgeBaseEmbedding = Omit<typeof knowledgeBaseEmbeddings.$inferInsert, "id" | "createdAt" | "updatedAt">;
 
 export type KnowledgeSuggestion = typeof knowledgeSuggestions.$inferSelect;
 export type InsertKnowledgeSuggestion = Omit<typeof knowledgeSuggestions.$inferInsert, "id" | "createdAt" | "updatedAt">;
