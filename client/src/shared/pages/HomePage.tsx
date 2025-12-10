@@ -222,6 +222,12 @@ export function HomePage() {
     refetchInterval: 30000,
   });
 
+  const { data: hourlyStats, isLoading: hourlyLoading } = useQuery<{ hourStart: string; hour: number; date: string; count: number }[]>({
+    queryKey: ["hourly-stats", timezone],
+    queryFn: () => fetchApi<{ hourStart: string; hour: number; date: string; count: number }[]>(`/api/conversations/hourly-stats?timezone=${encodeURIComponent(timezone)}`),
+    refetchInterval: 60000,
+  });
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -276,6 +282,14 @@ export function HomePage() {
           badge="24h"
         >
           <OpenAIStatsCard openaiStats={openaiStats} />
+        </StatsCard>
+
+        <StatsCard
+          title="Atendimentos por Hora"
+          icon={<Clock className="w-4 h-4 text-cyan-600" />}
+          badge="24h"
+        >
+          <HourlyBarChart data={hourlyStats || []} isLoading={hourlyLoading} />
         </StatsCard>
       </div>
     </div>
