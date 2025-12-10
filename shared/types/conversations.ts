@@ -96,6 +96,8 @@ export interface ConversationSummary {
   generated_at: string | null;
   updated_at: string | null;
   product: string | null;
+  subproduct: string | null;
+  subject: string | null;
   intent: string | null;
   confidence: number | null;
   classified_at: string | null;
