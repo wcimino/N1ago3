@@ -144,6 +144,7 @@ export function AtendimentosPage() {
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <PageHeader
         title="Atendimentos"
+        icon={<MessageCircle className="w-5 h-5" />}
         primaryTabs={CONFIG_TABS}
         primaryActiveTab={getActiveConfigTab()}
         onPrimaryTabChange={handleConfigTabChange}
