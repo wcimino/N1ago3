@@ -218,16 +218,13 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <span className={`inline-flex px-2 py-0.5 text-xs rounded border whitespace-nowrap ${LEVEL_COLORS[node.level]?.bg || "bg-gray-50"} ${LEVEL_COLORS[node.level]?.text || "text-gray-700"} ${LEVEL_COLORS[node.level]?.border || "border-gray-200"}`}>
-              {LEVEL_LABELS[node.level] || node.level}
-            </span>
             {onAddSubject && (isProduct || isSubproduct) && node.productId && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onAddSubject(node.productId!);
                 }}
-                className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-opacity"
                 title="Adicionar assunto"
               >
                 <Plus className="w-4 h-4" />
@@ -239,7 +236,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                   e.stopPropagation();
                   onAddIntent(node.subjectId!);
                 }}
-                className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-opacity"
                 title="Adicionar intenção"
               >
                 <Plus className="w-4 h-4" />
@@ -251,12 +248,15 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                   e.stopPropagation();
                   onAddArticle(node.subjectId, node.intentId, node.fullPath);
                 }}
-                className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-opacity"
                 title="Adicionar artigo"
               >
                 <Plus className="w-4 h-4" />
               </button>
             )}
+            <span className={`inline-flex px-2 py-0.5 text-xs rounded border whitespace-nowrap ${LEVEL_COLORS[node.level]?.bg || "bg-gray-50"} ${LEVEL_COLORS[node.level]?.text || "text-gray-700"} ${LEVEL_COLORS[node.level]?.border || "border-gray-200"}`}>
+              {LEVEL_LABELS[node.level] || node.level}
+            </span>
           </div>
         </div>
 
