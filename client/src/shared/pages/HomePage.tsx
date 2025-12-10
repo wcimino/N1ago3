@@ -222,7 +222,7 @@ function OpenAIStatsCard({ openaiStats }: { openaiStats: OpenAIStatsResponse | u
               };
               const isFirst = index === 0;
               const isLast = index === displayItems.length - 1;
-              const showLabel = item.percentage >= 12;
+              const showLabel = item.percentage >= 18;
               
               return (
                 <div 
