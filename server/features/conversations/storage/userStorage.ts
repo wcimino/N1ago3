@@ -68,12 +68,12 @@ export const userStorage = {
   async getUsersStats() {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     
-    // Count unique users based on events/conversations (same source as products/emotions stats)
-    // This ensures consistency across all dashboard cards
+    // Count distinct conversations (atendimentos) that had activity in the last 24h
+    // This matches the same logic used in emotions/products stats for consistency
     const result = await db
       .select({
-        total: sql<number>`count(DISTINCT ${conversations.userId})::int`,
-        authenticated: sql<number>`count(DISTINCT ${conversations.userId}) FILTER (WHERE ${users.authenticated} = true)::int`,
+        total: sql<number>`count(DISTINCT ${conversations.id})::int`,
+        authenticated: sql<number>`count(DISTINCT ${conversations.id}) FILTER (WHERE ${users.authenticated} = true)::int`,
       })
       .from(eventsStandard)
       .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
