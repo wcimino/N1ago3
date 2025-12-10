@@ -2,7 +2,7 @@
 
 ## Overview
 
-N1ago is a system designed to manage and monitor customer interactions related to credit inquiries. It receives and processes webhooks from Zendesk Sunshine Conversations, stores all conversation data, and displays real-time events on a React dashboard. The project aims to enhance customer service efficiency, provide a comprehensive overview of interaction data, and serve as a platform for future AI-powered automation, including conversation summarization and product classification. The ultimate goal is to improve customer experience and leverage data for better insights in automated support.
+N1ago is a system for managing and monitoring customer credit inquiry interactions. It processes webhooks from Zendesk Sunshine Conversations, stores conversation data, and displays real-time events on a React dashboard. The project aims to improve customer service efficiency, provide comprehensive interaction data, and lays the groundwork for future AI-powered automation like conversation summarization and product classification to enhance customer experience and generate insights for automated support.
 
 ## User Preferences
 
@@ -10,151 +10,52 @@ I prefer clear and direct communication. When suggesting changes, please provide
 
 ## System Architecture
 
-The system utilizes a decoupled frontend and backend architecture. The frontend is built with React, TypeScript, Vite, Tailwind CSS, TanStack Query, and wouter. The backend is an Express.js server, using Drizzle ORM for PostgreSQL interactions and Replit Auth for secure user authentication.
+The system employs a decoupled frontend (React, TypeScript, Vite, Tailwind CSS, TanStack Query, wouter) and backend (Express.js, Drizzle ORM for PostgreSQL, Replit Auth). It runs on a `vm` deployment target to support continuous background workers.
 
 **Core Architectural Patterns:**
 
-*   **Standardized Event Architecture:** Ingests events from various sources, normalizing them into a consistent `StandardEvent` format. It includes dedicated webhook endpoints (`Webhook Isolado`), an `EventBus` for asynchronous communication, an `Event Processor` for data normalization via `Adapters`, and a `Polling Worker` for retry mechanisms.
-*   **Authentication System:** Leverages Replit Auth (Google Login) with an Access Control List (ACL) that restricts access to specific email domains and entries in an `authorized_users` table.
-*   **AI-Powered Features:** A unified architecture supports multiple AI capabilities (summarization, classification, response generation) using a shared `openai_api_config` table. Each AI feature follows a 3-layer structure (`openaiApiService.ts`, `*Adapter.ts`, `*Orchestrator.ts`) with configurable triggers and lazy OpenAI client initialization. All OpenAI calls are logged for auditing.
+*   **Standardized Event Architecture:** Ingests events from various sources, normalizing them into a `StandardEvent` format using dedicated webhook endpoints, an `EventBus`, an `Event Processor` with `Adapters`, and a `Polling Worker` for retries.
+*   **Authentication System:** Uses Replit Auth (Google Login) with an Access Control List (ACL) based on email domains and an `authorized_users` table.
+*   **AI-Powered Features:** Supports multiple AI capabilities (summarization, classification, response generation) via a unified architecture with a shared `openai_api_config` table, configurable triggers, and lazy OpenAI client initialization. All OpenAI calls are logged.
 
 **UI/UX Decisions:**
 
-The React frontend provides a real-time dashboard for events and conversations, administrative interfaces for user and webhook management, and utilizes a component-based design with Tailwind CSS for styling. Reusable UI components include badges, data tables, modals, and pagination.
+The React frontend provides a real-time dashboard for events and conversations, administrative interfaces, and uses a component-based design with Tailwind CSS for styling. Reusable components include badges, data tables, modals, and pagination.
 
 **Feature Specifications:**
 
-*   **Webhook Ingestion & Conversation Storage:** Receives, logs, processes, and stores all conversation data and events in PostgreSQL.
-*   **Real-time Dashboard:** Offers a live view of events, conversation metrics, and allows user/webhook management.
+*   **Webhook Ingestion & Conversation Storage:** Receives, logs, processes, and stores conversation data and events in PostgreSQL.
+*   **Real-time Dashboard:** Live view of events, metrics, and management of users/webhooks.
 *   **User Management:** Secure authentication and authorization with domain and user-list restrictions.
 *   **Extensibility:** Designed for easy integration of new communication channels.
-*   **AI Integrations:** Includes Conversation Summaries, Product Classification, API Logging, and Configurable Triggers for AI features.
+*   **AI Integrations:** Includes Conversation Summaries, Product Classification, API Logging, and Configurable Triggers.
+*   **Structured Conversation Summary:** Displays AI-generated summaries with specific fields (`client_request`, `agent_actions`, `current_status`, `important_info`) parsed from JSON responses.
+*   **Automatic Routing Rules:** Manages conversation routing to `n1ago`, `human`, or `bot` based on predefined rules in `routing_rules` table, using atomic slot consumption and Zendesk Switchboard API for control transfer.
+*   **AutoPilot - Automatic Response Sending:** Automatically sends suggested responses under specific conditions (conversation assigned to n1ago, last message from client, no newer messages, `in_response_to` matches).
 
 **System Design Choices:**
 
-*   **Database Schema:** Uses plural, `snake_case` table names; singular, `snake_case` for single-config tables; singular, `snake_case` foreign keys; and `idx_<table_name>_<field>` indices.
-*   **API Endpoints:** REST resources are plural, `kebab-case`; config endpoints are singular; specific actions use verbs in the path.
+*   **Database Schema:** Plural, `snake_case` table names; singular, `snake_case` for config tables; `snake_case` foreign keys; `idx_<table_name>_<field>` indices.
+*   **API Endpoints:** REST resources are plural, `kebab-case`; config endpoints are singular; specific actions use verbs.
 *   **File Structure:** Organized by feature for both frontend and backend.
-*   **Shared Types Architecture:** Centralized type definitions in `shared/types/` for consistency between frontend and backend.
-*   **Backend Feature Architecture:** Each backend feature module follows a consistent structure including `routes/`, `storage/`, and `services/`.
-
-**Recent Refactoring (December 2025):**
-
-*   **Shared Formatters:** Centralized CPF/CNPJ/date formatting functions in `client/src/lib/formatters.ts`.
-*   **Reusable Detail Components:** Created shared components for detail pages (`DetailPageHeader`, `InfoField`, `HistoryList`, `RelatedEntityList`) in `client/src/shared/components/detail/`.
-*   **HandlerBadge Component:** Reusable badge for bot/human/n1ago handler identification in `client/src/shared/components/badges/`.
-*   **AtendimentosPage Refactor:** Extracted `FilterBar` and `UserGroupCard` components to reduce file size.
-*   **Storage Modularization:** Split large storage files for better maintainability:
-    *   `conversationStorage.ts` → `conversationCrud.ts` + `conversationStats.ts`
-    *   `configStorage.ts` → `summaryStorage.ts` + `classificationStorage.ts` + `openaiLogsStorage.ts`
-*   **Products Catalog (December 2025):** 
-    *   Table `products_catalog` with hierarchical structure: Produto > Subproduto (opcional) > Categoria 1 (opcional) > Categoria 2 (opcional)
-    *   CRUD API endpoints at `/api/product-catalog` and `/api/product-catalog/fullnames`
-    *   Hierarchical tree interface for product registration with expandable nodes
-    *   Product Standardization page uses dropdown selecting only from Produto level (distinct/produtos)
-*   **Navigation Restructuring (December 2025):**
-    *   "Cadastro" (Usuários/Organizações) moved to Settings > Cadastro tab at `/settings/catalog/*`
-    *   "Exportações" moved to Settings > Manutenção tab at `/settings/maintenance/export`
-    *   Simplified main navigation: Home, Atendimentos, AI, Base de Conhecimento
-*   **Learning Attempts Tracking (December 2025):**
-    *   Table `learning_attempts` tracks every knowledge extraction attempt with results
-    *   Results: `suggestion_created`, `insufficient_messages`, `skipped_by_agent`, `processing_error`
-    *   API endpoints at `/api/learning-attempts` and `/api/learning-attempts/stats`
-    *   New "Processamento" tab in Knowledge Base page with stats and filtered list
-    *   Stats use SQL aggregation for scalability (COUNT with FILTER)
-*   **AI Tools Architecture (December 2025):**
-    *   Centralized tool definitions in `server/features/ai/services/aiTools.ts`
-    *   Tools: `search_knowledge_base`, `search_product_catalog`
-    *   `callOpenAI` accepts `toolFlags` parameter for automatic tool construction
-    *   Hybrid architecture: simple adapters use `toolFlags`, complex adapters (response, learning) use custom tools with tracking
-    *   Each config has `useKnowledgeBaseTool` and `useProductCatalogTool` flags
-*   **Code Refactoring - Architecture Improvements (December 2025):**
-    *   **Shared Product Hierarchy Utilities:** Created `client/src/lib/productHierarchy.ts` with reusable tree-building functions, type definitions, and constants (LEVEL_LABELS, LEVEL_COLORS)
-    *   **Generic TreeView Component:** Created `client/src/shared/components/ui/TreeView.tsx` with expandable tree nodes and `useTreeExpansion` hook
-    *   **ProductCatalogPage Modularization:** Reduced from 705 to 120 lines by extracting:
-        *   `useProductCatalog` hook for all CRUD logic
-        *   `ProductAddForm` and `ProductEditForm` components
-        *   `ProductTreeActions` component for node actions
-    *   **KnowledgeBasePage Modularization:** Reduced from 551 to 168 lines by extracting:
-        *   `useKnowledgeBase` hook for all queries, mutations, and state logic
-        *   `HierarchyNodeItem` component for tree node rendering
-    *   **ToolsPage Modularization:** Reduced from 411 to 33 lines by extracting:
-        *   `KnowledgeBaseSearchTool` component for knowledge base search
-        *   `ProductCatalogSearchTool` component for product catalog search
-    *   **AI Prompts Centralization (December 2025):**
-        *   Extracted prompts from `openaiConfig.ts` to `server/features/ai/constants/defaultPrompts.ts`
-        *   Extracted prompts from `knowledgeLearningAgentAdapter.ts` to `server/features/ai/constants/learningAgentPrompts.ts`
-        *   Reduced `openaiConfig.ts` from 260 to 163 lines
-        *   Reduced `knowledgeLearningAgentAdapter.ts` from 399 to 319 lines
-    *   **Dashboard Components (December 2025):**
-        *   Created reusable stats components in `client/src/shared/components/dashboard/`
-        *   Components: `StatsCard`, `StatsTableHeader`, `StatsTotalRow`, `StatsRow`
-        *   Uses static `colorScheme` prop mapped to Tailwind classes (avoids JIT compilation issues)
-        *   Reduced `HomePage.tsx` from 349 to 293 lines
-    *   **Tailwind JIT Best Practice:**
-        *   Replaced dynamic class interpolation (`text-${color}-500`) with static color mappings
-        *   All color-based components use `colorScheme` prop with predefined class objects
-*   **Structured Conversation Summary (December 2025):**
-    *   Added 4 structured columns to `conversations_summary`: `client_request`, `agent_actions`, `current_status`, `important_info`
-    *   Backend parses AI response as JSON and extracts structured fields via `parseStructuredSummary()`
-    *   Frontend displays summary in visual cards with color-coded sections (blue, green, amber, purple)
-    *   Falls back to text display for legacy summaries without structured data
-    *   Prompt must be updated in AI config to return JSON format with the 4 fields
-*   **Standardized AI Configuration (December 2025):**
-    *   All 4 AI agents (summary, classification, response, learning) use unified 2-field structure:
-        *   `promptSystem`: Agent Instructions with dynamic variable placeholders
-        *   `responseFormat`: Expected response format (JSON, text, tool usage)
-    *   Shared `promptUtils.ts` with `replacePromptVariables()` function for variable substitution
-    *   Available variables: `{{RESUMO}}`, `{{RESUMO_ATUAL}}`, `{{MENSAGENS}}`, `{{ULTIMAS_20_MENSAGENS}}`, `{{ULTIMA_MENSAGEM}}`, `{{HANDLER}}`, `{{CLASSIFICACAO}}`
-    *   Frontend `OpenaiConfigForm.tsx` shows simplified 2-field interface with variable documentation
-    *   All adapters follow consistent architecture: short system prompt + full user prompt with variables substituted
-*   **Automatic Routing Rules (December 2025):**
-    *   Table `routing_rules` with fields: `rule_type`, `target`, `allocate_count`, `allocated_count`, `is_active`
-    *   Targets: `n1ago`, `human` (Agent Workspace), `bot` (Answer Bot)
-    *   `routingOrchestrator.ts` processes routing for NEW conversations only (event: `zendesk:conversation:create`)
-    *   Atomic slot consumption via `tryConsumeRuleSlot()` prevents race conditions
-    *   When a rule is created (e.g., "allocate next 5 conversations to N1ago"), the system automatically requests control via Zendesk Switchboard API (`passControl`)
-    *   Rules auto-deactivate when allocation limit is reached
-*   **Webhook Race Condition Fix (December 2025):**
-    *   Added "processing" status to webhook logs to prevent concurrent event creation from immediate processing + polling worker
-    *   Added UNIQUE constraint on `(source, source_event_id)` in `events_standard` table as guardrail
-    *   Polling worker now skips webhooks with "processing" status and recovers stuck webhooks (>5 minutes)
-    *   Duplicate events cleanup tool at `/settings/maintenance/duplicates` with dry-run mode
-    *   **Enhanced idempotent event creation (December 2025):**
-        *   `saveStandardEvent` catches unique constraint violation (23505) and returns existing event with `isNew=false`
-        *   Dispatch always runs (even for duplicates) to handle crash-after-insert-before-dispatch scenarios
-        *   All downstream orchestrators are idempotent: summary, classification, response, learning, handoff, routing
-        *   `eventsCreatedCount` tracks only NEW events created (not duplicates)
-        *   Polling worker only reprocesses webhooks with `eventsCreatedCount=0` using `COALESCE` for NULL handling
-*   **AutoPilot - Automatic Response Sending (December 2025):**
-    *   New component at `server/features/autoPilot/services/autoPilotService.ts`
-    *   Added `status` field to `responses_suggested` table with values: `created`, `sent`, `expired`
-    *   AutoPilot is called after each suggestion is created in `responseAdapter.ts`
-    *   Conditions for sending:
-        1. Conversation is assigned to n1ago (verified by handler ID and name)
-        2. Last message is from the client (authorType === "user")
-        3. No newer messages exist after the suggestion was created
-        4. `in_response_to` matches the client's last message text (normalized)
-    *   Race condition prevention: atomic status update with conditional WHERE clause
-    *   On send failure: marks as `expired` to prevent infinite retries
-    *   Sends via `ZendeskApiService.sendMessage()` when all conditions are met
-
-## Deployment Configuration
-
-**Important:** This application uses `deploymentTarget = "vm"` instead of `autoscale`. This is required because the system has background workers (polling worker, event processor, AI orchestrators) that must run continuously. The `autoscale` mode only runs when requests are made, which would break these background processes.
+*   **Shared Types Architecture:** Centralized type definitions in `shared/types/`.
+*   **Backend Feature Architecture:** Each feature module includes `routes/`, `storage/`, and `services/`.
+*   **Idempotent Event Creation:** `saveStandardEvent` handles unique constraint violations by returning existing events, and all downstream orchestrators are idempotent to prevent duplicate processing.
+*   **Modular AI Tools and Prompts:** Centralized tool definitions and prompt variables for AI agents, using a standardized 2-field configuration (`promptSystem`, `responseFormat`) and `promptUtils.ts` for variable substitution.
+*   **Enrichment Agent Modular Architecture:** Refactored into a sequential pipeline (`enrichmentOpenAICaller`, `enrichmentRunLogger`, `enrichmentRunProcessor`, `enrichmentOrchestrator`) to ensure robust logging of AI enrichment attempts.
 
 ## External Dependencies
 
-*   **Zendesk Sunshine Conversations:** Primary source for incoming webhooks.
-*   **PostgreSQL/Neon:** Relational database for data storage.
-*   **Replit Auth:** Handles user authentication via Google Login.
-*   **Passport.js:** Manages authentication sessions.
-*   **Express.js:** Backend web framework.
-*   **Drizzle ORM:** TypeScript ORM for database interactions.
-*   **React:** Frontend UI library.
+*   **Zendesk Sunshine Conversations:** Webhook source.
+*   **PostgreSQL/Neon:** Database.
+*   **Replit Auth:** User authentication.
+*   **Passport.js:** Authentication sessions.
+*   **Express.js:** Backend framework.
+*   **Drizzle ORM:** TypeScript ORM.
+*   **React:** Frontend UI.
 *   **Vite:** Frontend build tool.
-*   **Tailwind CSS:** Utility-first CSS framework.
-*   **TanStack Query:** Data fetching and state management for React.
-*   **Lucide React:** Icon library.
-*   **date-fns:** JavaScript date utility library.
-*   **wouter:** Lightweight React routing library.
+*   **Tailwind CSS:** CSS framework.
+*   **TanStack Query:** React data fetching.
+*   **Lucide React:** Icons.
+*   **date-fns:** Date utilities.
+*   **wouter:** React routing.
