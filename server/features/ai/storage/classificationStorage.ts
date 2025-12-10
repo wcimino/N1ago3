@@ -51,19 +51,18 @@ export const classificationStorage = {
       since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     }
 
-    // Get total unique users in the period (without duplicating across categories)
-    const [{ totalUnique }] = await db
+    // Get total distinct conversations (atendimentos) that had activity in the period
+    const [{ totalConversations }] = await db
       .select({
-        totalUnique: sql<number>`count(DISTINCT ${conversations.userId})::int`,
+        totalConversations: sql<number>`count(DISTINCT ${conversations.id})::int`,
       })
       .from(eventsStandard)
       .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
       .where(gte(eventsStandard.occurredAt, since));
 
-    // Count distinct users (clients) that had at least one message in the period
-    // grouped by product (including conversations without product classification)
+    // Count distinct conversations (atendimentos) that had activity in the period grouped by product
     // Logic:
-    // - "Sem classificação" = no summary exists at all
+    // - "Sem classificação" = no summary exists at all OR summary exists but no product
     // - "Sem mapeamento" = summary exists with product but no productStandard
     // - Otherwise show the productStandard value
     const productCaseExpr = sql<string>`CASE 
@@ -76,18 +75,18 @@ export const classificationStorage = {
     const results = await db
       .select({
         product: productCaseExpr,
-        count: sql<number>`count(DISTINCT ${conversations.userId})::int`,
+        count: sql<number>`count(DISTINCT ${conversations.id})::int`,
       })
       .from(eventsStandard)
       .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
       .leftJoin(conversationsSummary, eq(conversations.id, conversationsSummary.conversationId))
       .where(gte(eventsStandard.occurredAt, since))
       .groupBy(productCaseExpr)
-      .orderBy(sql`count(DISTINCT ${conversations.userId}) desc`);
+      .orderBy(sql`count(DISTINCT ${conversations.id}) desc`);
 
     return { 
       items: results as { product: string; count: number }[], 
-      total: totalUnique || 0 
+      total: totalConversations || 0 
     };
   },
 
@@ -152,21 +151,20 @@ export const classificationStorage = {
       since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     }
 
-    // Get total unique users in the period (without duplicating across categories)
-    const [{ totalUnique }] = await db
+    // Get total distinct conversations (atendimentos) that had activity in the period
+    const [{ totalConversations }] = await db
       .select({
-        totalUnique: sql<number>`count(DISTINCT ${conversations.userId})::int`,
+        totalConversations: sql<number>`count(DISTINCT ${conversations.id})::int`,
       })
       .from(eventsStandard)
       .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
       .where(gte(eventsStandard.occurredAt, since));
 
-    // Count distinct users (clients) that had at least one message in the period
-    // grouped by emotion level (0 = without classification)
+    // Count distinct conversations (atendimentos) that had activity in the period grouped by emotion level (0 = without classification)
     const results = await db
       .select({
         emotionLevel: sql<number>`COALESCE(${conversationsSummary.customerEmotionLevel}, 0)`,
-        count: sql<number>`count(DISTINCT ${conversations.userId})::int`,
+        count: sql<number>`count(DISTINCT ${conversations.id})::int`,
       })
       .from(eventsStandard)
       .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
@@ -177,7 +175,7 @@ export const classificationStorage = {
 
     return { 
       items: results as { emotionLevel: number; count: number }[], 
-      total: totalUnique || 0 
+      total: totalConversations || 0 
     };
   },
 };
