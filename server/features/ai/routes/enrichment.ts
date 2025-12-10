@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
 import { storage } from "../../../storage.js";
-import { generateEnrichmentSuggestions, EnrichmentConfig } from "../services/enrichmentAgentAdapter.js";
+import { generateEnrichmentSuggestions, type EnrichmentConfig } from "../services/enrichment/index.js";
 import { knowledgeBaseStorage } from "../storage/knowledgeBaseStorage.js";
 import { ENRICHMENT_SYSTEM_PROMPT, ENRICHMENT_USER_PROMPT_TEMPLATE, ENRICHMENT_RESPONSE_FORMAT } from "../constants/enrichmentAgentPrompts.js";
 

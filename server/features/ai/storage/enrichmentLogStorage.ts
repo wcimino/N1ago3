@@ -107,4 +107,40 @@ export const enrichmentLogStorage = {
       .where(eq(knowledgeEnrichmentLog.triggerRunId, triggerRunId))
       .orderBy(desc(knowledgeEnrichmentLog.processedAt));
   },
+
+  async updateSuggestionId(logId: number, suggestionId: number): Promise<void> {
+    await db.update(knowledgeEnrichmentLog)
+      .set({ suggestionId })
+      .where(eq(knowledgeEnrichmentLog.id, logId));
+  },
+
+  async markError(logId: number, error: string): Promise<void> {
+    const [existing] = await db.select()
+      .from(knowledgeEnrichmentLog)
+      .where(eq(knowledgeEnrichmentLog.id, logId));
+    
+    if (!existing) return;
+    
+    const existingPayload = (existing.outcomePayload || {}) as Record<string, unknown>;
+    const updatedPayload = { 
+      ...existingPayload,
+      _meta: {
+        processingError: error, 
+        markedAsError: true,
+        errorTimestamp: new Date().toISOString()
+      }
+    };
+    
+    const updates: { outcomePayload: object; outcomeReason?: string } = { 
+      outcomePayload: updatedPayload
+    };
+    
+    if (!existing.outcomeReason) {
+      updates.outcomeReason = `Processing error: ${error}`;
+    }
+    
+    await db.update(knowledgeEnrichmentLog)
+      .set(updates)
+      .where(eq(knowledgeEnrichmentLog.id, logId));
+  },
 };
