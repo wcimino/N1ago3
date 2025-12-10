@@ -163,7 +163,7 @@ export function KnowledgeBasePage() {
             <>
               <FilterBar
                 filters={[
-                  { type: "search", value: searchTerm, onChange: setSearchTerm, placeholder: "Buscar...", width: "8rem" },
+                  { type: "search", value: searchTerm, onChange: setSearchTerm, placeholder: "Buscar..." },
                   { type: "select", value: selectedProduct, onChange: handleProductChange, placeholder: "Produto", options: filters?.products || [] },
                   { type: "select", value: selectedSubjectId?.toString() || "", onChange: (v) => handleSubjectChange(v ? parseInt(v) : null), placeholder: "Assunto", options: filteredSubjects.map(s => ({ value: s.id.toString(), label: s.name })), disabled: !selectedProduct || filteredSubjects.length === 0 },
                   { type: "select", value: selectedIntentId?.toString() || "", onChange: (v) => setSelectedIntentId(v ? parseInt(v) : null), placeholder: "Intenção", options: filteredIntents.map(i => ({ value: i.id.toString(), label: i.name })), disabled: !selectedSubjectId || filteredIntents.length === 0 },
