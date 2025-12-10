@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { MessageCircle, Activity, Package, AlertCircle, Heart, Sparkles, Clock, FileText, Tags, Zap, BookOpen, Brain, Database } from "lucide-react";
+import { MessageCircle, Activity, Package, AlertCircle, Heart, Sparkles, Clock } from "lucide-react";
 import { fetchApi } from "../../lib/queryClient";
 import { DonutChart, HourlyBarChart, StatsCard, StatsTableHeader, StatsRow } from "../components";
 import { useTimezone } from "../../contexts/TimezoneContext";
@@ -15,14 +15,14 @@ interface OpenAIStatsResponse {
   };
 }
 
-const REQUEST_TYPE_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  'response': { label: 'Sugestão', icon: MessageCircle, color: 'text-blue-500' },
-  'summary': { label: 'Resumo', icon: FileText, color: 'text-emerald-500' },
-  'classification': { label: 'Classificação', icon: Tags, color: 'text-violet-500' },
-  'enrichment_agent': { label: 'Enriquecimento', icon: Zap, color: 'text-amber-500' },
-  'learning': { label: 'Aprendizado', icon: BookOpen, color: 'text-pink-500' },
-  'learning_agent': { label: 'Agente', icon: Brain, color: 'text-indigo-500' },
-  'embedding_generation': { label: 'Embeddings', icon: Database, color: 'text-gray-500' },
+const REQUEST_TYPE_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
+  'response': { label: 'Sugestão', bg: 'bg-blue-500', text: 'text-blue-600' },
+  'summary': { label: 'Resumo', bg: 'bg-emerald-500', text: 'text-emerald-600' },
+  'classification': { label: 'Classificação', bg: 'bg-violet-500', text: 'text-violet-600' },
+  'enrichment_agent': { label: 'Enriquecimento', bg: 'bg-amber-500', text: 'text-amber-600' },
+  'learning': { label: 'Aprendizado', bg: 'bg-pink-500', text: 'text-pink-600' },
+  'learning_agent': { label: 'Agente', bg: 'bg-indigo-500', text: 'text-indigo-600' },
+  'embedding_generation': { label: 'Embeddings', bg: 'bg-gray-400', text: 'text-gray-600' },
 };
 
 const emotionConfig: Record<number, { label: string; color: string; bgColor: string; emoji: string }> = {
@@ -179,7 +179,12 @@ function OpenAIStatsCard({ openaiStats }: { openaiStats: OpenAIStatsResponse | u
     return <p className="text-sm text-gray-400 italic">Nenhum dado ainda</p>;
   }
 
-  const maxCost = stats.breakdown?.length > 0 ? Math.max(...stats.breakdown.map(b => b.cost)) : 0;
+  const breakdownWithPercent = (stats.breakdown || []).map(item => ({
+    ...item,
+    percentage: stats.estimated_cost > 0 
+      ? (item.cost / stats.estimated_cost) * 100 
+      : 0
+  }));
   
   return (
     <div className="flex flex-col items-center text-center">
@@ -195,43 +200,38 @@ function OpenAIStatsCard({ openaiStats }: { openaiStats: OpenAIStatsResponse | u
           <p className="text-lg font-semibold text-violet-600">{formatNumber(stats.total_tokens)}</p>
         </div>
       </div>
-      {stats.breakdown && stats.breakdown.length > 0 && (
+      {breakdownWithPercent.length > 0 && (
         <div className="mt-4 pt-4 border-t border-gray-100 w-full">
-          <p className="text-xs text-gray-500 mb-3 text-left">Custo por tipo</p>
-          <div className="space-y-2.5">
-            {stats.breakdown.map((item) => {
+          <div className="h-3 w-full rounded-full overflow-hidden flex">
+            {breakdownWithPercent.map((item) => {
               const config = REQUEST_TYPE_CONFIG[item.request_type] || { 
                 label: item.request_type, 
-                icon: Sparkles, 
-                color: 'text-gray-500' 
+                bg: 'bg-gray-400',
+                text: 'text-gray-600'
               };
-              const Icon = config.icon;
-              const percentage = stats.estimated_cost > 0 
-                ? Math.round((item.cost / stats.estimated_cost) * 100) 
-                : 0;
-              const barWidth = maxCost > 0 ? (item.cost / maxCost) * 100 : 0;
-              
               return (
-                <div key={item.request_type} className="text-left">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-1.5">
-                      <Icon className={`w-3.5 h-3.5 ${config.color}`} />
-                      <span className="text-sm text-gray-700">{config.label}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-400">{formatNumber(item.calls)}x</span>
-                      <span className="text-sm font-semibold text-gray-800">${item.cost.toFixed(2)}</span>
-                      <span className="text-xs text-gray-400 w-8 text-right">{percentage}%</span>
-                    </div>
-                  </div>
-                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-300 ${
-                        barWidth > 66 ? 'bg-violet-500' : barWidth > 33 ? 'bg-violet-400' : 'bg-violet-300'
-                      }`}
-                      style={{ width: `${barWidth}%` }}
-                    />
-                  </div>
+                <div 
+                  key={item.request_type}
+                  className={`h-full ${config.bg} first:rounded-l-full last:rounded-r-full`}
+                  style={{ width: `${item.percentage}%` }}
+                  title={`${config.label}: $${item.cost.toFixed(2)} (${Math.round(item.percentage)}%)`}
+                />
+              );
+            })}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 justify-center">
+            {breakdownWithPercent.map((item) => {
+              const config = REQUEST_TYPE_CONFIG[item.request_type] || { 
+                label: item.request_type, 
+                bg: 'bg-gray-400',
+                text: 'text-gray-600'
+              };
+              return (
+                <div key={item.request_type} className="flex items-center gap-1.5">
+                  <div className={`w-2.5 h-2.5 rounded-sm ${config.bg}`} />
+                  <span className={`text-xs ${config.text}`}>
+                    {config.label} <span className="text-gray-400">${item.cost.toFixed(2)}</span>
+                  </span>
                 </div>
               );
             })}
