@@ -141,7 +141,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
 
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-              <span className={`font-medium text-gray-900 break-words ${isProduct ? "text-base" : "text-sm"}`}>
+              <span className={`text-gray-900 break-words ${isProduct ? "text-base" : "text-sm"} ${!isIntencao ? "font-medium" : ""}`}>
                 {isSubproduct && parentName && (
                   <span className="text-gray-500">{parentName} &gt; </span>
                 )}
