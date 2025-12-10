@@ -254,6 +254,15 @@ export function HomePage() {
         </StatsCard>
 
         <StatsCard
+          title="Atendimentos por Hora"
+          icon={<Clock className="w-4 h-4 text-cyan-600" />}
+          badge="24h"
+          className="lg:col-span-2"
+        >
+          <HourlyBarChart data={hourlyStats || []} isLoading={hourlyLoading} />
+        </StatsCard>
+
+        <StatsCard
           title="Eventos"
           icon={<Activity className="w-4 h-4 text-purple-600" />}
           linkTo="/events"
@@ -275,15 +284,6 @@ export function HomePage() {
           badge="24h"
         >
           <OpenAIStatsCard openaiStats={openaiStats} />
-        </StatsCard>
-
-        <StatsCard
-          title="Atendimentos por Hora"
-          icon={<Clock className="w-4 h-4 text-cyan-600" />}
-          badge="24h"
-          className="lg:col-span-2"
-        >
-          <HourlyBarChart data={hourlyStats || []} isLoading={hourlyLoading} />
         </StatsCard>
       </div>
     </div>
