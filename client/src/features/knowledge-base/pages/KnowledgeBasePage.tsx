@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
-import { Plus, Search, BookOpen, X, Lightbulb, BarChart3, Cloud, Database, Tags, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
+import { Plus, BookOpen, X, Lightbulb, BarChart3, Cloud, Database, Tags, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
 import { KnowledgeBaseForm } from "../components/KnowledgeBaseForm";
 import { HierarchyNodeItem } from "../components/HierarchyNodeItem";
 import { SuggestionsPage } from "./SuggestionsPage";
 import { LearningAttemptsPage } from "./LearningAttemptsPage";
 import { ZendeskArticlesPage } from "./ZendeskArticlesPage";
 import { SubjectsIntentsPage } from "./SubjectsIntentsPage";
-import { SegmentedTabs } from "../../../shared/components/ui";
+import { SegmentedTabs, FilterBar } from "../../../shared/components/ui";
 import { useKnowledgeBase } from "../hooks/useKnowledgeBase";
 
 const tabs = [
@@ -118,6 +118,7 @@ export function KnowledgeBasePage() {
           tabs={baseTabs}
           activeTab={activeBaseTab}
           onChange={setActiveBaseTab}
+          iconOnlyMobile
         />
       </div>
 
@@ -132,6 +133,7 @@ export function KnowledgeBasePage() {
               tabs={tabs}
               activeTab={activeTab}
               onChange={setActiveTab}
+              iconOnlyMobile
             />
           </div>
 
@@ -170,58 +172,14 @@ export function KnowledgeBasePage() {
             </div>
           ) : (
             <>
-              <div className="px-4 py-2 border-b">
-                <div className="flex gap-2 items-center">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Buscar..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  <select
-                    value={selectedProduct}
-                    onChange={(e) => handleProductChange(e.target.value)}
-                    className="px-2 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-w-[140px]"
-                  >
-                    <option value="">Produto</option>
-                    {filters?.products.map((product) => (
-                      <option key={product} value={product}>
-                        {product}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={selectedSubjectId?.toString() || ""}
-                    onChange={(e) => handleSubjectChange(e.target.value ? parseInt(e.target.value) : null)}
-                    className="px-2 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-w-[140px]"
-                    disabled={!selectedProduct || filteredSubjects.length === 0}
-                  >
-                    <option value="">Assunto</option>
-                    {filteredSubjects.map((subject) => (
-                      <option key={subject.id} value={subject.id}>
-                        {subject.name}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={selectedIntentId?.toString() || ""}
-                    onChange={(e) => setSelectedIntentId(e.target.value ? parseInt(e.target.value) : null)}
-                    className="px-2 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-w-[140px]"
-                    disabled={!selectedSubjectId || filteredIntents.length === 0}
-                  >
-                    <option value="">Intenção</option>
-                    {filteredIntents.map((intent) => (
-                      <option key={intent.id} value={intent.id}>
-                        {intent.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              <FilterBar
+                filters={[
+                  { type: "search", value: searchTerm, onChange: setSearchTerm, placeholder: "Buscar...", width: "8rem" },
+                  { type: "select", value: selectedProduct, onChange: handleProductChange, placeholder: "Produto", options: filters?.products || [] },
+                  { type: "select", value: selectedSubjectId?.toString() || "", onChange: (v) => handleSubjectChange(v ? parseInt(v) : null), placeholder: "Assunto", options: filteredSubjects.map(s => ({ value: s.id.toString(), label: s.name })), disabled: !selectedProduct || filteredSubjects.length === 0 },
+                  { type: "select", value: selectedIntentId?.toString() || "", onChange: (v) => setSelectedIntentId(v ? parseInt(v) : null), placeholder: "Intenção", options: filteredIntents.map(i => ({ value: i.id.toString(), label: i.name })), disabled: !selectedSubjectId || filteredIntents.length === 0 },
+                ]}
+              />
 
               <div className="p-4 h-[calc(100vh-250px)] flex flex-col">
                 {isLoading ? (

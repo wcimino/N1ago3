@@ -151,6 +151,7 @@ export function AtendimentosPage() {
             tabs={CONFIG_TABS}
             activeTab={getActiveConfigTab()}
             onChange={handleConfigTabChange}
+            iconOnlyMobile
           />
         </div>
       </div>

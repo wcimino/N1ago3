@@ -61,6 +61,7 @@ export function AIPage() {
             tabs={utilityTabs}
             activeTab={isUtilityTab ? activeTab : ""}
             onChange={handleTabChange}
+            iconOnlyMobile
           />
         </div>
       </div>
@@ -70,6 +71,7 @@ export function AIPage() {
           tabs={agentTabs}
           activeTab={!isUtilityTab ? activeTab : ""}
           onChange={handleTabChange}
+          iconOnlyMobile
         />
       </div>
 

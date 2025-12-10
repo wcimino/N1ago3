@@ -17,6 +17,7 @@ export { ModernSelect } from "./ModernSelect";
 export { PageCard } from "./PageCard";
 export type { PageCardProps } from "./PageCard";
 export { Pagination } from "./Pagination";
+export { FilterBar } from "./FilterBar";
 export { SegmentedTabs } from "./SegmentedTabs";
 export { Select } from "./Select";
 export { ToggleSwitch } from "./ToggleSwitch";
