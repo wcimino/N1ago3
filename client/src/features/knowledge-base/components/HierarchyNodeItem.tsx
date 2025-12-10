@@ -92,7 +92,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
   const statBadges = getStatBadges(stats, node.level);
   const useNestedStyle = isAssunto || isIntencao;
   
-  const baseIndent = isIntencao ? 32 : 0;
+  const baseIndent = isIntencao ? 40 : 0;
   const mobileIndent = baseIndent + depth * 12;
   const desktopIndent = baseIndent + depth * 20;
   
