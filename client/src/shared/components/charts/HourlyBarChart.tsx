@@ -2,6 +2,8 @@ interface HourlyDataPoint {
   hourStart: string;
   hour: number;
   date: string;
+  todayDate: string;
+  currentHour: number;
   count: number;
 }
 
@@ -34,9 +36,8 @@ export function HourlyBarChart({ data, isLoading }: HourlyBarChartProps) {
   const maxCount = Math.max(...data.map(d => d.count), 1);
   const total = data.reduce((sum, d) => sum + d.count, 0);
   
-  const now = new Date();
-  const currentHour = now.getHours();
-  const todayDate = now.toISOString().split('T')[0];
+  const todayDate = data[0]?.todayDate;
+  const currentHour = data[0]?.currentHour;
 
   return (
     <div className="space-y-2">

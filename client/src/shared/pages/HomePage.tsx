@@ -6,13 +6,6 @@ import { DonutChart, HourlyBarChart, StatsCard, StatsTableHeader, StatsRow } fro
 import { useTimezone } from "../../contexts/TimezoneContext";
 import type { UsersStatsResponse, StatsResponse, ProductStatsResponse, EmotionStatsResponse } from "../../types";
 
-interface HourlyStatsResponse {
-  hourStart: string;
-  hour: number;
-  date: string;
-  count: number;
-}[]
-
 interface OpenAIStatsResponse {
   last_24h: { total_calls: number; total_tokens: number; estimated_cost: number };
 }
@@ -222,9 +215,9 @@ export function HomePage() {
     refetchInterval: 30000,
   });
 
-  const { data: hourlyStats, isLoading: hourlyLoading } = useQuery<{ hourStart: string; hour: number; date: string; count: number }[]>({
+  const { data: hourlyStats, isLoading: hourlyLoading } = useQuery<{ hourStart: string; hour: number; date: string; todayDate: string; currentHour: number; count: number }[]>({
     queryKey: ["hourly-stats", timezone],
-    queryFn: () => fetchApi<{ hourStart: string; hour: number; date: string; count: number }[]>(`/api/conversations/hourly-stats?timezone=${encodeURIComponent(timezone)}`),
+    queryFn: () => fetchApi<{ hourStart: string; hour: number; date: string; todayDate: string; currentHour: number; count: number }[]>(`/api/conversations/hourly-stats?timezone=${encodeURIComponent(timezone)}`),
     refetchInterval: 60000,
   });
 
