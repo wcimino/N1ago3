@@ -42,7 +42,12 @@ The React frontend provides a real-time dashboard for events and conversations, 
 *   **Shared Types Architecture:** Centralized type definitions in `shared/types/`.
 *   **Backend Feature Architecture:** Each feature module includes `routes/`, `storage/`, and `services/`.
 *   **Idempotent Event Creation:** `saveStandardEvent` handles unique constraint violations by returning existing events, and all downstream orchestrators are idempotent to prevent duplicate processing.
-*   **Modular AI Tools and Prompts:** Centralized tool definitions and prompt variables for AI agents, using a standardized 2-field configuration (`promptSystem`, `responseFormat`) and `promptUtils.ts` for variable substitution.
+*   **Modular AI Tools and Prompts:** AI tools separated into individual files in `server/features/ai/services/tools/`:
+    - `knowledgeBaseTool.ts`: Internal knowledge base search
+    - `productCatalogTool.ts`: Product catalog search
+    - `subjectIntentTool.ts`: Subject and intent lookup
+    - `zendeskKnowledgeBaseTool.ts`: Zendesk Help Center semantic search
+    - Centralized prompt variables and `promptUtils.ts` for variable substitution.
 *   **Enrichment Agent Modular Architecture:** Refactored into a sequential pipeline (`enrichmentOpenAICaller`, `enrichmentRunLogger`, `enrichmentRunProcessor`, `enrichmentOrchestrator`) to ensure robust logging of AI enrichment attempts.
 
 ## OpenAI Services Architecture
