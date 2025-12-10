@@ -104,39 +104,41 @@ export const userStorage = {
 
     const sunshineId = userData.externalId;
 
-    const [existingUser] = await db.select()
-      .from(users)
-      .where(eq(users.sunshineId, sunshineId));
-
-    if (existingUser) {
-      const [updated] = await db.update(users)
-        .set({
-          signedUpAt: userData.signedUpAt || existingUser.signedUpAt,
-          authenticated: userData.authenticated ?? existingUser.authenticated,
-          profile: userData.profile || existingUser.profile,
-          metadata: userData.metadata || existingUser.metadata,
-          identities: userData.identities || existingUser.identities,
-          lastSeenAt: new Date(),
-          updatedAt: new Date(),
+    try {
+      const [result] = await db.insert(users)
+        .values({
+          sunshineId,
+          externalId: null,
+          signedUpAt: userData.signedUpAt || null,
+          authenticated: userData.authenticated ?? false,
+          profile: userData.profile || null,
+          metadata: userData.metadata || null,
+          identities: userData.identities || null,
         })
-        .where(eq(users.id, existingUser.id))
+        .onConflictDoUpdate({
+          target: users.sunshineId,
+          set: {
+            signedUpAt: userData.signedUpAt || sql`${users.signedUpAt}`,
+            authenticated: userData.authenticated ?? sql`${users.authenticated}`,
+            profile: userData.profile || sql`${users.profile}`,
+            metadata: userData.metadata || sql`${users.metadata}`,
+            identities: userData.identities || sql`${users.identities}`,
+            lastSeenAt: new Date(),
+            updatedAt: new Date(),
+          },
+        })
         .returning();
-      return updated;
+      
+      return result;
+    } catch (error: any) {
+      if (error?.cause?.code === '23505') {
+        const [existingUser] = await db.select()
+          .from(users)
+          .where(eq(users.sunshineId, sunshineId));
+        return existingUser || null;
+      }
+      throw error;
     }
-
-    const [newUser] = await db.insert(users)
-      .values({
-        sunshineId,
-        externalId: null,
-        signedUpAt: userData.signedUpAt || null,
-        authenticated: userData.authenticated ?? false,
-        profile: userData.profile || null,
-        metadata: userData.metadata || null,
-        identities: userData.identities || null,
-      })
-      .returning();
-    
-    return newUser;
   },
 
   async getHourlyAttendances(timezone: string = 'America/Sao_Paulo') {
