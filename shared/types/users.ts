@@ -32,9 +32,9 @@ export interface AuthorizedUser {
   id: number;
   email: string;
   name: string | null;
-  createdAt: string;
+  createdAt: Date;
   createdBy: string | null;
-  lastAccess: string | null;
+  lastAccess: Date | null;
 }
 
 export interface StandardUser {
