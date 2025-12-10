@@ -14,6 +14,8 @@ import {
   CheckCircle,
   AlertCircle,
   BarChart3,
+  Loader2,
+  Sparkles,
 } from "lucide-react";
 
 interface ZendeskArticle {
@@ -54,6 +56,16 @@ interface SyncResult {
   articlesUpdated: number;
   errors: string[];
   syncedAt: string;
+}
+
+interface EmbeddingProgress {
+  total: number;
+  completed: number;
+  pending: number;
+  withoutEmbedding: number;
+  outdated: number;
+  isProcessing: boolean;
+  progress: number;
 }
 
 interface Section {
@@ -218,6 +230,18 @@ export function ZendeskArticlesPage() {
     },
   });
   
+  const { data: embeddingProgress } = useQuery<EmbeddingProgress>({
+    queryKey: ["/api/zendesk-articles/embeddings/progress"],
+    queryFn: async () => {
+      const res = await fetch("/api/zendesk-articles/embeddings/progress");
+      return res.json();
+    },
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      return data?.isProcessing ? 3000 : false;
+    },
+  });
+  
   const viewCountMap = (Array.isArray(statistics) ? statistics : []).reduce<Record<number, number>>((acc, stat) => {
     acc[stat.zendeskArticleId] = stat.viewCount;
     return acc;
@@ -237,6 +261,7 @@ export function ZendeskArticlesPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/zendesk-articles/sync-info"] });
       queryClient.invalidateQueries({ queryKey: ["/api/zendesk-articles/sections"] });
       queryClient.invalidateQueries({ queryKey: ["/api/zendesk-articles/subdomains"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/zendesk-articles/embeddings/progress"] });
     },
   });
   
@@ -290,6 +315,39 @@ export function ZendeskArticlesPage() {
           </div>
           <div className="mt-1 text-red-600">
             {syncMutation.error?.message || "Verifique as credenciais do Zendesk."}
+          </div>
+        </div>
+      )}
+      
+      {embeddingProgress && embeddingProgress.pending > 0 && (
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+          <div className="flex items-center gap-2 text-blue-700 font-medium mb-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <Sparkles className="w-4 h-4" />
+            Gerando embeddings...
+          </div>
+          <div className="w-full bg-blue-200 rounded-full h-2.5">
+            <div 
+              className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
+              style={{ width: `${embeddingProgress.progress}%` }}
+            />
+          </div>
+          <div className="mt-2 text-blue-600 text-xs">
+            {embeddingProgress.completed} de {embeddingProgress.total} artigos processados
+            {embeddingProgress.outdated > 0 && ` (${embeddingProgress.outdated} desatualizados)`}
+          </div>
+        </div>
+      )}
+      
+      {embeddingProgress && embeddingProgress.pending === 0 && embeddingProgress.total > 0 && syncMutation.isSuccess && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm">
+          <div className="flex items-center gap-2 text-emerald-700 font-medium">
+            <Sparkles className="w-4 h-4" />
+            <CheckCircle className="w-4 h-4" />
+            Todos os embeddings foram gerados
+          </div>
+          <div className="mt-1 text-emerald-600 text-xs">
+            {embeddingProgress.total} artigos com embeddings prontos para busca semântica
           </div>
         </div>
       )}

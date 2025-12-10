@@ -146,6 +146,27 @@ router.get("/embeddings/stats", async (_req, res) => {
   }
 });
 
+router.get("/embeddings/progress", async (_req, res) => {
+  try {
+    const stats = await ZendeskArticlesStorage.getEmbeddingStats();
+    const pending = stats.withoutEmbedding + stats.outdated;
+    const isProcessing = pending > 0;
+    
+    res.json({
+      total: stats.total,
+      completed: stats.withEmbedding - stats.outdated,
+      pending,
+      withoutEmbedding: stats.withoutEmbedding,
+      outdated: stats.outdated,
+      isProcessing,
+      progress: stats.total > 0 ? Math.round(((stats.withEmbedding - stats.outdated) / stats.total) * 100) : 100,
+    });
+  } catch (error) {
+    console.error("[ZendeskArticles] Error fetching embedding progress:", error);
+    res.status(500).json({ error: "Failed to fetch embedding progress" });
+  }
+});
+
 router.post("/embeddings/generate", async (req, res) => {
   try {
     const { limit = 100 } = req.body;
