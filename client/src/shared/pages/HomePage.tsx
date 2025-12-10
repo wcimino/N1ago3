@@ -257,7 +257,6 @@ export function HomePage() {
           title="Atendimentos por Hora"
           icon={<Clock className="w-4 h-4 text-cyan-600" />}
           badge="24h"
-          className="lg:col-span-2"
         >
           <HourlyBarChart data={hourlyStats || []} isLoading={hourlyLoading} />
         </StatsCard>

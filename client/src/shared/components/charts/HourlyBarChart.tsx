@@ -35,12 +35,13 @@ export function HourlyBarChart({ data, isLoading }: HourlyBarChartProps) {
   const total = data.reduce((sum, d) => sum + d.count, 0);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 w-full">
       <div className="flex items-center justify-center">
         <span className="text-sm font-semibold text-gray-900">Total: {formatNumber(total)}</span>
       </div>
       
-      <div className="flex items-end gap-0.5 h-28">
+      <div className="overflow-x-auto">
+        <div className="flex items-end gap-0.5 h-28" style={{ minWidth: '500px' }}>
         {data.map((point) => {
           const heightPercent = maxCount > 0 ? (point.count / maxCount) * 100 : 0;
           
@@ -68,11 +69,12 @@ export function HourlyBarChart({ data, isLoading }: HourlyBarChartProps) {
             </div>
           );
         })}
-      </div>
-      
-      <div className="flex justify-between text-[10px] text-gray-400">
-        <span>0h</span>
-        <span>23h</span>
+        </div>
+        
+        <div className="flex justify-between text-[10px] text-gray-400" style={{ minWidth: '500px' }}>
+          <span>0h</span>
+          <span>23h</span>
+        </div>
       </div>
       
       <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
