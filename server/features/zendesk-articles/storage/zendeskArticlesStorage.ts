@@ -250,14 +250,15 @@ export async function getArticlesWithoutEmbedding(limit: number = 100): Promise<
 }
 
 export async function updateEmbedding(id: number, embedding: string): Promise<void> {
-  await db
-    .update(zendeskArticles)
-    .set({ 
-      embedding,
-      embeddingUpdatedAt: new Date(),
-      updatedAt: new Date()
-    })
-    .where(eq(zendeskArticles.id, id));
+  await db.execute(sql`
+    UPDATE zendesk_articles 
+    SET 
+      embedding = ${embedding},
+      embedding_vector = ${embedding}::vector,
+      embedding_updated_at = NOW(),
+      updated_at = NOW()
+    WHERE id = ${id}
+  `);
 }
 
 export async function getArticlesWithEmbedding(): Promise<Array<ZendeskArticle & { embedding: string }>> {
@@ -308,64 +309,34 @@ export async function searchBySimilarity(
 ): Promise<SemanticSearchResult[]> {
   const { limit = 5 } = options;
   
-  const articlesWithEmbedding = await db
-    .select({
-      id: zendeskArticles.id,
-      zendeskId: zendeskArticles.zendeskId,
-      title: zendeskArticles.title,
-      body: zendeskArticles.body,
-      sectionName: zendeskArticles.sectionName,
-      categoryName: zendeskArticles.categoryName,
-      htmlUrl: zendeskArticles.htmlUrl,
-      embedding: zendeskArticles.embedding,
-    })
-    .from(zendeskArticles)
-    .where(sql`${zendeskArticles.embedding} IS NOT NULL`);
+  const embeddingString = `[${queryEmbedding.join(',')}]`;
   
-  if (articlesWithEmbedding.length === 0) {
-    return [];
-  }
+  const results = await db.execute(sql`
+    SELECT 
+      id,
+      zendesk_id as "zendeskId",
+      title,
+      body,
+      section_name as "sectionName",
+      category_name as "categoryName",
+      html_url as "htmlUrl",
+      ROUND((1 - (embedding_vector <=> ${embeddingString}::vector)) * 100) as similarity
+    FROM zendesk_articles
+    WHERE embedding_vector IS NOT NULL
+    ORDER BY embedding_vector <=> ${embeddingString}::vector
+    LIMIT ${limit}
+  `);
   
-  const results = articlesWithEmbedding.map((article) => {
-    if (!article.embedding) return null;
-    
-    let articleEmbedding: number[];
-    try {
-      articleEmbedding = JSON.parse(article.embedding);
-    } catch {
-      return null;
-    }
-    
-    let dotProduct = 0;
-    let normA = 0;
-    let normB = 0;
-    
-    for (let i = 0; i < queryEmbedding.length; i++) {
-      dotProduct += queryEmbedding[i] * articleEmbedding[i];
-      normA += queryEmbedding[i] * queryEmbedding[i];
-      normB += articleEmbedding[i] * articleEmbedding[i];
-    }
-    
-    normA = Math.sqrt(normA);
-    normB = Math.sqrt(normB);
-    
-    const similarity = normA === 0 || normB === 0 ? 0 : dotProduct / (normA * normB);
-    
-    return {
-      id: article.id,
-      zendeskId: article.zendeskId,
-      title: article.title,
-      body: article.body,
-      sectionName: article.sectionName,
-      categoryName: article.categoryName,
-      htmlUrl: article.htmlUrl,
-      similarity: Math.round(similarity * 100),
-    };
-  }).filter((r): r is SemanticSearchResult => r !== null);
-  
-  results.sort((a, b) => b.similarity - a.similarity);
-  
-  return results.slice(0, limit);
+  return (results.rows as unknown as SemanticSearchResult[]).map(row => ({
+    id: row.id,
+    zendeskId: row.zendeskId,
+    title: row.title,
+    body: row.body,
+    sectionName: row.sectionName,
+    categoryName: row.categoryName,
+    htmlUrl: row.htmlUrl,
+    similarity: Number(row.similarity),
+  }));
 }
 
 export const ZendeskArticlesStorage = {

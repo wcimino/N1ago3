@@ -450,6 +450,7 @@ export const zendeskArticles = pgTable("zendesk_articles", {
   zendeskCreatedAt: timestamp("zendesk_created_at"),
   zendeskUpdatedAt: timestamp("zendesk_updated_at"),
   embedding: text("embedding"),
+  embeddingVector: text("embedding_vector"),
   embeddingUpdatedAt: timestamp("embedding_updated_at"),
   syncedAt: timestamp("synced_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -638,3 +639,20 @@ export const knowledgeEnrichmentLog = pgTable("knowledge_enrichment_log", {
 
 export type KnowledgeEnrichmentLog = typeof knowledgeEnrichmentLog.$inferSelect;
 export type InsertKnowledgeEnrichmentLog = Omit<typeof knowledgeEnrichmentLog.$inferInsert, "id" | "createdAt">;
+
+export const embeddingGenerationLogs = pgTable("embedding_generation_logs", {
+  id: serial("id").primaryKey(),
+  articleId: integer("article_id"),
+  zendeskId: text("zendesk_id"),
+  status: text("status").notNull(),
+  errorMessage: text("error_message"),
+  processingTimeMs: integer("processing_time_ms"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  statusIdx: index("idx_embedding_logs_status").on(table.status),
+  createdAtIdx: index("idx_embedding_logs_created_at").on(table.createdAt),
+  articleIdIdx: index("idx_embedding_logs_article_id").on(table.articleId),
+}));
+
+export type EmbeddingGenerationLog = typeof embeddingGenerationLogs.$inferSelect;
+export type InsertEmbeddingGenerationLog = Omit<typeof embeddingGenerationLogs.$inferInsert, "id" | "createdAt">;

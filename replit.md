@@ -43,13 +43,15 @@ The React frontend provides a real-time dashboard for events and conversations, 
 *   **Idempotent Event Creation:** `saveStandardEvent` handles unique constraint violations by returning existing events, and all downstream orchestrators are idempotent to prevent duplicate processing.
 *   **Modular AI Tools and Prompts:** Centralized tool definitions and prompt variables for AI agents, using a standardized 2-field configuration (`promptSystem`, `responseFormat`) and `promptUtils.ts` for variable substitution.
 *   **Enrichment Agent Modular Architecture:** Refactored into a sequential pipeline (`enrichmentOpenAICaller`, `enrichmentRunLogger`, `enrichmentRunProcessor`, `enrichmentOrchestrator`) to ensure robust logging of AI enrichment attempts.
-*   **RAG (Retrieval Augmented Generation) for Zendesk Articles:** Semantic search using OpenAI embeddings (`text-embedding-3-small`) stored in PostgreSQL. Articles are vectorized and searched by cosine similarity for more accurate knowledge base retrieval. Key components:
-    - `embeddingService.ts`: Generates embeddings for article content
-    - `zendeskArticlesStorage.ts`: Contains `searchBySimilarity()` for semantic search
+*   **RAG (Retrieval Augmented Generation) for Zendesk Articles:** Semantic search using OpenAI embeddings (`text-embedding-3-small`) stored in PostgreSQL with pgvector extension. Articles are vectorized and searched by cosine similarity using HNSW index for accurate knowledge base retrieval. Key components:
+    - `embeddingService.ts`: Generates embeddings for article content with logging
+    - `zendeskArticlesStorage.ts`: Contains `searchBySimilarity()` using pgvector native operators
     - Automatic embedding generation during Zendesk sync
     - Endpoint `/api/zendesk-articles/embeddings/generate` for batch processing
+    - Endpoint `/api/zendesk-articles/embeddings/logs` for monitoring generation failures
     - Endpoint `/api/zendesk-articles/search/semantic` for semantic search
     - `createZendeskKnowledgeBaseTool()` uses semantic search when embeddings are available, with fallback to full-text search
+    - `embedding_generation_logs` table for monitoring embedding generation success/failure rates
 
 ## External Dependencies
 

@@ -1,9 +1,31 @@
 import OpenAI from "openai";
+import { db } from "../../../db.js";
+import { embeddingGenerationLogs } from "../../../../shared/schema.js";
 
 const openai = new OpenAI();
 
 const EMBEDDING_MODEL = "text-embedding-3-small";
 const MAX_TOKENS = 8191;
+
+export async function logEmbeddingGeneration(params: {
+  articleId: number;
+  zendeskId?: string;
+  status: "success" | "error";
+  errorMessage?: string;
+  processingTimeMs?: number;
+}): Promise<void> {
+  try {
+    await db.insert(embeddingGenerationLogs).values({
+      articleId: params.articleId,
+      zendeskId: params.zendeskId || null,
+      status: params.status,
+      errorMessage: params.errorMessage || null,
+      processingTimeMs: params.processingTimeMs || null,
+    });
+  } catch (error) {
+    console.error("Failed to log embedding generation:", error);
+  }
+}
 
 function stripHtmlTags(html: string | null): string {
   if (!html) return "";
@@ -97,6 +119,7 @@ export interface BatchEmbeddingResult {
 export async function batchGenerateEmbeddings(
   articles: Array<{
     id: number;
+    zendeskId?: string;
     title: string;
     body: string | null;
     sectionName?: string | null;
@@ -116,15 +139,31 @@ export async function batchGenerateEmbeddings(
     
     await Promise.all(
       batch.map(async (article) => {
+        const startTime = Date.now();
         try {
           const embedding = await generateArticleEmbedding(article);
           const embeddingStr = embeddingToString(embedding);
           await updateFn(article.id, embeddingStr);
           processed++;
+          
+          await logEmbeddingGeneration({
+            articleId: article.id,
+            zendeskId: article.zendeskId,
+            status: "success",
+            processingTimeMs: Date.now() - startTime,
+          });
         } catch (error) {
-          const errorMsg = `Failed to generate embedding for article ${article.id}: ${error instanceof Error ? error.message : String(error)}`;
-          console.error(errorMsg);
-          errors.push(errorMsg);
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          console.error(`Failed to generate embedding for article ${article.id}: ${errorMsg}`);
+          errors.push(`Article ${article.id}: ${errorMsg}`);
+          
+          await logEmbeddingGeneration({
+            articleId: article.id,
+            zendeskId: article.zendeskId,
+            status: "error",
+            errorMessage: errorMsg,
+            processingTimeMs: Date.now() - startTime,
+          });
         }
       })
     );

@@ -2,7 +2,10 @@ import { Router } from "express";
 import { ZendeskGuideService } from "../services/zendeskGuideService.js";
 import { ZendeskArticlesStorage } from "../storage/zendeskArticlesStorage.js";
 import { ZendeskArticleStatisticsStorage } from "../storage/zendeskArticleStatisticsStorage.js";
-import { batchGenerateEmbeddings, generateEmbedding, stringToEmbedding, cosineSimilarity, embeddingToString } from "../services/embeddingService.js";
+import { batchGenerateEmbeddings, generateEmbedding } from "../services/embeddingService.js";
+import { db } from "../../../db.js";
+import { embeddingGenerationLogs } from "../../../../shared/schema.js";
+import { desc, sql, eq } from "drizzle-orm";
 
 const router = Router();
 
@@ -198,9 +201,9 @@ router.post("/search/semantic", async (req, res) => {
     
     const queryEmbedding = await generateEmbedding(query);
     
-    const articlesWithEmbedding = await ZendeskArticlesStorage.getArticlesWithEmbedding();
+    const results = await ZendeskArticlesStorage.searchBySimilarity(queryEmbedding, { limit });
     
-    if (articlesWithEmbedding.length === 0) {
+    if (results.length === 0) {
       res.json({
         message: "No articles with embeddings found. Please generate embeddings first.",
         articles: [],
@@ -208,19 +211,7 @@ router.post("/search/semantic", async (req, res) => {
       return;
     }
     
-    const articlesWithSimilarity = articlesWithEmbedding.map((article) => {
-      const articleEmbedding = stringToEmbedding(article.embedding);
-      const similarity = cosineSimilarity(queryEmbedding, articleEmbedding);
-      return {
-        ...article,
-        similarity,
-        embedding: undefined,
-      };
-    });
-    
-    articlesWithSimilarity.sort((a, b) => b.similarity - a.similarity);
-    
-    const topArticles = articlesWithSimilarity.slice(0, limit).map((a) => ({
+    const topArticles = results.map((a) => ({
       id: a.id,
       zendeskId: a.zendeskId,
       title: a.title,
@@ -228,10 +219,10 @@ router.post("/search/semantic", async (req, res) => {
       sectionName: a.sectionName,
       categoryName: a.categoryName,
       htmlUrl: a.htmlUrl,
-      similarity: Math.round(a.similarity * 100),
+      similarity: a.similarity,
     }));
     
-    console.log(`[ZendeskArticles] Found ${topArticles.length} relevant articles`);
+    console.log(`[ZendeskArticles] Found ${topArticles.length} relevant articles (pgvector)`);
     
     res.json({
       message: `Found ${topArticles.length} relevant articles`,
@@ -240,6 +231,51 @@ router.post("/search/semantic", async (req, res) => {
   } catch (error) {
     console.error("[ZendeskArticles] Error in semantic search:", error);
     res.status(500).json({ error: "Failed to perform semantic search" });
+  }
+});
+
+router.get("/embeddings/logs", async (req, res) => {
+  try {
+    const { status, limit = "100" } = req.query;
+    const limitNum = Math.min(parseInt(limit as string, 10), 500);
+    
+    let logsQuery = db
+      .select()
+      .from(embeddingGenerationLogs)
+      .orderBy(desc(embeddingGenerationLogs.createdAt))
+      .limit(limitNum);
+    
+    if (status) {
+      logsQuery = logsQuery.where(eq(embeddingGenerationLogs.status, status as string)) as typeof logsQuery;
+    }
+    
+    const logs = await logsQuery;
+    
+    const [stats] = await db
+      .select({
+        total: sql<number>`count(*)::int`,
+        success: sql<number>`count(CASE WHEN status = 'success' THEN 1 END)::int`,
+        error: sql<number>`count(CASE WHEN status = 'error' THEN 1 END)::int`,
+        avgProcessingTimeMs: sql<number>`ROUND(AVG(processing_time_ms))::int`,
+        last24h: sql<number>`count(CASE WHEN created_at > NOW() - INTERVAL '24 hours' THEN 1 END)::int`,
+        errors24h: sql<number>`count(CASE WHEN status = 'error' AND created_at > NOW() - INTERVAL '24 hours' THEN 1 END)::int`,
+      })
+      .from(embeddingGenerationLogs);
+    
+    res.json({
+      stats: {
+        total: stats?.total ?? 0,
+        success: stats?.success ?? 0,
+        error: stats?.error ?? 0,
+        avgProcessingTimeMs: stats?.avgProcessingTimeMs ?? 0,
+        last24h: stats?.last24h ?? 0,
+        errors24h: stats?.errors24h ?? 0,
+      },
+      logs,
+    });
+  } catch (error) {
+    console.error("[ZendeskArticles] Error fetching embedding logs:", error);
+    res.status(500).json({ error: "Failed to fetch embedding logs" });
   }
 });
 
