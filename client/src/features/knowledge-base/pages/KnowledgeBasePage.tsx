@@ -64,6 +64,7 @@ export function KnowledgeBasePage() {
     collapseAllPaths,
     subjects,
     intents,
+    catalogStats,
   } = useKnowledgeBase(activeTab);
 
   const allPathsCount = useMemo(() => {
@@ -233,7 +234,20 @@ export function KnowledgeBasePage() {
                   </div>
                 ) : (
                   <>
-                    <div className="flex justify-end mb-2">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="text-xs text-gray-500 flex items-center gap-1">
+                        <span>{catalogStats.productsCount} Produtos</span>
+                        <span className="text-gray-300">|</span>
+                        <span>{catalogStats.subproductsCount} Subprodutos</span>
+                        <span className="text-gray-300">|</span>
+                        <span>{catalogStats.subjectsCount} Assuntos</span>
+                        <span className="text-gray-300">|</span>
+                        <span>{catalogStats.intentsCount} Intenções</span>
+                        <span className="text-gray-300">|</span>
+                        <span>{catalogStats.articlesCount} Artigos</span>
+                        <span className="text-gray-300">|</span>
+                        <span>{catalogStats.embeddingsCount} Embeddings</span>
+                      </div>
                       <button
                         onClick={isAllArticlesExpanded ? collapseAllPaths : expandAllPaths}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"

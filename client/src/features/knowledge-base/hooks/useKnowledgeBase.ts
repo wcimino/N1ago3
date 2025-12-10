@@ -451,6 +451,29 @@ export function useKnowledgeBase(activeTab: string) {
     return intents.filter(i => i.subjectId === selectedSubjectId);
   }, [selectedSubjectId, intents]);
 
+  const { data: embeddingStats } = useQuery<{ total: number; withEmbedding: number; withoutEmbedding: number; outdated: number }>({
+    queryKey: ["/api/knowledge/embeddings/stats"],
+    queryFn: async () => {
+      const res = await fetch("/api/knowledge/embeddings/stats");
+      if (!res.ok) throw new Error("Failed to fetch embedding stats");
+      return res.json();
+    },
+    enabled: activeTab === "articles",
+  });
+
+  const catalogStats = useMemo(() => {
+    const uniqueProducts = new Set(catalogProducts.map(p => p.produto));
+    const uniqueSubproducts = catalogProducts.filter(p => p.subproduto).length;
+    return {
+      productsCount: uniqueProducts.size,
+      subproductsCount: uniqueSubproducts,
+      subjectsCount: subjects.length,
+      intentsCount: intents.length,
+      articlesCount: articles.length,
+      embeddingsCount: embeddingStats?.withEmbedding ?? 0,
+    };
+  }, [catalogProducts, subjects, intents, articles, embeddingStats]);
+
   return {
     articles,
     isLoading,
@@ -481,5 +504,6 @@ export function useKnowledgeBase(activeTab: string) {
     collapseAllPaths,
     subjects,
     intents,
+    catalogStats,
   };
 }
