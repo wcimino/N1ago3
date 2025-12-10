@@ -46,6 +46,13 @@ function ProductsCard({ productStats }: { productStats: ProductStatsResponse | u
   const totalLastHour = productStats?.last_hour?.total || 0;
   const totalToday = productStats?.today?.total || 0;
   
+  const top5Products = allProducts.slice(0, 5);
+  const othersProducts = allProducts.slice(5);
+  
+  const othersLastHour = othersProducts.reduce((sum, p) => sum + (lastHourMap.get(p) || 0), 0);
+  const othersToday = othersProducts.reduce((sum, p) => sum + (todayMap.get(p) || 0), 0);
+  const othersCount = othersProducts.length;
+  
   return (
     <div>
       <StatsTableHeader colorScheme="orange" />
@@ -70,7 +77,7 @@ function ProductsCard({ productStats }: { productStats: ProductStatsResponse | u
         </div>
       </div>
       <div className="space-y-1">
-        {allProducts.map((product) => (
+        {top5Products.map((product) => (
           <StatsRow
             key={product}
             label={product}
@@ -82,6 +89,15 @@ function ProductsCard({ productStats }: { productStats: ProductStatsResponse | u
             formatNumber={formatNumber}
           />
         ))}
+        {othersCount > 0 && (
+          <StatsRow
+            label={`Outros (${othersCount})`}
+            lastHourValue={othersLastHour || undefined}
+            todayValue={othersToday || undefined}
+            colorScheme="orange"
+            formatNumber={formatNumber}
+          />
+        )}
       </div>
     </div>
   );

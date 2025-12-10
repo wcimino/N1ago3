@@ -7,8 +7,8 @@ const router = Router();
 router.get("/api/products/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
     const [lastHour, last24Hours] = await Promise.all([
-      storage.getTopProductsByPeriod("lastHour", 5),
-      storage.getTopProductsByPeriod("last24Hours", 5),
+      storage.getTopProductsByPeriod("lastHour"),
+      storage.getTopProductsByPeriod("last24Hours"),
     ]);
 
     res.json({
