@@ -78,14 +78,14 @@ interface HierarchyNodeItemProps {
 }
 
 export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete, onAddArticle, parentName }: HierarchyNodeItemProps) {
-  const isExpanded = expandedPaths.has(node.fullPath);
-  const hasChildren = node.children.length > 0 || node.articles.length > 0;
-  const stats = getNodeStats(node);
-  const statBadges = getStatBadges(stats, node.level);
   const isProduct = node.level === "produto";
   const isSubproduct = node.level === "subproduto";
   const isAssunto = node.level === "assunto";
   const isIntencao = node.level === "intencao";
+  const isExpanded = expandedPaths.has(node.fullPath);
+  const hasChildren = isIntencao ? false : (node.children.length > 0 || node.articles.length > 0);
+  const stats = getNodeStats(node);
+  const statBadges = getStatBadges(stats, node.level);
   const useNestedStyle = isAssunto || isIntencao;
   
   const mobileIndent = depth * 12;
@@ -278,7 +278,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
         )}
       </div>
 
-      {isExpanded && !isProduct && !isSubproduct && (
+      {isExpanded && !isProduct && !isSubproduct && !isIntencao && (
         <div>
           {node.children.map((child) => (
             <HierarchyNodeItem
