@@ -59,6 +59,8 @@ function buildHierarchy(
   const subproductNodes = new Map<string, HierarchyNode>();
   
   for (const product of products) {
+    const isGenericProduct = !product.subproduto;
+    
     if (!productNodes.has(product.produto)) {
       productNodes.set(product.produto, {
         name: product.produto,
@@ -66,11 +68,11 @@ function buildHierarchy(
         fullPath: product.produto,
         children: [],
         articles: [],
-        productId: product.id,
+        productId: isGenericProduct ? product.id : undefined,
       });
     } else {
       const existingNode = productNodes.get(product.produto)!;
-      if (!existingNode.productId) {
+      if (isGenericProduct && !existingNode.productId) {
         existingNode.productId = product.id;
       }
     }
@@ -102,18 +104,21 @@ function buildHierarchy(
     const product = products.find(p => p.id === subject.productCatalogId);
     if (!product) continue;
     
+    const isGenericProduct = !product.subproduto;
+    
     let prodNode = productNodes.get(product.produto);
     if (!prodNode) {
+      const genericProduct = products.find(p => p.produto === product.produto && !p.subproduto);
       prodNode = {
         name: product.produto,
         level: "produto",
         fullPath: product.produto,
         children: [],
         articles: [],
-        productId: product.id,
+        productId: genericProduct?.id,
       };
       productNodes.set(product.produto, prodNode);
-    } else if (!prodNode.productId) {
+    } else if (isGenericProduct && !prodNode.productId) {
       prodNode.productId = product.id;
     }
     
