@@ -21,7 +21,7 @@ function getDefaultEnrichmentConfig(): EnrichmentConfig {
 
 router.post("/api/ai/enrichment/generate", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
-    const { product, subproduct, limit = 3 } = req.body;
+    const { product, subproduct, limit = 3, articleId } = req.body;
 
     const dbConfig = await storage.getOpenaiApiConfig("enrichment");
     
@@ -40,26 +40,42 @@ router.post("/api/ai/enrichment/generate", isAuthenticated, requireAuthorizedUse
     // Note: Manual execution works even if config.enabled is false
     // The enabled flag controls automatic triggers only
 
-    const intentsWithArticles = await knowledgeBaseStorage.getIntentsWithArticles({
-      product,
-      subproduct,
-      limit: Math.min(limit, 50),
-    });
+    let intentsWithArticles;
 
-    if (intentsWithArticles.length === 0) {
-      return res.json({
-        success: true,
-        intentsProcessed: 0,
-        articlesCreated: 0,
-        articlesUpdated: 0,
-        suggestionsGenerated: 0,
-        skipped: 0,
-        suggestions: [],
-        message: "Nenhuma intenção encontrada com os filtros aplicados. Cadastre intenções primeiro na aba 'Assuntos e Intenções'."
+    if (articleId) {
+      const intentWithArticle = await knowledgeBaseStorage.getIntentWithArticleByArticleId(articleId);
+      
+      if (!intentWithArticle) {
+        return res.json({
+          success: false,
+          error: "Artigo não encontrado ou não possui intenção associada. Associe uma intenção ao artigo primeiro."
+        });
+      }
+      
+      intentsWithArticles = [intentWithArticle];
+      console.log(`[Enrichment] Processing single article #${articleId} for improvement`);
+    } else {
+      intentsWithArticles = await knowledgeBaseStorage.getIntentsWithArticles({
+        product,
+        subproduct,
+        limit: Math.min(limit, 50),
       });
-    }
 
-    console.log(`[Enrichment] Processing ${intentsWithArticles.length} intents (with/without articles)`);
+      if (intentsWithArticles.length === 0) {
+        return res.json({
+          success: true,
+          intentsProcessed: 0,
+          articlesCreated: 0,
+          articlesUpdated: 0,
+          suggestionsGenerated: 0,
+          skipped: 0,
+          suggestions: [],
+          message: "Nenhuma intenção encontrada com os filtros aplicados. Cadastre intenções primeiro na aba 'Assuntos e Intenções'."
+        });
+      }
+
+      console.log(`[Enrichment] Processing ${intentsWithArticles.length} intents (with/without articles)`);
+    }
 
     const result = await generateEnrichmentSuggestions({
       intentsWithArticles,

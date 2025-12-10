@@ -554,6 +554,49 @@ export const knowledgeBaseStorage = {
     const stats = await this.getEmbeddingStats();
     return stats.withEmbedding > 0;
   },
+
+  async getIntentWithArticleByArticleId(articleId: number): Promise<IntentWithArticle | null> {
+    const article = await this.getArticleById(articleId);
+    if (!article) return null;
+
+    if (!article.intentId) {
+      return null;
+    }
+
+    const result = await db
+      .select({
+        intentId: knowledgeIntents.id,
+        intentName: knowledgeIntents.name,
+        intentSynonyms: knowledgeIntents.synonyms,
+        subjectId: knowledgeSubjects.id,
+        subjectName: knowledgeSubjects.name,
+        subjectSynonyms: knowledgeSubjects.synonyms,
+        productName: ifoodProducts.produto,
+        subproductName: ifoodProducts.subproduto,
+      })
+      .from(knowledgeIntents)
+      .innerJoin(knowledgeSubjects, eq(knowledgeIntents.subjectId, knowledgeSubjects.id))
+      .innerJoin(ifoodProducts, eq(knowledgeSubjects.productCatalogId, ifoodProducts.id))
+      .where(eq(knowledgeIntents.id, article.intentId))
+      .limit(1);
+
+    if (result.length === 0) return null;
+
+    const intent = result[0];
+    return {
+      intent: {
+        id: intent.intentId,
+        name: intent.intentName,
+        synonyms: intent.intentSynonyms || [],
+        subjectId: intent.subjectId,
+        subjectName: intent.subjectName,
+        subjectSynonyms: intent.subjectSynonyms || [],
+        productName: intent.productName,
+        subproductName: intent.subproductName,
+      },
+      article,
+    };
+  },
 };
 
 export interface SemanticSearchResult {

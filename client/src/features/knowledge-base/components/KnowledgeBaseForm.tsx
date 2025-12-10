@@ -1,9 +1,17 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Save, X, FileText, Tag, MessageSquare, CheckCircle, StickyNote } from "lucide-react";
+import { Save, X, FileText, Tag, MessageSquare, CheckCircle, StickyNote, Sparkles, Loader2, Check, XCircle } from "lucide-react";
 import { ModernSelect } from "@/shared/components/ui";
+import { DiffPreview } from "./DiffView";
 import type { KnowledgeSubject, KnowledgeIntent, ProductCatalogItem } from "../../../types";
 import type { KnowledgeBaseArticle, KnowledgeBaseFormData } from "../hooks/useKnowledgeBase";
+
+interface ImprovementSuggestion {
+  description: string;
+  resolution: string;
+  observations: string | null;
+  updateReason?: string;
+}
 
 type CatalogProduct = ProductCatalogItem;
 
@@ -42,6 +50,10 @@ export function KnowledgeBaseForm({
     intentId: null as number | null,
   });
   const [initializedForId, setInitializedForId] = useState<number | null>(null);
+  const [isImproving, setIsImproving] = useState(false);
+  const [improvementSuggestion, setImprovementSuggestion] = useState<ImprovementSuggestion | null>(null);
+  const [improvementError, setImprovementError] = useState<string | null>(null);
+  const [improvementMessage, setImprovementMessage] = useState<string | null>(null);
 
   const { data: produtos = [], isSuccess: produtosLoaded } = useQuery<string[]>({
     queryKey: ["/api/product-catalog/distinct/produtos"],
@@ -196,6 +208,85 @@ export function KnowledgeBaseForm({
     formData.description.trim() &&
     formData.resolution.trim();
 
+  const handleSuggestImprovement = async () => {
+    if (!initialData?.id) return;
+    
+    setIsImproving(true);
+    setImprovementError(null);
+    setImprovementMessage(null);
+    setImprovementSuggestion(null);
+    
+    try {
+      const response = await fetch("/api/ai/enrichment/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ articleId: initialData.id }),
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        setImprovementError(result.error || "Erro ao gerar sugestão");
+        return;
+      }
+      
+      if (!result.success) {
+        setImprovementError(result.error || "Não foi possível gerar sugestão");
+        return;
+      }
+      
+      if (result.suggestionsGenerated === 0 || result.skipped > 0) {
+        setImprovementMessage("A IA não encontrou melhorias para este artigo.");
+        return;
+      }
+      
+      if (result.suggestions && result.suggestions.length > 0) {
+        const suggestionId = result.suggestions[0].id;
+        const suggestionResponse = await fetch(`/api/knowledge/suggestions/${suggestionId}`, {
+          credentials: "include",
+        });
+        
+        if (suggestionResponse.ok) {
+          const suggestionData = await suggestionResponse.json();
+          setImprovementSuggestion({
+            description: suggestionData.description,
+            resolution: suggestionData.resolution,
+            observations: suggestionData.observations,
+            updateReason: suggestionData.updateReason,
+          });
+        } else {
+          setImprovementMessage("Sugestão criada! Acesse a aba Sugestões para revisar.");
+        }
+      } else {
+        setImprovementMessage("A IA não encontrou melhorias para este artigo.");
+      }
+    } catch (error: any) {
+      setImprovementError(error.message || "Erro ao gerar sugestão");
+    } finally {
+      setIsImproving(false);
+    }
+  };
+
+  const handleApplySuggestion = () => {
+    if (!improvementSuggestion) return;
+    
+    setFormData((prev) => ({
+      ...prev,
+      description: improvementSuggestion.description,
+      resolution: improvementSuggestion.resolution,
+      observations: improvementSuggestion.observations || prev.observations,
+    }));
+    setImprovementSuggestion(null);
+    setImprovementMessage("Sugestão aplicada! Revise as alterações e salve o artigo.");
+  };
+
+  const handleDiscardSuggestion = () => {
+    setImprovementSuggestion(null);
+    setImprovementMessage(null);
+    setImprovementError(null);
+  };
+
   if (initialData && !isInitialized) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -328,7 +419,98 @@ export function KnowledgeBaseForm({
         />
       </div>
 
+      {improvementSuggestion && (
+        <div className="space-y-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-600" />
+              <h4 className="font-medium text-purple-800">Sugestão de Melhoria</h4>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleApplySuggestion}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <Check className="w-4 h-4" />
+                Aplicar
+              </button>
+              <button
+                type="button"
+                onClick={handleDiscardSuggestion}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <XCircle className="w-4 h-4" />
+                Descartar
+              </button>
+            </div>
+          </div>
+          
+          {improvementSuggestion.updateReason && (
+            <div className="bg-purple-100 border border-purple-300 rounded-md p-2">
+              <span className="text-xs font-medium text-purple-800">Motivo da melhoria:</span>
+              <p className="text-sm text-purple-700 mt-1">{improvementSuggestion.updateReason}</p>
+            </div>
+          )}
+          
+          <DiffPreview
+            label="Problema"
+            before={formData.description}
+            after={improvementSuggestion.description}
+          />
+          
+          <DiffPreview
+            label="Resolução"
+            before={formData.resolution}
+            after={improvementSuggestion.resolution}
+          />
+          
+          {(formData.observations || improvementSuggestion.observations) && (
+            <DiffPreview
+              label="Observações"
+              before={formData.observations}
+              after={improvementSuggestion.observations}
+            />
+          )}
+        </div>
+      )}
+
+      {improvementError && (
+        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <XCircle className="w-4 h-4 shrink-0" />
+          {improvementError}
+        </div>
+      )}
+
+      {improvementMessage && !improvementSuggestion && (
+        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm">
+          <Sparkles className="w-4 h-4 shrink-0" />
+          {improvementMessage}
+        </div>
+      )}
+
       <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+        {initialData && (
+          <button
+            type="button"
+            onClick={handleSuggestImprovement}
+            disabled={isImproving || !initialData.intentId}
+            title={!initialData.intentId ? "Associe uma intenção ao artigo para usar esta função" : ""}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-purple-600 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isImproving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Analisando...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Sugerir Melhorias
+              </>
+            )}
+          </button>
+        )}
         <button
           type="button"
           onClick={onCancel}
