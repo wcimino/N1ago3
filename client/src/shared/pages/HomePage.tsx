@@ -213,7 +213,7 @@ function OpenAIStatsCard({ openaiStats }: { openaiStats: OpenAIStatsResponse | u
       </div>
       {displayItems.length > 0 && (
         <div className="mt-4 pt-4 border-t border-gray-100 w-full">
-          <div className="h-7 w-full rounded-lg overflow-hidden flex shadow-inner">
+          <div className="h-7 w-full rounded-lg flex shadow-inner relative">
             {displayItems.map((item, index) => {
               const config = REQUEST_TYPE_CONFIG[item.request_type] || { 
                 label: item.request_type === 'others' ? 'Outros' : item.request_type, 
@@ -226,13 +226,13 @@ function OpenAIStatsCard({ openaiStats }: { openaiStats: OpenAIStatsResponse | u
               return (
                 <div 
                   key={item.request_type}
-                  className={`h-full ${config.bg} flex items-center justify-center relative group cursor-pointer ${isFirst ? 'rounded-l-lg' : ''} ${isLast ? 'rounded-r-lg' : ''}`}
+                  className={`h-full ${config.bg} flex items-center justify-center relative group cursor-pointer overflow-visible ${isFirst ? 'rounded-l-lg' : ''} ${isLast ? 'rounded-r-lg' : ''}`}
                   style={{ width: `${item.percentage}%` }}
                 >
                   <span className="text-[10px] font-medium text-white whitespace-nowrap overflow-hidden px-0.5">
                     {item.percentage >= 15 ? `$${item.cost.toFixed(2)}` : ''}
                   </span>
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg hidden group-hover:block whitespace-nowrap z-50">
                     {config.label}: ${item.cost.toFixed(2)}
                   </div>
                 </div>
