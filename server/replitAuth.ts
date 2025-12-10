@@ -27,15 +27,18 @@ export function getSession() {
     createTableIfMissing: false,
     ttl: sessionTtl,
     tableName: "sessions",
+    pruneSessionInterval: 60 * 15, // Clean expired sessions every 15 minutes
   });
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
+    rolling: true, // Reset session expiration on each request (keeps users logged in while active)
     cookie: {
       httpOnly: true,
       secure: true,
+      sameSite: "lax", // Prevents CSRF while allowing normal navigation
       maxAge: sessionTtl,
     },
   });
