@@ -410,7 +410,6 @@ export const knowledgeBaseStorage = {
       WHERE e.content_hash != md5(
         COALESCE(a.product_standard, '') || 
         COALESCE(a.subproduct_standard, '') || 
-        COALESCE(a.intent, '') || 
         COALESCE(a.description, '') || 
         COALESCE(a.resolution, '')
       )
@@ -436,7 +435,6 @@ export const knowledgeBaseStorage = {
          WHERE e.content_hash != md5(
            COALESCE(a.product_standard, '') || 
            COALESCE(a.subproduct_standard, '') || 
-           COALESCE(a.intent, '') || 
            COALESCE(a.description, '') || 
            COALESCE(a.resolution, '')
          )) as outdated
