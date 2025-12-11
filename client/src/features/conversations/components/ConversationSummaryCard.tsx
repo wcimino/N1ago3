@@ -78,14 +78,9 @@ export function ConversationSummaryCard({ summary }: ConversationSummaryCardProp
             </div>
             <div className="flex items-start gap-2">
               <span className="text-gray-500 min-w-[70px]">Intenção:</span>
-              <div className="flex items-center gap-2">
-                <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${intentColors[summary.intent || "outros"] || intentColors.outros}`}>
-                  <Target className="w-3 h-3" />
-                  {summary.subject || "(vazio)"} {">"} {intentLabels[summary.intent || ""] || summary.intent || "(vazio)"}
-                </div>
-                {summary.confidence !== null && (
-                  <span className="text-gray-500 text-xs">{summary.confidence}%</span>
-                )}
+              <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${intentColors[summary.intent || "outros"] || intentColors.outros}`}>
+                <Target className="w-3 h-3" />
+                {summary.subject || "(vazio)"} {">"} {intentLabels[summary.intent || ""] || summary.intent || "(vazio)"}
               </div>
             </div>
             {summary.customer_emotion_level && emotionConfig[summary.customer_emotion_level] && (
@@ -95,6 +90,12 @@ export function ConversationSummaryCard({ summary }: ConversationSummaryCardProp
                   <span>{emotionConfig[summary.customer_emotion_level].emoji}</span>
                   {emotionConfig[summary.customer_emotion_level].label}
                 </div>
+              </div>
+            )}
+            {summary.confidence !== null && (
+              <div className="flex items-start gap-2">
+                <span className="text-gray-500 min-w-[70px]">Confiança:</span>
+                <span className="text-gray-700 text-sm">{summary.confidence}%</span>
               </div>
             )}
           </div>
