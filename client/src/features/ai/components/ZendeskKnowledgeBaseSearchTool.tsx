@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FileText, HelpCircle, ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ExpandableSearchTool } from "../../../shared/components/ui";
@@ -12,6 +12,11 @@ interface ZendeskArticle {
   htmlUrl: string | null;
 }
 
+interface ZendeskSubdomain {
+  subdomain: string;
+  count: number;
+}
+
 interface ZendeskKnowledgeBaseSearchToolProps {
   isExpanded: boolean;
   onToggle: () => void;
@@ -20,7 +25,24 @@ interface ZendeskKnowledgeBaseSearchToolProps {
 export function ZendeskKnowledgeBaseSearchTool({ isExpanded, onToggle }: ZendeskKnowledgeBaseSearchToolProps) {
   const [keywords, setKeywords] = useState("");
   const [sectionId, setSectionId] = useState("");
+  const [selectedSubdomains, setSelectedSubdomains] = useState<string[]>([]);
   const [searchTrigger, setSearchTrigger] = useState(0);
+
+  const { data: subdomains } = useQuery<ZendeskSubdomain[]>({
+    queryKey: ["zendesk-subdomains"],
+    queryFn: async () => {
+      const res = await fetch("/api/zendesk-articles/subdomains", { credentials: "include" });
+      if (!res.ok) throw new Error("Falha ao carregar subdomínios");
+      return res.json();
+    },
+    enabled: isExpanded,
+  });
+
+  useEffect(() => {
+    if (subdomains && subdomains.length > 0 && selectedSubdomains.length === 0) {
+      setSelectedSubdomains(subdomains.map(s => s.subdomain));
+    }
+  }, [subdomains]);
 
   const { data: sections } = useQuery<Array<{ sectionId: string; sectionName: string }>>({
     queryKey: ["zendesk-sections"],
@@ -32,13 +54,21 @@ export function ZendeskKnowledgeBaseSearchTool({ isExpanded, onToggle }: Zendesk
     enabled: isExpanded,
   });
 
+  const noSubdomainsSelected = subdomains && subdomains.length > 0 && selectedSubdomains.length === 0;
+
   const { data, isLoading, error } = useQuery<ZendeskArticle[]>({
-    queryKey: ["zendesk-search", keywords, sectionId, searchTrigger],
+    queryKey: ["zendesk-search", keywords, sectionId, selectedSubdomains, searchTrigger],
     queryFn: async () => {
+      if (noSubdomainsSelected) {
+        return [];
+      }
       const params = new URLSearchParams();
       params.set("limit", "10");
       if (keywords) params.set("search", keywords);
       if (sectionId) params.set("sectionId", sectionId);
+      if (selectedSubdomains.length > 0) {
+        params.set("helpCenterSubdomains", selectedSubdomains.join(","));
+      }
       
       const res = await fetch(`/api/zendesk-articles?${params.toString()}`, {
         credentials: "include",
@@ -46,8 +76,17 @@ export function ZendeskKnowledgeBaseSearchTool({ isExpanded, onToggle }: Zendesk
       if (!res.ok) throw new Error("Falha na busca");
       return res.json();
     },
-    enabled: searchTrigger > 0 && isExpanded,
+    enabled: searchTrigger > 0 && isExpanded && !noSubdomainsSelected,
   });
+
+  const handleSubdomainToggle = (subdomain: string) => {
+    setSelectedSubdomains(prev => {
+      if (prev.includes(subdomain)) {
+        return prev.filter(s => s !== subdomain);
+      }
+      return [...prev, subdomain];
+    });
+  };
 
   const handleSearch = () => {
     setSearchTrigger(prev => prev + 1);
@@ -108,6 +147,31 @@ export function ZendeskKnowledgeBaseSearchTool({ isExpanded, onToggle }: Zendesk
       )}
     >
       <div className="grid gap-3">
+        {subdomains && subdomains.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Subdomínios</label>
+            <div className="flex flex-wrap gap-3">
+              {subdomains.map((subdomain) => (
+                <label key={subdomain.subdomain} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedSubdomains.includes(subdomain.subdomain)}
+                    onChange={() => handleSubdomainToggle(subdomain.subdomain)}
+                    className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-gray-700">
+                    {subdomain.subdomain}
+                    <span className="text-gray-400 ml-1">({subdomain.count})</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+            {noSubdomainsSelected && (
+              <p className="text-sm text-amber-600 mt-2">Selecione pelo menos um subdomínio para realizar a busca.</p>
+            )}
+          </div>
+        )}
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Palavras-chave</label>
           <input
