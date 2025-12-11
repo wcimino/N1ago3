@@ -203,6 +203,21 @@ export function KnowledgeBasePage() {
     },
   });
 
+  const updateSubjectMutation = useMutation({
+    mutationFn: async (data: { id: number; name: string }) => {
+      const res = await fetch(`/api/knowledge/subjects/${data.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: data.name }),
+      });
+      if (!res.ok) throw new Error("Failed to update subject");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/subjects"] });
+    },
+  });
+
   const handleAddSubject = (productId: number) => {
     setInputModal({ isOpen: true, type: "subject", targetId: productId, mode: "create" });
   };
@@ -215,8 +230,14 @@ export function KnowledgeBasePage() {
     setInputModal({ isOpen: true, type: "intent", targetId: intentId, mode: "edit", currentName: intentName });
   };
 
+  const handleEditSubject = (subjectId: number, subjectName: string) => {
+    setInputModal({ isOpen: true, type: "subject", targetId: subjectId, mode: "edit", currentName: subjectName });
+  };
+
   const handleInputModalConfirm = (name: string) => {
-    if (inputModal.mode === "edit" && inputModal.type === "intent" && inputModal.targetId) {
+    if (inputModal.mode === "edit" && inputModal.type === "subject" && inputModal.targetId) {
+      updateSubjectMutation.mutate({ id: inputModal.targetId, name });
+    } else if (inputModal.mode === "edit" && inputModal.type === "intent" && inputModal.targetId) {
       updateIntentMutation.mutate({ id: inputModal.targetId, name });
     } else if (inputModal.type === "subject" && inputModal.targetId) {
       createSubjectMutation.mutate({ productCatalogId: inputModal.targetId, name });
@@ -363,6 +384,7 @@ export function KnowledgeBasePage() {
                           onAddSubject={handleAddSubject}
                           onAddIntent={handleAddIntent}
                           onEditIntent={handleEditIntent}
+                          onEditSubject={handleEditSubject}
                           onDeleteSubject={handleDeleteSubject}
                           onDeleteIntent={handleDeleteIntent}
                         />

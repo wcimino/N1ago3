@@ -77,12 +77,13 @@ interface HierarchyNodeItemProps {
   onAddSubject?: (productId: number) => void;
   onAddIntent?: (subjectId: number) => void;
   onEditIntent?: (intentId: number, intentName: string) => void;
+  onEditSubject?: (subjectId: number, subjectName: string) => void;
   onDeleteSubject?: (subjectId: number, subjectName: string, hasArticles: boolean) => void;
   onDeleteIntent?: (intentId: number, intentName: string, hasArticles: boolean) => void;
   parentName?: string;
 }
 
-export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete, onAddArticle, onAddSubject, onAddIntent, onEditIntent, onDeleteSubject, onDeleteIntent, parentName }: HierarchyNodeItemProps) {
+export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete, onAddArticle, onAddSubject, onAddIntent, onEditIntent, onEditSubject, onDeleteSubject, onDeleteIntent, parentName }: HierarchyNodeItemProps) {
   const isProduct = node.level === "produto";
   const isSubproduct = node.level === "subproduto";
   const isAssunto = node.level === "assunto";
@@ -253,6 +254,18 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 <Plus className="w-4 h-4" />
               </button>
             )}
+            {onEditSubject && isAssunto && node.subjectId && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditSubject(node.subjectId!, node.name);
+                }}
+                className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-opacity"
+                title="Editar assunto"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+            )}
             {onDeleteSubject && isAssunto && node.subjectId && (
               <button
                 onClick={(e) => {
@@ -322,6 +335,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 onAddSubject={onAddSubject}
                 onAddIntent={onAddIntent}
                 onEditIntent={onEditIntent}
+                onEditSubject={onEditSubject}
                 onDeleteSubject={onDeleteSubject}
                 onDeleteIntent={onDeleteIntent}
               />
@@ -352,6 +366,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 onAddSubject={onAddSubject}
                 onAddIntent={onAddIntent}
                 onEditIntent={onEditIntent}
+                onEditSubject={onEditSubject}
                 onDeleteSubject={onDeleteSubject}
                 onDeleteIntent={onDeleteIntent}
                 parentName={node.name}
@@ -376,6 +391,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
               onAddSubject={onAddSubject}
               onAddIntent={onAddIntent}
               onEditIntent={onEditIntent}
+              onEditSubject={onEditSubject}
               onDeleteSubject={onDeleteSubject}
               onDeleteIntent={onDeleteIntent}
             />
