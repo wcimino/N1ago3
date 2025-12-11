@@ -53,7 +53,7 @@ function evaluateRule(rule: RoutingRule, event: EventStandard, userAuthenticated
       return { matches: false, reason: "not message event" };
     }
     
-    if (event.authorType !== "user" && event.authorType !== "customer" && event.authorType !== "bot") {
+    if (event.authorType !== "user" && event.authorType !== "customer" && event.authorType !== "bot" && event.authorType !== "agent") {
       return { matches: false, reason: `invalid author type: ${event.authorType}` };
     }
     
