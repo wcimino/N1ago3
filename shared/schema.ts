@@ -613,6 +613,22 @@ export const zendeskArticlesStatistics = pgTable("zendesk_articles_statistics", 
 export type ZendeskArticleStatistic = typeof zendeskArticlesStatistics.$inferSelect;
 export type InsertZendeskArticleStatistic = Omit<typeof zendeskArticlesStatistics.$inferInsert, "id" | "createdAt">;
 
+export const knowledgeBaseStatistics = pgTable("knowledge_base_statistics", {
+  id: serial("id").primaryKey(),
+  articleId: integer("article_id").notNull().references(() => knowledgeBase.id, { onDelete: "cascade" }),
+  keywords: text("keywords"),
+  conversationId: integer("conversation_id"),
+  externalConversationId: text("external_conversation_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  articleIdIdx: index("idx_knowledge_base_statistics_article_id").on(table.articleId),
+  createdAtIdx: index("idx_knowledge_base_statistics_created_at").on(table.createdAt),
+  conversationIdIdx: index("idx_knowledge_base_statistics_conversation_id").on(table.conversationId),
+}));
+
+export type KnowledgeBaseStatistic = typeof knowledgeBaseStatistics.$inferSelect;
+export type InsertKnowledgeBaseStatistic = Omit<typeof knowledgeBaseStatistics.$inferInsert, "id" | "createdAt">;
+
 export const routingRules = pgTable("routing_rules", {
   id: serial("id").primaryKey(),
   ruleType: text("rule_type").notNull(),

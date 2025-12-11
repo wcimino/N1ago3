@@ -2,6 +2,7 @@ import { Router } from "express";
 import { knowledgeBaseStorage } from "../../../storage/index.js";
 import { knowledgeBaseService } from "../services/knowledgeBaseService.js";
 import { batchGenerateEmbeddings, generateArticleEmbedding, generateContentHash } from "../services/knowledgeBaseEmbeddingService.js";
+import { KnowledgeBaseStatisticsStorage } from "../storage/knowledgeBaseStatisticsStorage.js";
 import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
 import type { InsertKnowledgeBaseArticle } from "../../../../shared/schema.js";
 
@@ -274,6 +275,33 @@ router.post("/api/knowledge/embeddings/regenerate/:id", isAuthenticated, require
   } catch (error) {
     console.error("Error regenerating embedding:", error);
     res.status(500).json({ error: "Failed to regenerate embedding" });
+  }
+});
+
+router.get("/api/knowledge/articles/statistics", async (req, res) => {
+  try {
+    const { limit } = req.query;
+    const results = await KnowledgeBaseStatisticsStorage.getViewCountByArticle({
+      limit: limit ? parseInt(limit as string) : 1000,
+    });
+    res.json(results);
+  } catch (error) {
+    console.error("Error fetching article statistics:", error);
+    res.status(500).json({ error: "Failed to fetch statistics" });
+  }
+});
+
+router.get("/api/knowledge/articles/statistics/by-intent", async (req, res) => {
+  try {
+    const intentViewMap = await KnowledgeBaseStatisticsStorage.getViewCountByIntent();
+    const results = Array.from(intentViewMap.entries()).map(([intentId, viewCount]) => ({
+      intentId,
+      viewCount,
+    }));
+    res.json(results);
+  } catch (error) {
+    console.error("Error fetching intent statistics:", error);
+    res.status(500).json({ error: "Failed to fetch statistics" });
   }
 });
 

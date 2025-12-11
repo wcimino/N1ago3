@@ -1,6 +1,7 @@
 import { knowledgeBaseStorage } from "../../storage/knowledgeBaseStorage.js";
 import { knowledgeSubjectsStorage } from "../../../knowledge/storage/knowledgeSubjectsStorage.js";
 import { knowledgeIntentsStorage } from "../../../knowledge/storage/knowledgeIntentsStorage.js";
+import { KnowledgeBaseStatisticsStorage } from "../../storage/knowledgeBaseStatisticsStorage.js";
 import { generateEmbedding as generateKBEmbedding } from "../knowledgeBaseEmbeddingService.js";
 import type { ToolDefinition } from "../openaiApiService.js";
 
@@ -88,6 +89,7 @@ export function createKnowledgeBaseTool(): ToolDefinition {
       }
 
       interface ArticleWithRelevance {
+        id: number;
         productStandard: string;
         subproductStandard: string | null;
         intentId: number | null;
@@ -123,6 +125,7 @@ export function createKnowledgeBaseTool(): ToolDefinition {
             );
             
             articles = semanticResults.map(a => ({
+              id: a.id,
               productStandard: a.productStandard,
               subproductStandard: a.subproductStandard,
               intentId: a.intentId,
@@ -144,6 +147,7 @@ export function createKnowledgeBaseTool(): ToolDefinition {
               .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
               .slice(0, 5)
               .map(a => ({
+                id: a.id,
                 productStandard: a.productStandard,
                 subproductStandard: a.subproductStandard,
                 intentId: a.intentId,
@@ -164,6 +168,7 @@ export function createKnowledgeBaseTool(): ToolDefinition {
             .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
             .slice(0, 5)
             .map(a => ({
+              id: a.id,
               productStandard: a.productStandard,
               subproductStandard: a.subproductStandard,
               intentId: a.intentId,
@@ -180,6 +185,7 @@ export function createKnowledgeBaseTool(): ToolDefinition {
           limit: 5
         });
         articles = allArticles.map(a => ({
+          id: a.id,
           productStandard: a.productStandard,
           subproductStandard: a.subproductStandard,
           intentId: a.intentId,
@@ -206,6 +212,15 @@ export function createKnowledgeBaseTool(): ToolDefinition {
             intent: resolvedIntent || args.intent
           }
         });
+      }
+      
+      try {
+        await KnowledgeBaseStatisticsStorage.recordMultipleArticleViews(
+          articles.map(a => ({ id: a.id })),
+          { keywords: args.keywords }
+        );
+      } catch (error) {
+        console.error("[KB Tool] Failed to record article views:", error);
       }
       
       const articleList = await Promise.all(articles.map(async (a) => {

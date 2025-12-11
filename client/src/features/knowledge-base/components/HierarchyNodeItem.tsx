@@ -1,4 +1,4 @@
-import { ChevronRight, ChevronDown, Pencil, Trash2, AlertCircle, Plus, Minus, FileText, X } from "lucide-react";
+import { ChevronRight, ChevronDown, Pencil, Trash2, AlertCircle, Plus, Minus, FileText, X, BarChart3 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { HierarchyNode, KnowledgeBaseArticle } from "../hooks/useKnowledgeBase";
@@ -81,9 +81,10 @@ interface HierarchyNodeItemProps {
   onDeleteSubject?: (subjectId: number, subjectName: string, hasArticles: boolean) => void;
   onDeleteIntent?: (intentId: number, intentName: string, hasArticles: boolean) => void;
   parentName?: string;
+  intentViewCountMap?: Map<number, number>;
 }
 
-export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete, onAddArticle, onAddSubject, onAddIntent, onEditIntent, onEditSubject, onDeleteSubject, onDeleteIntent, parentName }: HierarchyNodeItemProps) {
+export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete, onAddArticle, onAddSubject, onAddIntent, onEditIntent, onEditSubject, onDeleteSubject, onDeleteIntent, parentName, intentViewCountMap }: HierarchyNodeItemProps) {
   const isProduct = node.level === "produto";
   const isSubproduct = node.level === "subproduto";
   const isAssunto = node.level === "assunto";
@@ -175,22 +176,30 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
               )}
 
               {isIntencao && stats.articleCount > 0 && (
-                <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-emerald-600">
-                  <FileText className="w-3 h-3" />
-                  Com artigo
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (node.articles.length > 0) {
-                        onEdit(node.articles[0]);
-                      }
-                    }}
-                    className="text-blue-500 hover:text-blue-700 hover:underline cursor-pointer ml-1"
-                    title="Editar artigo"
-                  >
-                    (Editar artigo)
-                  </button>
-                </span>
+                <>
+                  <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-emerald-600">
+                    <FileText className="w-3 h-3" />
+                    Com artigo
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (node.articles.length > 0) {
+                          onEdit(node.articles[0]);
+                        }
+                      }}
+                      className="text-blue-500 hover:text-blue-700 hover:underline cursor-pointer ml-1"
+                      title="Editar artigo"
+                    >
+                      (Editar artigo)
+                    </button>
+                  </span>
+                  {node.intentId && intentViewCountMap && intentViewCountMap.get(node.intentId) !== undefined && intentViewCountMap.get(node.intentId)! > 0 && (
+                    <span className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium" title="Acessos via IA">
+                      <BarChart3 className="w-3 h-3" />
+                      {intentViewCountMap.get(node.intentId)}
+                    </span>
+                  )}
+                </>
               )}
 
               {isAssunto && stats.articleCount === 0 && (
@@ -341,6 +350,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 onEditSubject={onEditSubject}
                 onDeleteSubject={onDeleteSubject}
                 onDeleteIntent={onDeleteIntent}
+                intentViewCountMap={intentViewCountMap}
               />
             ))}
             {node.articles.map((article) => (
@@ -373,6 +383,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 onDeleteSubject={onDeleteSubject}
                 onDeleteIntent={onDeleteIntent}
                 parentName={node.name}
+                intentViewCountMap={intentViewCountMap}
               />
             ))}
           </div>
@@ -397,6 +408,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
               onEditSubject={onEditSubject}
               onDeleteSubject={onDeleteSubject}
               onDeleteIntent={onDeleteIntent}
+              intentViewCountMap={intentViewCountMap}
             />
           ))}
           {node.articles.map((article) => (

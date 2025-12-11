@@ -95,6 +95,7 @@ export function KnowledgeBasePage() {
     subjects,
     intents,
     catalogStats,
+    intentViewCountMap,
   } = useKnowledgeBase(activeTab);
 
   const allPathsCount = useMemo(() => {
@@ -387,6 +388,7 @@ export function KnowledgeBasePage() {
                           onEditSubject={handleEditSubject}
                           onDeleteSubject={handleDeleteSubject}
                           onDeleteIntent={handleDeleteIntent}
+                          intentViewCountMap={intentViewCountMap}
                         />
                       ))}
                     </div>

@@ -479,6 +479,24 @@ export function useKnowledgeBase(activeTab: string) {
     enabled: activeTab === "articles",
   });
 
+  const { data: intentStatistics = [] } = useQuery<{ intentId: number; viewCount: number }[]>({
+    queryKey: ["/api/knowledge/articles/statistics/by-intent"],
+    queryFn: async () => {
+      const res = await fetch("/api/knowledge/articles/statistics/by-intent");
+      if (!res.ok) throw new Error("Failed to fetch statistics");
+      return res.json();
+    },
+    enabled: activeTab === "articles",
+  });
+
+  const intentViewCountMap = useMemo(() => {
+    const map = new Map<number, number>();
+    for (const stat of intentStatistics) {
+      map.set(stat.intentId, stat.viewCount);
+    }
+    return map;
+  }, [intentStatistics]);
+
   const catalogStats = useMemo(() => {
     const uniqueProducts = new Set(catalogProducts.map(p => p.produto));
     const uniqueSubproducts = catalogProducts.filter(p => p.subproduto).length;
@@ -523,5 +541,6 @@ export function useKnowledgeBase(activeTab: string) {
     subjects,
     intents,
     catalogStats,
+    intentViewCountMap,
   };
 }
