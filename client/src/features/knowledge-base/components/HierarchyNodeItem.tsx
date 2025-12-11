@@ -193,12 +193,6 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                       (Editar artigo)
                     </button>
                   </span>
-                  {node.intentId && intentViewCountMap && (
-                    <span className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium" title="Acessos via IA">
-                      <BarChart3 className="w-3 h-3" />
-                      {intentViewCountMap.get(node.intentId) ?? 0}
-                    </span>
-                  )}
                 </>
               )}
 
@@ -325,6 +319,12 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
               >
                 <X className="w-4 h-4" />
               </button>
+            )}
+            {isIntencao && stats.articleCount > 0 && node.intentId && intentViewCountMap && (
+              <span className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium" title="Acessos via IA">
+                <BarChart3 className="w-3 h-3" />
+                {intentViewCountMap.get(node.intentId) ?? 0}
+              </span>
             )}
             <span className={`inline-flex px-2 py-0.5 text-xs rounded border whitespace-nowrap ${LEVEL_COLORS[node.level]?.bg || "bg-gray-50"} ${LEVEL_COLORS[node.level]?.text || "text-gray-700"} ${LEVEL_COLORS[node.level]?.border || "border-gray-200"}`}>
               {LEVEL_LABELS[node.level] || node.level}
