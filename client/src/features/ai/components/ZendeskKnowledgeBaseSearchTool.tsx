@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FileText, HelpCircle, ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ExpandableSearchTool } from "../../../shared/components/ui";
@@ -27,6 +27,7 @@ export function ZendeskKnowledgeBaseSearchTool({ isExpanded, onToggle }: Zendesk
   const [sectionId, setSectionId] = useState("");
   const [selectedSubdomains, setSelectedSubdomains] = useState<string[]>([]);
   const [searchTrigger, setSearchTrigger] = useState(0);
+  const initializedRef = useRef(false);
 
   const { data: subdomains } = useQuery<ZendeskSubdomain[]>({
     queryKey: ["zendesk-subdomains"],
@@ -39,8 +40,9 @@ export function ZendeskKnowledgeBaseSearchTool({ isExpanded, onToggle }: Zendesk
   });
 
   useEffect(() => {
-    if (subdomains && subdomains.length > 0 && selectedSubdomains.length === 0) {
+    if (subdomains && subdomains.length > 0 && !initializedRef.current) {
       setSelectedSubdomains(subdomains.map(s => s.subdomain));
+      initializedRef.current = true;
     }
   }, [subdomains]);
 
