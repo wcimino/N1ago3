@@ -34,6 +34,7 @@ function buildEnrichedQueryText(params: EnrichedQueryParams): string {
   descriptionParts.push(params.keywords);
   
   parts.push(`Descrição: ${descriptionParts.join(". ")}`);
+  parts.push(`Resolução: ${params.keywords}`);
   
   return parts.join("\n\n");
 }
@@ -102,21 +103,13 @@ export function createKnowledgeBaseTool(): ToolDefinition {
         
         if (hasEmbeddings) {
           try {
-            const hasContext = args.product || resolvedSubject || resolvedIntent;
-            let queryText: string;
-            
-            if (hasContext) {
-              queryText = buildEnrichedQueryText({
-                keywords: args.keywords,
-                product: args.product,
-                subject: resolvedSubject,
-                intent: resolvedIntent,
-              });
-              console.log(`[KB Tool] Using enriched semantic search: product=${args.product}, subject=${resolvedSubject}, intent=${resolvedIntent}`);
-            } else {
-              queryText = args.keywords;
-              console.log("[KB Tool] Using simple semantic search with embeddings");
-            }
+            const queryText = buildEnrichedQueryText({
+              keywords: args.keywords,
+              product: args.product,
+              subject: resolvedSubject,
+              intent: resolvedIntent,
+            });
+            console.log(`[KB Tool] Using structured semantic search: product=${args.product || 'none'}, subject=${resolvedSubject || 'none'}, intent=${resolvedIntent || 'none'}`);
             
             const { embedding: queryEmbedding } = await generateKBEmbedding(queryText);
             const semanticResults = await knowledgeBaseStorage.searchBySimilarity(
@@ -138,7 +131,7 @@ export function createKnowledgeBaseTool(): ToolDefinition {
               relevanceScore: a.similarity
             }));
             
-            console.log(`[KB Tool] Semantic search found ${articles.length} articles (enriched=${!!hasContext})`);
+            console.log(`[KB Tool] Semantic search found ${articles.length} articles`);
           } catch (error) {
             console.error("[KB Tool] Semantic search failed, falling back to full-text:", error);
             const searchResults = await knowledgeBaseStorage.searchArticlesWithRelevance(args.keywords, {
