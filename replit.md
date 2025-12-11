@@ -90,6 +90,21 @@ All features (enrichment, AutoPilot, knowledge-base) consume these centralized s
 *   `createZendeskKnowledgeBaseTool()` uses semantic search with fallback to full-text
 *   `embedding_generation_logs` table for monitoring success/failure rates
 
+## Known Issues & Workarounds
+
+### Drizzle DESC Index Bug (Fixed Dec 2024)
+**Problem:** Drizzle ORM 0.31.x has a bug where it cannot properly track indexes with DESC ordering. Every `drizzle-kit generate` would emit DROP/CREATE statements for these indexes, even when the database already had them correctly configured.
+
+**Affected indexes:**
+- `idx_conversations_updated_at`
+- `idx_zendesk_webhook_received_at`
+- `idx_openai_api_logs_created_at`
+- `idx_events_standard_occurred_at`
+
+**Solution:** These indexes were removed from the Drizzle schema (schema.ts) and snapshot (drizzle/meta/0006_snapshot.json). The indexes remain in the database and continue to work, but are now "unmanaged" by Drizzle. This prevents the migration cycle.
+
+**Important:** If you need to recreate or modify these indexes in the future, use raw SQL migrations or `db:push` with manual SQL commands.
+
 ## External Dependencies
 
 *   **Zendesk Sunshine Conversations:** Webhook source.

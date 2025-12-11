@@ -332,21 +332,6 @@
           "method": "btree",
           "with": {}
         },
-        "idx_conversations_updated_at": {
-          "name": "idx_conversations_updated_at",
-          "columns": [
-            {
-              "expression": "updated_at",
-              "isExpression": false,
-              "asc": false,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "idx_conversations_status": {
           "name": "idx_conversations_status",
           "columns": [
@@ -858,21 +843,6 @@
         }
       },
       "indexes": {
-        "idx_events_standard_occurred_at": {
-          "name": "idx_events_standard_occurred_at",
-          "columns": [
-            {
-              "expression": "occurred_at",
-              "isExpression": false,
-              "asc": false,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "idx_events_standard_conversation_event": {
           "name": "idx_events_standard_conversation_event",
           "columns": [
@@ -2267,23 +2237,7 @@
           "default": "now()"
         }
       },
-      "indexes": {
-        "idx_openai_api_logs_created_at": {
-          "name": "idx_openai_api_logs_created_at",
-          "columns": [
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": false,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -3884,21 +3838,6 @@
         }
       },
       "indexes": {
-        "idx_zendesk_webhook_received_at": {
-          "name": "idx_zendesk_webhook_received_at",
-          "columns": [
-            {
-              "expression": "received_at",
-              "isExpression": false,
-              "asc": false,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "idx_zendesk_webhook_processing_status": {
           "name": "idx_zendesk_webhook_processing_status",
           "columns": [
