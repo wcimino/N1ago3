@@ -1,7 +1,7 @@
 import { db, pool } from "../../../../db.js";
 import { zendeskArticles, zendeskArticleEmbeddings, type ZendeskArticle, type ZendeskArticleEmbedding } from "../../../../../shared/schema.js";
 import { eq, ilike, or, sql, desc, and, isNull, type SQL } from "drizzle-orm";
-import crypto from "crypto";
+import { generateZendeskContentHash, stripHtmlTags } from "../../../../shared/embeddings/index.js";
 
 export interface ArticleFilters {
   search?: string;
@@ -260,13 +260,7 @@ export function generateContentHash(article: {
   sectionName?: string | null;
   categoryName?: string | null;
 }): string {
-  const content = [
-    article.title || '',
-    article.body || '',
-    article.sectionName || '',
-    article.categoryName || '',
-  ].join('');
-  return crypto.createHash('md5').update(content).digest('hex');
+  return generateZendeskContentHash(article);
 }
 
 export async function getArticlesPendingEmbedding(limit: number = 1): Promise<ZendeskArticle[]> {
@@ -377,11 +371,6 @@ export interface SemanticSearchResult {
   categoryName: string | null;
   htmlUrl: string | null;
   similarity: number;
-}
-
-function stripHtmlTags(html: string | null): string {
-  if (!html) return "";
-  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
 export async function searchBySimilarity(
