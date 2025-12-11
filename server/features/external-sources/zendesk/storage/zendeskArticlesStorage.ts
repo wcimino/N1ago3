@@ -8,6 +8,7 @@ export interface ArticleFilters {
   sectionId?: string;
   locale?: string;
   helpCenterSubdomain?: string;
+  helpCenterSubdomains?: string[];
   limit?: number;
   offset?: number;
 }
@@ -151,7 +152,7 @@ export async function searchArticlesWithRelevance(
 }
 
 export async function getAllArticles(filters: ArticleFilters = {}): Promise<ZendeskArticle[]> {
-  const { search, sectionId, locale, helpCenterSubdomain, limit = 100, offset = 0 } = filters;
+  const { search, sectionId, locale, helpCenterSubdomain, helpCenterSubdomains, limit = 100, offset = 0 } = filters;
   
   const conditions: SQL[] = [];
   
@@ -173,7 +174,13 @@ export async function getAllArticles(filters: ArticleFilters = {}): Promise<Zend
     conditions.push(eq(zendeskArticles.locale, locale));
   }
   
-  if (helpCenterSubdomain) {
+  if (helpCenterSubdomains && helpCenterSubdomains.length > 0) {
+    const subdomainConditions = helpCenterSubdomains.map(sd => eq(zendeskArticles.helpCenterSubdomain, sd));
+    const subdomainFilter = or(...subdomainConditions);
+    if (subdomainFilter) {
+      conditions.push(subdomainFilter);
+    }
+  } else if (helpCenterSubdomain) {
     conditions.push(eq(zendeskArticles.helpCenterSubdomain, helpCenterSubdomain));
   }
   
