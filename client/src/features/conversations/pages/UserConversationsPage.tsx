@@ -98,61 +98,69 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
 
   return (
     <div className="h-[calc(100vh-180px)] flex flex-col">
-      <div className="bg-white rounded-t-lg shadow-sm border-b px-4 py-3 flex items-center gap-3 flex-shrink-0">
-        <button
-          onClick={() => navigate("/atendimentos")}
-          className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <div className="flex-1">
-          <h2 className="text-lg font-semibold text-gray-900">{customerName}</h2>
-          <p className="text-xs text-gray-500">
-            {data?.conversations.length || 0} {(data?.conversations.length || 0) === 1 ? "conversa" : "conversas"} - {totalMessages} {totalMessages === 1 ? "mensagem" : "mensagens"}
-          </p>
+      <div className="bg-white rounded-t-lg shadow-sm border-b px-3 sm:px-4 py-2 sm:py-3 flex-shrink-0 overflow-hidden">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            onClick={() => navigate("/atendimentos")}
+            className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900 flex-shrink-0"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 truncate">{customerName}</h2>
+            <p className="text-xs text-gray-500 truncate">
+              {data?.conversations.length || 0} {(data?.conversations.length || 0) === 1 ? "conversa" : "conversas"} - {totalMessages} msg
+            </p>
+          </div>
+          {selectedConversation && (
+            <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+              <div className="hidden sm:block">
+                <HandlerBadge 
+                  handlerName={selectedConversation.conversation.current_handler_name} 
+                  size="sm" 
+                />
+              </div>
+              {selectedConversation.conversation.current_handler_name?.startsWith("n1ago") && (
+                <button
+                  onClick={() => toggleAutopilotMutation.mutate({
+                    conversationId: selectedConversation.conversation.id,
+                    enabled: !selectedConversation.conversation.autopilot_enabled,
+                  })}
+                  disabled={toggleAutopilotMutation.isPending}
+                  className={`inline-flex items-center justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-2 sm:py-1.5 text-sm border rounded-lg transition-colors ${
+                    selectedConversation.conversation.autopilot_enabled
+                      ? "text-amber-600 hover:text-amber-700 border-amber-200 hover:border-amber-300 hover:bg-amber-50"
+                      : "text-green-600 hover:text-green-700 border-green-200 hover:border-green-300 hover:bg-green-50"
+                  }`}
+                  title={selectedConversation.conversation.autopilot_enabled ? "Pausar AutoPilot" : "Ativar AutoPilot"}
+                >
+                  {selectedConversation.conversation.autopilot_enabled ? (
+                    <ZapOff className="w-4 h-4" />
+                  ) : (
+                    <Zap className="w-4 h-4" />
+                  )}
+                  <span className="hidden lg:inline ml-1">
+                    {selectedConversation.conversation.autopilot_enabled ? "Pausar" : "AutoPilot"}
+                  </span>
+                </button>
+              )}
+              <button
+                onClick={() => setShowTransferModal(true)}
+                className="inline-flex items-center justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-2 sm:py-1.5 text-sm text-purple-600 hover:text-purple-700 border border-purple-200 hover:border-purple-300 rounded-lg hover:bg-purple-50 transition-colors"
+                title="Transferir conversa"
+              >
+                <ArrowRightLeft className="w-4 h-4" />
+                <span className="hidden lg:inline ml-1">Transferir</span>
+              </button>
+            </div>
+          )}
         </div>
         {selectedConversation && (
-          <div className="flex items-center gap-3">
+          <div className="sm:hidden mt-2 flex items-center justify-end">
             <HandlerBadge 
               handlerName={selectedConversation.conversation.current_handler_name} 
               size="sm" 
-              showLabel 
             />
-            {selectedConversation.conversation.current_handler_name?.startsWith("n1ago") && (
-              <button
-                onClick={() => toggleAutopilotMutation.mutate({
-                  conversationId: selectedConversation.conversation.id,
-                  enabled: !selectedConversation.conversation.autopilot_enabled,
-                })}
-                disabled={toggleAutopilotMutation.isPending}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-lg transition-colors ${
-                  selectedConversation.conversation.autopilot_enabled
-                    ? "text-amber-600 hover:text-amber-700 border-amber-200 hover:border-amber-300 hover:bg-amber-50"
-                    : "text-green-600 hover:text-green-700 border-green-200 hover:border-green-300 hover:bg-green-50"
-                }`}
-                title={selectedConversation.conversation.autopilot_enabled ? "Pausar AutoPilot" : "Ativar AutoPilot"}
-              >
-                {selectedConversation.conversation.autopilot_enabled ? (
-                  <>
-                    <ZapOff className="w-4 h-4" />
-                    <span className="hidden sm:inline">Pausar AutoPilot</span>
-                  </>
-                ) : (
-                  <>
-                    <Zap className="w-4 h-4" />
-                    <span className="hidden sm:inline">Ativar AutoPilot</span>
-                  </>
-                )}
-              </button>
-            )}
-            <button
-              onClick={() => setShowTransferModal(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-purple-600 hover:text-purple-700 border border-purple-200 hover:border-purple-300 rounded-lg hover:bg-purple-50 transition-colors"
-              title="Transferir conversa"
-            >
-              <ArrowRightLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Transferir</span>
-            </button>
           </div>
         )}
       </div>
