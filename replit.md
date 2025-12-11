@@ -31,7 +31,7 @@ The React frontend provides a real-time dashboard for events and conversations, 
 *   **AI Integrations:** Includes Conversation Summaries, Product Classification, API Logging, and Configurable Triggers.
 *   **Four-Field Classification System:** Classifies conversations using hierarchical fields (Product → Subproduct → Subject → Intent). Uses two sequential AI tools: `search_product_catalog` (finds product/subproduct) and `search_subject_and_intent` (finds subject/intent based on product). Configurable via `use_subject_intent_tool` flag.
 *   **Structured Conversation Summary:** Displays AI-generated summaries with specific fields (`client_request`, `agent_actions`, `current_status`, `important_info`) parsed from JSON responses.
-*   **Automatic Routing Rules:** Manages conversation routing to `n1ago`, `human`, or `bot` based on predefined rules in `routing_rules` table, using atomic slot consumption and Zendesk Switchboard API for control transfer.
+*   **Automatic Routing Rules:** Unified routing system in `server/features/routing/` that routes conversations to `n1ago`, `human`, or `bot`. Uses a single `processRoutingEvent` function called by the EventDispatcher for all relevant events. Supports two rule types: `allocate_next_n` (routes new conversations on `conversation_started`) and `transfer_ongoing` (routes based on exact text match in messages). Features detailed logging at each step, atomic slot consumption, and Zendesk Switchboard API for control transfer.
 *   **AutoPilot - Automatic Response Sending:** Automatically sends suggested responses under specific conditions (conversation assigned to n1ago, last message from client, no newer messages, `in_response_to` matches).
 
 **System Design Choices:**
