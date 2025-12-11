@@ -4,6 +4,7 @@ import { generateEmbedding as generateZendeskEmbedding, generateEnrichedQueryEmb
 import type { ToolDefinition } from "../openaiApiService.js";
 
 const RELEVANCE_THRESHOLD = 0.05;
+const ENABLED_HELP_CENTER_SUBDOMAIN = "centralajudaifp";
 
 export interface ZendeskSearchContext {
   produto?: string;
@@ -89,7 +90,7 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
             
             const semanticResults = await ZendeskArticlesStorage.searchBySimilarity(
               queryEmbedding,
-              { limit: 5 }
+              { limit: 5, helpCenterSubdomain: ENABLED_HELP_CENTER_SUBDOMAIN }
             );
             
             articles = semanticResults.map(a => ({
@@ -107,7 +108,7 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
             console.error("[Zendesk KB Tool] Semantic search failed, falling back to full-text:", error);
             const searchResults = await ZendeskArticlesStorage.searchArticlesWithRelevance(
               args.keywords,
-              { sectionId: args.section, limit: 10 }
+              { sectionId: args.section, limit: 10, helpCenterSubdomain: ENABLED_HELP_CENTER_SUBDOMAIN }
             );
             articles = searchResults
               .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
@@ -126,7 +127,7 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
           console.log("[Zendesk KB Tool] No embeddings available, using full-text search");
           const searchResults = await ZendeskArticlesStorage.searchArticlesWithRelevance(
             args.keywords,
-            { sectionId: args.section, limit: 10 }
+            { sectionId: args.section, limit: 10, helpCenterSubdomain: ENABLED_HELP_CENTER_SUBDOMAIN }
           );
           articles = searchResults
             .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
@@ -144,7 +145,8 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
       } else {
         const allArticles = await ZendeskArticlesStorage.getAllArticles({
           sectionId: args.section,
-          limit: 5
+          limit: 5,
+          helpCenterSubdomain: ENABLED_HELP_CENTER_SUBDOMAIN
         });
         articles = allArticles.map(a => ({
           id: a.id,

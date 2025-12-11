@@ -381,11 +381,15 @@ export interface SemanticSearchResult {
 
 export async function searchBySimilarity(
   queryEmbedding: number[],
-  options: { limit?: number } = {}
+  options: { limit?: number; helpCenterSubdomain?: string } = {}
 ): Promise<SemanticSearchResult[]> {
-  const { limit = 5 } = options;
+  const { limit = 5, helpCenterSubdomain } = options;
   
   const embeddingString = `[${queryEmbedding.join(',')}]`;
+  
+  const subdomainFilter = helpCenterSubdomain 
+    ? sql`AND a.help_center_subdomain = ${helpCenterSubdomain}`
+    : sql``;
   
   const results = await db.execute(sql`
     SELECT 
@@ -400,6 +404,7 @@ export async function searchBySimilarity(
     FROM zendesk_articles a
     INNER JOIN zendesk_article_embeddings e ON a.id = e.article_id
     WHERE e.embedding_vector IS NOT NULL
+    ${subdomainFilter}
     ORDER BY e.embedding_vector <=> ${embeddingString}::vector
     LIMIT ${limit}
   `);
