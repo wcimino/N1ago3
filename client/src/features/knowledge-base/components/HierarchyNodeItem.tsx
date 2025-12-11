@@ -208,9 +208,21 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
               )}
 
               {isIntencao && stats.articleCount === 0 && (
-                <span className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
+                <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-amber-600">
                   <AlertCircle className="w-3 h-3" />
                   Sem artigos
+                  {onAddArticle && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddArticle(node.subjectId, node.intentId, node.fullPath);
+                      }}
+                      className="text-blue-500 hover:text-blue-700 hover:underline cursor-pointer ml-1"
+                      title="Criar artigo"
+                    >
+                      (Criar artigo)
+                    </button>
+                  )}
                 </span>
               )}
             </div>
@@ -279,19 +291,6 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 title="Excluir assunto"
               >
                 <X className="w-4 h-4" />
-              </button>
-            )}
-            {onAddArticle && isIntencao && stats.articleCount === 0 && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddArticle(node.subjectId, node.intentId, node.fullPath);
-                }}
-                className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 hover:underline transition-opacity"
-                title="Adicionar artigo"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                (Criar artigo)
               </button>
             )}
             {onEditIntent && isIntencao && node.intentId && (
