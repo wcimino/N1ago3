@@ -48,6 +48,12 @@ The React frontend provides a real-time dashboard for events and conversations, 
     - `subjectIntentTool.ts`: Subject and intent lookup
     - `zendeskKnowledgeBaseTool.ts`: Zendesk Help Center semantic search
     - Centralized prompt variables and `promptUtils.ts` for variable substitution.
+*   **Unified Knowledge Base Search Helper** (`server/features/ai/services/knowledgeBaseSearchHelper.ts`):
+    - `runKnowledgeBaseSearch()` provides a single entry point for KB searches
+    - Supports two modes: `useSimpleSearch=true` (legacy scoring via `findRelatedArticles`) and default (semantic + FTS fallback)
+    - Always records article views to `knowledge_base_statistics` table
+    - Resolves subject/intent synonyms and passes conversation context for statistics
+    - Used by both `createKnowledgeBaseTool()` and `buildKnowledgeBaseTool()` to avoid duplication
 *   **Enrichment Agent Modular Architecture:** Refactored into a sequential pipeline (`enrichmentOpenAICaller`, `enrichmentRunLogger`, `enrichmentRunProcessor`, `enrichmentOrchestrator`) to ensure robust logging of AI enrichment attempts.
 
 ## OpenAI Services Architecture
