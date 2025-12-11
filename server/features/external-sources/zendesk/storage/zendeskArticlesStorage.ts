@@ -130,7 +130,13 @@ export async function searchArticlesWithRelevance(
         ) * 10 +
         CASE WHEN LOWER(${zendeskArticles.title}) ILIKE ${'%' + firstTerm + '%'} THEN 5 ELSE 0 END +
         CASE WHEN ${zendeskArticles.promoted} = true THEN 2 ELSE 0 END +
-        COALESCE(${zendeskArticles.voteSum}, 0) * 0.1
+        COALESCE(${zendeskArticles.voteSum}, 0) * 0.1 +
+        CASE 
+          WHEN ${zendeskArticles.zendeskUpdatedAt} > NOW() - INTERVAL '30 days' THEN 3
+          WHEN ${zendeskArticles.zendeskUpdatedAt} > NOW() - INTERVAL '90 days' THEN 2
+          WHEN ${zendeskArticles.zendeskUpdatedAt} > NOW() - INTERVAL '180 days' THEN 1
+          ELSE 0
+        END
       )`.as('relevance_score'),
     })
     .from(zendeskArticles)
