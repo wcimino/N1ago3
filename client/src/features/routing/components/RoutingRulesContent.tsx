@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Route, ArrowRight, Bot, Brain, UserCircle, Plus, Trash2, Power, PowerOff, MessageCircle, Sparkles } from "lucide-react";
+import { Route, ArrowRight, Bot, Brain, UserCircle, Plus, Trash2, Power, PowerOff, MessageCircle, Sparkles, Clock } from "lucide-react";
 import { fetchApi } from "../../../lib/queryClient";
+import { useDateFormatters } from "../../../shared/hooks";
 
 interface RoutingRule {
   id: number;
@@ -415,6 +416,7 @@ interface RuleCardProps {
 }
 
 function RuleCard({ rule, onDeactivate, onDelete, isDeactivating }: RuleCardProps) {
+  const { formatDateTimeShort } = useDateFormatters();
   const targetInfo = TARGET_INFO[rule.target] || TARGET_INFO.n1ago;
   const authInfo = AUTH_FILTER_INFO[rule.authFilter] || AUTH_FILTER_INFO.all;
   const Icon = targetInfo.icon;
@@ -450,27 +452,33 @@ function RuleCard({ rule, onDeactivate, onDelete, isDeactivating }: RuleCardProp
                 </span>
               )}
             </div>
-            {rule.isActive && (
-              <div className="mt-1">
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <span>{rule.allocatedCount} alocadas</span>
-                  <span>•</span>
-                  <span>{remaining} restantes</span>
-                  {!isOngoing && rule.authFilter !== "all" && (
-                    <>
-                      <span>•</span>
-                      <span>{authInfo.label}</span>
-                    </>
-                  )}
-                </div>
-                <div className="w-40 h-1 bg-gray-200 rounded-full mt-1">
-                  <div
-                    className={`h-full rounded-full transition-all ${isOngoing ? 'bg-blue-500' : 'bg-purple-500'}`}
-                    style={{ width: `${Math.min(progress, 100)}%` }}
-                  />
-                </div>
+            <div className="mt-1">
+              {rule.isActive && (
+                <>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span>{rule.allocatedCount} alocadas</span>
+                    <span>•</span>
+                    <span>{remaining} restantes</span>
+                    {!isOngoing && rule.authFilter !== "all" && (
+                      <>
+                        <span>•</span>
+                        <span>{authInfo.label}</span>
+                      </>
+                    )}
+                  </div>
+                  <div className="w-40 h-1 bg-gray-200 rounded-full mt-1">
+                    <div
+                      className={`h-full rounded-full transition-all ${isOngoing ? 'bg-blue-500' : 'bg-purple-500'}`}
+                      style={{ width: `${Math.min(progress, 100)}%` }}
+                    />
+                  </div>
+                </>
+              )}
+              <div className={`flex items-center gap-1 text-xs ${rule.isActive ? 'text-gray-400 mt-1' : 'text-gray-400'}`}>
+                <Clock className="w-3 h-3" />
+                <span>Criada em {formatDateTimeShort(rule.createdAt)}</span>
               </div>
-            )}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1">
