@@ -24,41 +24,6 @@ export interface ClassificationResult {
   error?: string;
 }
 
-const DEFAULT_CLASSIFICATION_PROMPT = `Você é um assistente especializado em classificar conversas de atendimento ao cliente de serviços financeiros.
-
-## Catálogo de Produtos
-Use APENAS as combinações de produto/subproduto listadas abaixo. Copie os valores exatamente como aparecem:
-
-{{CATALOGO_PRODUTOS_SUBPRODUTOS}}
-
-## Contexto da Conversa
-
-### Resumo
-{{RESUMO}}
-
-### Mensagens
-{{MENSAGENS}}
-
-## Sua Tarefa
-Classifique a conversa identificando os campos:
-
-1. **Produto**: Escolha da lista acima (copie o valor exato do campo "produto")
-2. **Subproduto**: Copie o valor exato do campo "subproduto" correspondente, ou null se não houver
-3. **Assunto**: Tema principal da conversa
-4. **Intenção**: O que o cliente deseja
-5. **Confiança**: Seu nível de certeza na classificação (0-100)
-
-Use APENAS os produtos/subprodutos que existem no catálogo acima. Se não identificar claramente, use null.`;
-
-const DEFAULT_CLASSIFICATION_RESPONSE_FORMAT = `Responda em JSON válido:
-{
-  "product": "valor exato do campo produto do catálogo",
-  "subproduct": "valor exato do campo subproduto do catálogo, ou null",
-  "subject": "tema principal da conversa",
-  "intent": "o que o cliente deseja",
-  "confidence": 85
-}`;
-
 export async function classifyConversation(
   payload: ClassificationPayload,
   promptSystem: string | null,
@@ -70,6 +35,34 @@ export async function classifyConversation(
   useProductCatalogTool: boolean = false,
   useSubjectIntentTool: boolean = false
 ): Promise<ClassificationResult> {
+  if (!promptSystem || !promptSystem.trim()) {
+    console.error("[Classification Adapter] Erro: Prompt de classificação não configurado no banco de dados");
+    return {
+      product: null,
+      subproduct: null,
+      subject: null,
+      intent: null,
+      confidence: null,
+      success: false,
+      logId: 0,
+      error: "Prompt de classificação não configurado. Configure o prompt em Configurações de IA > Classificação de Produto."
+    };
+  }
+
+  if (!responseFormat || !responseFormat.trim()) {
+    console.error("[Classification Adapter] Erro: Formato de resposta não configurado no banco de dados");
+    return {
+      product: null,
+      subproduct: null,
+      subject: null,
+      intent: null,
+      confidence: null,
+      success: false,
+      logId: 0,
+      error: "Formato de resposta não configurado. Configure o formato em Configurações de IA > Classificação de Produto."
+    };
+  }
+
   const messagesContext = formatMessagesContext(payload.last20Messages);
 
   const variables = {
@@ -79,11 +72,8 @@ export async function classifyConversation(
     catalogoProdutosSubprodutos: payload.productCatalogJson,
   };
 
-  const basePrompt = promptSystem || DEFAULT_CLASSIFICATION_PROMPT;
-  const format = responseFormat || DEFAULT_CLASSIFICATION_RESPONSE_FORMAT;
-  
-  const promptWithVars = replacePromptVariables(basePrompt, variables);
-  const fullPrompt = `${promptWithVars}\n\n## Formato da Resposta\n${format}`;
+  const promptWithVars = replacePromptVariables(promptSystem, variables);
+  const fullPrompt = `${promptWithVars}\n\n## Formato da Resposta\n${responseFormat}`;
 
   const effectiveUseProductCatalogTool = payload.productCatalogJson ? false : useProductCatalogTool;
 
