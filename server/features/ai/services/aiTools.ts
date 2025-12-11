@@ -1,12 +1,12 @@
 import type { ToolDefinition } from "./openaiApiService.js";
 import { createKnowledgeBaseTool } from "./tools/knowledgeBaseTool.js";
 import { createProductCatalogTool } from "./tools/productCatalogTool.js";
-import { createZendeskKnowledgeBaseTool } from "./tools/zendeskKnowledgeBaseTool.js";
+import { createZendeskKnowledgeBaseTool, type ZendeskSearchContext } from "./tools/zendeskKnowledgeBaseTool.js";
 import { createSubjectIntentTool } from "./tools/subjectIntentTool.js";
 
 export { createKnowledgeBaseTool } from "./tools/knowledgeBaseTool.js";
 export { createProductCatalogTool } from "./tools/productCatalogTool.js";
-export { createZendeskKnowledgeBaseTool } from "./tools/zendeskKnowledgeBaseTool.js";
+export { createZendeskKnowledgeBaseTool, type ZendeskSearchContext } from "./tools/zendeskKnowledgeBaseTool.js";
 export { createSubjectIntentTool } from "./tools/subjectIntentTool.js";
 
 export interface ToolFlags {

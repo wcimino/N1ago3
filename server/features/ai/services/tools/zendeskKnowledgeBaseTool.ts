@@ -1,14 +1,22 @@
 import { ZendeskArticlesStorage } from "../../../external-sources/zendesk/storage/zendeskArticlesStorage.js";
 import { ZendeskArticleStatisticsStorage } from "../../../external-sources/zendesk/storage/zendeskArticleStatisticsStorage.js";
-import { generateEmbedding as generateZendeskEmbedding } from "../../../external-sources/zendesk/services/embeddingService.js";
+import { generateEmbedding as generateZendeskEmbedding, generateEnrichedQueryEmbedding } from "../../../external-sources/zendesk/services/embeddingService.js";
 import type { ToolDefinition } from "../openaiApiService.js";
 
 const RELEVANCE_THRESHOLD = 0.05;
 
-export function createZendeskKnowledgeBaseTool(): ToolDefinition {
+export interface ZendeskSearchContext {
+  produto?: string;
+  subproduto?: string;
+  assunto?: string;
+  intencao?: string;
+  situacao?: string;
+}
+
+export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchContext): ToolDefinition {
   return {
     name: "search_knowledge_base_zendesk",
-    description: "Busca artigos na base de conhecimento do Zendesk (Help Center) usando busca semântica inteligente. Use para encontrar artigos de ajuda, FAQs e documentação pública. A busca entende o significado da sua consulta e encontra os artigos mais relevantes.",
+    description: "Busca artigos na base de conhecimento do Zendesk (Help Center) usando busca semântica inteligente. Use para encontrar artigos de ajuda, FAQs e documentação pública. A busca entende o significado da sua consulta e encontra os artigos mais relevantes. Você pode fornecer contexto adicional (produto, subproduto, assunto, intenção) para melhorar a precisão da busca.",
     parameters: {
       type: "object",
       properties: {
@@ -19,11 +27,27 @@ export function createZendeskKnowledgeBaseTool(): ToolDefinition {
         section: {
           type: "string",
           description: "ID da seção para filtrar artigos (opcional)"
+        },
+        produto: {
+          type: "string",
+          description: "Produto relacionado (ex: Cartão, Conta Digital, Maquinona, Empréstimo). Melhora a precisão da busca."
+        },
+        subproduto: {
+          type: "string",
+          description: "Subproduto ou variante (ex: Cartão de Débito, Cartão de Crédito). Melhora a precisão da busca."
+        },
+        assunto: {
+          type: "string",
+          description: "Assunto ou tema geral (ex: Saque, Fatura, Limite, Preço e tarifas). Melhora a precisão da busca."
+        },
+        intencao: {
+          type: "string",
+          description: "Intenção ou tipo de demanda (ex: Dúvida, Reclamação, Solicitação). Melhora a precisão da busca."
         }
       },
       required: []
     },
-    handler: async (args: { keywords?: string; section?: string }) => {
+    handler: async (args: { keywords?: string; section?: string; produto?: string; subproduto?: string; assunto?: string; intencao?: string }) => {
       let articles: Array<{
         id: number;
         zendeskId: string;
@@ -34,12 +58,35 @@ export function createZendeskKnowledgeBaseTool(): ToolDefinition {
         similarity: number;
       }> = [];
       
+      const mergedContext = {
+        produto: args.produto || searchContext?.produto,
+        subproduto: args.subproduto || searchContext?.subproduto,
+        assunto: args.assunto || searchContext?.assunto,
+        intencao: args.intencao || searchContext?.intencao,
+        situacao: searchContext?.situacao,
+      };
+      
+      const hasContext = mergedContext.produto || mergedContext.subproduto || mergedContext.assunto || mergedContext.intencao || mergedContext.situacao;
+      
       if (args.keywords && args.keywords.trim().length > 0) {
         const stats = await ZendeskArticlesStorage.getEmbeddingStats();
         
         if (stats.withEmbedding > 0) {
           try {
-            const { embedding: queryEmbedding } = await generateZendeskEmbedding(args.keywords);
+            let queryEmbedding: number[];
+            
+            if (hasContext) {
+              console.log(`[Zendesk KB Tool] Using enriched query with context: produto=${mergedContext.produto}, subproduto=${mergedContext.subproduto}, assunto=${mergedContext.assunto}, intencao=${mergedContext.intencao}`);
+              const enrichedResult = await generateEnrichedQueryEmbedding({
+                keywords: args.keywords,
+                ...mergedContext,
+              });
+              queryEmbedding = enrichedResult.embedding;
+            } else {
+              const simpleResult = await generateZendeskEmbedding(args.keywords);
+              queryEmbedding = simpleResult.embedding;
+            }
+            
             const semanticResults = await ZendeskArticlesStorage.searchBySimilarity(
               queryEmbedding,
               { limit: 5 }
@@ -55,7 +102,7 @@ export function createZendeskKnowledgeBaseTool(): ToolDefinition {
               similarity: a.similarity,
             }));
             
-            console.log(`[Zendesk KB Tool] Semantic search found ${articles.length} articles`);
+            console.log(`[Zendesk KB Tool] Semantic search found ${articles.length} articles (enriched=${hasContext})`);
           } catch (error) {
             console.error("[Zendesk KB Tool] Semantic search failed, falling back to full-text:", error);
             const searchResults = await ZendeskArticlesStorage.searchArticlesWithRelevance(

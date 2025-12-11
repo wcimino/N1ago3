@@ -113,3 +113,48 @@ export function cosineSimilarity(a: number[], b: number[]): number {
   return dotProduct / (normA * normB);
 }
 
+export interface EnrichedQueryParams {
+  keywords: string;
+  produto?: string;
+  subproduto?: string;
+  assunto?: string;
+  intencao?: string;
+  situacao?: string;
+}
+
+export async function generateEnrichedQueryEmbedding(params: EnrichedQueryParams): Promise<{ embedding: number[]; logId: number; formattedQuery: string }> {
+  const parts: string[] = [];
+  
+  if (params.produto) {
+    parts.push(`Categoria: ${params.produto}`);
+  }
+  if (params.subproduto) {
+    parts.push(`Seção: ${params.subproduto}`);
+  }
+  if (params.assunto) {
+    parts.push(`Título: ${params.assunto}`);
+  }
+  
+  const contentParts: string[] = [];
+  if (params.intencao) {
+    contentParts.push(params.intencao);
+  }
+  if (params.situacao) {
+    contentParts.push(params.situacao);
+  }
+  contentParts.push(params.keywords);
+  
+  parts.push(`Conteúdo: ${contentParts.join(". ")}`);
+  
+  const formattedQuery = parts.join("\n\n");
+  
+  console.log(`[Embedding] Generating enriched query embedding:\n${formattedQuery}`);
+  
+  const result = await generateEmbedding(formattedQuery);
+  
+  return {
+    ...result,
+    formattedQuery,
+  };
+}
+

@@ -190,10 +190,15 @@ export async function callOpenAIForIntent(
   ];
 
   if (config.useZendeskKnowledgeBaseTool) {
-    const zendeskTool = createZendeskKnowledgeBaseTool();
+    const zendeskTool = createZendeskKnowledgeBaseTool({
+      produto: intent.productName,
+      subproduto: intent.subproductName || undefined,
+      assunto: intent.subjectName || undefined,
+      intencao: intent.name,
+    });
     const originalHandler = zendeskTool.handler;
     zendeskTool.handler = async (args) => {
-      console.log(`[OpenAI Caller] Zendesk KB search for intent #${intent.id}: keywords=${args.keywords}`);
+      console.log(`[OpenAI Caller] Zendesk KB search for intent #${intent.id}: keywords=${args.keywords}, produto=${intent.productName}, assunto=${intent.subjectName}`);
       return originalHandler(args);
     };
     tools.unshift(zendeskTool);
