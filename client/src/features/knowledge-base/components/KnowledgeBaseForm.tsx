@@ -34,7 +34,6 @@ export function KnowledgeBaseForm({
   isLoading = false,
 }: KnowledgeBaseFormProps) {
   const [formData, setFormData] = useState({
-    name: "",
     productStandard: "",
     description: "",
     resolution: "",
@@ -101,7 +100,6 @@ export function KnowledgeBaseForm({
   useEffect(() => {
     if (initialData && dataReady && initializedForId !== initialData.id) {
       setFormData({
-        name: initialData.name || "",
         productStandard: initialData.productStandard,
         description: initialData.description,
         resolution: initialData.resolution,
@@ -113,7 +111,6 @@ export function KnowledgeBaseForm({
       setInitializedForId(initialData.id);
     } else if (prefilledData && !initialData && initializedForId !== -1) {
       setFormData({
-        name: "",
         productStandard: prefilledData.productStandard,
         description: "",
         resolution: "",
@@ -125,7 +122,6 @@ export function KnowledgeBaseForm({
       setInitializedForId(-1);
     } else if (!initialData && !prefilledData && initializedForId !== 0) {
       setFormData({
-        name: "",
         productStandard: "",
         description: "",
         resolution: "",
@@ -177,7 +173,7 @@ export function KnowledgeBaseForm({
     const intentId = prefilledData?.intentId || formData.intentId;
     
     onSubmit({
-      name: formData.name || null,
+      name: null,
       productStandard,
       subproductStandard,
       description: formData.description,
@@ -279,27 +275,11 @@ export function KnowledgeBaseForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2 sm:col-span-1">
-          <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
-            <FileText className="w-3.5 h-3.5" />
-            Nome do Artigo
-          </label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
-            placeholder="Ex: Como contratar o Cartão de Crédito"
-          />
-        </div>
-
-        <div className="col-span-2 sm:col-span-1">
-          <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
-            <Tag className="w-3.5 h-3.5" />
-            Classificação
-          </label>
+      <div>
+        <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
+          <Tag className="w-3.5 h-3.5" />
+          Classificação
+        </label>
           {prefilledData || initialData ? (
             <div className="flex items-center gap-1.5 flex-wrap py-1.5">
               <span className="px-2 py-1 text-xs bg-gray-100 rounded border border-gray-200 text-gray-700 font-medium">
