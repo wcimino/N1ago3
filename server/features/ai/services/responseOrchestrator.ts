@@ -54,8 +54,10 @@ export async function generateConversationResponse(event: EventStandard): Promis
 
     const reversedMessages = [...last20Messages].reverse();
 
-    const classification = (existingSummary?.product || existingSummary?.intent) ? {
+    const classification = (existingSummary?.product || existingSummary?.subproduct || existingSummary?.subject || existingSummary?.intent) ? {
       product: existingSummary.product,
+      subproduct: existingSummary.subproduct,
+      subject: existingSummary.subject,
       intent: existingSummary.intent,
       confidence: existingSummary.confidence,
     } : null;

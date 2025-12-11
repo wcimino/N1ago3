@@ -9,6 +9,8 @@ export interface ResponsePayload {
   currentSummary: string | null;
   classification: {
     product: string | null;
+    subproduct: string | null;
+    subject: string | null;
     intent: string | null;
     confidence: number | null;
   } | null;

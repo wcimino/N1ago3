@@ -48,13 +48,19 @@ export function formatLastMessage(message: {
 
 export function formatClassification(classification: {
   product: string | null;
+  subproduct: string | null;
+  subject: string | null;
   intent: string | null;
   confidence: number | null;
 } | null): string {
   if (!classification) {
     return 'Classificação não disponível';
   }
-  return `Produto: ${classification.product || 'Não identificado'}\nIntenção: ${classification.intent || 'Não identificada'}\nConfiança: ${classification.confidence !== null ? `${classification.confidence}%` : 'N/A'}`;
+  return `Produto: ${classification.product || 'Não identificado'}
+Subproduto: ${classification.subproduct || 'Não identificado'}
+Assunto: ${classification.subject || 'Não identificado'}
+Intenção: ${classification.intent || 'Não identificada'}
+Confiança: ${classification.confidence !== null ? `${classification.confidence}%` : 'N/A'}`;
 }
 
 export function buildFullPrompt(
@@ -78,7 +84,7 @@ export function buildFullPrompt(
 export const AVAILABLE_VARIABLES = [
   { name: '{{RESUMO}}', description: 'Resumo da conversa atual' },
   { name: '{{RESUMO_ATUAL}}', description: 'Resumo anterior da conversa (para atualização)' },
-  { name: '{{CLASSIFICACAO}}', description: 'Classificação: Produto, Intenção e Confiança' },
+  { name: '{{CLASSIFICACAO}}', description: 'Produto, Subproduto, Assunto, Intenção e Confiança' },
   { name: '{{ULTIMAS_20_MENSAGENS}}', description: 'Histórico das últimas 20 mensagens' },
   { name: '{{ULTIMA_MENSAGEM}}', description: 'A mensagem mais recente' },
   { name: '{{MENSAGENS}}', description: 'Alias para {{ULTIMAS_20_MENSAGENS}}' },
