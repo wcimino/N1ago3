@@ -1,40 +1,54 @@
 import { db } from "../../../db.js";
 import { routingRules, type RoutingRule } from "../../../../shared/schema.js";
-import { eq, and, sql, lt, or } from "drizzle-orm";
+import { eq, and, sql, or, asc } from "drizzle-orm";
 
-export async function getActiveRoutingRules(): Promise<RoutingRule[]> {
+export async function getAllActiveRules(): Promise<RoutingRule[]> {
   const rules = await db
     .select()
     .from(routingRules)
-    .where(eq(routingRules.isActive, true));
+    .where(
+      and(
+        eq(routingRules.isActive, true),
+        or(
+          sql`${routingRules.allocateCount} IS NULL`,
+          sql`${routingRules.allocatedCount} < ${routingRules.allocateCount}`
+        )
+      )
+    )
+    .orderBy(asc(routingRules.id));
   
   return rules;
 }
 
-export async function getActiveAllocateNextNRule(userAuthenticated?: boolean): Promise<RoutingRule | null> {
-  const baseConditions = and(
-    eq(routingRules.isActive, true),
-    eq(routingRules.ruleType, "allocate_next_n")
-  );
-
-  let whereCondition;
-  if (userAuthenticated === undefined) {
-    whereCondition = baseConditions;
-  } else {
-    const authFilterCondition = or(
-      eq(routingRules.authFilter, "all"),
-      eq(routingRules.authFilter, userAuthenticated ? "authenticated" : "unauthenticated")
-    );
-    whereCondition = and(baseConditions, authFilterCondition);
+export function matchesText(ruleMatchText: string | null, messageText: string): boolean {
+  if (!ruleMatchText) {
+    return false;
   }
-
-  const rules = await db
-    .select()
-    .from(routingRules)
-    .where(whereCondition)
-    .limit(1);
   
-  return rules[0] || null;
+  const normalizedRule = ruleMatchText.trim().toLowerCase();
+  const normalizedMessage = messageText.trim().toLowerCase();
+  
+  return normalizedMessage === normalizedRule;
+}
+
+export function matchesAuthFilter(rule: RoutingRule, userAuthenticated: boolean | undefined): boolean {
+  if (!rule.authFilter || rule.authFilter === "all") {
+    return true;
+  }
+  
+  if (userAuthenticated === undefined) {
+    return true;
+  }
+  
+  if (rule.authFilter === "authenticated" && userAuthenticated) {
+    return true;
+  }
+  
+  if (rule.authFilter === "unauthenticated" && !userAuthenticated) {
+    return true;
+  }
+  
+  return false;
 }
 
 export async function tryConsumeRuleSlot(ruleId: number): Promise<{ success: boolean; rule: RoutingRule | null; shouldDeactivate: boolean }> {
@@ -73,46 +87,10 @@ export async function deactivateRule(ruleId: number): Promise<void> {
     .where(eq(routingRules.id, ruleId));
 }
 
-export async function getActiveTransferOngoingRules(): Promise<RoutingRule[]> {
-  const rules = await db
-    .select()
-    .from(routingRules)
-    .where(
-      and(
-        eq(routingRules.isActive, true),
-        eq(routingRules.ruleType, "transfer_ongoing"),
-        or(
-          sql`${routingRules.allocateCount} IS NULL`,
-          sql`${routingRules.allocatedCount} < ${routingRules.allocateCount}`
-        )
-      )
-    );
-  
-  return rules;
-}
-
-export async function findMatchingTransferOngoingRule(messageText: string): Promise<RoutingRule | null> {
-  const normalizedMessage = messageText.trim().toLowerCase();
-  
-  const rules = await getActiveTransferOngoingRules();
-  
-  for (const rule of rules) {
-    if (rule.matchText) {
-      const normalizedMatchText = rule.matchText.trim().toLowerCase();
-      if (normalizedMessage === normalizedMatchText) {
-        return rule;
-      }
-    }
-  }
-  
-  return null;
-}
-
 export const routingStorage = {
-  getActiveRoutingRules,
-  getActiveAllocateNextNRule,
-  getActiveTransferOngoingRules,
-  findMatchingTransferOngoingRule,
+  getAllActiveRules,
+  matchesText,
+  matchesAuthFilter,
   tryConsumeRuleSlot,
   deactivateRule,
 };

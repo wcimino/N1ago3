@@ -11,15 +11,9 @@ type StandardEventInput = Parameters<typeof eventStorage.saveStandardEvent>[0];
 
 export async function dispatchEvent(event: EventStandard): Promise<void> {
   try {
-    await RoutingOrchestrator.processRoutingForEvent(event);
+    await RoutingOrchestrator.processRoutingEvent(event);
   } catch (error) {
     console.error(`[EventDispatcher] Failed to process routing for event ${event.id}:`, error);
-  }
-
-  try {
-    await RoutingOrchestrator.processOngoingRoutingForEvent(event);
-  } catch (error) {
-    console.error(`[EventDispatcher] Failed to process ongoing routing for event ${event.id}:`, error);
   }
 
   try {
