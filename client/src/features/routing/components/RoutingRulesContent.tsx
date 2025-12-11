@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Route, ArrowRight, Bot, Brain, UserCircle, Plus, Trash2, Power, PowerOff } from "lucide-react";
+import { Route, ArrowRight, Bot, Brain, UserCircle, Plus, Trash2, Power, PowerOff, MessageCircle, Sparkles } from "lucide-react";
 import { fetchApi } from "../../../lib/queryClient";
 
 interface RoutingRule {
@@ -11,6 +11,7 @@ interface RoutingRule {
   allocatedCount: number;
   isActive: boolean;
   authFilter: string;
+  matchText: string | null;
   createdBy: string | null;
   createdAt: string;
   expiresAt: string | null;
@@ -28,13 +29,22 @@ const TARGET_INFO: Record<string, { label: string; icon: typeof Bot; bgClass: st
   bot: { label: "Bot Zendesk", icon: Bot, bgClass: "bg-emerald-100", iconClass: "text-emerald-600" },
 };
 
+type FormType = "new_conversation" | "ongoing_conversation" | null;
+
 export function RoutingRulesContent() {
   const queryClient = useQueryClient();
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
+  const [activeForm, setActiveForm] = useState<FormType>(null);
+  
+  const [newConvForm, setNewConvForm] = useState({
     target: "n1ago",
     allocateCount: 10,
     authFilter: "all",
+  });
+
+  const [ongoingConvForm, setOngoingConvForm] = useState({
+    target: "n1ago",
+    allocateCount: 10,
+    matchText: "",
   });
 
   const { data: rules, isLoading } = useQuery<RoutingRule[]>({
@@ -43,7 +53,7 @@ export function RoutingRulesContent() {
   });
 
   const createRule = useMutation({
-    mutationFn: async (data: { ruleType: string; target: string; allocateCount: number; authFilter: string }) => {
+    mutationFn: async (data: { ruleType: string; target: string; allocateCount: number; authFilter?: string; matchText?: string }) => {
       const response = await fetch("/api/routing/rules", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -55,8 +65,9 @@ export function RoutingRulesContent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["routing-rules"] });
-      setShowForm(false);
-      setFormData({ target: "n1ago", allocateCount: 10, authFilter: "all" });
+      setActiveForm(null);
+      setNewConvForm({ target: "n1ago", allocateCount: 10, authFilter: "all" });
+      setOngoingConvForm({ target: "n1ago", allocateCount: 10, matchText: "" });
     },
   });
 
@@ -88,152 +99,310 @@ export function RoutingRulesContent() {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmitNewConv = (e: React.FormEvent) => {
     e.preventDefault();
     createRule.mutate({
       ruleType: "allocate_next_n",
-      target: formData.target,
-      allocateCount: formData.allocateCount,
-      authFilter: formData.authFilter,
+      target: newConvForm.target,
+      allocateCount: newConvForm.allocateCount,
+      authFilter: newConvForm.authFilter,
     });
   };
 
-  const activeRules = rules?.filter(r => r.isActive) || [];
-  const inactiveRules = rules?.filter(r => !r.isActive) || [];
+  const handleSubmitOngoingConv = (e: React.FormEvent) => {
+    e.preventDefault();
+    createRule.mutate({
+      ruleType: "transfer_ongoing",
+      target: ongoingConvForm.target,
+      allocateCount: ongoingConvForm.allocateCount,
+      matchText: ongoingConvForm.matchText,
+    });
+  };
+
+  const newConvRules = rules?.filter(r => r.ruleType === "allocate_next_n") || [];
+  const ongoingConvRules = rules?.filter(r => r.ruleType === "transfer_ongoing") || [];
+  
+  const activeNewConvRules = newConvRules.filter(r => r.isActive);
+  const inactiveNewConvRules = newConvRules.filter(r => !r.isActive);
+  
+  const activeOngoingRules = ongoingConvRules.filter(r => r.isActive);
+  const inactiveOngoingRules = ongoingConvRules.filter(r => !r.isActive);
 
   return (
-    <div className="p-4 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <Route className="w-5 h-5 text-purple-600" />
-            Regras de Roteamento
-          </h3>
-          <p className="text-sm text-gray-500 mt-1">
-            Configure como as novas conversas devem ser distribuídas
-          </p>
-        </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Nova Regra
-        </button>
+    <div className="p-4 space-y-8">
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <Route className="w-5 h-5 text-purple-600" />
+          Regras de Roteamento
+        </h3>
+        <p className="text-sm text-gray-500 mt-1">
+          Configure como as conversas devem ser distribuídas
+        </p>
       </div>
 
-      {showForm && (
-        <div className="bg-gray-50 rounded-lg border p-6">
-          <h4 className="text-base font-semibold text-gray-900 mb-4">
-            Alocar próximas novas conversas
-          </h4>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex items-center gap-4 flex-wrap">
-              <span className="text-gray-700">Alocar as próximas</span>
-              <input
-                type="number"
-                min="1"
-                max="1000"
-                value={formData.allocateCount}
-                onChange={(e) => setFormData({ ...formData, allocateCount: parseInt(e.target.value) || 1 })}
-                className="w-24 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              />
-              <span className="text-gray-700">conversas novas para</span>
-              <select
-                value={formData.target}
-                onChange={(e) => setFormData({ ...formData, target: e.target.value })}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              >
-                <option value="n1ago">N1ago</option>
-                <option value="human">Humano</option>
-                <option value="bot">Bot Zendesk</option>
-              </select>
+      {/* Seção: Novas Conversas */}
+      <div className="bg-white rounded-lg border shadow-sm">
+        <div className="p-4 border-b bg-gray-50 rounded-t-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-600" />
+              <h4 className="text-base font-semibold text-gray-900">Novas Conversas</h4>
             </div>
-            <div className="flex items-center gap-4 flex-wrap">
-              <span className="text-gray-700">Tipo de cliente:</span>
-              <select
-                value={formData.authFilter}
-                onChange={(e) => setFormData({ ...formData, authFilter: e.target.value })}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              >
-                <option value="all">Todos os clientes</option>
-                <option value="authenticated">Apenas autenticados</option>
-                <option value="unauthenticated">Apenas não autenticados</option>
-              </select>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={createRule.isPending}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
-              >
-                {createRule.isPending ? "Criando..." : "Criar Regra"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                Cancelar
-              </button>
-            </div>
-          </form>
+            <button
+              onClick={() => setActiveForm(activeForm === "new_conversation" ? null : "new_conversation")}
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Nova Regra
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 mt-1">
+            Regras para alocar conversas que acabaram de iniciar
+          </p>
         </div>
-      )}
 
-      {isLoading ? (
-        <div className="text-center py-12 text-gray-500">Carregando regras...</div>
-      ) : (
-        <div className="space-y-6">
-          {activeRules.length > 0 && (
-            <div>
-              <h4 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Power className="w-4 h-4 text-green-600" />
-                Regras Ativas
-              </h4>
-              <div className="space-y-3">
-                {activeRules.map((rule) => (
-                  <RuleCard
-                    key={rule.id}
-                    rule={rule}
-                    onDeactivate={() => deactivateRule.mutate(rule.id)}
-                    onDelete={() => deleteRule.mutate(rule.id)}
-                    isDeactivating={deactivateRule.isPending}
+        <div className="p-4 space-y-4">
+          {activeForm === "new_conversation" && (
+            <div className="bg-purple-50 rounded-lg border border-purple-200 p-4">
+              <h5 className="text-sm font-semibold text-gray-900 mb-3">
+                Alocar próximas novas conversas
+              </h5>
+              <form onSubmit={handleSubmitNewConv} className="space-y-4">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <span className="text-gray-700 text-sm">Alocar as próximas</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="1000"
+                    value={newConvForm.allocateCount}
+                    onChange={(e) => setNewConvForm({ ...newConvForm, allocateCount: parseInt(e.target.value) || 1 })}
+                    className="w-20 px-3 py-1.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
                   />
-                ))}
-              </div>
+                  <span className="text-gray-700 text-sm">conversas novas para</span>
+                  <select
+                    value={newConvForm.target}
+                    onChange={(e) => setNewConvForm({ ...newConvForm, target: e.target.value })}
+                    className="px-3 py-1.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                  >
+                    <option value="n1ago">N1ago</option>
+                    <option value="human">Humano</option>
+                    <option value="bot">Bot Zendesk</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-4 flex-wrap">
+                  <span className="text-gray-700 text-sm">Tipo de cliente:</span>
+                  <select
+                    value={newConvForm.authFilter}
+                    onChange={(e) => setNewConvForm({ ...newConvForm, authFilter: e.target.value })}
+                    className="px-3 py-1.5 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                  >
+                    <option value="all">Todos os clientes</option>
+                    <option value="authenticated">Apenas autenticados</option>
+                    <option value="unauthenticated">Apenas não autenticados</option>
+                  </select>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={createRule.isPending}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors text-sm"
+                  >
+                    {createRule.isPending ? "Criando..." : "Criar Regra"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveForm(null)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
             </div>
           )}
 
-          {inactiveRules.length > 0 && (
-            <div>
-              <h4 className="text-base font-semibold text-gray-500 mb-3 flex items-center gap-2">
-                <PowerOff className="w-4 h-4" />
-                Regras Inativas
-              </h4>
-              <div className="space-y-3 opacity-60">
-                {inactiveRules.slice(0, 5).map((rule) => (
-                  <RuleCard
-                    key={rule.id}
-                    rule={rule}
-                    onDelete={() => deleteRule.mutate(rule.id)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+          {isLoading ? (
+            <div className="text-center py-8 text-gray-500">Carregando...</div>
+          ) : (
+            <>
+              {activeNewConvRules.length > 0 && (
+                <div>
+                  <h5 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    <Power className="w-4 h-4 text-green-600" />
+                    Ativas
+                  </h5>
+                  <div className="space-y-2">
+                    {activeNewConvRules.map((rule) => (
+                      <RuleCard
+                        key={rule.id}
+                        rule={rule}
+                        onDeactivate={() => deactivateRule.mutate(rule.id)}
+                        onDelete={() => deleteRule.mutate(rule.id)}
+                        isDeactivating={deactivateRule.isPending}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
-          {rules?.length === 0 && (
-            <div className="text-center py-12 bg-gray-50 rounded-lg border">
-              <Route className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">Nenhuma regra de roteamento configurada</p>
-              <p className="text-sm text-gray-400 mt-1">
-                Crie uma regra para começar a alocar conversas automaticamente
-              </p>
-            </div>
+              {inactiveNewConvRules.length > 0 && (
+                <div>
+                  <h5 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                    <PowerOff className="w-4 h-4" />
+                    Inativas
+                  </h5>
+                  <div className="space-y-2 opacity-60">
+                    {inactiveNewConvRules.slice(0, 3).map((rule) => (
+                      <RuleCard
+                        key={rule.id}
+                        rule={rule}
+                        onDelete={() => deleteRule.mutate(rule.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {newConvRules.length === 0 && activeForm !== "new_conversation" && (
+                <div className="text-center py-6 text-gray-400 text-sm">
+                  Nenhuma regra para novas conversas
+                </div>
+              )}
+            </>
           )}
         </div>
-      )}
+      </div>
+
+      {/* Seção: Conversas em Andamento */}
+      <div className="bg-white rounded-lg border shadow-sm">
+        <div className="p-4 border-b bg-gray-50 rounded-t-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5 text-blue-600" />
+              <h4 className="text-base font-semibold text-gray-900">Conversas em Andamento</h4>
+            </div>
+            <button
+              onClick={() => setActiveForm(activeForm === "ongoing_conversation" ? null : "ongoing_conversation")}
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Nova Regra
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 mt-1">
+            Regras para transferir conversas baseado no conteúdo da mensagem
+          </p>
+        </div>
+
+        <div className="p-4 space-y-4">
+          {activeForm === "ongoing_conversation" && (
+            <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
+              <h5 className="text-sm font-semibold text-gray-900 mb-3">
+                Transferir conversas quando mensagem contiver texto
+              </h5>
+              <form onSubmit={handleSubmitOngoingConv} className="space-y-4">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <span className="text-gray-700 text-sm">Quando a mensagem for exatamente</span>
+                  <input
+                    type="text"
+                    placeholder="Ex: quero falar com atendente"
+                    value={ongoingConvForm.matchText}
+                    onChange={(e) => setOngoingConvForm({ ...ongoingConvForm, matchText: e.target.value })}
+                    className="flex-1 min-w-[200px] px-3 py-1.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  />
+                </div>
+                <div className="flex items-center gap-4 flex-wrap">
+                  <span className="text-gray-700 text-sm">Transferir as próximas</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="1000"
+                    value={ongoingConvForm.allocateCount}
+                    onChange={(e) => setOngoingConvForm({ ...ongoingConvForm, allocateCount: parseInt(e.target.value) || 1 })}
+                    className="w-20 px-3 py-1.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  />
+                  <span className="text-gray-700 text-sm">conversas para</span>
+                  <select
+                    value={ongoingConvForm.target}
+                    onChange={(e) => setOngoingConvForm({ ...ongoingConvForm, target: e.target.value })}
+                    className="px-3 py-1.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  >
+                    <option value="n1ago">N1ago</option>
+                    <option value="human">Humano</option>
+                    <option value="bot">Bot Zendesk</option>
+                  </select>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={createRule.isPending || !ongoingConvForm.matchText.trim()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm"
+                  >
+                    {createRule.isPending ? "Criando..." : "Criar Regra"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveForm(null)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="text-center py-8 text-gray-500">Carregando...</div>
+          ) : (
+            <>
+              {activeOngoingRules.length > 0 && (
+                <div>
+                  <h5 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    <Power className="w-4 h-4 text-green-600" />
+                    Ativas
+                  </h5>
+                  <div className="space-y-2">
+                    {activeOngoingRules.map((rule) => (
+                      <RuleCard
+                        key={rule.id}
+                        rule={rule}
+                        onDeactivate={() => deactivateRule.mutate(rule.id)}
+                        onDelete={() => deleteRule.mutate(rule.id)}
+                        isDeactivating={deactivateRule.isPending}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {inactiveOngoingRules.length > 0 && (
+                <div>
+                  <h5 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                    <PowerOff className="w-4 h-4" />
+                    Inativas
+                  </h5>
+                  <div className="space-y-2 opacity-60">
+                    {inactiveOngoingRules.slice(0, 3).map((rule) => (
+                      <RuleCard
+                        key={rule.id}
+                        rule={rule}
+                        onDelete={() => deleteRule.mutate(rule.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {ongoingConvRules.length === 0 && activeForm !== "ongoing_conversation" && (
+                <div className="text-center py-6 text-gray-400 text-sm">
+                  Nenhuma regra para conversas em andamento
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -251,41 +420,52 @@ function RuleCard({ rule, onDeactivate, onDelete, isDeactivating }: RuleCardProp
   const Icon = targetInfo.icon;
   const progress = rule.allocateCount ? (rule.allocatedCount / rule.allocateCount) * 100 : 0;
   const remaining = rule.allocateCount ? rule.allocateCount - rule.allocatedCount : 0;
+  const isOngoing = rule.ruleType === "transfer_ongoing";
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm border p-4 ${rule.isActive ? "" : "border-gray-200"}`}>
+    <div className={`bg-white rounded-lg shadow-sm border p-3 ${rule.isActive ? "" : "border-gray-200"}`}>
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${targetInfo.bgClass}`}>
-            <Icon className={`w-5 h-5 ${targetInfo.iconClass}`} />
+        <div className="flex items-center gap-3">
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center ${targetInfo.bgClass}`}>
+            <Icon className={`w-4 h-4 ${targetInfo.iconClass}`} />
           </div>
           <div>
-            <div className="flex items-center gap-2 text-gray-900">
-              <span className="font-medium">Alocar próximas {rule.allocateCount} conversas</span>
-              <ArrowRight className="w-4 h-4 text-gray-400" />
+            <div className="flex items-center gap-2 text-gray-900 text-sm">
+              {isOngoing ? (
+                <>
+                  <span className="font-medium">Quando mensagem = "{rule.matchText}"</span>
+                  <ArrowRight className="w-4 h-4 text-gray-400" />
+                  <span>Transferir {rule.allocateCount} para</span>
+                </>
+              ) : (
+                <>
+                  <span className="font-medium">Alocar próximas {rule.allocateCount} conversas</span>
+                  <ArrowRight className="w-4 h-4 text-gray-400" />
+                </>
+              )}
               <span className={`font-semibold ${targetInfo.iconClass}`}>{targetInfo.label}</span>
-              {rule.authFilter !== "all" && (
+              {!isOngoing && rule.authFilter !== "all" && (
                 <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">
                   {authInfo.shortLabel}
                 </span>
               )}
             </div>
             {rule.isActive && (
-              <div className="mt-2">
-                <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="mt-1">
+                <div className="flex items-center gap-2 text-xs text-gray-500">
                   <span>{rule.allocatedCount} alocadas</span>
                   <span>•</span>
                   <span>{remaining} restantes</span>
-                  {rule.authFilter !== "all" && (
+                  {!isOngoing && rule.authFilter !== "all" && (
                     <>
                       <span>•</span>
                       <span>{authInfo.label}</span>
                     </>
                   )}
                 </div>
-                <div className="w-48 h-1.5 bg-gray-200 rounded-full mt-1">
+                <div className="w-40 h-1 bg-gray-200 rounded-full mt-1">
                   <div
-                    className="h-full bg-purple-500 rounded-full transition-all"
+                    className={`h-full rounded-full transition-all ${isOngoing ? 'bg-blue-500' : 'bg-purple-500'}`}
                     style={{ width: `${Math.min(progress, 100)}%` }}
                   />
                 </div>
@@ -293,23 +473,23 @@ function RuleCard({ rule, onDeactivate, onDelete, isDeactivating }: RuleCardProp
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {rule.isActive && onDeactivate && (
             <button
               onClick={onDeactivate}
               disabled={isDeactivating}
-              className="p-2 text-gray-400 hover:text-amber-600 transition-colors"
+              className="p-1.5 text-gray-400 hover:text-amber-600 transition-colors"
               title="Desativar regra"
             >
-              <PowerOff className="w-5 h-5" />
+              <PowerOff className="w-4 h-4" />
             </button>
           )}
           <button
             onClick={onDelete}
-            className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+            className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
             title="Excluir regra"
           >
-            <Trash2 className="w-5 h-5" />
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>

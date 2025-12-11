@@ -621,6 +621,7 @@ export const routingRules = pgTable("routing_rules", {
   allocatedCount: integer("allocated_count").default(0).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   authFilter: text("auth_filter").default("all").notNull(),
+  matchText: text("match_text"),
   createdBy: varchar("created_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

@@ -35,7 +35,7 @@ router.get("/api/routing/rules/active", isAuthenticated, requireAuthorizedUser, 
 
 router.post("/api/routing/rules", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
-    const { ruleType, target, allocateCount, expiresAt, authFilter } = req.body;
+    const { ruleType, target, allocateCount, expiresAt, authFilter, matchText } = req.body;
     const user = (req as any).user;
 
     if (!ruleType || !target) {
@@ -46,16 +46,29 @@ router.post("/api/routing/rules", isAuthenticated, requireAuthorizedUser, async 
       return res.status(400).json({ error: "allocateCount must be greater than 0" });
     }
 
+    if (ruleType === "transfer_ongoing" && (!matchText || matchText.trim() === "")) {
+      return res.status(400).json({ error: "matchText is required for transfer_ongoing rules" });
+    }
+
+    if (ruleType === "transfer_ongoing" && (!allocateCount || allocateCount < 1)) {
+      return res.status(400).json({ error: "allocateCount must be greater than 0 for transfer_ongoing rules" });
+    }
+
     const validAuthFilters = ["all", "authenticated", "unauthenticated"];
     const finalAuthFilter = validAuthFilters.includes(authFilter) ? authFilter : "all";
 
+    const deactivateConditions = [
+      eq(routingRules.ruleType, ruleType),
+      eq(routingRules.isActive, true),
+    ];
+    if (ruleType === "transfer_ongoing") {
+      deactivateConditions.push(eq(routingRules.matchText, matchText));
+    }
+    
     await db
       .update(routingRules)
       .set({ isActive: false, updatedAt: new Date() })
-      .where(and(
-        eq(routingRules.ruleType, ruleType),
-        eq(routingRules.isActive, true)
-      ));
+      .where(and(...deactivateConditions));
 
     const [newRule] = await db
       .insert(routingRules)
@@ -65,6 +78,7 @@ router.post("/api/routing/rules", isAuthenticated, requireAuthorizedUser, async 
         allocateCount: allocateCount || null,
         isActive: true,
         authFilter: finalAuthFilter,
+        matchText: ruleType === "transfer_ongoing" ? matchText?.trim() : null,
         createdBy: user?.email || null,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
       })
