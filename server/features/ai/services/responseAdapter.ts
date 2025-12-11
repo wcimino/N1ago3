@@ -111,9 +111,7 @@ function buildKnowledgeBaseTool(context?: { conversationId?: number; externalCon
           product: args.product,
           intent: args.intent,
           keywords: args.keywords,
-          limit: 3,
-          useSimpleSearch: true,
-          minScore: 20
+          limit: 3
         },
         context
       );

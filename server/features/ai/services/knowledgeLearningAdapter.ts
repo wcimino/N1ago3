@@ -1,6 +1,6 @@
 import { callOpenAI, ToolDefinition } from "./openaiApiService.js";
 import { knowledgeSuggestionsStorage } from "../storage/knowledgeSuggestionsStorage.js";
-import { knowledgeBaseService } from "./knowledgeBaseService.js";
+import { runKnowledgeBaseSearch } from "./knowledgeBaseSearchHelper.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 
 export interface LearningPayload {
@@ -178,18 +178,18 @@ async function findSimilarArticle(extraction: ExtractedKnowledge): Promise<{ art
     .split(/\s+/)
     .filter(word => word.length > 3) || [];
 
-  const results = await knowledgeBaseService.findRelatedArticles(
-    extraction.productStandard || undefined,
-    descriptionKeywords,
-    { limit: 1, minScore: 40 }
-  );
+  const result = await runKnowledgeBaseSearch({
+    product: extraction.productStandard || undefined,
+    keywords: descriptionKeywords,
+    limit: 1
+  });
 
-  if (results.length === 0) return null;
+  if (result.articles.length === 0) return null;
 
-  const bestMatch = results[0];
+  const bestMatch = result.articles[0];
   return {
-    articleId: bestMatch.article.id,
-    score: bestMatch.relevanceScore
+    articleId: bestMatch.id,
+    score: Math.round(bestMatch.relevanceScore * 100)
   };
 }
 

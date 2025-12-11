@@ -471,7 +471,22 @@ export const knowledgeBaseStorage = {
     
     const embeddingString = `[${queryEmbedding.join(',')}]`;
     
-    let query = `
+    const conditions: SQL[] = [];
+    conditions.push(sql`e.embedding_vector IS NOT NULL`);
+    
+    if (options.productStandard) {
+      conditions.push(sql`a.product_standard = ${options.productStandard}`);
+    }
+    if (options.subjectId) {
+      conditions.push(sql`a.subject_id = ${options.subjectId}`);
+    }
+    if (options.intentId) {
+      conditions.push(sql`a.intent_id = ${options.intentId}`);
+    }
+    
+    const whereClause = and(...conditions);
+    
+    const results = await db.execute(sql`
       SELECT 
         a.id,
         a.name,
@@ -484,31 +499,13 @@ export const knowledgeBaseStorage = {
         a.observations,
         a.created_at as "createdAt",
         a.updated_at as "updatedAt",
-        ROUND((1 - (e.embedding_vector::vector <=> '${embeddingString}'::vector)) * 100) as similarity
+        ROUND((1 - (e.embedding_vector::vector <=> ${embeddingString}::vector)) * 100) as similarity
       FROM knowledge_base a
       INNER JOIN knowledge_base_embeddings e ON a.id = e.article_id
-      WHERE e.embedding_vector IS NOT NULL
-    `;
-    
-    const conditions: string[] = [];
-    
-    if (options.productStandard) {
-      conditions.push(`a.product_standard = '${options.productStandard.replace(/'/g, "''")}'`);
-    }
-    if (options.subjectId) {
-      conditions.push(`a.subject_id = ${options.subjectId}`);
-    }
-    if (options.intentId) {
-      conditions.push(`a.intent_id = ${options.intentId}`);
-    }
-    
-    if (conditions.length > 0) {
-      query += ` AND ${conditions.join(' AND ')}`;
-    }
-    
-    query += ` ORDER BY e.embedding_vector::vector <=> '${embeddingString}'::vector LIMIT ${limit}`;
-    
-    const results = await db.execute(sql.raw(query));
+      WHERE ${whereClause}
+      ORDER BY e.embedding_vector::vector <=> ${embeddingString}::vector
+      LIMIT ${limit}
+    `);
     
     return (results.rows as unknown as SemanticSearchResult[]).map(row => ({
       id: row.id,

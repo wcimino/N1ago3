@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { knowledgeBaseStorage } from "../../../storage/index.js";
-import { knowledgeBaseService } from "../services/knowledgeBaseService.js";
+import { runKnowledgeBaseSearch } from "../services/knowledgeBaseSearchHelper.js";
 import { batchGenerateEmbeddings, generateArticleEmbedding, generateContentHash } from "../services/knowledgeBaseEmbeddingService.js";
 import { KnowledgeBaseStatisticsStorage } from "../storage/knowledgeBaseStatisticsStorage.js";
 import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
@@ -115,16 +115,20 @@ router.get("/api/knowledge/search", isAuthenticated, requireAuthorizedUser, asyn
       ? (keywords as string).split(",").map(k => k.trim()).filter(k => k.length > 0)
       : undefined;
 
-    const results = await knowledgeBaseService.findRelatedArticles(
-      product as string | undefined,
-      keywordsArray,
-      { limit: parseInt(limit as string) || 10 }
-    );
+    const result = await runKnowledgeBaseSearch({
+      product: product as string | undefined,
+      keywords: keywordsArray,
+      limit: parseInt(limit as string) || 10
+    });
 
     res.json({
-      results,
-      total: results.length,
+      results: result.articles,
+      total: result.articles.length,
       query: { product, keywords: keywordsArray },
+      resolvedFilters: {
+        subject: result.resolvedSubject,
+        intent: result.resolvedIntent
+      }
     });
   } catch (error) {
     console.error("Error searching knowledge base:", error);
@@ -140,12 +144,15 @@ router.get("/api/knowledge/search/product", isAuthenticated, requireAuthorizedUs
       return res.status(400).json({ error: "Query parameter 'q' is required" });
     }
 
-    const results = await knowledgeBaseService.searchByProduct(
-      q as string,
-      { limit: parseInt(limit as string) || 10 }
-    );
+    const result = await runKnowledgeBaseSearch({
+      product: q as string,
+      limit: parseInt(limit as string) || 10
+    });
 
-    res.json({ results, total: results.length });
+    res.json({ 
+      results: result.articles, 
+      total: result.articles.length 
+    });
   } catch (error) {
     console.error("Error searching by product:", error);
     res.status(500).json({ error: "Failed to search by product" });
@@ -163,12 +170,16 @@ router.get("/api/knowledge/search/keywords", isAuthenticated, requireAuthorizedU
 
     const keywords = (q as string).split(",").map(k => k.trim()).filter(k => k.length > 0);
 
-    const results = await knowledgeBaseService.searchByKeywords(
+    const result = await runKnowledgeBaseSearch({
       keywords,
-      { limit: parseInt(limit as string) || 10 }
-    );
+      limit: parseInt(limit as string) || 10
+    });
 
-    res.json({ results, total: results.length, keywords });
+    res.json({ 
+      results: result.articles, 
+      total: result.articles.length, 
+      keywords 
+    });
   } catch (error) {
     console.error("Error searching by keywords:", error);
     res.status(500).json({ error: "Failed to search by keywords" });

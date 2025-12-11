@@ -1,5 +1,5 @@
 import { knowledgeSuggestionsStorage } from "../storage/knowledgeSuggestionsStorage.js";
-import { knowledgeBaseService } from "./knowledgeBaseService.js";
+import { runKnowledgeBaseSearch } from "./knowledgeBaseSearchHelper.js";
 import { callOpenAI, ToolDefinition } from "./openaiApiService.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 import { createZendeskKnowledgeBaseTool } from "./aiTools.js";
@@ -50,23 +50,23 @@ function buildSearchKnowledgeBaseTool(): ToolDefinition {
       required: ["product"]
     },
     handler: async (args: { product: string; category?: string; keywords?: string[] }) => {
-      const results = await knowledgeBaseService.findRelatedArticles(
-        args.product,
-        args.keywords || [],
-        { limit: 5, minScore: 20 }
-      );
+      const result = await runKnowledgeBaseSearch({
+        product: args.product,
+        keywords: args.keywords,
+        limit: 5
+      });
 
-      if (results.length === 0) {
+      if (result.articles.length === 0) {
         return "Nenhum artigo encontrado para esses critérios.";
       }
 
-      return results.map((r, i) => `
-### Artigo ${i + 1} (ID: ${r.article.id}, Score: ${r.relevanceScore})
-- Produto: ${r.article.productStandard}
-- Subproduto: ${r.article.subproductStandard || "N/A"}
-- Descrição: ${r.article.description}
-- Resolução: ${r.article.resolution}
-- Observações: ${r.article.observations || "N/A"}
+      return result.articles.map((a, i) => `
+### Artigo ${i + 1} (ID: ${a.id}, Score: ${Math.round(a.relevanceScore * 100)})
+- Produto: ${a.productStandard}
+- Subproduto: ${a.subproductStandard || "N/A"}
+- Descrição: ${a.description}
+- Resolução: ${a.resolution}
+- Observações: ${a.observations || "N/A"}
 `).join("\n");
     }
   };

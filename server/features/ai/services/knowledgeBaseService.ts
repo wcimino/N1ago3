@@ -14,6 +14,11 @@ export interface SearchOptions {
   minScore?: number;
 }
 
+/**
+ * @deprecated Use runKnowledgeBaseSearch() from knowledgeBaseSearchHelper.ts instead.
+ * This service uses legacy scoring logic that doesn't leverage semantic search.
+ * It will be removed in a future version.
+ */
 export const knowledgeBaseService = {
   async searchByProduct(
     productStandard: string,

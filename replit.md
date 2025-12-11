@@ -50,10 +50,11 @@ The React frontend provides a real-time dashboard for events and conversations, 
     - Centralized prompt variables and `promptUtils.ts` for variable substitution.
 *   **Unified Knowledge Base Search Helper** (`server/features/ai/services/knowledgeBaseSearchHelper.ts`):
     - `runKnowledgeBaseSearch()` provides a single entry point for KB searches
-    - Supports two modes: `useSimpleSearch=true` (legacy scoring via `findRelatedArticles`) and default (semantic + FTS fallback)
-    - Always records article views to `knowledge_base_statistics` table
-    - Resolves subject/intent synonyms and passes conversation context for statistics
-    - Used by both `createKnowledgeBaseTool()` and `buildKnowledgeBaseTool()` to avoid duplication
+    - Always uses semantic search (embeddings) with PostgreSQL FTS fallback when no embeddings available
+    - Records article views to `knowledge_base_statistics` table with conversation context
+    - Resolves subject/intent synonyms before filtering
+    - Used by AI tools (`createKnowledgeBaseTool`, `buildKnowledgeBaseTool`), API endpoints, and learning adapters
+    - Security: Uses parameterized SQL queries to prevent SQL injection
 *   **Enrichment Agent Modular Architecture:** Refactored into a sequential pipeline (`enrichmentOpenAICaller`, `enrichmentRunLogger`, `enrichmentRunProcessor`, `enrichmentOrchestrator`) to ensure robust logging of AI enrichment attempts.
 
 ## OpenAI Services Architecture
