@@ -4,6 +4,7 @@ import { userStorage } from "../../conversations/storage/userStorage.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 
 const processedConversations = new Set<string>();
+const processedOngoingTransfers = new Set<string>();
 
 export function shouldProcessRouting(event: EventStandard): boolean {
   if (event.eventType !== "conversation_started") {
@@ -110,10 +111,97 @@ function getTargetIntegrationId(target: string): string | null {
 
 export function clearProcessedConversations(): void {
   processedConversations.clear();
+  processedOngoingTransfers.clear();
+}
+
+export function shouldProcessOngoingRouting(event: EventStandard): boolean {
+  if (event.eventType !== "message") {
+    return false;
+  }
+
+  if (event.authorType !== "user") {
+    return false;
+  }
+
+  if (!event.externalConversationId) {
+    return false;
+  }
+
+  if (!event.contentText || event.contentText.trim() === "") {
+    return false;
+  }
+
+  return true;
+}
+
+export async function processOngoingRoutingForEvent(event: EventStandard): Promise<void> {
+  if (!shouldProcessOngoingRouting(event)) {
+    return;
+  }
+
+  const externalConversationId = event.externalConversationId!;
+  const messageText = event.contentText!;
+
+  if (processedOngoingTransfers.has(externalConversationId)) {
+    return;
+  }
+
+  const matchingRule = await routingStorage.findMatchingTransferOngoingRule(messageText);
+
+  if (!matchingRule) {
+    return;
+  }
+
+  console.log(`[RoutingOrchestrator] Found matching transfer_ongoing rule ${matchingRule.id} for message: "${messageText.substring(0, 50)}..."`);
+
+  const targetIntegrationId = getTargetIntegrationId(matchingRule.target);
+
+  if (!targetIntegrationId) {
+    console.error(`[RoutingOrchestrator] Unknown target: ${matchingRule.target}`);
+    return;
+  }
+
+  const consumeResult = await routingStorage.tryConsumeRuleSlot(matchingRule.id);
+
+  if (!consumeResult.success) {
+    console.log(`[RoutingOrchestrator] Rule ${matchingRule.id} no longer has available slots`);
+    return;
+  }
+
+  processedOngoingTransfers.add(externalConversationId);
+
+  try {
+    console.log(`[RoutingOrchestrator] Transferring ongoing conversation ${externalConversationId} -> ${matchingRule.target} (match: "${matchingRule.matchText}")`);
+
+    const result = await ZendeskApiService.passControl(
+      externalConversationId,
+      targetIntegrationId,
+      { source: "routing_rule_ongoing", ruleId: matchingRule.id, matchText: matchingRule.matchText },
+      "routing_ongoing",
+      `rule:${matchingRule.id}`
+    );
+
+    if (result.success) {
+      console.log(`[RoutingOrchestrator] Successfully transferred ongoing conversation ${externalConversationId} (${consumeResult.rule?.allocatedCount}/${consumeResult.rule?.allocateCount})`);
+
+      if (consumeResult.shouldDeactivate) {
+        await routingStorage.deactivateRule(matchingRule.id);
+        console.log(`[RoutingOrchestrator] Rule ${matchingRule.id} has been completed and deactivated`);
+      }
+    } else {
+      console.error(`[RoutingOrchestrator] Failed to transfer ongoing conversation: ${result.error}`);
+      processedOngoingTransfers.delete(externalConversationId);
+    }
+  } catch (error) {
+    console.error(`[RoutingOrchestrator] Error processing ongoing routing:`, error);
+    processedOngoingTransfers.delete(externalConversationId);
+  }
 }
 
 export const RoutingOrchestrator = {
   shouldProcessRouting,
   processRoutingForEvent,
+  shouldProcessOngoingRouting,
+  processOngoingRoutingForEvent,
   clearProcessedConversations,
 };

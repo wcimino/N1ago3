@@ -73,9 +73,46 @@ export async function deactivateRule(ruleId: number): Promise<void> {
     .where(eq(routingRules.id, ruleId));
 }
 
+export async function getActiveTransferOngoingRules(): Promise<RoutingRule[]> {
+  const rules = await db
+    .select()
+    .from(routingRules)
+    .where(
+      and(
+        eq(routingRules.isActive, true),
+        eq(routingRules.ruleType, "transfer_ongoing"),
+        or(
+          sql`${routingRules.allocateCount} IS NULL`,
+          sql`${routingRules.allocatedCount} < ${routingRules.allocateCount}`
+        )
+      )
+    );
+  
+  return rules;
+}
+
+export async function findMatchingTransferOngoingRule(messageText: string): Promise<RoutingRule | null> {
+  const normalizedMessage = messageText.trim().toLowerCase();
+  
+  const rules = await getActiveTransferOngoingRules();
+  
+  for (const rule of rules) {
+    if (rule.matchText) {
+      const normalizedMatchText = rule.matchText.trim().toLowerCase();
+      if (normalizedMessage === normalizedMatchText) {
+        return rule;
+      }
+    }
+  }
+  
+  return null;
+}
+
 export const routingStorage = {
   getActiveRoutingRules,
   getActiveAllocateNextNRule,
+  getActiveTransferOngoingRules,
+  findMatchingTransferOngoingRule,
   tryConsumeRuleSlot,
   deactivateRule,
 };

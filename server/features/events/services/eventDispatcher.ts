@@ -17,6 +17,12 @@ export async function dispatchEvent(event: EventStandard): Promise<void> {
   }
 
   try {
+    await RoutingOrchestrator.processOngoingRoutingForEvent(event);
+  } catch (error) {
+    console.error(`[EventDispatcher] Failed to process ongoing routing for event ${event.id}:`, error);
+  }
+
+  try {
     await processSummaryForEvent(event);
   } catch (error) {
     console.error(`[EventDispatcher] Failed to process summary for event ${event.id}:`, error);
