@@ -116,18 +116,30 @@ function EnrichmentLogCard({ log }: { log: EnrichmentLog }) {
 }
 
 export function EnrichmentLogsList() {
-  const { data: logs = [], isLoading } = useQuery<EnrichmentLog[]>({
+  const { data: logs = [], isLoading, error } = useQuery<EnrichmentLog[]>({
     queryKey: ["enrichment-logs", "skip"],
     queryFn: () => fetchApi<EnrichmentLog[]>("/api/knowledge/enrichment-logs?action=skip&limit=100"),
+    staleTime: 30000,
+    refetchOnMount: true,
   });
 
   const { data: stats } = useQuery<{ total: number; created: number; updated: number; skipped: number }>({
     queryKey: ["enrichment-logs-stats"],
     queryFn: () => fetchApi("/api/knowledge/enrichment-logs/stats"),
+    staleTime: 30000,
+    refetchOnMount: true,
   });
 
   if (isLoading) {
     return <div className="text-center py-8 text-gray-500">Carregando logs...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8 text-red-500">
+        Erro ao carregar logs: {error.message}
+      </div>
+    );
   }
 
   if (logs.length === 0) {

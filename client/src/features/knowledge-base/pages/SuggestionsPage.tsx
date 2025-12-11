@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useKnowledgeSuggestions } from "../hooks/useKnowledgeSuggestions";
 import { SuggestionCard } from "../components/SuggestionCard";
 import { EnrichmentPanel } from "../components/EnrichmentPanel";
@@ -8,6 +9,7 @@ type StatusFilter = "pending" | "approved" | "rejected" | "merged" | "skipped" |
 
 export function SuggestionsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending");
+  const queryClient = useQueryClient();
   const { 
     suggestions, 
     stats, 
@@ -18,6 +20,14 @@ export function SuggestionsPage() {
     isRejecting,
   } = useKnowledgeSuggestions(statusFilter === "all" || statusFilter === "skipped" ? undefined : statusFilter);
 
+  const handleStatusChange = (status: StatusFilter) => {
+    setStatusFilter(status);
+    if (status === "skipped") {
+      queryClient.invalidateQueries({ queryKey: ["enrichment-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["enrichment-logs-stats"] });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <EnrichmentPanel />
@@ -26,7 +36,7 @@ export function SuggestionsPage() {
         {(["pending", "approved", "rejected", "merged", "skipped", "all"] as StatusFilter[]).map((status) => (
           <button
             key={status}
-            onClick={() => setStatusFilter(status)}
+            onClick={() => handleStatusChange(status)}
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               statusFilter === status
                 ? "bg-purple-600 text-white"
