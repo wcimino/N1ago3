@@ -119,7 +119,9 @@ export function shouldProcessOngoingRouting(event: EventStandard): boolean {
     return false;
   }
 
-  if (event.authorType !== "user") {
+  // Accept messages from both users and bots (e.g., Zendesk Answer Bot)
+  // The bot often sends structured responses that we want to match for routing
+  if (event.authorType !== "user" && event.authorType !== "bot") {
     return false;
   }
 
