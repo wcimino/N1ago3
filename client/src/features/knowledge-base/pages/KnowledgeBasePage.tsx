@@ -34,6 +34,8 @@ interface InputModalState {
   isOpen: boolean;
   type: "subject" | "intent" | null;
   targetId: number | null;
+  mode: "create" | "edit";
+  currentName?: string;
 }
 
 interface ConfirmModalState {
@@ -52,6 +54,7 @@ export function KnowledgeBasePage() {
     isOpen: false,
     type: null,
     targetId: null,
+    mode: "create",
   });
   const [confirmModal, setConfirmModal] = useState<ConfirmModalState>({
     isOpen: false,
@@ -185,16 +188,37 @@ export function KnowledgeBasePage() {
     },
   });
 
+  const updateIntentMutation = useMutation({
+    mutationFn: async (data: { id: number; name: string }) => {
+      const res = await fetch(`/api/knowledge/intents/${data.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: data.name }),
+      });
+      if (!res.ok) throw new Error("Failed to update intent");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/intents"] });
+    },
+  });
+
   const handleAddSubject = (productId: number) => {
-    setInputModal({ isOpen: true, type: "subject", targetId: productId });
+    setInputModal({ isOpen: true, type: "subject", targetId: productId, mode: "create" });
   };
 
   const handleAddIntent = (subjectId: number) => {
-    setInputModal({ isOpen: true, type: "intent", targetId: subjectId });
+    setInputModal({ isOpen: true, type: "intent", targetId: subjectId, mode: "create" });
+  };
+
+  const handleEditIntent = (intentId: number, intentName: string) => {
+    setInputModal({ isOpen: true, type: "intent", targetId: intentId, mode: "edit", currentName: intentName });
   };
 
   const handleInputModalConfirm = (name: string) => {
-    if (inputModal.type === "subject" && inputModal.targetId) {
+    if (inputModal.mode === "edit" && inputModal.type === "intent" && inputModal.targetId) {
+      updateIntentMutation.mutate({ id: inputModal.targetId, name });
+    } else if (inputModal.type === "subject" && inputModal.targetId) {
       createSubjectMutation.mutate({ productCatalogId: inputModal.targetId, name });
     } else if (inputModal.type === "intent" && inputModal.targetId) {
       createIntentMutation.mutate({ subjectId: inputModal.targetId, name });
@@ -202,7 +226,7 @@ export function KnowledgeBasePage() {
   };
 
   const handleInputModalClose = () => {
-    setInputModal({ isOpen: false, type: null, targetId: null });
+    setInputModal({ isOpen: false, type: null, targetId: null, mode: "create", currentName: undefined });
   };
 
   const handleDeleteSubject = (subjectId: number, subjectName: string, hasArticles: boolean) => {
@@ -338,6 +362,7 @@ export function KnowledgeBasePage() {
                           onAddArticle={handleAddArticle}
                           onAddSubject={handleAddSubject}
                           onAddIntent={handleAddIntent}
+                          onEditIntent={handleEditIntent}
                           onDeleteSubject={handleDeleteSubject}
                           onDeleteIntent={handleDeleteIntent}
                         />
@@ -355,9 +380,16 @@ export function KnowledgeBasePage() {
         isOpen={inputModal.isOpen}
         onClose={handleInputModalClose}
         onConfirm={handleInputModalConfirm}
-        title={inputModal.type === "subject" ? "Novo Assunto" : "Nova Intenção"}
+        title={
+          inputModal.mode === "edit" 
+            ? "Editar Intenção" 
+            : inputModal.type === "subject" 
+              ? "Novo Assunto" 
+              : "Nova Intenção"
+        }
         placeholder={inputModal.type === "subject" ? "Nome do assunto..." : "Nome da intenção..."}
-        confirmLabel="Criar"
+        confirmLabel={inputModal.mode === "edit" ? "Salvar" : "Criar"}
+        initialValue={inputModal.currentName}
       />
 
       <ConfirmModal

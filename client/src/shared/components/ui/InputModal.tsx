@@ -10,6 +10,7 @@ interface InputModalProps {
   placeholder?: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  initialValue?: string;
 }
 
 export function InputModal({
@@ -20,16 +21,17 @@ export function InputModal({
   placeholder = "",
   confirmLabel = "Confirmar",
   cancelLabel = "Cancelar",
+  initialValue = "",
 }: InputModalProps) {
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
-      setValue("");
+      setValue(initialValue);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [isOpen]);
+  }, [isOpen, initialValue]);
 
   const handleConfirm = () => {
     if (value.trim()) {

@@ -76,12 +76,13 @@ interface HierarchyNodeItemProps {
   onAddArticle?: (subjectId?: number, intentId?: number, productName?: string) => void;
   onAddSubject?: (productId: number) => void;
   onAddIntent?: (subjectId: number) => void;
+  onEditIntent?: (intentId: number, intentName: string) => void;
   onDeleteSubject?: (subjectId: number, subjectName: string, hasArticles: boolean) => void;
   onDeleteIntent?: (intentId: number, intentName: string, hasArticles: boolean) => void;
   parentName?: string;
 }
 
-export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete, onAddArticle, onAddSubject, onAddIntent, onDeleteSubject, onDeleteIntent, parentName }: HierarchyNodeItemProps) {
+export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete, onAddArticle, onAddSubject, onAddIntent, onEditIntent, onDeleteSubject, onDeleteIntent, parentName }: HierarchyNodeItemProps) {
   const isProduct = node.level === "produto";
   const isSubproduct = node.level === "subproduto";
   const isAssunto = node.level === "assunto";
@@ -173,10 +174,19 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
               )}
 
               {isIntencao && stats.articleCount > 0 && (
-                <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-emerald-600">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (node.articles.length > 0) {
+                      onEdit(node.articles[0]);
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
+                  title="Editar artigo"
+                >
                   <FileText className="w-3 h-3" />
                   Com artigo
-                </span>
+                </button>
               )}
 
               {isAssunto && stats.articleCount === 0 && (
@@ -267,14 +277,14 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 <Plus className="w-4 h-4" />
               </button>
             )}
-            {isIntencao && node.articles.length > 0 && (
+            {onEditIntent && isIntencao && node.intentId && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onEdit(node.articles[0]);
+                  onEditIntent(node.intentId!, node.name);
                 }}
                 className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-opacity"
-                title="Editar artigo"
+                title="Editar intenção"
               >
                 <Pencil className="w-4 h-4" />
               </button>
@@ -311,6 +321,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 onAddArticle={onAddArticle}
                 onAddSubject={onAddSubject}
                 onAddIntent={onAddIntent}
+                onEditIntent={onEditIntent}
                 onDeleteSubject={onDeleteSubject}
                 onDeleteIntent={onDeleteIntent}
               />
@@ -340,6 +351,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 onAddArticle={onAddArticle}
                 onAddSubject={onAddSubject}
                 onAddIntent={onAddIntent}
+                onEditIntent={onEditIntent}
                 onDeleteSubject={onDeleteSubject}
                 onDeleteIntent={onDeleteIntent}
                 parentName={node.name}
@@ -363,6 +375,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
               onAddArticle={onAddArticle}
               onAddSubject={onAddSubject}
               onAddIntent={onAddIntent}
+              onEditIntent={onEditIntent}
               onDeleteSubject={onDeleteSubject}
               onDeleteIntent={onDeleteIntent}
             />
