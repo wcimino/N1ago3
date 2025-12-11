@@ -81,15 +81,30 @@ function isValidActionUri(uri: string | undefined): boolean {
 }
 
 function ActionsContent({ actions }: { actions: MessageAction[] }) {
+  const replyActions = actions.filter(a => a.type === "reply" || a.type === "postback");
+  const linkActions = actions.filter(a => a.type !== "reply" && a.type !== "postback");
+
   return (
-    <div className="flex flex-wrap gap-2 mt-2">
-      {actions.map((action, idx) => {
+    <div className="flex flex-col gap-2 mt-2">
+      {replyActions.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {replyActions.map((action, idx) => (
+            <span
+              key={`reply-${idx}`}
+              className="inline-flex items-center px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full border border-gray-300"
+            >
+              {action.text}
+            </span>
+          ))}
+        </div>
+      )}
+      {linkActions.map((action, idx) => {
         const safeUri = isValidActionUri(action.uri) ? action.uri : undefined;
         if (!safeUri) return null;
         
         return (
           <a
-            key={idx}
+            key={`link-${idx}`}
             href={safeUri}
             target="_blank"
             rel="noopener noreferrer"
