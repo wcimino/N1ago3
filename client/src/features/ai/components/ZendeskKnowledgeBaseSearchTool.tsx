@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { FileText, HelpCircle, ExternalLink } from "lucide-react";
+import { useState } from "react";
+import { HelpCircle, ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ExpandableSearchTool } from "../../../shared/components/ui";
 
@@ -22,12 +22,12 @@ interface ZendeskKnowledgeBaseSearchToolProps {
   onToggle: () => void;
 }
 
+const ENABLED_SUBDOMAIN = "centralajudaifp";
+
 export function ZendeskKnowledgeBaseSearchTool({ isExpanded, onToggle }: ZendeskKnowledgeBaseSearchToolProps) {
   const [keywords, setKeywords] = useState("");
   const [sectionId, setSectionId] = useState("");
-  const [selectedSubdomains, setSelectedSubdomains] = useState<string[]>([]);
   const [searchTrigger, setSearchTrigger] = useState(0);
-  const initializedRef = useRef(false);
 
   const { data: subdomains } = useQuery<ZendeskSubdomain[]>({
     queryKey: ["zendesk-subdomains"],
@@ -39,13 +39,6 @@ export function ZendeskKnowledgeBaseSearchTool({ isExpanded, onToggle }: Zendesk
     enabled: isExpanded,
   });
 
-  useEffect(() => {
-    if (subdomains && subdomains.length > 0 && !initializedRef.current) {
-      setSelectedSubdomains(subdomains.map(s => s.subdomain));
-      initializedRef.current = true;
-    }
-  }, [subdomains]);
-
   const { data: sections } = useQuery<Array<{ sectionId: string; sectionName: string }>>({
     queryKey: ["zendesk-sections"],
     queryFn: async () => {
@@ -56,21 +49,14 @@ export function ZendeskKnowledgeBaseSearchTool({ isExpanded, onToggle }: Zendesk
     enabled: isExpanded,
   });
 
-  const noSubdomainsSelected = subdomains && subdomains.length > 0 && selectedSubdomains.length === 0;
-
   const { data, isLoading, error } = useQuery<ZendeskArticle[]>({
-    queryKey: ["zendesk-search", keywords, sectionId, selectedSubdomains, searchTrigger],
+    queryKey: ["zendesk-search", keywords, sectionId, ENABLED_SUBDOMAIN, searchTrigger],
     queryFn: async () => {
-      if (noSubdomainsSelected) {
-        return [];
-      }
       const params = new URLSearchParams();
       params.set("limit", "10");
       if (keywords) params.set("search", keywords);
       if (sectionId) params.set("sectionId", sectionId);
-      if (selectedSubdomains.length > 0) {
-        params.set("helpCenterSubdomains", selectedSubdomains.join(","));
-      }
+      params.set("helpCenterSubdomains", ENABLED_SUBDOMAIN);
       
       const res = await fetch(`/api/zendesk-articles?${params.toString()}`, {
         credentials: "include",
@@ -78,17 +64,8 @@ export function ZendeskKnowledgeBaseSearchTool({ isExpanded, onToggle }: Zendesk
       if (!res.ok) throw new Error("Falha na busca");
       return res.json();
     },
-    enabled: searchTrigger > 0 && isExpanded && !noSubdomainsSelected,
+    enabled: searchTrigger > 0 && isExpanded,
   });
-
-  const handleSubdomainToggle = (subdomain: string) => {
-    setSelectedSubdomains(prev => {
-      if (prev.includes(subdomain)) {
-        return prev.filter(s => s !== subdomain);
-      }
-      return [...prev, subdomain];
-    });
-  };
 
   const handleSearch = () => {
     setSearchTrigger(prev => prev + 1);
@@ -154,12 +131,12 @@ export function ZendeskKnowledgeBaseSearchTool({ isExpanded, onToggle }: Zendesk
             <label className="block text-sm font-medium text-gray-700 mb-2">Subdomínios</label>
             <div className="flex flex-wrap gap-3">
               {subdomains.map((subdomain) => (
-                <label key={subdomain.subdomain} className="flex items-center gap-2 cursor-pointer">
+                <label key={subdomain.subdomain} className="flex items-center gap-2 cursor-not-allowed opacity-70">
                   <input
                     type="checkbox"
-                    checked={selectedSubdomains.includes(subdomain.subdomain)}
-                    onChange={() => handleSubdomainToggle(subdomain.subdomain)}
-                    className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                    checked={subdomain.subdomain === ENABLED_SUBDOMAIN}
+                    disabled
+                    className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500 cursor-not-allowed"
                   />
                   <span className="text-sm text-gray-700">
                     {subdomain.subdomain}
@@ -168,9 +145,6 @@ export function ZendeskKnowledgeBaseSearchTool({ isExpanded, onToggle }: Zendesk
                 </label>
               ))}
             </div>
-            {noSubdomainsSelected && (
-              <p className="text-sm text-amber-600 mt-2">Selecione pelo menos um subdomínio para realizar a busca.</p>
-            )}
           </div>
         )}
 
