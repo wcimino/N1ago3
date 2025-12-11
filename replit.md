@@ -67,6 +67,29 @@ Centralized OpenAI services in `shared/services/openai/`:
 
 All features (enrichment, AutoPilot, knowledge-base) consume these centralized services.
 
+## Shared Embeddings Architecture (Dec 2024)
+
+Centralized embeddings layer in `server/shared/embeddings/` that eliminates code duplication between internal knowledge base and Zendesk articles:
+
+**Core Components:**
+*   **types.ts:** Base interfaces (`EmbeddableArticle`, `EmbeddingResult`, `EmbeddingStats`, `BatchEmbeddingResult`) and utility functions (`generateContentHashFromParts`, `embeddingToString`, `stripHtmlTags`, `cosineSimilarity`)
+*   **embeddingService.ts:** Generic embedding generation using OpenAI, enriched query building, and batch processing
+*   **adapters/knowledgeBaseAdapter.ts:** Implements `EmbeddableArticle` for internal KB articles with content formatting and hash generation
+*   **adapters/zendeskAdapter.ts:** Implements `EmbeddableArticle` for Zendesk articles with HTML stripping and content formatting
+
+**Benefits:**
+*   Single source of truth for embedding logic
+*   Consistent content hashing across sources
+*   Easier to add new article sources in the future
+*   Reduced bug surface from duplicated code
+
+**Usage Pattern:**
+```typescript
+import { generateEmbedding, KnowledgeBaseEmbeddableArticle } from "server/shared/embeddings";
+const embeddable = KnowledgeBaseEmbeddableArticle.fromArticle(article);
+const result = await generateArticleEmbedding(embeddable, "knowledge_base_article");
+```
+
 ## External Sources & Knowledge Base Architecture
 
 **Concept:**
