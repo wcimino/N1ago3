@@ -6,6 +6,38 @@ import type { ToolDefinition } from "../openaiApiService.js";
 
 const RELEVANCE_THRESHOLD = 0.05;
 
+interface EnrichedQueryParams {
+  keywords: string;
+  product?: string;
+  subproduct?: string;
+  subject?: string;
+  intent?: string;
+}
+
+function buildEnrichedQueryText(params: EnrichedQueryParams): string {
+  const parts: string[] = [];
+  
+  if (params.product) {
+    parts.push(`Produto: ${params.product}`);
+  }
+  if (params.subproduct) {
+    parts.push(`Subproduto: ${params.subproduct}`);
+  }
+  
+  const descriptionParts: string[] = [];
+  if (params.subject) {
+    descriptionParts.push(params.subject);
+  }
+  if (params.intent) {
+    descriptionParts.push(params.intent);
+  }
+  descriptionParts.push(params.keywords);
+  
+  parts.push(`Descrição: ${descriptionParts.join(". ")}`);
+  
+  return parts.join("\n\n");
+}
+
 export function createKnowledgeBaseTool(): ToolDefinition {
   return {
     name: "search_knowledge_base",
@@ -70,8 +102,23 @@ export function createKnowledgeBaseTool(): ToolDefinition {
         
         if (hasEmbeddings) {
           try {
-            console.log("[KB Tool] Using semantic search with embeddings");
-            const { embedding: queryEmbedding } = await generateKBEmbedding(args.keywords);
+            const hasContext = args.product || resolvedSubject || resolvedIntent;
+            let queryText: string;
+            
+            if (hasContext) {
+              queryText = buildEnrichedQueryText({
+                keywords: args.keywords,
+                product: args.product,
+                subject: resolvedSubject,
+                intent: resolvedIntent,
+              });
+              console.log(`[KB Tool] Using enriched semantic search: product=${args.product}, subject=${resolvedSubject}, intent=${resolvedIntent}`);
+            } else {
+              queryText = args.keywords;
+              console.log("[KB Tool] Using simple semantic search with embeddings");
+            }
+            
+            const { embedding: queryEmbedding } = await generateKBEmbedding(queryText);
             const semanticResults = await knowledgeBaseStorage.searchBySimilarity(
               queryEmbedding,
               {
@@ -91,7 +138,7 @@ export function createKnowledgeBaseTool(): ToolDefinition {
               relevanceScore: a.similarity
             }));
             
-            console.log(`[KB Tool] Semantic search found ${articles.length} articles`);
+            console.log(`[KB Tool] Semantic search found ${articles.length} articles (enriched=${!!hasContext})`);
           } catch (error) {
             console.error("[KB Tool] Semantic search failed, falling back to full-text:", error);
             const searchResults = await knowledgeBaseStorage.searchArticlesWithRelevance(args.keywords, {
