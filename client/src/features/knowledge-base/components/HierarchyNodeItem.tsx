@@ -175,19 +175,22 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
               )}
 
               {isIntencao && stats.articleCount > 0 && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (node.articles.length > 0) {
-                      onEdit(node.articles[0]);
-                    }
-                  }}
-                  className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
-                  title="Editar artigo"
-                >
+                <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-emerald-600">
                   <FileText className="w-3 h-3" />
                   Com artigo
-                </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (node.articles.length > 0) {
+                        onEdit(node.articles[0]);
+                      }
+                    }}
+                    className="text-blue-500 hover:text-blue-700 hover:underline cursor-pointer ml-1"
+                    title="Editar artigo"
+                  >
+                    (Editar artigo)
+                  </button>
+                </span>
               )}
 
               {isAssunto && stats.articleCount === 0 && (
@@ -284,10 +287,11 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                   e.stopPropagation();
                   onAddArticle(node.subjectId, node.intentId, node.fullPath);
                 }}
-                className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-opacity"
+                className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 hover:underline transition-opacity"
                 title="Adicionar artigo"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5" />
+                (Criar artigo)
               </button>
             )}
             {onEditIntent && isIntencao && node.intentId && (
