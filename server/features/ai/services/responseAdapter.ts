@@ -1,6 +1,6 @@
 import { callOpenAI, ToolDefinition } from "./openaiApiService.js";
 import { storage } from "../../../storage/index.js";
-import { knowledgeBaseService } from "./knowledgeBaseService.js";
+import { runKnowledgeBaseSearch } from "./knowledgeBaseSearchHelper.js";
 import { createZendeskKnowledgeBaseTool } from "./aiTools.js";
 import { replacePromptVariables, formatMessagesContext, formatLastMessage, formatClassification } from "./promptUtils.js";
 import { AutoPilotService } from "../../autoPilot/services/autoPilotService.js";
@@ -82,7 +82,7 @@ const KB_SUFFIX = `
 - Se não encontrar, responda com base no contexto da conversa
 - NÃO invente procedimentos - use apenas informações da base de conhecimento ou contexto`;
 
-function buildKnowledgeBaseTool(): ToolDefinition {
+function buildKnowledgeBaseTool(context?: { conversationId?: number; externalConversationId?: string }): ToolDefinition {
   return {
     name: "search_knowledge_base",
     description: "Busca artigos na base de conhecimento com procedimentos e soluções. Use para encontrar informações sobre como resolver o problema do cliente.",
@@ -106,22 +106,28 @@ function buildKnowledgeBaseTool(): ToolDefinition {
       required: ["product"]
     },
     handler: async (args: { product: string; intent?: string; keywords?: string[] }) => {
-      const results = await knowledgeBaseService.findRelatedArticles(
-        args.product,
-        args.keywords || [],
-        { limit: 3, minScore: 20 }
+      const result = await runKnowledgeBaseSearch(
+        {
+          product: args.product,
+          intent: args.intent,
+          keywords: args.keywords,
+          limit: 3,
+          useSimpleSearch: true,
+          minScore: 20
+        },
+        context
       );
 
-      if (results.length === 0) {
+      if (result.articles.length === 0) {
         return "Nenhum artigo encontrado na base de conhecimento. Responda com base no contexto da conversa.";
       }
 
-      return results.map((r, i) => `
-### Artigo ${i + 1}: ${r.article.name || 'Sem nome'} (ID: ${r.article.id})
-- **Produto:** ${r.article.productStandard}
-- **Problema:** ${r.article.description}
-- **Resolução:** ${r.article.resolution}
-${r.article.observations ? `- **Observações:** ${r.article.observations}` : ''}`).join("\n\n");
+      return result.articles.map((a, i) => `
+### Artigo ${i + 1}: ${a.name || 'Sem nome'} (ID: ${a.id})
+- **Produto:** ${a.productStandard}
+- **Problema:** ${a.description}
+- **Resolução:** ${a.resolution}
+${a.observations ? `- **Observações:** ${a.observations}` : ''}`).join("\n\n");
     }
   };
 }
@@ -143,7 +149,7 @@ export async function generateResponse(
   let articlesUsed: ArticleUsed[] = [];
 
   if (useKnowledgeBaseTool) {
-    const kbTool = buildKnowledgeBaseTool();
+    const kbTool = buildKnowledgeBaseTool({ conversationId, externalConversationId });
     const originalHandler = kbTool.handler;
     kbTool.handler = async (args) => {
       usedKnowledgeBase = true;
