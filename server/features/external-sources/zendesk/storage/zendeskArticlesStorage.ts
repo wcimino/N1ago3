@@ -386,9 +386,9 @@ function stripHtmlTags(html: string | null): string {
 
 export async function searchBySimilarity(
   queryEmbedding: number[],
-  options: { limit?: number; helpCenterSubdomain?: string } = {}
+  options: { limit?: number; helpCenterSubdomain?: string; minSimilarity?: number } = {}
 ): Promise<SemanticSearchResult[]> {
-  const { limit = 5, helpCenterSubdomain } = options;
+  const { limit = 5, helpCenterSubdomain, minSimilarity = 60 } = options;
   
   const embeddingString = `[${queryEmbedding.join(',')}]`;
   
@@ -414,16 +414,18 @@ export async function searchBySimilarity(
     LIMIT ${limit}
   `);
   
-  return (results.rows as unknown as SemanticSearchResult[]).map(row => ({
-    id: row.id,
-    zendeskId: row.zendeskId,
-    title: row.title,
-    body: stripHtmlTags(row.body),
-    sectionName: row.sectionName,
-    categoryName: row.categoryName,
-    htmlUrl: row.htmlUrl,
-    similarity: Number(row.similarity),
-  }));
+  return (results.rows as unknown as SemanticSearchResult[])
+    .map(row => ({
+      id: row.id,
+      zendeskId: row.zendeskId,
+      title: row.title,
+      body: stripHtmlTags(row.body),
+      sectionName: row.sectionName,
+      categoryName: row.categoryName,
+      htmlUrl: row.htmlUrl,
+      similarity: Number(row.similarity),
+    }))
+    .filter(row => row.similarity >= minSimilarity);
 }
 
 export const ZendeskArticlesStorage = {
