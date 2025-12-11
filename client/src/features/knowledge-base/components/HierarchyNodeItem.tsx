@@ -193,10 +193,10 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                       (Editar artigo)
                     </button>
                   </span>
-                  {node.intentId && intentViewCountMap && intentViewCountMap.get(node.intentId) !== undefined && intentViewCountMap.get(node.intentId)! > 0 && (
+                  {node.intentId && intentViewCountMap && (
                     <span className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium" title="Acessos via IA">
                       <BarChart3 className="w-3 h-3" />
-                      {intentViewCountMap.get(node.intentId)}
+                      {intentViewCountMap.get(node.intentId) ?? 0}
                     </span>
                   )}
                 </>
