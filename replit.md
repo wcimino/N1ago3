@@ -92,8 +92,8 @@ All features (enrichment, AutoPilot, knowledge-base) consume these centralized s
 
 ## Known Issues & Workarounds
 
-### Drizzle DESC Index Bug (Fixed Dec 2024)
-**Problem:** Drizzle ORM 0.31.x has a bug where it cannot properly track indexes with DESC ordering. Every `drizzle-kit generate` would emit DROP/CREATE statements for these indexes, even when the database already had them correctly configured.
+### Drizzle DESC Index Bug (Resolved Dec 2024)
+**Problem:** Drizzle ORM previously had issues tracking indexes with DESC ordering, causing repeated DROP/CREATE migration cycles.
 
 **Affected indexes:**
 - `idx_conversations_updated_at`
@@ -101,9 +101,9 @@ All features (enrichment, AutoPilot, knowledge-base) consume these centralized s
 - `idx_openai_api_logs_created_at`
 - `idx_events_standard_occurred_at`
 
-**Solution:** These indexes were removed from the Drizzle schema (schema.ts) and snapshot (drizzle/meta/0006_snapshot.json). The indexes remain in the database and continue to work, but are now "unmanaged" by Drizzle. This prevents the migration cycle.
+**Solution (Dec 11, 2024):** Using Drizzle ORM 0.31.x+ which now supports `.desc()` on index columns, these indexes are now properly declared in `schema.ts` using the syntax `table.column.desc()`. Migrations 0007 and 0008 sync the state between schema and database using `IF EXISTS/IF NOT EXISTS` clauses to handle both fresh installs and existing production databases.
 
-**Important:** If you need to recreate or modify these indexes in the future, use raw SQL migrations or `db:push` with manual SQL commands.
+**Status:** Fully resolved. Running `drizzle-kit generate` now correctly reports "No schema changes, nothing to migrate".
 
 ## External Dependencies
 
