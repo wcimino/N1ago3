@@ -80,7 +80,7 @@ export const openaiLogsStorage = {
       openaiLogId: number; 
       externalConversationId?: string | null; 
       inResponseTo?: string | null;
-      articlesUsed?: Array<{ id: number; name: string; product: string; url?: string }>;
+      articlesUsed?: Array<{ id: number; name: string; product: string; url?: string; relevanceScore?: number }>;
     }
   ): Promise<SuggestedResponse> {
     const [response] = await db.insert(responsesSuggested)

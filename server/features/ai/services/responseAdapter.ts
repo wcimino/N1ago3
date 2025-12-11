@@ -33,6 +33,7 @@ export interface ArticleUsed {
   name: string;
   product: string;
   url?: string;
+  relevanceScore?: number;
 }
 
 export interface ResponseResult {
@@ -82,7 +83,11 @@ const KB_SUFFIX = `
 - Se não encontrar, responda com base no contexto da conversa
 - NÃO invente procedimentos - use apenas informações da base de conhecimento ou contexto`;
 
-function buildKnowledgeBaseTool(context?: { conversationId?: number; externalConversationId?: string }): ToolDefinition {
+function buildKnowledgeBaseTool(
+  context?: { conversationId?: number; externalConversationId?: string },
+  onArticlesFound?: (articles: ArticleUsed[]) => void,
+  onToolInvoked?: () => void
+): ToolDefinition {
   return {
     name: "search_knowledge_base",
     description: "Busca artigos na base de conhecimento com procedimentos e soluções. Use para encontrar informações sobre como resolver o problema do cliente.",
@@ -106,6 +111,10 @@ function buildKnowledgeBaseTool(context?: { conversationId?: number; externalCon
       required: ["product"]
     },
     handler: async (args: { product: string; intent?: string; keywords?: string[] }) => {
+      if (onToolInvoked) {
+        onToolInvoked();
+      }
+
       const result = await runKnowledgeBaseSearch(
         {
           product: args.product,
@@ -120,12 +129,25 @@ function buildKnowledgeBaseTool(context?: { conversationId?: number; externalCon
         return "Nenhum artigo encontrado na base de conhecimento. Responda com base no contexto da conversa.";
       }
 
-      return result.articles.map((a, i) => `
-### Artigo ${i + 1}: ${a.name || 'Sem nome'} (ID: ${a.id})
-- **Produto:** ${a.productStandard}
+      const foundArticles: ArticleUsed[] = result.articles.map(a => ({
+        id: a.id,
+        name: a.name || 'Sem nome',
+        product: a.productStandard,
+        relevanceScore: typeof a.relevanceScore === 'number' ? Math.round(a.relevanceScore) : undefined,
+      }));
+
+      if (onArticlesFound) {
+        onArticlesFound(foundArticles);
+      }
+
+      return result.articles.map((a, i) => {
+        const score = typeof a.relevanceScore === 'number' ? Math.round(a.relevanceScore) : null;
+        return `### Artigo ${i + 1}: ${a.name || 'Sem nome'} (ID: ${a.id})
+- **Produto:** ${a.productStandard}${score !== null ? `\n- **Relevância:** ${score}%` : ''}
 - **Problema:** ${a.description}
 - **Resolução:** ${a.resolution}
-${a.observations ? `- **Observações:** ${a.observations}` : ''}`).join("\n\n");
+${a.observations ? `- **Observações:** ${a.observations}` : ''}`;
+      }).join("\n\n");
     }
   };
 }
@@ -147,32 +169,19 @@ export async function generateResponse(
   let articlesUsed: ArticleUsed[] = [];
 
   if (useKnowledgeBaseTool) {
-    const kbTool = buildKnowledgeBaseTool({ conversationId, externalConversationId });
-    const originalHandler = kbTool.handler;
-    kbTool.handler = async (args) => {
-      usedKnowledgeBase = true;
-      const result = await originalHandler(args);
-      console.log(`[Response Adapter] KB search: product=${args.product}`);
-      
-      const articleMatches = result.matchAll(/### Artigo \d+: (.+?) \(ID: (\d+)\)\n- \*\*Produto:\*\* (.+?)\n/g);
-      const newArticles: ArticleUsed[] = [];
-      for (const match of articleMatches) {
-        newArticles.push({
-          id: parseInt(match[2], 10),
-          name: match[1],
-          product: match[3],
-        });
+    const kbTool = buildKnowledgeBaseTool(
+      { conversationId, externalConversationId },
+      (foundArticles) => {
+        const existingIds = new Set(articlesUsed.map(a => a.id));
+        const uniqueNewArticles = foundArticles.filter(a => !existingIds.has(a.id));
+        articlesUsed = [...articlesUsed, ...uniqueNewArticles];
+        articlesFound += uniqueNewArticles.length;
+        console.log(`[Response Adapter] KB search: found ${foundArticles.length} articles, added ${uniqueNewArticles.length}, total=${articlesUsed.length}`);
+      },
+      () => {
+        usedKnowledgeBase = true;
       }
-      
-      const existingIds = new Set(articlesUsed.map(a => a.id));
-      const uniqueNewArticles = newArticles.filter(a => !existingIds.has(a.id));
-      articlesUsed = [...articlesUsed, ...uniqueNewArticles];
-      articlesFound += uniqueNewArticles.length;
-      
-      console.log(`[Response Adapter] KB search: found ${newArticles.length} articles, added ${uniqueNewArticles.length}, total=${articlesUsed.length}`);
-      
-      return result;
-    };
+    );
     tools.push(kbTool);
   }
 

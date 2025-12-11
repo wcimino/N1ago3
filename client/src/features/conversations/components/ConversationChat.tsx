@@ -8,6 +8,7 @@ interface ArticleUsed {
   name: string;
   product: string;
   url?: string;
+  relevanceScore?: number;
 }
 
 interface SuggestedResponse {
@@ -173,8 +174,13 @@ function SuggestionBubble({ suggestion, formatDateTime }: SuggestionBubbleProps)
                           {article.name}
                           {article.url && <ExternalLink className="w-3 h-3 text-purple-500" />}
                         </p>
-                        <p className="text-xs text-purple-600 mt-0.5">
-                          {article.product}{article.id > 0 && ` • ID: ${article.id}`}
+                        <p className="text-xs text-purple-600 mt-0.5 flex items-center gap-2">
+                          <span>{article.product}{article.id > 0 && ` • ID: ${article.id}`}</span>
+                          {article.relevanceScore !== undefined && (
+                            <span className="bg-purple-200 text-purple-800 px-1.5 py-0.5 rounded text-[10px] font-medium">
+                              {article.relevanceScore}%
+                            </span>
+                          )}
                         </p>
                       </button>
                     ))}
