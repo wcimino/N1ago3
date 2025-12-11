@@ -5,6 +5,43 @@ import type { ToolDefinition } from "../openaiApiService.js";
 
 const RELEVANCE_THRESHOLD = 0.05;
 const ENABLED_HELP_CENTER_SUBDOMAIN = "centralajudaifp";
+const PRODUCT_MISMATCH_PENALTY = 0.20;
+
+function normalizeForComparison(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function sectionMatchesProduct(sectionName: string | null, produto: string | undefined): boolean {
+  if (!sectionName || !produto) return true;
+  
+  const normalizedSection = normalizeForComparison(sectionName);
+  const normalizedProduct = normalizeForComparison(produto);
+  
+  return normalizedSection.includes(normalizedProduct) || normalizedProduct.includes(normalizedSection);
+}
+
+function applyProductMismatchPenalty<T extends { similarity: number; sectionName: string | null }>(
+  articles: T[],
+  produto: string | undefined
+): T[] {
+  if (!produto) return articles;
+  
+  return articles
+    .map(article => {
+      const matches = sectionMatchesProduct(article.sectionName, produto);
+      if (!matches) {
+        const penalizedSimilarity = Math.max(0, article.similarity - (article.similarity * PRODUCT_MISMATCH_PENALTY));
+        console.log(`[Zendesk KB Tool] Product mismatch penalty applied: "${article.sectionName}" vs "${produto}" - score ${article.similarity.toFixed(2)} -> ${penalizedSimilarity.toFixed(2)}`);
+        return { ...article, similarity: penalizedSimilarity };
+      }
+      return article;
+    })
+    .sort((a, b) => b.similarity - a.similarity);
+}
 
 export interface ZendeskSearchContext {
   produto?: string;
@@ -93,7 +130,7 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
               { limit: 5, helpCenterSubdomain: ENABLED_HELP_CENTER_SUBDOMAIN }
             );
             
-            articles = semanticResults.map(a => ({
+            const mappedArticles = semanticResults.map(a => ({
               id: a.id,
               zendeskId: a.zendeskId,
               title: a.title,
@@ -103,14 +140,16 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
               similarity: a.similarity,
             }));
             
-            console.log(`[Zendesk KB Tool] Semantic search found ${articles.length} articles (enriched=${hasContext})`);
+            articles = applyProductMismatchPenalty(mappedArticles, mergedContext.produto);
+            
+            console.log(`[Zendesk KB Tool] Semantic search found ${articles.length} articles (enriched=${hasContext}, product penalty applied for: ${mergedContext.produto || 'none'})`);
           } catch (error) {
             console.error("[Zendesk KB Tool] Semantic search failed, falling back to full-text:", error);
             const searchResults = await ZendeskArticlesStorage.searchArticlesWithRelevance(
               args.keywords,
               { sectionId: args.section, limit: 10, helpCenterSubdomain: ENABLED_HELP_CENTER_SUBDOMAIN }
             );
-            articles = searchResults
+            const fallbackArticles = searchResults
               .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
               .slice(0, 5)
               .map(a => ({
@@ -122,6 +161,7 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
                 htmlUrl: a.htmlUrl,
                 similarity: Math.round(a.relevanceScore * 100),
               }));
+            articles = applyProductMismatchPenalty(fallbackArticles, mergedContext.produto);
           }
         } else {
           console.log("[Zendesk KB Tool] No embeddings available, using full-text search");
@@ -129,7 +169,7 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
             args.keywords,
             { sectionId: args.section, limit: 10, helpCenterSubdomain: ENABLED_HELP_CENTER_SUBDOMAIN }
           );
-          articles = searchResults
+          const fullTextArticles = searchResults
             .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
             .slice(0, 5)
             .map(a => ({
@@ -141,6 +181,7 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
               htmlUrl: a.htmlUrl,
               similarity: Math.round(a.relevanceScore * 100),
             }));
+          articles = applyProductMismatchPenalty(fullTextArticles, mergedContext.produto);
         }
       } else {
         const allArticles = await ZendeskArticlesStorage.getAllArticles({
