@@ -123,16 +123,16 @@ export interface EnrichedQueryParams {
 }
 
 export async function generateEnrichedQueryEmbedding(params: EnrichedQueryParams): Promise<{ embedding: number[]; logId: number; formattedQuery: string }> {
-  const parts: string[] = [];
+  const contextParts: string[] = [];
   
   if (params.produto) {
-    parts.push(`Categoria: ${params.produto}`);
+    contextParts.push(params.produto);
   }
   if (params.subproduto) {
-    parts.push(`Seção: ${params.subproduto}`);
+    contextParts.push(params.subproduto);
   }
   if (params.assunto) {
-    parts.push(`Título: ${params.assunto}`);
+    contextParts.push(params.assunto);
   }
   
   const contentParts: string[] = [];
@@ -144,11 +144,11 @@ export async function generateEnrichedQueryEmbedding(params: EnrichedQueryParams
   }
   contentParts.push(params.keywords);
   
-  parts.push(`Conteúdo: ${contentParts.join(". ")}`);
+  const context = contextParts.join(" - ");
+  const content = contentParts.join(". ");
+  const formattedQuery = context ? `${context}: ${content}` : content;
   
-  const formattedQuery = parts.join("\n\n");
-  
-  console.log(`[Embedding] Generating enriched query embedding:\n${formattedQuery}`);
+  console.log(`[Embedding] Generating natural query embedding:\n${formattedQuery}`);
   
   const result = await generateEmbedding(formattedQuery);
   

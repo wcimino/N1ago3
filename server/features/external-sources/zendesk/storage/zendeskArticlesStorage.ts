@@ -379,6 +379,11 @@ export interface SemanticSearchResult {
   similarity: number;
 }
 
+function stripHtmlTags(html: string | null): string {
+  if (!html) return "";
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
 export async function searchBySimilarity(
   queryEmbedding: number[],
   options: { limit?: number; helpCenterSubdomain?: string } = {}
@@ -413,7 +418,7 @@ export async function searchBySimilarity(
     id: row.id,
     zendeskId: row.zendeskId,
     title: row.title,
-    body: row.body,
+    body: stripHtmlTags(row.body),
     sectionName: row.sectionName,
     categoryName: row.categoryName,
     htmlUrl: row.htmlUrl,
