@@ -1,7 +1,18 @@
 import { storage } from "../../../storage/index.js";
 import { classifyAndSave, type ClassificationPayload } from "./productClassificationAdapter.js";
 import { generalSettingsStorage } from "../storage/generalSettingsStorage.js";
+import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 import type { EventStandard } from "../../../../shared/schema.js";
+
+function formatProductCatalogAsJson(): Promise<string> {
+  return productCatalogStorage.getAll().then(products => {
+    const catalogList = products.map(p => ({
+      produto: p.produto,
+      subproduto: p.subproduto || null
+    }));
+    return JSON.stringify(catalogList, null, 2);
+  });
+}
 
 export async function shouldClassify(event: EventStandard): Promise<boolean> {
   const config = await storage.getOpenaiApiConfig("classification");
@@ -48,8 +59,11 @@ export async function classifyConversationProduct(event: EventStandard): Promise
   }
 
   try {
-    const last20Messages = await storage.getLast20MessagesForConversation(event.conversationId);
-    const existingSummary = await storage.getConversationSummary(event.conversationId);
+    const [last20Messages, existingSummary, productCatalogJson] = await Promise.all([
+      storage.getLast20MessagesForConversation(event.conversationId),
+      storage.getConversationSummary(event.conversationId),
+      formatProductCatalogAsJson()
+    ]);
 
     const reversedMessages = [...last20Messages].reverse();
 
@@ -61,6 +75,7 @@ export async function classifyConversationProduct(event: EventStandard): Promise
         occurredAt: m.occurredAt,
       })),
       currentSummary: existingSummary?.summary || null,
+      productCatalogJson,
     };
 
     let effectivePromptSystem = config.promptSystem;

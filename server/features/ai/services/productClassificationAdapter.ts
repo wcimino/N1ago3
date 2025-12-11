@@ -10,6 +10,7 @@ export interface ClassificationPayload {
     occurredAt: Date;
   }>;
   currentSummary?: string | null;
+  productCatalogJson?: string | null;
 }
 
 export interface ClassificationResult {
@@ -25,6 +26,11 @@ export interface ClassificationResult {
 
 const DEFAULT_CLASSIFICATION_PROMPT = `Você é um assistente especializado em classificar conversas de atendimento ao cliente de serviços financeiros.
 
+## Catálogo de Produtos
+Use APENAS as combinações de produto/subproduto listadas abaixo. Copie os valores exatamente como aparecem:
+
+{{CATALOGO_PRODUTOS_SUBPRODUTOS}}
+
 ## Contexto da Conversa
 
 ### Resumo
@@ -34,22 +40,22 @@ const DEFAULT_CLASSIFICATION_PROMPT = `Você é um assistente especializado em c
 {{MENSAGENS}}
 
 ## Sua Tarefa
-Classifique a conversa identificando os 4 campos:
+Classifique a conversa identificando os campos:
 
-1. **Produto**: Use a ferramenta search_product_catalog para buscar produtos válidos. Use o fullName exato.
-2. **Subproduto**: Se o produto tiver subproduto, inclua-o. Caso contrário, deixe null.
-3. **Assunto**: Use a ferramenta search_subject_and_intent para encontrar assuntos válidos para o produto.
-4. **Intenção**: Use search_subject_and_intent com o assunto encontrado para listar as intenções válidas.
+1. **Produto**: Escolha da lista acima (copie o valor exato do campo "produto")
+2. **Subproduto**: Copie o valor exato do campo "subproduto" correspondente, ou null se não houver
+3. **Assunto**: Tema principal da conversa
+4. **Intenção**: O que o cliente deseja
 5. **Confiança**: Seu nível de certeza na classificação (0-100)
 
-Use APENAS os valores que existem no catálogo e na base de conhecimento. Se não identificar claramente, use null.`;
+Use APENAS os produtos/subprodutos que existem no catálogo acima. Se não identificar claramente, use null.`;
 
 const DEFAULT_CLASSIFICATION_RESPONSE_FORMAT = `Responda em JSON válido:
 {
-  "product": "fullName do catálogo",
-  "subproduct": "subproduto ou null",
-  "subject": "assunto da base de conhecimento",
-  "intent": "intenção da base de conhecimento",
+  "product": "valor exato do campo produto do catálogo",
+  "subproduct": "valor exato do campo subproduto do catálogo, ou null",
+  "subject": "tema principal da conversa",
+  "intent": "o que o cliente deseja",
   "confidence": 85
 }`;
 
@@ -70,6 +76,7 @@ export async function classifyConversation(
     resumo: payload.currentSummary,
     mensagens: messagesContext,
     ultimas20Mensagens: messagesContext,
+    catalogoProdutosSubprodutos: payload.productCatalogJson,
   };
 
   const basePrompt = promptSystem || DEFAULT_CLASSIFICATION_PROMPT;
@@ -77,6 +84,8 @@ export async function classifyConversation(
   
   const promptWithVars = replacePromptVariables(basePrompt, variables);
   const fullPrompt = `${promptWithVars}\n\n## Formato da Resposta\n${format}`;
+
+  const effectiveUseProductCatalogTool = payload.productCatalogJson ? false : useProductCatalogTool;
 
   const result = await callOpenAI({
     requestType: "classification",
@@ -88,7 +97,7 @@ export async function classifyConversation(
     contextId: externalConversationId || (conversationId ? String(conversationId) : undefined),
     toolFlags: {
       useKnowledgeBaseTool,
-      useProductCatalogTool,
+      useProductCatalogTool: effectiveUseProductCatalogTool,
       useSubjectIntentTool,
     },
     maxIterations: 5,
