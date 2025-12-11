@@ -39,9 +39,14 @@ export function SourceArticlesBadge({ rawExtraction }: SourceArticlesBadgeProps)
                 </span>
                 {isEnrichment && article.id && (
                   <button
-                    onClick={() => openArticle(String(article.id))}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      openArticle(String(article.id));
+                    }}
                     className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded p-0.5 transition-colors"
                     title="Ver artigo"
+                    type="button"
                   >
                     <Eye className="w-3.5 h-3.5" />
                   </button>

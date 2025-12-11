@@ -300,27 +300,35 @@ export function KnowledgeBaseForm({
             <Tag className="w-3.5 h-3.5" />
             Classificação
           </label>
-          {prefilledData ? (
+          {prefilledData || initialData ? (
             <div className="flex items-center gap-1.5 flex-wrap py-1.5">
               <span className="px-2 py-1 text-xs bg-gray-100 rounded border border-gray-200 text-gray-700 font-medium">
-                {prefilledData.productStandard}
+                {prefilledData?.productStandard || initialData?.productStandard}
               </span>
-              {prefilledData.subproductStandard && (
+              {(prefilledData?.subproductStandard || initialData?.subproductStandard) && (
                 <>
                   <span className="text-gray-300">/</span>
                   <span className="px-2 py-1 text-xs bg-purple-50 rounded border border-purple-200 text-purple-700 font-medium">
-                    {prefilledData.subproductStandard}
+                    {prefilledData?.subproductStandard || initialData?.subproductStandard}
                   </span>
                 </>
               )}
-              <span className="text-gray-300">/</span>
-              <span className="px-2 py-1 text-xs bg-blue-50 rounded border border-blue-200 text-blue-700 font-medium">
-                {prefilledData.subjectName}
-              </span>
-              <span className="text-gray-300">/</span>
-              <span className="px-2 py-1 text-xs bg-green-50 rounded border border-green-200 text-green-700 font-medium">
-                {prefilledData.intentName}
-              </span>
+              {(prefilledData?.subjectName || (initialData?.subjectId && allSubjects.find(s => s.id === initialData.subjectId)?.name)) && (
+                <>
+                  <span className="text-gray-300">/</span>
+                  <span className="px-2 py-1 text-xs bg-blue-50 rounded border border-blue-200 text-blue-700 font-medium">
+                    {prefilledData?.subjectName || allSubjects.find(s => s.id === initialData?.subjectId)?.name}
+                  </span>
+                </>
+              )}
+              {(prefilledData?.intentName || (initialData?.intentId && allIntents.find(i => i.id === initialData.intentId)?.name)) && (
+                <>
+                  <span className="text-gray-300">/</span>
+                  <span className="px-2 py-1 text-xs bg-green-50 rounded border border-green-200 text-green-700 font-medium">
+                    {prefilledData?.intentName || allIntents.find(i => i.id === initialData?.intentId)?.name}
+                  </span>
+                </>
+              )}
             </div>
           ) : (
             <div className="flex gap-2">
