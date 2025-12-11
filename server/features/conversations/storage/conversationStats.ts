@@ -20,7 +20,7 @@ export const conversationStats = {
     };
   },
 
-  async getConversationsGroupedByUser(limit = 50, offset = 0, productStandardFilter?: string, intentFilter?: string, handlerFilter?: string, emotionLevelFilter?: number, clientFilter?: string) {
+  async getConversationsGroupedByUser(limit = 50, offset = 0, productStandardFilter?: string, intentFilter?: string, handlerFilter?: string, emotionLevelFilter?: number, clientFilter?: string, userAuthenticatedFilter?: string) {
     const productCondition = productStandardFilter ? sql`AND lc_filter.last_product_standard = ${productStandardFilter}` : sql``;
     const intentCondition = intentFilter ? sql`AND lc_filter.last_intent = ${intentFilter}` : sql``;
     const emotionCondition = emotionLevelFilter ? sql`AND lc_filter.last_customer_emotion_level = ${emotionLevelFilter}` : sql``;
@@ -32,6 +32,13 @@ export const conversationStats = {
       handlerCondition = sql`AND (LOWER(lc_filter.current_handler_name) LIKE '%agentworkspace%' OR LOWER(lc_filter.current_handler_name) LIKE '%zd-agentworkspace%')`;
     } else if (handlerFilter === 'n1ago') {
       handlerCondition = sql`AND LOWER(lc_filter.current_handler_name) LIKE '%n1ago%'`;
+    }
+
+    let userAuthenticatedCondition = sql``;
+    if (userAuthenticatedFilter === 'authenticated') {
+      userAuthenticatedCondition = sql`AND lc_filter.user_authenticated = true`;
+    } else if (userAuthenticatedFilter === 'not_authenticated') {
+      userAuthenticatedCondition = sql`AND (lc_filter.user_authenticated = false OR lc_filter.user_authenticated IS NULL)`;
     }
 
     const clientSearchPattern = clientFilter ? `%${clientFilter}%` : null;
@@ -69,7 +76,8 @@ export const conversationStats = {
           cs.customer_emotion_level as last_customer_emotion_level,
           u.profile->>'givenName' as profile_given_name,
           u.profile->>'surname' as profile_surname,
-          u.profile->>'email' as profile_email
+          u.profile->>'email' as profile_email,
+          u.authenticated as user_authenticated
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
         LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
@@ -79,7 +87,7 @@ export const conversationStats = {
       ),
       filtered_users AS (
         SELECT user_id FROM last_conv_filter lc_filter
-        WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition} ${emotionCondition} ${clientCondition}
+        WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition} ${emotionCondition} ${clientCondition} ${userAuthenticatedCondition}
       ),
       user_stats AS (
         SELECT 
@@ -163,7 +171,8 @@ export const conversationStats = {
           cs.customer_emotion_level as last_customer_emotion_level,
           u.profile->>'givenName' as profile_given_name,
           u.profile->>'surname' as profile_surname,
-          u.profile->>'email' as profile_email
+          u.profile->>'email' as profile_email,
+          u.authenticated as user_authenticated
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
         LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
@@ -172,7 +181,7 @@ export const conversationStats = {
         ORDER BY c.user_id, COALESCE(lm.last_message_at, c.created_at) DESC
       )
       SELECT COUNT(*) as count FROM last_conv_filter lc_filter
-      WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition} ${emotionCondition} ${clientCondition}
+      WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition} ${emotionCondition} ${clientCondition} ${userAuthenticatedCondition}
     `);
 
     return { 

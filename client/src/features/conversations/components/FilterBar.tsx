@@ -8,6 +8,11 @@ const EMOTION_OPTIONS = [
   { value: "5", label: "😠 Muito irritado" },
 ];
 
+const USER_AUTHENTICATED_OPTIONS = [
+  { value: "authenticated", label: "Autenticado" },
+  { value: "not_authenticated", label: "Não autenticado" },
+];
+
 interface FilterBarProps {
   productStandards: string[];
   intents: string[];
@@ -15,10 +20,12 @@ interface FilterBarProps {
   intentFilter: string;
   emotionLevelFilter: string;
   clientFilter: string;
+  userAuthenticatedFilter: string;
   onProductStandardChange: (value: string) => void;
   onIntentChange: (value: string) => void;
   onEmotionLevelChange: (value: string) => void;
   onClientChange: (value: string) => void;
+  onUserAuthenticatedChange: (value: string) => void;
   onClear: () => void;
 }
 
@@ -29,10 +36,12 @@ export function FilterBar({
   intentFilter,
   emotionLevelFilter,
   clientFilter,
+  userAuthenticatedFilter,
   onProductStandardChange,
   onIntentChange,
   onEmotionLevelChange,
   onClientChange,
+  onUserAuthenticatedChange,
   onClear,
 }: FilterBarProps) {
   return (
@@ -42,6 +51,7 @@ export function FilterBar({
         { type: "select", value: productStandardFilter, onChange: onProductStandardChange, placeholder: "Produtos", options: productStandards },
         { type: "select", value: intentFilter, onChange: onIntentChange, placeholder: "Intenções", options: intents },
         { type: "select", value: emotionLevelFilter, onChange: onEmotionLevelChange, placeholder: "Emoção", options: EMOTION_OPTIONS },
+        { type: "select", value: userAuthenticatedFilter, onChange: onUserAuthenticatedChange, placeholder: "Usuário", options: USER_AUTHENTICATED_OPTIONS },
       ]}
       onClear={onClear}
     />

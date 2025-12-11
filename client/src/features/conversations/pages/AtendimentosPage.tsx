@@ -40,6 +40,7 @@ export function AtendimentosPage() {
   const [productStandardFilter, setProductStandardFilter] = useState<string>(initialProductStandard);
   const [intentFilter, setIntentFilter] = useState<string>(initialIntent);
   const [emotionLevelFilter, setEmotionLevelFilter] = useState<string>(initialEmotionLevel);
+  const [userAuthenticatedFilter, setUserAuthenticatedFilter] = useState<string>("");
   const [handlerFilter, setHandlerFilter] = useState<string>("all");
   const [clientFilterInput, setClientFilterInput] = useState<string>("");
   const [clientFilterDebounced, setClientFilterDebounced] = useState<string>("");
@@ -79,9 +80,10 @@ export function AtendimentosPage() {
     if (handlerFilter && handlerFilter !== "all") params.set("handler", handlerFilter);
     if (emotionLevelFilter) params.set("emotionLevel", emotionLevelFilter);
     if (clientFilterDebounced) params.set("client", clientFilterDebounced);
+    if (userAuthenticatedFilter) params.set("userAuthenticated", userAuthenticatedFilter);
     const queryString = params.toString();
     return queryString ? `/api/conversations/grouped?${queryString}` : "/api/conversations/grouped";
-  }, [productStandardFilter, intentFilter, handlerFilter, emotionLevelFilter, clientFilterDebounced]);
+  }, [productStandardFilter, intentFilter, handlerFilter, emotionLevelFilter, clientFilterDebounced, userAuthenticatedFilter]);
 
   const {
     data: userGroups,
@@ -96,19 +98,20 @@ export function AtendimentosPage() {
     showingFrom,
     showingTo,
   } = usePaginatedQuery<UserGroup>({
-    queryKey: `conversations-grouped-${productStandardFilter}-${intentFilter}-${handlerFilter}-${emotionLevelFilter}-${clientFilterDebounced}`,
+    queryKey: `conversations-grouped-${productStandardFilter}-${intentFilter}-${handlerFilter}-${emotionLevelFilter}-${clientFilterDebounced}-${userAuthenticatedFilter}`,
     endpoint,
     limit: 20,
     dataKey: "user_groups",
   });
 
-  const hasFilters = productStandardFilter || intentFilter || emotionLevelFilter || clientFilterInput;
+  const hasFilters = productStandardFilter || intentFilter || emotionLevelFilter || clientFilterInput || userAuthenticatedFilter;
 
   const clearFilters = () => {
     setProductStandardFilter("");
     setIntentFilter("");
     setEmotionLevelFilter("");
     setClientFilterInput("");
+    setUserAuthenticatedFilter("");
   };
 
   const handleConfigTabChange = (tabId: string) => {
@@ -167,10 +170,12 @@ export function AtendimentosPage() {
             intentFilter={intentFilter}
             emotionLevelFilter={emotionLevelFilter}
             clientFilter={clientFilterInput}
+            userAuthenticatedFilter={userAuthenticatedFilter}
             onProductStandardChange={setProductStandardFilter}
             onIntentChange={setIntentFilter}
             onEmotionLevelChange={setEmotionLevelFilter}
             onClientChange={setClientFilterInput}
+            onUserAuthenticatedChange={setUserAuthenticatedFilter}
             onClear={clearFilters}
           />
 
