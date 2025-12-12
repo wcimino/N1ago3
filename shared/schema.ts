@@ -376,7 +376,7 @@ export const knowledgeBaseEmbeddings = pgTable("knowledge_base_embeddings", {
 
 export const knowledgeBaseObjectiveProblems = pgTable("knowledge_base_objective_problems", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull().unique(),
+  name: text("name").notNull(),
   description: text("description").notNull(),
   synonyms: json("synonyms").$type<string[]>().default([]),
   examples: json("examples").$type<string[]>().default([]),
@@ -385,7 +385,6 @@ export const knowledgeBaseObjectiveProblems = pgTable("knowledge_base_objective_
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
-  nameIdx: uniqueIndex("idx_kb_objective_problems_name").on(table.name),
   presentedByIdx: index("idx_kb_objective_problems_presented_by").on(table.presentedBy),
   isActiveIdx: index("idx_kb_objective_problems_is_active").on(table.isActive),
 }));
