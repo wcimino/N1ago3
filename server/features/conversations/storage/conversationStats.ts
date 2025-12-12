@@ -301,7 +301,7 @@ export const conversationStats = {
         ${clientCondition}
         ${userAuthenticatedCondition}
         ${handledByN1agoCondition}
-      ORDER BY COALESCE(lm.last_message_at, c.created_at) DESC
+      ORDER BY c.created_at DESC, c.id DESC
       LIMIT ${limit} OFFSET ${offset}
     `);
 
