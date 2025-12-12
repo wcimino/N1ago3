@@ -57,13 +57,19 @@ router.post("/api/conversations/:conversationId/transfer", isAuthenticated, requ
       bot: "zd-answerBot",
     };
 
+    const updateData: Record<string, any> = { 
+      currentHandler: targetIntegrationId,
+      currentHandlerName: handlerNameMap[target],
+      updatedAt: new Date() 
+    };
+    
+    if (target === "n1ago") {
+      updateData.handledByN1ago = true;
+    }
+    
     await db
       .update(conversations)
-      .set({ 
-        currentHandler: targetIntegrationId,
-        currentHandlerName: handlerNameMap[target],
-        updatedAt: new Date() 
-      })
+      .set(updateData)
       .where(eq(conversations.id, parseInt(conversationId)));
 
     res.json({ 

@@ -1,6 +1,9 @@
 import { routingStorage } from "../storage/routingStorage.js";
 import { ZendeskApiService } from "../../../services/zendeskApiService.js";
 import { userStorage } from "../../conversations/storage/userStorage.js";
+import { db } from "../../../db.js";
+import { conversations } from "../../../../shared/schema.js";
+import { eq } from "drizzle-orm";
 import type { EventStandard, RoutingRule } from "../../../../shared/schema.js";
 
 const processedAllocateNextN = new Set<string>();
@@ -143,6 +146,14 @@ export async function processRoutingEvent(event: EventStandard): Promise<void> {
 
       if (result.success) {
         console.log(`[Routing] Rule ${rule.id}: SUCCESS - Conversation ${externalConversationId} routed to ${rule.target}`);
+        
+        if (rule.target.toLowerCase() === "n1ago") {
+          await db
+            .update(conversations)
+            .set({ handledByN1ago: true, updatedAt: new Date() })
+            .where(eq(conversations.externalConversationId, externalConversationId));
+          console.log(`[Routing] Rule ${rule.id}: Marked conversation as handled by N1ago`);
+        }
         
         if (consumeResult.shouldDeactivate) {
           await routingStorage.deactivateRule(rule.id);

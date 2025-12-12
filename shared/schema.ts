@@ -121,6 +121,7 @@ export const conversations = pgTable("conversations", {
   currentHandler: text("current_handler"),
   currentHandlerName: text("current_handler_name"),
   autopilotEnabled: boolean("autopilot_enabled").default(true).notNull(),
+  handledByN1ago: boolean("handled_by_n1ago").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   metadataJson: json("metadata_json"),
@@ -128,6 +129,7 @@ export const conversations = pgTable("conversations", {
   userIdIdx: index("idx_conversations_user_id").on(table.userId),
   updatedAtIdx: index("idx_conversations_updated_at").on(table.updatedAt.desc()),
   statusIdx: index("idx_conversations_status").on(table.status),
+  handledByN1agoIdx: index("idx_conversations_handled_by_n1ago").on(table.handledByN1ago),
 }));
 
 export const eventTypeMappings = pgTable("event_type_mappings", {

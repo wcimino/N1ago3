@@ -20,7 +20,7 @@ export const conversationStats = {
     };
   },
 
-  async getConversationsGroupedByUser(limit = 50, offset = 0, productStandardFilter?: string, intentFilter?: string, handlerFilter?: string, emotionLevelFilter?: number, clientFilter?: string, userAuthenticatedFilter?: string) {
+  async getConversationsGroupedByUser(limit = 50, offset = 0, productStandardFilter?: string, intentFilter?: string, handlerFilter?: string, emotionLevelFilter?: number, clientFilter?: string, userAuthenticatedFilter?: string, handledByN1agoFilter?: string) {
     const productCondition = productStandardFilter ? sql`AND lc_filter.last_product_standard = ${productStandardFilter}` : sql``;
     const intentCondition = intentFilter ? sql`AND lc_filter.last_intent = ${intentFilter}` : sql``;
     const emotionCondition = emotionLevelFilter ? sql`AND lc_filter.last_customer_emotion_level = ${emotionLevelFilter}` : sql``;
@@ -39,6 +39,11 @@ export const conversationStats = {
       userAuthenticatedCondition = sql`AND lc_filter.user_authenticated = true`;
     } else if (userAuthenticatedFilter === 'not_authenticated') {
       userAuthenticatedCondition = sql`AND (lc_filter.user_authenticated = false OR lc_filter.user_authenticated IS NULL)`;
+    }
+
+    let handledByN1agoCondition = sql``;
+    if (handledByN1agoFilter === 'yes') {
+      handledByN1agoCondition = sql`AND lc_filter.has_n1ago_conversation = true`;
     }
 
     const clientSearchPattern = clientFilter ? `%${clientFilter}%` : null;
@@ -67,6 +72,14 @@ export const conversationStats = {
         WHERE event_type = 'message'
         GROUP BY conversation_id
       ),
+      user_n1ago_status AS (
+        SELECT 
+          c.user_id,
+          BOOL_OR(c.handled_by_n1ago) as has_n1ago_conversation
+        FROM conversations c
+        WHERE c.user_id IS NOT NULL
+        GROUP BY c.user_id
+      ),
       last_conv_filter AS (
         SELECT DISTINCT ON (c.user_id)
           c.user_id,
@@ -77,17 +90,19 @@ export const conversationStats = {
           u.profile->>'givenName' as profile_given_name,
           u.profile->>'surname' as profile_surname,
           u.profile->>'email' as profile_email,
-          u.authenticated as user_authenticated
+          u.authenticated as user_authenticated,
+          uns.has_n1ago_conversation
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
         LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
         LEFT JOIN users u ON c.user_id = u.sunshine_id
+        LEFT JOIN user_n1ago_status uns ON uns.user_id = c.user_id
         WHERE c.user_id IS NOT NULL
         ORDER BY c.user_id, COALESCE(lm.last_message_at, c.created_at) DESC
       ),
       filtered_users AS (
         SELECT user_id FROM last_conv_filter lc_filter
-        WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition} ${emotionCondition} ${clientCondition} ${userAuthenticatedCondition}
+        WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition} ${emotionCondition} ${clientCondition} ${userAuthenticatedCondition} ${handledByN1agoCondition}
       ),
       user_stats AS (
         SELECT 
@@ -162,6 +177,14 @@ export const conversationStats = {
         WHERE event_type = 'message'
         GROUP BY conversation_id
       ),
+      user_n1ago_status AS (
+        SELECT 
+          c.user_id,
+          BOOL_OR(c.handled_by_n1ago) as has_n1ago_conversation
+        FROM conversations c
+        WHERE c.user_id IS NOT NULL
+        GROUP BY c.user_id
+      ),
       last_conv_filter AS (
         SELECT DISTINCT ON (c.user_id)
           c.user_id,
@@ -172,16 +195,18 @@ export const conversationStats = {
           u.profile->>'givenName' as profile_given_name,
           u.profile->>'surname' as profile_surname,
           u.profile->>'email' as profile_email,
-          u.authenticated as user_authenticated
+          u.authenticated as user_authenticated,
+          uns.has_n1ago_conversation
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
         LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
         LEFT JOIN users u ON c.user_id = u.sunshine_id
+        LEFT JOIN user_n1ago_status uns ON uns.user_id = c.user_id
         WHERE c.user_id IS NOT NULL
         ORDER BY c.user_id, COALESCE(lm.last_message_at, c.created_at) DESC
       )
       SELECT COUNT(*) as count FROM last_conv_filter lc_filter
-      WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition} ${emotionCondition} ${clientCondition} ${userAuthenticatedCondition}
+      WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition} ${emotionCondition} ${clientCondition} ${userAuthenticatedCondition} ${handledByN1agoCondition}
     `);
 
     return { 
