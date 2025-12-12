@@ -17,6 +17,7 @@ export function ClassificationConfigPage() {
       showKnowledgeBaseTool={true}
       showProductCatalogTool={true}
       showSubjectIntentTool={true}
+      showObjectiveProblemTool={true}
     />
   );
 }

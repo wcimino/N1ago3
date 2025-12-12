@@ -17,6 +17,7 @@ export function ResponseConfigPage() {
       showKnowledgeBaseTool={true}
       showProductCatalogTool={true}
       showZendeskKnowledgeBaseTool={true}
+      showObjectiveProblemTool={true}
     />
   );
 }

@@ -17,6 +17,7 @@ export interface OpenaiApiConfigResponse {
   use_product_catalog_tool: boolean;
   use_subject_intent_tool: boolean;
   use_zendesk_knowledge_base_tool: boolean;
+  use_objective_problem_tool: boolean;
   use_general_settings: boolean;
   created_at?: string;
   updated_at?: string;
@@ -34,6 +35,7 @@ export interface OpenaiApiConfigState {
   useProductCatalogTool: boolean;
   useSubjectIntentTool: boolean;
   useZendeskKnowledgeBaseTool: boolean;
+  useObjectiveProblemTool: boolean;
   useGeneralSettings: boolean;
   hasChanges: boolean;
 }
@@ -50,6 +52,7 @@ export interface OpenaiApiConfigActions {
   setUseProductCatalogTool: (value: boolean) => void;
   setUseSubjectIntentTool: (value: boolean) => void;
   setUseZendeskKnowledgeBaseTool: (value: boolean) => void;
+  setUseObjectiveProblemTool: (value: boolean) => void;
   setUseGeneralSettings: (value: boolean) => void;
   save: () => void;
 }
@@ -76,6 +79,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
   const [useProductCatalogTool, setUseProductCatalogToolState] = useState(false);
   const [useSubjectIntentTool, setUseSubjectIntentToolState] = useState(false);
   const [useZendeskKnowledgeBaseTool, setUseZendeskKnowledgeBaseToolState] = useState(false);
+  const [useObjectiveProblemTool, setUseObjectiveProblemToolState] = useState(false);
   const [useGeneralSettings, setUseGeneralSettingsState] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -102,6 +106,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       setUseProductCatalogToolState(config.use_product_catalog_tool ?? false);
       setUseSubjectIntentToolState(config.use_subject_intent_tool ?? false);
       setUseZendeskKnowledgeBaseToolState(config.use_zendesk_knowledge_base_tool ?? false);
+      setUseObjectiveProblemToolState(config.use_objective_problem_tool ?? false);
       setUseGeneralSettingsState(config.use_general_settings ?? false);
       setHasChanges(false);
     }
@@ -121,6 +126,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
         use_product_catalog_tool: useProductCatalogTool,
         use_subject_intent_tool: useSubjectIntentTool,
         use_zendesk_knowledge_base_tool: useZendeskKnowledgeBaseTool,
+        use_objective_problem_tool: useObjectiveProblemTool,
         use_general_settings: useGeneralSettings,
       });
     },
@@ -195,6 +201,11 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
     markChanged();
   }, [markChanged]);
 
+  const setUseObjectiveProblemTool = useCallback((value: boolean) => {
+    setUseObjectiveProblemToolState(value);
+    markChanged();
+  }, [markChanged]);
+
   const setUseGeneralSettings = useCallback((value: boolean) => {
     setUseGeneralSettingsState(value);
     markChanged();
@@ -217,6 +228,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       useProductCatalogTool,
       useSubjectIntentTool,
       useZendeskKnowledgeBaseTool,
+      useObjectiveProblemTool,
       useGeneralSettings,
       hasChanges,
     },
@@ -232,6 +244,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       setUseProductCatalogTool,
       setUseSubjectIntentTool,
       setUseZendeskKnowledgeBaseTool,
+      setUseObjectiveProblemTool,
       setUseGeneralSettings,
       save,
     },

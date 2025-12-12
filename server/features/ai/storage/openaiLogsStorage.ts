@@ -28,7 +28,9 @@ export const openaiLogsStorage = {
           modelName: data.modelName,
           useKnowledgeBaseTool: data.useKnowledgeBaseTool ?? existing.useKnowledgeBaseTool,
           useProductCatalogTool: data.useProductCatalogTool ?? existing.useProductCatalogTool,
+          useSubjectIntentTool: data.useSubjectIntentTool ?? existing.useSubjectIntentTool,
           useZendeskKnowledgeBaseTool: data.useZendeskKnowledgeBaseTool ?? existing.useZendeskKnowledgeBaseTool,
+          useObjectiveProblemTool: data.useObjectiveProblemTool ?? existing.useObjectiveProblemTool,
           useGeneralSettings: data.useGeneralSettings ?? existing.useGeneralSettings,
           updatedAt: new Date(),
         })
