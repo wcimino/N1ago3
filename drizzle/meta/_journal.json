@@ -71,6 +71,13 @@
       "when": 1765547432314,
       "tag": "0009_warm_whizzer",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1765550514247,
+      "tag": "0010_broken_tyrannus",
+      "breakpoints": true
     }
   ]
 }

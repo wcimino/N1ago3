@@ -390,6 +390,20 @@ export const knowledgeBaseObjectiveProblems = pgTable("knowledge_base_objective_
 export type KnowledgeBaseObjectiveProblem = typeof knowledgeBaseObjectiveProblems.$inferSelect;
 export type InsertKnowledgeBaseObjectiveProblem = typeof knowledgeBaseObjectiveProblems.$inferInsert;
 
+export const knowledgeBaseObjectiveProblemsHasProductsCatalog = pgTable("knowledge_base_objective_problems_has_products_catalog", {
+  id: serial("id").primaryKey(),
+  objectiveProblemId: integer("objective_problem_id").notNull().references(() => knowledgeBaseObjectiveProblems.id, { onDelete: "cascade" }),
+  productId: integer("product_id").notNull().references(() => ifoodProducts.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueLink: uniqueIndex("idx_kb_objective_problems_products_unique").on(table.objectiveProblemId, table.productId),
+  problemIdx: index("idx_kb_objective_problems_products_problem").on(table.objectiveProblemId),
+  productIdx: index("idx_kb_objective_problems_products_product").on(table.productId),
+}));
+
+export type KnowledgeBaseObjectiveProblemsHasProductsCatalog = typeof knowledgeBaseObjectiveProblemsHasProductsCatalog.$inferSelect;
+export type InsertKnowledgeBaseObjectiveProblemsHasProductsCatalog = Omit<typeof knowledgeBaseObjectiveProblemsHasProductsCatalog.$inferInsert, "id" | "createdAt">;
+
 export const ifoodProducts = pgTable("products_catalog", {
   id: serial("id").primaryKey(),
   produto: text("produto").notNull(),
