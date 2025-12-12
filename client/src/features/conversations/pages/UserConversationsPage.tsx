@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { XCircle, MessageCircle, ChevronLeft, FileText, Eye, EyeOff, ArrowRightLeft, Zap, ZapOff } from "lucide-react";
+import { XCircle, MessageCircle, ChevronLeft, FileText, Eye, EyeOff, ArrowRightLeft, Zap, ZapOff, XSquare, Loader2 } from "lucide-react";
 import type { UserConversationsMessagesResponse, ImagePayload } from "../../../types";
 import { ImageLightbox, LoadingState, SegmentedTabs } from "../../../shared/components/ui";
 import { HandlerBadge } from "../../../shared/components/badges/HandlerBadge";
@@ -50,6 +50,18 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-conversations-messages", userId] });
+    },
+  });
+
+  const closeConversationMutation = useMutation({
+    mutationFn: async (conversationId: number) => {
+      return apiRequest("POST", `/api/conversations/${conversationId}/close`, { reason: "manual" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-conversations-messages", userId] });
+    },
+    onError: (error: Error) => {
+      alert(`Erro ao encerrar conversa: ${error.message}`);
     },
   });
 
@@ -152,6 +164,25 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                 <ArrowRightLeft className="w-4 h-4" />
                 <span className="hidden lg:inline ml-1">Transferir</span>
               </button>
+              {selectedConversation.conversation.status === "active" && (
+                <button
+                  onClick={() => {
+                    if (confirm("Tem certeza que deseja encerrar esta conversa?")) {
+                      closeConversationMutation.mutate(selectedConversation.conversation.id);
+                    }
+                  }}
+                  disabled={closeConversationMutation.isPending}
+                  className="inline-flex items-center justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-2 sm:py-1.5 text-sm text-red-600 hover:text-red-700 border border-red-200 hover:border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+                  title="Encerrar conversa"
+                >
+                  {closeConversationMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <XSquare className="w-4 h-4" />
+                  )}
+                  <span className="hidden lg:inline ml-1">Encerrar</span>
+                </button>
+              )}
             </div>
           )}
         </div>
