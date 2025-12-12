@@ -381,3 +381,187 @@ export async function searchObjectiveProblems(
     .sort((a, b) => b.matchScore - a.matchScore)
     .slice(0, limit);
 }
+
+export interface SemanticSearchParams {
+  queryEmbedding: number[];
+  productId?: number;
+  onlyActive?: boolean;
+  limit?: number;
+}
+
+export interface SemanticSearchResult {
+  id: number;
+  name: string;
+  description: string;
+  synonyms: string[];
+  examples: string[];
+  similarity: number;
+  productIds: number[];
+  productNames: string[];
+}
+
+export async function searchObjectiveProblemsBySimilarity(
+  params: SemanticSearchParams
+): Promise<SemanticSearchResult[]> {
+  const { queryEmbedding, productId, onlyActive = true, limit = 10 } = params;
+  
+  const embeddingString = `[${queryEmbedding.join(',')}]`;
+  
+  let results;
+  
+  if (productId && onlyActive) {
+    results = await db.execute(sql`
+      SELECT 
+        p.id,
+        p.name,
+        p.description,
+        p.synonyms,
+        p.examples,
+        ROUND((1 - (e.embedding_vector::vector <=> ${embeddingString}::vector)) * 100) as similarity
+      FROM knowledge_base_objective_problems p
+      INNER JOIN knowledge_base_objective_problems_embeddings e ON p.id = e.problem_id
+      WHERE e.embedding_vector IS NOT NULL
+        AND p.is_active = true
+        AND EXISTS (
+          SELECT 1 FROM knowledge_base_objective_problems_has_products_catalog pc 
+          WHERE pc.objective_problem_id = p.id AND pc.product_id = ${productId}
+        )
+      ORDER BY e.embedding_vector::vector <=> ${embeddingString}::vector
+      LIMIT ${limit}
+    `);
+  } else if (productId) {
+    results = await db.execute(sql`
+      SELECT 
+        p.id,
+        p.name,
+        p.description,
+        p.synonyms,
+        p.examples,
+        ROUND((1 - (e.embedding_vector::vector <=> ${embeddingString}::vector)) * 100) as similarity
+      FROM knowledge_base_objective_problems p
+      INNER JOIN knowledge_base_objective_problems_embeddings e ON p.id = e.problem_id
+      WHERE e.embedding_vector IS NOT NULL
+        AND EXISTS (
+          SELECT 1 FROM knowledge_base_objective_problems_has_products_catalog pc 
+          WHERE pc.objective_problem_id = p.id AND pc.product_id = ${productId}
+        )
+      ORDER BY e.embedding_vector::vector <=> ${embeddingString}::vector
+      LIMIT ${limit}
+    `);
+  } else if (onlyActive) {
+    results = await db.execute(sql`
+      SELECT 
+        p.id,
+        p.name,
+        p.description,
+        p.synonyms,
+        p.examples,
+        ROUND((1 - (e.embedding_vector::vector <=> ${embeddingString}::vector)) * 100) as similarity
+      FROM knowledge_base_objective_problems p
+      INNER JOIN knowledge_base_objective_problems_embeddings e ON p.id = e.problem_id
+      WHERE e.embedding_vector IS NOT NULL
+        AND p.is_active = true
+      ORDER BY e.embedding_vector::vector <=> ${embeddingString}::vector
+      LIMIT ${limit}
+    `);
+  } else {
+    results = await db.execute(sql`
+      SELECT 
+        p.id,
+        p.name,
+        p.description,
+        p.synonyms,
+        p.examples,
+        ROUND((1 - (e.embedding_vector::vector <=> ${embeddingString}::vector)) * 100) as similarity
+      FROM knowledge_base_objective_problems p
+      INNER JOIN knowledge_base_objective_problems_embeddings e ON p.id = e.problem_id
+      WHERE e.embedding_vector IS NOT NULL
+      ORDER BY e.embedding_vector::vector <=> ${embeddingString}::vector
+      LIMIT ${limit}
+    `);
+  }
+  
+  const allProducts = await db.select().from(ifoodProducts);
+  const productMap = new Map(allProducts.map((prod: typeof allProducts[number]) => [prod.id, prod.fullName]));
+  
+  const enrichedResults = await Promise.all(
+    (results.rows as any[]).map(async (row) => {
+      const productIds = await getProductIdsForProblem(row.id);
+      const productNames = productIds.map(id => productMap.get(id) || "").filter(Boolean);
+      
+      return {
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        synonyms: row.synonyms || [],
+        examples: row.examples || [],
+        similarity: Number(row.similarity),
+        productIds,
+        productNames,
+      };
+    })
+  );
+  
+  return enrichedResults;
+}
+
+export async function hasObjectiveProblemEmbeddings(): Promise<boolean> {
+  const result = await db.execute(sql`
+    SELECT COUNT(*) as count FROM knowledge_base_objective_problems_embeddings 
+    WHERE embedding_vector IS NOT NULL
+  `);
+  const count = (result.rows as any[])[0]?.count || 0;
+  return count > 0;
+}
+
+export async function getProblemsWithoutEmbeddings(): Promise<KnowledgeBaseObjectiveProblem[]> {
+  const results = await db.execute(sql`
+    SELECT p.* FROM knowledge_base_objective_problems p
+    LEFT JOIN knowledge_base_objective_problems_embeddings e ON p.id = e.problem_id
+    WHERE e.id IS NULL
+    ORDER BY p.id
+  `);
+  return results.rows as unknown as KnowledgeBaseObjectiveProblem[];
+}
+
+export async function generateAllMissingEmbeddings(): Promise<{ processed: number; errors: string[] }> {
+  const problemsWithoutEmbeddings = await getProblemsWithoutEmbeddings();
+  
+  console.log(`[ObjectiveProblem Embedding] Found ${problemsWithoutEmbeddings.length} problems without embeddings`);
+  
+  let processed = 0;
+  const errors: string[] = [];
+  
+  for (const problem of problemsWithoutEmbeddings) {
+    try {
+      await generateAndSaveEmbeddingSync(problem);
+      processed++;
+      console.log(`[ObjectiveProblem Embedding] Generated embedding for problem ${problem.id} (${processed}/${problemsWithoutEmbeddings.length})`);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      errors.push(`Problem ${problem.id}: ${errorMsg}`);
+      console.error(`[ObjectiveProblem Embedding] Failed for problem ${problem.id}: ${errorMsg}`);
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, 200));
+  }
+  
+  return { processed, errors };
+}
+
+async function generateAndSaveEmbeddingSync(problem: KnowledgeBaseObjectiveProblem): Promise<void> {
+  const contentText = generateProblemContentForEmbedding(problem);
+  const { embedding, logId, tokensUsed } = await generateEmbedding(contentText, { 
+    contextType: "knowledge_base_article" 
+  });
+  const contentHash = generateProblemContentHash(problem);
+  
+  await upsertProblemEmbedding({
+    problemId: problem.id,
+    contentHash,
+    embedding,
+    modelUsed: 'text-embedding-3-small',
+    tokensUsed,
+    openaiLogId: logId,
+  });
+}

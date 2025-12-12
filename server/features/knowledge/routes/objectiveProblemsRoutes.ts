@@ -168,4 +168,19 @@ router.delete("/api/knowledge/objective-problems/:id", async (req, res) => {
   }
 });
 
+router.post("/api/knowledge/objective-problems/embeddings/generate-all", async (_req, res) => {
+  try {
+    const { generateAllMissingEmbeddings } = await import("../storage/objectiveProblemsStorage.js");
+    const result = await generateAllMissingEmbeddings();
+    res.json({
+      message: `Generated embeddings for ${result.processed} problems`,
+      processed: result.processed,
+      errors: result.errors
+    });
+  } catch (error) {
+    console.error("Error generating embeddings:", error);
+    res.status(500).json({ error: "Failed to generate embeddings" });
+  }
+});
+
 export default router;
