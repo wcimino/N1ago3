@@ -213,190 +213,194 @@ export function ObjectiveProblemsPage() {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder="Ex: Transação recusada"
-              required
-            />
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-6">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="Ex: Transação recusada"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                rows={2}
+                placeholder="Descrição detalhada do problema"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sinônimos (um por linha)
+                </label>
+                <textarea
+                  value={formData.synonyms}
+                  onChange={(e) => setFormData({ ...formData, synonyms: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  rows={4}
+                  placeholder="Pagamento negado&#10;Recusa de cartão"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Exemplos de frases (um por linha)
+                </label>
+                <textarea
+                  value={formData.examples}
+                  onChange={(e) => setFormData({ ...formData, examples: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  rows={4}
+                  placeholder="Meu cartão não passou&#10;Não consegui pagar"
+                />
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              rows={3}
-              placeholder="Descrição detalhada do problema"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Produtos relacionados (opcional)
-            </label>
-            <div className="border border-gray-300 rounded-lg max-h-64 overflow-y-auto">
-              {products.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-2">Nenhum produto disponível</p>
-              ) : (
-                <div className="divide-y divide-gray-100">
-                  {Object.entries(groupedProducts).map(([mainProduct, subProducts]) => {
-                    const isExpanded = expandedProducts.has(mainProduct);
-                    const generalProduct = subProducts.find(p => !p.subproduto);
-                    const specificProducts = subProducts.filter(p => p.subproduto);
-                    const selectedCount = subProducts.filter(p => formData.productIds.includes(p.id)).length;
-                    
-                    return (
-                      <div key={mainProduct}>
-                        <div className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50">
-                          {specificProducts.length > 0 ? (
-                            <button
-                              type="button"
-                              onClick={() => toggleExpanded(mainProduct)}
-                              className="p-0.5"
-                            >
-                              {isExpanded ? (
-                                <ChevronDown className="w-4 h-4 text-gray-400" />
-                              ) : (
-                                <ChevronRight className="w-4 h-4 text-gray-400" />
-                              )}
-                            </button>
-                          ) : (
-                            <div className="w-5" />
-                          )}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Produtos relacionados (opcional)
+              </label>
+              <div className="border border-gray-300 rounded-lg max-h-48 overflow-y-auto">
+                {products.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-2">Nenhum produto disponível</p>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {Object.entries(groupedProducts).map(([mainProduct, subProducts]) => {
+                      const isExpanded = expandedProducts.has(mainProduct);
+                      const generalProduct = subProducts.find(p => !p.subproduto);
+                      const specificProducts = subProducts.filter(p => p.subproduto);
+                      const selectedCount = subProducts.filter(p => formData.productIds.includes(p.id)).length;
+                      
+                      return (
+                        <div key={mainProduct}>
+                          <div className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50">
+                            {specificProducts.length > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => toggleExpanded(mainProduct)}
+                                className="p-0.5"
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                                ) : (
+                                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                                )}
+                              </button>
+                            ) : (
+                              <div className="w-5" />
+                            )}
+                            
+                            {generalProduct && (
+                              <input
+                                type="checkbox"
+                                checked={formData.productIds.includes(generalProduct.id)}
+                                onChange={() => toggleProduct(generalProduct.id)}
+                                className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                              />
+                            )}
+                            
+                            <span className="font-medium text-gray-900 text-sm">{mainProduct}</span>
+                            
+                            {specificProducts.length > 0 && (
+                              <span className="text-xs text-gray-400">
+                                {specificProducts.length}
+                              </span>
+                            )}
+                            
+                            {selectedCount > 0 && (
+                              <span className="ml-auto text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
+                                {selectedCount}
+                              </span>
+                            )}
+                          </div>
                           
-                          {generalProduct && (
-                            <input
-                              type="checkbox"
-                              checked={formData.productIds.includes(generalProduct.id)}
-                              onChange={() => toggleProduct(generalProduct.id)}
-                              className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                            />
-                          )}
-                          
-                          <span className="font-medium text-gray-900">{mainProduct}</span>
-                          
-                          {specificProducts.length > 0 && (
-                            <span className="text-xs text-gray-400">
-                              {specificProducts.length} subproduto{specificProducts.length !== 1 ? "s" : ""}
-                            </span>
-                          )}
-                          
-                          {selectedCount > 0 && (
-                            <span className="ml-auto text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
-                              {selectedCount}
-                            </span>
+                          {isExpanded && specificProducts.length > 0 && (
+                            <div className="bg-gray-50 border-t border-gray-100">
+                              {specificProducts.map((product) => (
+                                <label
+                                  key={product.id}
+                                  className="flex items-center gap-2 px-3 py-1.5 pl-10 hover:bg-gray-100 cursor-pointer"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.productIds.includes(product.id)}
+                                    onChange={() => toggleProduct(product.id)}
+                                    className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                                  />
+                                  <span className="text-sm text-gray-700">
+                                    {product.subproduto}
+                                  </span>
+                                </label>
+                              ))}
+                            </div>
                           )}
                         </div>
-                        
-                        {isExpanded && specificProducts.length > 0 && (
-                          <div className="bg-gray-50 border-t border-gray-100">
-                            {specificProducts.map((product) => (
-                              <label
-                                key={product.id}
-                                className="flex items-center gap-2 px-3 py-2 pl-12 hover:bg-gray-100 cursor-pointer"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={formData.productIds.includes(product.id)}
-                                  onChange={() => toggleProduct(product.id)}
-                                  className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                                />
-                                <span className="text-sm text-gray-700">
-                                  {product.subproduto}
-                                </span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              {formData.productIds.length > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.productIds.length} produto{formData.productIds.length !== 1 ? "s" : ""} selecionado{formData.productIds.length !== 1 ? "s" : ""}
+                </p>
               )}
             </div>
-            {formData.productIds.length > 0 && (
-              <p className="text-xs text-gray-500 mt-1">
-                {formData.productIds.length} produto{formData.productIds.length !== 1 ? "s" : ""} selecionado{formData.productIds.length !== 1 ? "s" : ""}
-              </p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Sinônimos (um por linha)
-              </label>
-              <textarea
-                value={formData.synonyms}
-                onChange={(e) => setFormData({ ...formData, synonyms: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                rows={3}
-                placeholder="Pagamento negado&#10;Recusa de cartão"
-              />
-            </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Exemplos de frases (um por linha)
-              </label>
-              <textarea
-                value={formData.examples}
-                onChange={(e) => setFormData({ ...formData, examples: e.target.value })}
+              <label className="block text-sm font-medium text-gray-700 mb-1">Apresentado por</label>
+              <select
+                value={formData.presentedBy}
+                onChange={(e) => setFormData({ ...formData, presentedBy: e.target.value as FormData["presentedBy"] })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                rows={3}
-                placeholder="Meu cartão não passou&#10;Não consegui pagar"
-              />
+              >
+                <option value="customer">Cliente</option>
+                <option value="system">Sistema</option>
+                <option value="both">Ambos</option>
+              </select>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Apresentado por</label>
-            <select
-              value={formData.presentedBy}
-              onChange={(e) => setFormData({ ...formData, presentedBy: e.target.value as FormData["presentedBy"] })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="customer">Cliente</option>
-              <option value="system">Sistema</option>
-              <option value="both">Ambos</option>
-            </select>
-          </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="isActive"
+                checked={formData.isActive}
+                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+              />
+              <label htmlFor="isActive" className="text-sm font-medium text-gray-700">Ativo</label>
+            </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="isActive"
-              checked={formData.isActive}
-              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-              className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-            />
-            <label htmlFor="isActive" className="text-sm font-medium text-gray-700">Ativo</label>
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <button
-              type="submit"
-              disabled={createMutation.isPending || updateMutation.isPending}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
-            >
-              <Check className="w-4 h-4" />
-              {editingId ? "Atualizar" : "Criar"}
-            </button>
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              Cancelar
-            </button>
+            <div className="flex gap-2 pt-2">
+              <button
+                type="submit"
+                disabled={createMutation.isPending || updateMutation.isPending}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+              >
+                <Check className="w-4 h-4" />
+                {editingId ? "Atualizar" : "Criar"}
+              </button>
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         </form>
       </div>
