@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit2, Trash2, X, Check, AlertCircle } from "lucide-react";
+import { Plus, Edit2, Trash2, X, Check, AlertCircle, ChevronRight, ChevronDown } from "lucide-react";
 
 interface Product {
   id: number;
@@ -46,7 +46,20 @@ export function ObjectiveProblemsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyForm);
+  const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
+
+  const toggleExpanded = (productName: string) => {
+    setExpandedProducts(prev => {
+      const next = new Set(prev);
+      if (next.has(productName)) {
+        next.delete(productName);
+      } else {
+        next.add(productName);
+      }
+      return next;
+    });
+  };
 
   const { data: problems = [], isLoading } = useQuery<ObjectiveProblem[]>({
     queryKey: ["/api/knowledge/objective-problems"],
@@ -229,36 +242,61 @@ export function ObjectiveProblemsPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Produtos relacionados (opcional)
             </label>
-            <div className="border border-gray-300 rounded-lg max-h-64 overflow-y-auto p-2">
+            <div className="border border-gray-300 rounded-lg max-h-64 overflow-y-auto">
               {products.length === 0 ? (
                 <p className="text-sm text-gray-500 text-center py-2">Nenhum produto disponível</p>
               ) : (
-                <div className="space-y-2">
-                  {Object.entries(groupedProducts).map(([mainProduct, subProducts]) => (
-                    <div key={mainProduct}>
-                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 py-1 bg-gray-50 rounded">
-                        {mainProduct}
-                      </div>
-                      <div className="ml-2 mt-1 space-y-0.5">
-                        {subProducts.map((product) => (
-                          <label
-                            key={product.id}
-                            className="flex items-center gap-2 p-1.5 hover:bg-gray-50 rounded cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={formData.productIds.includes(product.id)}
-                              onChange={() => toggleProduct(product.id)}
-                              className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                            />
-                            <span className="text-sm text-gray-700">
-                              {product.subproduto || "(geral)"}
+                <div className="divide-y divide-gray-100">
+                  {Object.entries(groupedProducts).map(([mainProduct, subProducts]) => {
+                    const isExpanded = expandedProducts.has(mainProduct);
+                    const selectedCount = subProducts.filter(p => formData.productIds.includes(p.id)).length;
+                    
+                    return (
+                      <div key={mainProduct}>
+                        <button
+                          type="button"
+                          onClick={() => toggleExpanded(mainProduct)}
+                          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 text-left"
+                        >
+                          {isExpanded ? (
+                            <ChevronDown className="w-4 h-4 text-gray-400" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-gray-400" />
+                          )}
+                          <span className="font-medium text-gray-900">{mainProduct}</span>
+                          <span className="text-xs text-gray-400">
+                            {subProducts.length} subproduto{subProducts.length !== 1 ? "s" : ""}
+                          </span>
+                          {selectedCount > 0 && (
+                            <span className="ml-auto text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
+                              {selectedCount} selecionado{selectedCount !== 1 ? "s" : ""}
                             </span>
-                          </label>
-                        ))}
+                          )}
+                        </button>
+                        
+                        {isExpanded && (
+                          <div className="bg-gray-50 border-t border-gray-100">
+                            {subProducts.map((product) => (
+                              <label
+                                key={product.id}
+                                className="flex items-center gap-2 px-3 py-2 pl-9 hover:bg-gray-100 cursor-pointer"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={formData.productIds.includes(product.id)}
+                                  onChange={() => toggleProduct(product.id)}
+                                  className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                                />
+                                <span className="text-sm text-gray-700">
+                                  {product.subproduto || "(geral)"}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
