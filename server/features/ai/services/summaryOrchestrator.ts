@@ -61,12 +61,16 @@ export async function generateConversationSummary(event: EventStandard): Promise
         authorName: m.authorName,
         contentText: m.contentText,
         occurredAt: m.occurredAt,
+        eventSubtype: m.eventSubtype,
+        contentPayload: m.contentPayload as Record<string, unknown> | null,
       })),
       lastMessage: {
         authorType: event.authorType,
         authorName: event.authorName,
         contentText: event.contentText,
         occurredAt: event.occurredAt,
+        eventSubtype: event.eventSubtype,
+        contentPayload: event.contentPayload as Record<string, unknown> | null,
       }
     };
 

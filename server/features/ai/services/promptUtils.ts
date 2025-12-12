@@ -27,14 +27,70 @@ export function replacePromptVariables(
   return result;
 }
 
+interface FormField {
+  label?: string;
+  text?: string;
+  name?: string;
+  type?: string;
+}
+
+interface ContentPayload {
+  type?: string;
+  textFallback?: string;
+  fields?: FormField[];
+}
+
+function extractMessageText(message: {
+  contentText: string | null;
+  eventSubtype?: string | null;
+  contentPayload?: ContentPayload | null;
+}): string {
+  if (message.eventSubtype === 'formResponse' && message.contentPayload) {
+    const payload = message.contentPayload;
+    if (payload.textFallback) {
+      return `[Resposta do Formulário] ${payload.textFallback}`;
+    }
+    if (payload.fields && payload.fields.length > 0) {
+      const responses = payload.fields
+        .filter(f => f.label && f.text)
+        .map(f => `${f.label}: ${f.text}`)
+        .join('; ');
+      if (responses) {
+        return `[Resposta do Formulário] ${responses}`;
+      }
+    }
+  }
+  
+  if (message.eventSubtype === 'form' && message.contentPayload) {
+    const payload = message.contentPayload;
+    if (payload.fields && payload.fields.length > 0) {
+      const labels = payload.fields
+        .filter(f => f.label)
+        .map(f => f.label)
+        .join(', ');
+      if (labels) {
+        return `[Formulário enviado: ${labels}]`;
+      }
+    }
+    return '[Formulário enviado]';
+  }
+  
+  return message.contentText || '(sem texto)';
+}
+
 export function formatMessagesContext(messages: Array<{
   authorType: string;
   authorName: string | null;
   contentText: string | null;
   occurredAt: Date;
+  eventSubtype?: string | null;
+  contentPayload?: ContentPayload | null;
 }>): string {
   return messages
-    .map(m => `[${m.authorType}${m.authorName ? ` - ${m.authorName}` : ''}]: ${m.contentText || '(sem texto)'}`)
+    .map(m => {
+      const text = extractMessageText(m);
+      return `[${m.authorType}${m.authorName ? ` - ${m.authorName}` : ''}]: ${text}`;
+    })
     .join('\n');
 }
 
@@ -42,8 +98,11 @@ export function formatLastMessage(message: {
   authorType: string;
   authorName: string | null;
   contentText: string | null;
+  eventSubtype?: string | null;
+  contentPayload?: ContentPayload | null;
 }): string {
-  return `[${message.authorType}${message.authorName ? ` - ${message.authorName}` : ''}]: ${message.contentText || '(sem texto)'}`;
+  const text = extractMessageText(message);
+  return `[${message.authorType}${message.authorName ? ` - ${message.authorName}` : ''}]: ${text}`;
 }
 
 export function formatClassification(classification: {

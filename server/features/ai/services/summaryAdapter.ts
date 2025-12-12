@@ -9,12 +9,16 @@ export interface SummaryPayload {
     authorName: string | null;
     contentText: string | null;
     occurredAt: Date;
+    eventSubtype?: string | null;
+    contentPayload?: Record<string, unknown> | null;
   }>;
   lastMessage: {
     authorType: string;
     authorName: string | null;
     contentText: string | null;
     occurredAt: Date;
+    eventSubtype?: string | null;
+    contentPayload?: Record<string, unknown> | null;
   };
 }
 

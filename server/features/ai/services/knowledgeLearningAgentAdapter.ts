@@ -11,6 +11,8 @@ export interface AgentLearningPayload {
     authorName: string | null;
     contentText: string | null;
     occurredAt: Date;
+    eventSubtype?: string | null;
+    contentPayload?: Record<string, unknown> | null;
   }>;
   currentSummary: string | null;
   conversationHandler: string | null;

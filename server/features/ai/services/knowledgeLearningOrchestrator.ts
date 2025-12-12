@@ -98,6 +98,8 @@ export async function extractConversationKnowledge(event: EventStandard): Promis
         authorName: m.authorName,
         contentText: m.contentText,
         occurredAt: m.occurredAt,
+        eventSubtype: m.eventSubtype,
+        contentPayload: m.contentPayload as Record<string, unknown> | null,
       })),
       currentSummary: existingSummary?.summary || null,
       conversationHandler: null,

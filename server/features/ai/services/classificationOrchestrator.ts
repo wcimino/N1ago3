@@ -73,6 +73,8 @@ export async function classifyConversationProduct(event: EventStandard): Promise
         authorName: m.authorName,
         contentText: m.contentText,
         occurredAt: m.occurredAt,
+        eventSubtype: m.eventSubtype,
+        contentPayload: m.contentPayload as Record<string, unknown> | null,
       })),
       currentSummary: existingSummary?.summary || null,
       productCatalogJson,

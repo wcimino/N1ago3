@@ -8,6 +8,8 @@ export interface ClassificationPayload {
     authorName: string | null;
     contentText: string | null;
     occurredAt: Date;
+    eventSubtype?: string | null;
+    contentPayload?: Record<string, unknown> | null;
   }>;
   currentSummary?: string | null;
   productCatalogJson?: string | null;
