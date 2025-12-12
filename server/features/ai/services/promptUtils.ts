@@ -27,14 +27,14 @@ export function replacePromptVariables(
   return result;
 }
 
-interface FormField {
+export interface FormField {
   label?: string;
   text?: string;
   name?: string;
   type?: string;
 }
 
-interface ContentPayload {
+export interface ContentPayload {
   type?: string;
   textFallback?: string;
   fields?: FormField[];

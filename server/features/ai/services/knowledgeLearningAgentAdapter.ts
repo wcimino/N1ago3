@@ -3,7 +3,7 @@ import { runKnowledgeBaseSearch } from "./knowledgeBaseSearchHelper.js";
 import { callOpenAI, ToolDefinition } from "./openaiApiService.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 import { createZendeskKnowledgeBaseTool } from "./aiTools.js";
-import { replacePromptVariables, formatMessagesContext } from "./promptUtils.js";
+import { replacePromptVariables, formatMessagesContext, type ContentPayload } from "./promptUtils.js";
 
 export interface AgentLearningPayload {
   messages: Array<{
@@ -12,7 +12,7 @@ export interface AgentLearningPayload {
     contentText: string | null;
     occurredAt: Date;
     eventSubtype?: string | null;
-    contentPayload?: Record<string, unknown> | null;
+    contentPayload?: ContentPayload | null;
   }>;
   currentSummary: string | null;
   conversationHandler: string | null;

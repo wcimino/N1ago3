@@ -2,6 +2,7 @@ import { storage } from "../../../storage/index.js";
 import { generateAndSaveSummary, type SummaryPayload } from "./summaryAdapter.js";
 import { generalSettingsStorage } from "../storage/generalSettingsStorage.js";
 import type { EventStandard } from "../../../../shared/schema.js";
+import type { ContentPayload } from "./promptUtils.js";
 
 export async function shouldGenerateSummary(event: EventStandard): Promise<boolean> {
   const config = await storage.getOpenaiApiConfig("summary");
@@ -62,7 +63,7 @@ export async function generateConversationSummary(event: EventStandard): Promise
         contentText: m.contentText,
         occurredAt: m.occurredAt,
         eventSubtype: m.eventSubtype,
-        contentPayload: m.contentPayload as Record<string, unknown> | null,
+        contentPayload: m.contentPayload as ContentPayload | null,
       })),
       lastMessage: {
         authorType: event.authorType,
@@ -70,7 +71,7 @@ export async function generateConversationSummary(event: EventStandard): Promise
         contentText: event.contentText,
         occurredAt: event.occurredAt,
         eventSubtype: event.eventSubtype,
-        contentPayload: event.contentPayload as Record<string, unknown> | null,
+        contentPayload: event.contentPayload as ContentPayload | null,
       }
     };
 

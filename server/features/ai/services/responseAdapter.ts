@@ -2,7 +2,7 @@ import { callOpenAI, ToolDefinition } from "./openaiApiService.js";
 import { storage } from "../../../storage/index.js";
 import { runKnowledgeBaseSearch } from "./knowledgeBaseSearchHelper.js";
 import { createZendeskKnowledgeBaseTool } from "./aiTools.js";
-import { replacePromptVariables, formatMessagesContext, formatLastMessage, formatClassification } from "./promptUtils.js";
+import { replacePromptVariables, formatMessagesContext, formatLastMessage, formatClassification, type ContentPayload } from "./promptUtils.js";
 import { AutoPilotService } from "../../autoPilot/services/autoPilotService.js";
 
 export interface ResponsePayload {
@@ -20,7 +20,7 @@ export interface ResponsePayload {
     contentText: string | null;
     occurredAt: Date;
     eventSubtype?: string | null;
-    contentPayload?: Record<string, unknown> | null;
+    contentPayload?: ContentPayload | null;
   }>;
   lastMessage: {
     authorType: string;
@@ -28,7 +28,7 @@ export interface ResponsePayload {
     contentText: string | null;
     occurredAt: Date;
     eventSubtype?: string | null;
-    contentPayload?: Record<string, unknown> | null;
+    contentPayload?: ContentPayload | null;
   };
 }
 

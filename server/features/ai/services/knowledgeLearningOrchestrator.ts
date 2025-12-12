@@ -3,6 +3,7 @@ import { extractKnowledgeWithAgent, type AgentLearningPayload } from "./knowledg
 import { learningAttemptsStorage } from "../storage/learningAttemptsStorage.js";
 import { generalSettingsStorage } from "../storage/generalSettingsStorage.js";
 import type { EventStandard, LearningAttemptResult } from "../../../../shared/schema.js";
+import type { ContentPayload } from "./promptUtils.js";
 
 export async function shouldExtractKnowledge(event: EventStandard): Promise<boolean> {
   const config = await storage.getOpenaiApiConfig("learning");
@@ -99,7 +100,7 @@ export async function extractConversationKnowledge(event: EventStandard): Promis
         contentText: m.contentText,
         occurredAt: m.occurredAt,
         eventSubtype: m.eventSubtype,
-        contentPayload: m.contentPayload as Record<string, unknown> | null,
+        contentPayload: m.contentPayload as ContentPayload | null,
       })),
       currentSummary: existingSummary?.summary || null,
       conversationHandler: null,

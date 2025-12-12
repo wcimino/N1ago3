@@ -3,6 +3,7 @@ import { classifyAndSave, type ClassificationPayload } from "./productClassifica
 import { generalSettingsStorage } from "../storage/generalSettingsStorage.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 import type { EventStandard } from "../../../../shared/schema.js";
+import type { ContentPayload } from "./promptUtils.js";
 
 function formatProductCatalogAsJson(): Promise<string> {
   return productCatalogStorage.getAll().then(products => {
@@ -74,7 +75,7 @@ export async function classifyConversationProduct(event: EventStandard): Promise
         contentText: m.contentText,
         occurredAt: m.occurredAt,
         eventSubtype: m.eventSubtype,
-        contentPayload: m.contentPayload as Record<string, unknown> | null,
+        contentPayload: m.contentPayload as ContentPayload | null,
       })),
       currentSummary: existingSummary?.summary || null,
       productCatalogJson,

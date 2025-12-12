@@ -1,6 +1,6 @@
 import { callOpenAI, type OpenAICallResult } from "./openaiApiService.js";
 import { storage } from "../../../storage/index.js";
-import { replacePromptVariables, formatMessagesContext, formatLastMessage } from "./promptUtils.js";
+import { replacePromptVariables, formatMessagesContext, formatLastMessage, type ContentPayload } from "./promptUtils.js";
 
 export interface SummaryPayload {
   currentSummary: string | null;
@@ -10,7 +10,7 @@ export interface SummaryPayload {
     contentText: string | null;
     occurredAt: Date;
     eventSubtype?: string | null;
-    contentPayload?: Record<string, unknown> | null;
+    contentPayload?: ContentPayload | null;
   }>;
   lastMessage: {
     authorType: string;
@@ -18,7 +18,7 @@ export interface SummaryPayload {
     contentText: string | null;
     occurredAt: Date;
     eventSubtype?: string | null;
-    contentPayload?: Record<string, unknown> | null;
+    contentPayload?: ContentPayload | null;
   };
 }
 

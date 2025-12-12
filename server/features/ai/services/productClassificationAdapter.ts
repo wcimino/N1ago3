@@ -1,6 +1,6 @@
 import { callOpenAI } from "./openaiApiService.js";
 import { storage } from "../../../storage/index.js";
-import { replacePromptVariables, formatMessagesContext } from "./promptUtils.js";
+import { replacePromptVariables, formatMessagesContext, type ContentPayload } from "./promptUtils.js";
 
 export interface ClassificationPayload {
   last20Messages: Array<{
@@ -9,7 +9,7 @@ export interface ClassificationPayload {
     contentText: string | null;
     occurredAt: Date;
     eventSubtype?: string | null;
-    contentPayload?: Record<string, unknown> | null;
+    contentPayload?: ContentPayload | null;
   }>;
   currentSummary?: string | null;
   productCatalogJson?: string | null;
