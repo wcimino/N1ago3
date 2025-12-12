@@ -35,6 +35,7 @@ export interface StructuredSummary {
   currentStatus?: string;
   importantInfo?: string;
   customerEmotionLevel?: number;
+  customerRequestType?: string;
   objectiveProblems?: ObjectiveProblemResult[];
 }
 
@@ -111,12 +112,20 @@ function parseStructuredSummary(responseContent: string): StructuredSummary | nu
       if (objectiveProblems.length === 0) objectiveProblems = undefined;
     }
 
+    const rawRequestType = parsed.customerRequestType || parsed.tipoSolicitacaoCliente || parsed.tipo_solicitacao_cliente ||
+      parsed.triage?.anamnese?.customerRequestType || undefined;
+    const validRequestTypes = ['Suporte', 'Informações', 'Contratação', 'Quer suporte', 'Quer contratar', 'Quer informações'];
+    const customerRequestType = validRequestTypes.includes(rawRequestType) 
+      ? rawRequestType.replace('Quer ', '').replace('suporte', 'Suporte').replace('contratar', 'Contratação').replace('informações', 'Informações')
+      : undefined;
+
     return {
       clientRequest: parsed.clientRequest || parsed.solicitacaoCliente || parsed.solicitacao_cliente || undefined,
       agentActions: parsed.agentActions || parsed.acoesAtendente || parsed.acoes_atendente || undefined,
       currentStatus: parsed.currentStatus || parsed.statusAtual || parsed.status_atual || undefined,
       importantInfo: parsed.importantInfo || parsed.informacoesImportantes || parsed.informacoes_importantes || undefined,
       customerEmotionLevel: validEmotionLevel,
+      customerRequestType,
       objectiveProblems,
     };
   } catch {
@@ -210,6 +219,7 @@ export async function generateAndSaveSummary(
       currentStatus: result.structured?.currentStatus,
       importantInfo: result.structured?.importantInfo,
       customerEmotionLevel: result.structured?.customerEmotionLevel,
+      customerRequestType: result.structured?.customerRequestType,
       objectiveProblems: result.structured?.objectiveProblems,
       lastEventId,
     });
