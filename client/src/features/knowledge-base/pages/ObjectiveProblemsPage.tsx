@@ -143,14 +143,27 @@ export function ObjectiveProblemsPage() {
       }
       
       const problemProducts = products.filter(p => problem.productIds.includes(p.id));
-      const addedToProducts = new Set<string>();
+      const addedToPaths = new Set<string>();
       
       problemProducts.forEach(product => {
-        if (!addedToProducts.has(product.produto)) {
-          const node = productMap.get(product.produto);
-          if (node) {
-            node.problems.push(problem);
-            addedToProducts.add(product.produto);
+        const productNode = productMap.get(product.produto);
+        if (!productNode) return;
+        
+        if (product.subproduto) {
+          const subPath = `${product.produto}|${product.subproduto}`;
+          if (!addedToPaths.has(subPath)) {
+            let subNode = productNode.children.find(c => c.name === product.subproduto);
+            if (!subNode) {
+              subNode = { name: product.subproduto, productId: product.id, problems: [], children: [] };
+              productNode.children.push(subNode);
+            }
+            subNode.problems.push(problem);
+            addedToPaths.add(subPath);
+          }
+        } else {
+          if (!addedToPaths.has(product.produto)) {
+            productNode.problems.push(problem);
+            addedToPaths.add(product.produto);
           }
         }
       });
@@ -160,7 +173,7 @@ export function ObjectiveProblemsPage() {
     
     mainProducts.forEach(name => {
       const node = productMap.get(name);
-      if (node && node.problems.length > 0) {
+      if (node && (node.problems.length > 0 || node.children.length > 0)) {
         result.push(node);
       }
     });
@@ -534,7 +547,8 @@ export function ObjectiveProblemsPage() {
           <div className="space-y-1">
             {hierarchy.map((node) => {
               const isExpanded = expandedPaths.has(node.name);
-              const hasProblems = node.problems.length > 0;
+              const hasContent = node.problems.length > 0 || node.children.length > 0;
+              const totalProblems = node.problems.length + node.children.reduce((sum, c) => sum + c.problems.length, 0);
               
               return (
                 <div key={node.name}>
@@ -542,7 +556,7 @@ export function ObjectiveProblemsPage() {
                     className="flex items-start gap-2 py-2 px-2 sm:px-3 rounded-lg hover:bg-gray-50 cursor-pointer"
                     onClick={() => togglePath(node.name)}
                   >
-                    {hasProblems ? (
+                    {hasContent ? (
                       <button className="mt-0.5 p-0.5 hover:bg-gray-200 rounded shrink-0">
                         {isExpanded ? (
                           <Minus className="w-4 h-4 text-gray-500" />
@@ -560,14 +574,100 @@ export function ObjectiveProblemsPage() {
                           {node.name}
                         </span>
                         <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-purple-600">
-                          <span className="font-medium">{node.problems.length}</span> problema{node.problems.length !== 1 ? "s" : ""}
+                          <span className="font-medium">{totalProblems}</span> problema{totalProblems !== 1 ? "s" : ""}
                         </span>
                       </div>
                     </div>
                   </div>
                   
-                  {isExpanded && node.problems.length > 0 && (
+                  {isExpanded && (
                     <div className="ml-5 sm:ml-7 space-y-1">
+                      {node.children.map((subNode) => {
+                        const subPath = `${node.name}|${subNode.name}`;
+                        const isSubExpanded = expandedPaths.has(subPath);
+                        const hasSubProblems = subNode.problems.length > 0;
+                        
+                        return (
+                          <div key={subPath}>
+                            <div 
+                              className="flex items-start gap-2 py-2 px-2 sm:px-3 rounded-lg hover:bg-gray-50 cursor-pointer"
+                              onClick={() => togglePath(subPath)}
+                            >
+                              {hasSubProblems ? (
+                                <button className="mt-0.5 p-0.5 hover:bg-gray-200 rounded shrink-0">
+                                  {isSubExpanded ? (
+                                    <Minus className="w-4 h-4 text-gray-500" />
+                                  ) : (
+                                    <Plus className="w-4 h-4 text-gray-500" />
+                                  )}
+                                </button>
+                              ) : (
+                                <div className="w-5 shrink-0" />
+                              )}
+                              
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                  <span className="text-gray-800 text-sm font-medium break-words">
+                                    {subNode.name}
+                                  </span>
+                                  <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-purple-600">
+                                    <span className="font-medium">{subNode.problems.length}</span> problema{subNode.problems.length !== 1 ? "s" : ""}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {isSubExpanded && subNode.problems.length > 0 && (
+                              <div className="ml-5 sm:ml-7 space-y-1">
+                                {subNode.problems.map((problem) => (
+                                  <div
+                                    key={problem.id}
+                                    className={`flex items-start gap-2 py-2 px-2 sm:px-3 rounded-lg hover:bg-gray-50 group ${!problem.isActive ? "opacity-60" : ""}`}
+                                  >
+                                    <div className="w-5 shrink-0" />
+                                    
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium text-gray-900 break-words">
+                                          {problem.name}
+                                        </span>
+                                        {!problem.isActive && (
+                                          <span className="px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-500">
+                                            Inativo
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-1 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); handleEdit(problem); }}
+                                        className="p-1.5 text-gray-400 hover:text-purple-500 hover:bg-purple-50 rounded"
+                                        title="Editar"
+                                      >
+                                        <Pencil className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (confirm(`Tem certeza que deseja excluir "${problem.name}"?`)) {
+                                            deleteMutation.mutate(problem.id);
+                                          }
+                                        }}
+                                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
+                                        title="Excluir"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      
                       {node.problems.map((problem) => (
                         <div
                           key={problem.id}
@@ -576,7 +676,7 @@ export function ObjectiveProblemsPage() {
                           <div className="w-5 shrink-0" />
                           
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-0.5">
+                            <div className="flex items-center gap-2">
                               <span className="text-sm font-medium text-gray-900 break-words">
                                 {problem.name}
                               </span>
@@ -586,7 +686,6 @@ export function ObjectiveProblemsPage() {
                                 </span>
                               )}
                             </div>
-                            <p className="text-sm text-gray-600 line-clamp-2">{problem.description}</p>
                           </div>
                           
                           <div className="flex items-center gap-1 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
