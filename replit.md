@@ -2,7 +2,7 @@
 
 ## Overview
 
-N1ago is a system for managing and monitoring customer credit inquiry interactions. It processes webhooks from Zendesk Sunshine Conversations, stores conversation data, and displays real-time events on a React dashboard. The project aims to improve customer service efficiency, provide comprehensive interaction data, and lays the groundwork for future AI-powered automation like conversation summarization and product classification to enhance customer experience and generate insights for automated support.
+N1ago is a system designed to manage and monitor customer credit inquiry interactions. It processes webhooks from Zendesk Sunshine Conversations, stores conversation data, and provides a real-time React dashboard for event visualization. The project's primary goal is to enhance customer service efficiency, offer comprehensive interaction insights, and establish a foundation for future AI-driven automations such as conversation summarization, product classification, and automated support to improve customer experience and generate valuable business insights.
 
 ## User Preferences
 
@@ -10,150 +10,56 @@ I prefer clear and direct communication. When suggesting changes, please provide
 
 ## System Architecture
 
-The system employs a decoupled frontend (React, TypeScript, Vite, Tailwind CSS, TanStack Query, wouter) and backend (Express.js, Drizzle ORM for PostgreSQL, Replit Auth). It runs on a `vm` deployment target to support continuous background workers.
+The system utilizes a decoupled architecture comprising a React, TypeScript, Vite, Tailwind CSS, TanStack Query, and wouter frontend, and an Express.js, Drizzle ORM (for PostgreSQL), and Replit Auth backend. It operates on a `vm` deployment target to support continuous background workers.
 
 **Core Architectural Patterns:**
 
-*   **Standardized Event Architecture:** Ingests events from various sources, normalizing them into a `StandardEvent` format using dedicated webhook endpoints, an `EventBus`, an `Event Processor` with `Adapters`, and a `Polling Worker` for retries.
-*   **Authentication System:** Uses Replit Auth (Google Login) with an Access Control List (ACL) based on email domains and an `authorized_users` table.
-*   **AI-Powered Features:** Supports multiple AI capabilities (summarization, classification, response generation) via a unified architecture with centralized OpenAI services, configurable triggers, and automatic logging of all API calls.
+*   **Standardized Event Architecture:** Events from various sources are ingested and normalized into a `StandardEvent` format using dedicated webhook endpoints, an `EventBus`, an `Event Processor` with `Adapters`, and a `Polling Worker`.
+*   **Authentication System:** Leverages Replit Auth (Google Login) with an Access Control List (ACL) based on email domains and an `authorized_users` table.
+*   **AI-Powered Features:** A unified architecture supports multiple AI capabilities (summarization, classification, response generation) with centralized OpenAI services, configurable triggers, and automatic logging of all API calls.
+*   **Shared Embeddings Architecture:** A centralized embeddings layer in `server/shared/embeddings/` standardizes embedding generation, content hashing, and processing across different knowledge sources.
 
 **UI/UX Decisions:**
 
-The React frontend provides a real-time dashboard for events and conversations, administrative interfaces, and uses a component-based design with Tailwind CSS for styling. Reusable components include badges, data tables, modals, and pagination.
+The React frontend offers a real-time dashboard for events and conversations, administrative interfaces, and employs a component-based design with Tailwind CSS for styling. Reusable components include badges, data tables, modals, and pagination.
 
 **Feature Specifications:**
 
 *   **Webhook Ingestion & Conversation Storage:** Receives, logs, processes, and stores conversation data and events in PostgreSQL.
-*   **Real-time Dashboard:** Live view of events, metrics, and management of users/webhooks.
-*   **Atendimentos Listing:** Individual conversations displayed without user grouping. Uses `/api/conversations/list` endpoint with full filtering support (product, intent, handler, emotion level, client search, authentication status). Pagination shows total conversations.
+*   **Real-time Dashboard:** Live view of events, metrics, and user/webhook management.
+*   **Atendimentos Listing:** Displays individual conversations with full filtering capabilities and pagination.
 *   **User Management:** Secure authentication and authorization with domain and user-list restrictions.
-*   **Extensibility:** Designed for easy integration of new communication channels.
 *   **AI Integrations:** Includes Conversation Summaries, Product Classification, API Logging, and Configurable Triggers.
-*   **Four-Field Classification System:** Classifies conversations using hierarchical fields (Product → Subproduct → Subject → Intent). Uses two sequential AI tools: `search_product_catalog` (finds product/subproduct) and `search_subject_and_intent` (finds subject/intent based on product). Configurable via `use_subject_intent_tool` flag.
-*   **Structured Conversation Summary:** Displays AI-generated summaries with specific fields (`client_request`, `agent_actions`, `current_status`, `important_info`) parsed from JSON responses.
-*   **Automatic Routing Rules:** Unified routing system in `server/features/routing/` that routes conversations to `n1ago`, `human`, or `bot`. Uses a single `processRoutingEvent` function called by the EventDispatcher for all relevant events. Supports two rule types: `allocate_next_n` (routes new conversations on `conversation_started`) and `transfer_ongoing` (routes based on exact text match in messages). Features detailed logging at each step, atomic slot consumption, and Zendesk Switchboard API for control transfer.
-*   **AutoPilot - Automatic Response Sending:** Automatically sends suggested responses under specific conditions (conversation assigned to n1ago, last message from client, no newer messages, `in_response_to` matches).
-*   **Objective Problems Catalog (Dec 2024):** Normalized catalog of evidence-based problems stored in `knowledge_base_objective_problems` table. Each problem includes name, description, synonyms, examples, and source (`customer`, `system`, or `both`). Problems can be optionally associated with products via the N-N junction table `knowledge_base_objective_problems_has_products_catalog`. Used by the Organizer Agent and consumed by the Diagnostician. Accessible via "Problemas" tab in Base de Conhecimento.
+*   **Four-Field Classification System:** Classifies conversations hierarchically (Product → Subproduct → Subject → Intent) using sequential AI tools.
+*   **Structured Conversation Summary:** Displays AI-generated summaries with specific structured fields.
+*   **Automatic Routing Rules:** A unified routing system handles conversation allocation to `n1ago`, `human`, or `bot` using rule types like `allocate_next_n` and `transfer_ongoing`, with detailed logging and Zendesk Switchboard API integration.
+*   **AutoPilot - Automatic Response Sending:** Automatically sends suggested responses under specific conditions.
+*   **Objective Problems Catalog:** A normalized catalog of evidence-based problems stored in `knowledge_base_objective_problems` table, used by the Organizer Agent and Diagnostician, and accessible via the Base de Conhecimento.
 
 **System Design Choices:**
 
-*   **Database Schema:** Plural, `snake_case` table names; singular, `snake_case` for config tables; `snake_case` foreign keys; `idx_<table_name>_<field>` indices.
+*   **Database Schema:** Plural, `snake_case` table names; singular for config tables; `snake_case` foreign keys; `idx_<table_name>_<field>` indices.
 *   **API Endpoints:** REST resources are plural, `kebab-case`; config endpoints are singular; specific actions use verbs.
 *   **File Structure:** Organized by feature for both frontend and backend.
 *   **Shared Types Architecture:** Centralized type definitions in `shared/types/`.
 *   **Backend Feature Architecture:** Each feature module includes `routes/`, `storage/`, and `services/`.
-*   **Idempotent Event Creation:** `saveStandardEvent` handles unique constraint violations by returning existing events, and all downstream orchestrators are idempotent to prevent duplicate processing.
-*   **Modular AI Tools and Prompts:** AI tools separated into individual files in `server/features/ai/services/tools/`:
-    - `knowledgeBaseTool.ts`: Internal knowledge base search
-    - `productCatalogTool.ts`: Product catalog search
-    - `subjectIntentTool.ts`: Subject and intent lookup
-    - `zendeskKnowledgeBaseTool.ts`: Zendesk Help Center semantic search
-    - `problemObjectiveTool.ts`: Objective problems search with match scoring
-    - Centralized prompt variables and `promptUtils.ts` for variable substitution.
-*   **Objective Problems Search Tool** (`search_knowledge_base_problem_objective`):
-    - Searches objective problems by keywords and optional product filter
-    - Returns matchScore (0-100%) indicating probability of match:
-      - 100%: Exact name match
-      - 90%: Exact synonym match
-      - 80%: Partial name match
-      - 70%: Partial synonym match
-      - 60%: Example contains search term
-      - 40%: Description contains search term
-    - Returns matchReason explaining why the score was assigned
-    - Enabled via `useObjectiveProblemTool` flag in `ToolFlags`
-*   **Unified Knowledge Base Search Helper** (`server/features/ai/services/knowledgeBaseSearchHelper.ts`):
-    - `runKnowledgeBaseSearch()` provides a single entry point for KB searches
-    - Always uses semantic search (embeddings) with PostgreSQL FTS fallback when no embeddings available
-    - Records article views to `knowledge_base_statistics` table with conversation context
-    - Resolves subject/intent synonyms before filtering
-    - Used by AI tools (`createKnowledgeBaseTool`, `buildKnowledgeBaseTool`), API endpoints, and learning adapters
-    - Security: Uses parameterized SQL queries to prevent SQL injection
-*   **Enrichment Agent Modular Architecture:** Refactored into a sequential pipeline (`enrichmentOpenAICaller`, `enrichmentRunLogger`, `enrichmentRunProcessor`, `enrichmentOrchestrator`) to ensure robust logging of AI enrichment attempts.
-*   **Centralized AI Agent Configuration Metadata (Dec 2024):** All AI agent configuration pages (Summary, Classification, Response, Learning, Enrichment) now consume a central metadata registry at `client/src/features/ai/config/agentConfigMetadata.ts`. This eliminates code duplication and ensures consistent behavior across all agents. Each agent's metadata defines:
-    - Labels and descriptions (title, enabledLabel, eventTriggerLabel, etc.)
-    - Textarea sizes (promptRows, responseFormatRows)
-    - Recommended model
-    - Available tools (showKnowledgeBaseTool, showProductCatalogTool, showZendeskKnowledgeBaseTool, showSubjectIntentTool, showObjectiveProblemTool)
-    - All pages use the shared `OpenaiConfigForm` component which receives these props from metadata
+*   **Idempotent Event Creation:** Ensures unique event processing and prevents duplicates.
+*   **Modular AI Tools and Prompts:** AI tools are separated into individual files, and prompt variables are centralized.
+*   **Objective Problems Search Tool:** Searches objective problems by keywords and product filter, utilizing semantic search with OpenAI embeddings and falling back to text-based search.
+*   **Unified Knowledge Base Search Helper:** Provides a single entry point for knowledge base searches, using semantic search with PostgreSQL FTS fallback, and recording article views.
+*   **Enrichment Agent Modular Architecture:** Refactored into a sequential pipeline for robust logging of AI enrichment attempts.
+*   **Centralized AI Agent Configuration Metadata:** All AI agent configuration pages consume a central metadata registry for consistency.
 
-## OpenAI Services Architecture
+**OpenAI Services Architecture:**
 
-Centralized OpenAI services in `shared/services/openai/`:
-*   **openaiService.ts:** Wrapper with `chat()`, `chatWithTools()`, and `embedding()` methods
-*   **openaiLogger.ts:** Automatic logging of all OpenAI calls to `openai_api_logs` table
-*   **Lazy initialization:** OpenAI client created on first use, API key validated
-*   **correlationId support:** For end-to-end tracing across features
+Centralized OpenAI services in `shared/services/openai/` provide wrappers for `chat()`, `chatWithTools()`, and `embedding()` methods, with automatic logging of all OpenAI calls to `openai_api_logs` and support for `correlationId` for tracing.
 
-All features (enrichment, AutoPilot, knowledge-base) consume these centralized services.
+**External Sources & Knowledge Base Architecture:**
 
-## Shared Embeddings Architecture (Dec 2024)
-
-Centralized embeddings layer in `server/shared/embeddings/` that eliminates code duplication between internal knowledge base and Zendesk articles:
-
-**Core Components:**
-*   **types.ts:** Base interfaces (`EmbeddableArticle`, `EmbeddingResult`, `EmbeddingStats`, `BatchEmbeddingResult`) and utility functions (`generateContentHashFromParts`, `embeddingToString`, `stripHtmlTags`, `cosineSimilarity`)
-*   **embeddingService.ts:** Generic embedding generation using OpenAI, enriched query building, and batch processing
-*   **adapters/knowledgeBaseAdapter.ts:** Implements `EmbeddableArticle` for internal KB articles with content formatting and hash generation
-*   **adapters/zendeskAdapter.ts:** Implements `EmbeddableArticle` for Zendesk articles with HTML stripping and content formatting
-
-**Benefits:**
-*   Single source of truth for embedding logic
-*   Consistent content hashing across sources
-*   Easier to add new article sources in the future
-*   Reduced bug surface from duplicated code
-
-**Usage Pattern:**
-```typescript
-import { generateEmbedding, KnowledgeBaseEmbeddableArticle } from "server/shared/embeddings";
-const embeddable = KnowledgeBaseEmbeddableArticle.fromArticle(article);
-const result = await generateArticleEmbedding(embeddable, "knowledge_base_article");
-```
-
-## External Sources & Knowledge Base Architecture
-
-**Concept:**
-*   **External Sources** (`server/features/external-sources/`): Replicas of external data (e.g., Zendesk articles) synced manually
-*   **Knowledge Base** (internal): Generated knowledge from external sources and internal content
-
-**Zendesk Articles** (`server/features/external-sources/zendesk/`):
-*   `zendesk_articles` table: Raw data from Zendesk Help Center
-*   `zendesk_article_embeddings` table: Separate table for embeddings with:
-    - `article_id` (FK to zendesk_articles)
-    - `content_hash` (MD5 hash for change detection)
-    - `embedding_vector` (pgvector vector(1536))
-    - `model_used`, `tokens_used`, `openai_log_id`
-*   HNSW index for accurate cosine similarity search
-*   Automatic embedding generation on sync via `generateEmbeddingsForNewOrOutdatedArticles()`
-*   Processes articles 1 by 1 in continuous loop until all pending are done
-*   Tracks real processing state via `isEmbeddingProcessing` flag
-*   Skips failed articles to prevent infinite loops, stops after 5 consecutive errors
-
-**RAG (Retrieval Augmented Generation):**
-*   Semantic search using OpenAI embeddings (`text-embedding-3-small`)
-*   pgvector extension with HNSW index for accurate results
-*   `searchBySimilarity()` joins articles with embeddings table
-*   Endpoints:
-    - `/api/zendesk-articles/embeddings/progress` for real-time processing status
-    - `/api/zendesk-articles/embeddings/logs` for monitoring failures
-    - `/api/zendesk-articles/search/semantic` for semantic search
-*   `createZendeskKnowledgeBaseTool()` uses semantic search with fallback to full-text
-*   `embedding_generation_logs` table for monitoring success/failure rates
-
-## Known Issues & Workarounds
-
-### Drizzle DESC Index Bug (Resolved Dec 2024)
-**Problem:** Drizzle ORM previously had issues tracking indexes with DESC ordering, causing repeated DROP/CREATE migration cycles.
-
-**Affected indexes:**
-- `idx_conversations_updated_at`
-- `idx_zendesk_webhook_received_at`
-- `idx_openai_api_logs_created_at`
-- `idx_events_standard_occurred_at`
-
-**Solution (Dec 11, 2024):** Using Drizzle ORM 0.31.x+ which now supports `.desc()` on index columns, these indexes are now properly declared in `schema.ts` using the syntax `table.column.desc()`. Migrations 0007 and 0008 sync the state between schema and database using `IF EXISTS/IF NOT EXISTS` clauses to handle both fresh installs and existing production databases.
-
-**Status:** Fully resolved. Running `drizzle-kit generate` now correctly reports "No schema changes, nothing to migrate".
+*   **External Sources:** Replicas of external data (e.g., Zendesk articles) are synced manually.
+*   **Knowledge Base:** Internal generated knowledge from external and internal content.
+*   **Zendesk Articles:** Raw data from Zendesk Help Center stored in `zendesk_articles` with separate `zendesk_article_embeddings` for semantic search using pgvector and HNSW index.
+*   **RAG (Retrieval Augmented Generation):** Implements semantic search using OpenAI embeddings with pgvector and HNSW indexing for accurate results, with fallbacks to full-text search.
 
 ## External Dependencies
 
