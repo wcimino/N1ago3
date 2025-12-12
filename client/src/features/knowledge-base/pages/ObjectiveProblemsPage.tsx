@@ -441,13 +441,6 @@ export function ObjectiveProblemsPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h4 className="font-medium text-gray-900">{problem.name}</h4>
-                    <span className={`px-2 py-0.5 text-xs rounded-full ${
-                      problem.presentedBy === "customer" ? "bg-blue-100 text-blue-700" :
-                      problem.presentedBy === "system" ? "bg-orange-100 text-orange-700" :
-                      "bg-purple-100 text-purple-700"
-                    }`}>
-                      {presentedByLabels[problem.presentedBy]}
-                    </span>
                     {!problem.isActive && (
                       <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
                         Inativo
