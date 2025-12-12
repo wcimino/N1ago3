@@ -1,22 +1,27 @@
 import { OpenaiConfigForm } from "../components";
+import { getAgentConfig } from "../config/agentConfigMetadata";
+
+const config = getAgentConfig("learning");
 
 export function LearningConfigPage() {
   return (
     <OpenaiConfigForm
-      configType="learning"
-      title="Configuração de Aprendizado"
-      description="Configure a extração automática de conhecimento das conversas para enriquecer a base de conhecimento"
-      enabledLabel="Ativar extração de conhecimento"
-      enabledDescription="Quando ativado, conhecimento será extraído automaticamente das conversas"
-      eventTriggerLabel="Eventos que disparam a extração"
-      eventTriggerDescription="Selecione os tipos de eventos que devem disparar a extração de conhecimento. Recomendado: conversas encerradas ou transferências"
-      authorFilterDescription="Selecione quais tipos de autor devem disparar a extração. Se nenhum for selecionado, todos os autores serão considerados."
-      promptRows={24}
-      responseFormatRows={8}
-      recommendedModel="gpt-4o-mini"
-      showKnowledgeBaseTool={true}
-      showProductCatalogTool={true}
-      showZendeskKnowledgeBaseTool={true}
+      configType={config.configType}
+      title={config.title}
+      description={config.description}
+      enabledLabel={config.enabledLabel}
+      enabledDescription={config.enabledDescription}
+      eventTriggerLabel={config.eventTriggerLabel}
+      eventTriggerDescription={config.eventTriggerDescription}
+      authorFilterDescription={config.authorFilterDescription}
+      promptRows={config.promptRows}
+      responseFormatRows={config.responseFormatRows}
+      recommendedModel={config.recommendedModel}
+      showKnowledgeBaseTool={config.tools.showKnowledgeBaseTool}
+      showProductCatalogTool={config.tools.showProductCatalogTool}
+      showZendeskKnowledgeBaseTool={config.tools.showZendeskKnowledgeBaseTool}
+      showSubjectIntentTool={config.tools.showSubjectIntentTool}
+      showObjectiveProblemTool={config.tools.showObjectiveProblemTool}
     />
   );
 }

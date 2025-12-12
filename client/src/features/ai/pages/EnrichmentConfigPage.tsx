@@ -1,22 +1,27 @@
 import { OpenaiConfigForm } from "../components";
+import { getAgentConfig } from "../config/agentConfigMetadata";
+
+const config = getAgentConfig("enrichment");
 
 export function EnrichmentConfigPage() {
   return (
     <OpenaiConfigForm
-      configType="enrichment"
-      title="Configuração de Enriquecimento"
-      description="Configure a geração de sugestões de melhoria para artigos da base de conhecimento usando artigos do Zendesk como referência"
-      enabledLabel="Ativar geração de sugestões de melhoria"
-      enabledDescription="Quando ativado, permite gerar sugestões comparando artigos da base de conhecimento com artigos do Zendesk"
-      eventTriggerLabel="Eventos que disparam o enriquecimento"
-      eventTriggerDescription="Selecione os tipos de eventos que devem disparar a geração de sugestões (opcional - pode ser executado manualmente)"
-      authorFilterDescription="Selecione quais tipos de autor devem disparar o enriquecimento. Se nenhum for selecionado, todos os autores serão considerados."
-      promptRows={24}
-      responseFormatRows={12}
-      recommendedModel="gpt-4o"
-      showKnowledgeBaseTool={true}
-      showProductCatalogTool={false}
-      showZendeskKnowledgeBaseTool={true}
+      configType={config.configType}
+      title={config.title}
+      description={config.description}
+      enabledLabel={config.enabledLabel}
+      enabledDescription={config.enabledDescription}
+      eventTriggerLabel={config.eventTriggerLabel}
+      eventTriggerDescription={config.eventTriggerDescription}
+      authorFilterDescription={config.authorFilterDescription}
+      promptRows={config.promptRows}
+      responseFormatRows={config.responseFormatRows}
+      recommendedModel={config.recommendedModel}
+      showKnowledgeBaseTool={config.tools.showKnowledgeBaseTool}
+      showProductCatalogTool={config.tools.showProductCatalogTool}
+      showZendeskKnowledgeBaseTool={config.tools.showZendeskKnowledgeBaseTool}
+      showSubjectIntentTool={config.tools.showSubjectIntentTool}
+      showObjectiveProblemTool={config.tools.showObjectiveProblemTool}
     />
   );
 }

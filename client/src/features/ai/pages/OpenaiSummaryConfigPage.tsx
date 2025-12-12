@@ -1,19 +1,27 @@
 import { OpenaiConfigForm } from "../components";
+import { getAgentConfig } from "../config/agentConfigMetadata";
+
+const config = getAgentConfig("summary");
 
 export function OpenaiSummaryConfigPage() {
   return (
     <OpenaiConfigForm
-      configType="summary"
-      title="Configuração do Resumo com OpenAI"
-      description="Configure a geração automática de resumos das conversas"
-      enabledLabel="Ativar geração de resumos"
-      enabledDescription="Quando ativado, resumos serão gerados automaticamente"
-      eventTriggerLabel="Eventos que disparam a geração de resumo"
-      eventTriggerDescription="Selecione os tipos de eventos que devem disparar a geração de um novo resumo"
-      authorFilterDescription="Selecione quais tipos de autor devem disparar a geração de resumo. Se nenhum for selecionado, todos os autores serão considerados."
-      promptRows={16}
-      responseFormatRows={10}
-      recommendedModel="gpt-4o-mini"
+      configType={config.configType}
+      title={config.title}
+      description={config.description}
+      enabledLabel={config.enabledLabel}
+      enabledDescription={config.enabledDescription}
+      eventTriggerLabel={config.eventTriggerLabel}
+      eventTriggerDescription={config.eventTriggerDescription}
+      authorFilterDescription={config.authorFilterDescription}
+      promptRows={config.promptRows}
+      responseFormatRows={config.responseFormatRows}
+      recommendedModel={config.recommendedModel}
+      showKnowledgeBaseTool={config.tools.showKnowledgeBaseTool}
+      showProductCatalogTool={config.tools.showProductCatalogTool}
+      showZendeskKnowledgeBaseTool={config.tools.showZendeskKnowledgeBaseTool}
+      showSubjectIntentTool={config.tools.showSubjectIntentTool}
+      showObjectiveProblemTool={config.tools.showObjectiveProblemTool}
     />
   );
 }

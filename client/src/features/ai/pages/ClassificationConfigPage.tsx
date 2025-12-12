@@ -1,23 +1,27 @@
 import { OpenaiConfigForm } from "../components";
+import { getAgentConfig } from "../config/agentConfigMetadata";
+
+const config = getAgentConfig("classification");
 
 export function ClassificationConfigPage() {
   return (
     <OpenaiConfigForm
-      configType="classification"
-      title="Configuração da Classificação de Produto"
-      description="Configure a classificação automática de produto e intenção das conversas"
-      enabledLabel="Ativar classificação"
-      enabledDescription="Quando ativado, conversas serão classificadas automaticamente"
-      eventTriggerLabel="Eventos que disparam a classificação"
-      eventTriggerDescription="Selecione os tipos de eventos que devem disparar uma nova classificação"
-      authorFilterDescription="Selecione quais tipos de autor devem disparar a classificação. Se nenhum for selecionado, todos os autores serão considerados."
-      promptRows={16}
-      responseFormatRows={6}
-      recommendedModel="gpt-4o-mini"
-      showKnowledgeBaseTool={true}
-      showProductCatalogTool={true}
-      showSubjectIntentTool={true}
-      showObjectiveProblemTool={true}
+      configType={config.configType}
+      title={config.title}
+      description={config.description}
+      enabledLabel={config.enabledLabel}
+      enabledDescription={config.enabledDescription}
+      eventTriggerLabel={config.eventTriggerLabel}
+      eventTriggerDescription={config.eventTriggerDescription}
+      authorFilterDescription={config.authorFilterDescription}
+      promptRows={config.promptRows}
+      responseFormatRows={config.responseFormatRows}
+      recommendedModel={config.recommendedModel}
+      showKnowledgeBaseTool={config.tools.showKnowledgeBaseTool}
+      showProductCatalogTool={config.tools.showProductCatalogTool}
+      showZendeskKnowledgeBaseTool={config.tools.showZendeskKnowledgeBaseTool}
+      showSubjectIntentTool={config.tools.showSubjectIntentTool}
+      showObjectiveProblemTool={config.tools.showObjectiveProblemTool}
     />
   );
 }

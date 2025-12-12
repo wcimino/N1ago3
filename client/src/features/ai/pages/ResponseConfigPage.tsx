@@ -1,23 +1,27 @@
 import { OpenaiConfigForm } from "../components";
+import { getAgentConfig } from "../config/agentConfigMetadata";
+
+const config = getAgentConfig("response");
 
 export function ResponseConfigPage() {
   return (
     <OpenaiConfigForm
-      configType="response"
-      title="Configuração de Sugestão de Resposta"
-      description="Configure a geração automática de sugestões de resposta para os atendentes"
-      enabledLabel="Ativar sugestão de resposta"
-      enabledDescription="Quando ativado, respostas serão sugeridas automaticamente"
-      eventTriggerLabel="Eventos que disparam a sugestão"
-      eventTriggerDescription="Selecione os tipos de eventos que devem disparar uma nova sugestão de resposta"
-      authorFilterDescription="Selecione quais tipos de autor devem disparar a sugestão. Normalmente, você vai querer gerar sugestões quando o cliente envia uma mensagem."
-      promptRows={20}
-      responseFormatRows={4}
-      recommendedModel="gpt-4o-mini"
-      showKnowledgeBaseTool={true}
-      showProductCatalogTool={true}
-      showZendeskKnowledgeBaseTool={true}
-      showObjectiveProblemTool={true}
+      configType={config.configType}
+      title={config.title}
+      description={config.description}
+      enabledLabel={config.enabledLabel}
+      enabledDescription={config.enabledDescription}
+      eventTriggerLabel={config.eventTriggerLabel}
+      eventTriggerDescription={config.eventTriggerDescription}
+      authorFilterDescription={config.authorFilterDescription}
+      promptRows={config.promptRows}
+      responseFormatRows={config.responseFormatRows}
+      recommendedModel={config.recommendedModel}
+      showKnowledgeBaseTool={config.tools.showKnowledgeBaseTool}
+      showProductCatalogTool={config.tools.showProductCatalogTool}
+      showZendeskKnowledgeBaseTool={config.tools.showZendeskKnowledgeBaseTool}
+      showSubjectIntentTool={config.tools.showSubjectIntentTool}
+      showObjectiveProblemTool={config.tools.showObjectiveProblemTool}
     />
   );
 }
