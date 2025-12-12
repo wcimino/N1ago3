@@ -83,12 +83,6 @@ export function UserGroupCard({
                 <h3 className="text-base font-semibold text-gray-900 truncate">
                   {getUserDisplayName(group)}
                 </h3>
-                {activeCount > 0 && (
-                  <span className="flex items-center gap-1 shrink-0">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                    <span className="text-xs font-medium text-green-600">{activeCount} ativa{activeCount > 1 ? "s" : ""}</span>
-                  </span>
-                )}
                 {emotion && (
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${emotion.bgColor} ${emotion.color}`}>
                     <span>{emotion.emoji}</span>
@@ -150,7 +144,7 @@ export function UserGroupCard({
             </div>
           )}
 
-          {/* Linha 3: data inicio, data ultima, conversas, mensagens */}
+          {/* Linha 3: data inicio, data ultima, conversas, mensagens, ativa */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
             <span className="inline-flex items-center gap-1">
               <Calendar className="w-3 h-3" />
@@ -167,6 +161,12 @@ export function UserGroupCard({
                 <span className="text-gray-400">• {totalMessages} msg</span>
               )}
             </span>
+            {activeCount > 0 && (
+              <span className="flex items-center gap-1 shrink-0">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                <span className="text-xs font-medium text-green-600">{activeCount} ativa{activeCount > 1 ? "s" : ""}</span>
+              </span>
+            )}
           </div>
 
           {group.conversations.length > 1 && (
