@@ -1,7 +1,8 @@
 import { db } from "../../../db.js";
-import { knowledgeSuggestions, knowledgeBase } from "../../../../shared/schema.js";
+import { knowledgeSuggestions } from "../../../../shared/schema.js";
 import { eq, desc, and, type SQL } from "drizzle-orm";
-import type { KnowledgeSuggestion, InsertKnowledgeSuggestion, InsertKnowledgeBaseArticle } from "../../../../shared/schema.js";
+import type { KnowledgeSuggestion, InsertKnowledgeSuggestion } from "../../../../shared/schema.js";
+import { knowledgeBaseStorage } from "./knowledgeBaseStorage.js";
 
 export type SuggestionStatus = "pending" | "approved" | "rejected" | "merged" | "no_improvement";
 
@@ -65,18 +66,16 @@ export const knowledgeSuggestionsStorage = {
     const suggestion = await this.getSuggestionById(id);
     if (!suggestion) return null;
 
-    const [article] = await db.insert(knowledgeBase)
-      .values({
-        productStandard: suggestion.productStandard || "Não classificado",
-        subproductStandard: suggestion.subproductStandard,
-        description: suggestion.description || "",
-        resolution: suggestion.resolution || "",
-        internalActions: suggestion.internalActions || null,
-        observations: suggestion.observations 
-          ? `${suggestion.observations}\n\n[Fonte: Extraído de conversa]`
-          : "[Fonte: Extraído de conversa]",
-      })
-      .returning();
+    await knowledgeBaseStorage.createArticle({
+      productStandard: suggestion.productStandard || "Não classificado",
+      subproductStandard: suggestion.subproductStandard,
+      description: suggestion.description || "",
+      resolution: suggestion.resolution || "",
+      internalActions: suggestion.internalActions || null,
+      observations: suggestion.observations 
+        ? `${suggestion.observations}\n\n[Fonte: Extraído de conversa]`
+        : "[Fonte: Extraído de conversa]",
+    });
 
     const [updated] = await db.update(knowledgeSuggestions)
       .set({
@@ -109,15 +108,15 @@ export const knowledgeSuggestionsStorage = {
     const suggestion = await this.getSuggestionById(id);
     if (!suggestion) return null;
 
-    await db.update(knowledgeBase)
-      .set({
-        description: suggestion.description || undefined,
-        resolution: suggestion.resolution || undefined,
-        internalActions: suggestion.internalActions || undefined,
-        observations: suggestion.observations || undefined,
-        updatedAt: new Date(),
-      })
-      .where(eq(knowledgeBase.id, targetArticleId));
+    const updateData: Record<string, string | null | undefined> = {};
+    if (suggestion.description) updateData.description = suggestion.description;
+    if (suggestion.resolution) updateData.resolution = suggestion.resolution;
+    if (suggestion.internalActions) updateData.internalActions = suggestion.internalActions;
+    if (suggestion.observations) updateData.observations = suggestion.observations;
+
+    if (Object.keys(updateData).length > 0) {
+      await knowledgeBaseStorage.updateArticle(targetArticleId, updateData);
+    }
 
     const [updated] = await db.update(knowledgeSuggestions)
       .set({
