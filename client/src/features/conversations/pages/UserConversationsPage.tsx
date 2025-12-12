@@ -127,10 +127,11 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
         )}
         <button
           onClick={() => setShowTransferModal(true)}
-          className="inline-flex items-center justify-center w-8 h-8 text-sm text-purple-600 hover:text-purple-700 border border-purple-200 hover:border-purple-300 rounded-lg hover:bg-purple-50 transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-purple-600 hover:text-purple-700 border border-purple-200 hover:border-purple-300 rounded-lg hover:bg-purple-50 transition-colors"
           title="Transferir conversa"
         >
           <ArrowRightLeft className="w-4 h-4" />
+          <span className="hidden sm:inline">Transferir</span>
         </button>
         {selectedConversation.conversation.status === "active" && (
           <button
@@ -140,7 +141,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
               }
             }}
             disabled={closeConversationMutation.isPending}
-            className="inline-flex items-center justify-center w-8 h-8 text-sm text-red-600 hover:text-red-700 border border-red-200 hover:border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 hover:text-red-700 border border-red-200 hover:border-red-300 rounded-lg hover:bg-red-50 transition-colors"
             title="Encerrar conversa"
           >
             {closeConversationMutation.isPending ? (
@@ -148,6 +149,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
             ) : (
               <XSquare className="w-4 h-4" />
             )}
+            <span className="hidden sm:inline">Encerrar</span>
           </button>
         )}
       </>

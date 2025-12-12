@@ -25,13 +25,22 @@ export function ConversationSelector({
 }: ConversationSelectorProps) {
   return (
     <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
-      <button
-        onClick={onPrevious}
-        disabled={selectedIndex === 0}
-        className="p-2 rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-      >
-        <ChevronLeft className="w-5 h-5 text-gray-600" />
-      </button>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={onPrevious}
+          disabled={selectedIndex === 0}
+          className="p-2 rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5 text-gray-600" />
+        </button>
+        <button
+          onClick={onNext}
+          disabled={selectedIndex === totalCount - 1}
+          className="p-2 rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          <ChevronRight className="w-5 h-5 text-gray-600" />
+        </button>
+      </div>
       
       <div className="flex-1 text-center">
         <p className="text-sm font-medium text-gray-900">
@@ -47,18 +56,10 @@ export function ConversationSelector({
       </div>
       
       {actionButtons && (
-        <div className="flex items-center gap-1.5 mr-2">
+        <div className="flex items-center gap-1.5">
           {actionButtons}
         </div>
       )}
-      
-      <button
-        onClick={onNext}
-        disabled={selectedIndex === totalCount - 1}
-        className="p-2 rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-      >
-        <ChevronRight className="w-5 h-5 text-gray-600" />
-      </button>
     </div>
   );
 }
