@@ -34,6 +34,7 @@ The React frontend provides a real-time dashboard for events and conversations, 
 *   **Structured Conversation Summary:** Displays AI-generated summaries with specific fields (`client_request`, `agent_actions`, `current_status`, `important_info`) parsed from JSON responses.
 *   **Automatic Routing Rules:** Unified routing system in `server/features/routing/` that routes conversations to `n1ago`, `human`, or `bot`. Uses a single `processRoutingEvent` function called by the EventDispatcher for all relevant events. Supports two rule types: `allocate_next_n` (routes new conversations on `conversation_started`) and `transfer_ongoing` (routes based on exact text match in messages). Features detailed logging at each step, atomic slot consumption, and Zendesk Switchboard API for control transfer.
 *   **AutoPilot - Automatic Response Sending:** Automatically sends suggested responses under specific conditions (conversation assigned to n1ago, last message from client, no newer messages, `in_response_to` matches).
+*   **Objective Problems Catalog (Dec 2024):** Normalized catalog of evidence-based problems stored in `knowledge_base_objective_problems` table. Each problem includes name, description, synonyms, examples, and source (`customer`, `system`, or `both`). Used by the Organizer Agent and consumed by the Diagnostician. Accessible via "Problemas" tab in Base de Conhecimento.
 
 **System Design Choices:**
 
