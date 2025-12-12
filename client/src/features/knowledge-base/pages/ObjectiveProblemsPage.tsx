@@ -249,37 +249,59 @@ export function ObjectiveProblemsPage() {
                 <div className="divide-y divide-gray-100">
                   {Object.entries(groupedProducts).map(([mainProduct, subProducts]) => {
                     const isExpanded = expandedProducts.has(mainProduct);
+                    const generalProduct = subProducts.find(p => !p.subproduto);
+                    const specificProducts = subProducts.filter(p => p.subproduto);
                     const selectedCount = subProducts.filter(p => formData.productIds.includes(p.id)).length;
                     
                     return (
                       <div key={mainProduct}>
-                        <button
-                          type="button"
-                          onClick={() => toggleExpanded(mainProduct)}
-                          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 text-left"
-                        >
-                          {isExpanded ? (
-                            <ChevronDown className="w-4 h-4 text-gray-400" />
+                        <div className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50">
+                          {specificProducts.length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => toggleExpanded(mainProduct)}
+                              className="p-0.5"
+                            >
+                              {isExpanded ? (
+                                <ChevronDown className="w-4 h-4 text-gray-400" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4 text-gray-400" />
+                              )}
+                            </button>
                           ) : (
-                            <ChevronRight className="w-4 h-4 text-gray-400" />
+                            <div className="w-5" />
                           )}
+                          
+                          {generalProduct && (
+                            <input
+                              type="checkbox"
+                              checked={formData.productIds.includes(generalProduct.id)}
+                              onChange={() => toggleProduct(generalProduct.id)}
+                              className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                            />
+                          )}
+                          
                           <span className="font-medium text-gray-900">{mainProduct}</span>
-                          <span className="text-xs text-gray-400">
-                            {subProducts.length} subproduto{subProducts.length !== 1 ? "s" : ""}
-                          </span>
-                          {selectedCount > 0 && (
-                            <span className="ml-auto text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
-                              {selectedCount} selecionado{selectedCount !== 1 ? "s" : ""}
+                          
+                          {specificProducts.length > 0 && (
+                            <span className="text-xs text-gray-400">
+                              {specificProducts.length} subproduto{specificProducts.length !== 1 ? "s" : ""}
                             </span>
                           )}
-                        </button>
+                          
+                          {selectedCount > 0 && (
+                            <span className="ml-auto text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
+                              {selectedCount}
+                            </span>
+                          )}
+                        </div>
                         
-                        {isExpanded && (
+                        {isExpanded && specificProducts.length > 0 && (
                           <div className="bg-gray-50 border-t border-gray-100">
-                            {subProducts.map((product) => (
+                            {specificProducts.map((product) => (
                               <label
                                 key={product.id}
-                                className="flex items-center gap-2 px-3 py-2 pl-9 hover:bg-gray-100 cursor-pointer"
+                                className="flex items-center gap-2 px-3 py-2 pl-12 hover:bg-gray-100 cursor-pointer"
                               >
                                 <input
                                   type="checkbox"
@@ -288,7 +310,7 @@ export function ObjectiveProblemsPage() {
                                   className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
                                 />
                                 <span className="text-sm text-gray-700">
-                                  {product.subproduto || "(geral)"}
+                                  {product.subproduto}
                                 </span>
                               </label>
                             ))}
