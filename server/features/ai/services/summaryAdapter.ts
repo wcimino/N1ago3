@@ -1,6 +1,7 @@
 import { callOpenAI, type OpenAICallResult } from "./openaiApiService.js";
 import { storage } from "../../../storage/index.js";
 import { replacePromptVariables, formatMessagesContext, formatLastMessage, type ContentPayload } from "./promptUtils.js";
+import type { ToolFlags } from "./aiTools.js";
 
 export interface SummaryPayload {
   currentSummary: string | null;
@@ -22,12 +23,19 @@ export interface SummaryPayload {
   };
 }
 
+export interface ObjectiveProblemResult {
+  id: number;
+  name: string;
+  matchScore?: number;
+}
+
 export interface StructuredSummary {
   clientRequest?: string;
   agentActions?: string;
   currentStatus?: string;
   importantInfo?: string;
   customerEmotionLevel?: number;
+  objectiveProblems?: ObjectiveProblemResult[];
 }
 
 export interface SummaryResult {
@@ -90,12 +98,26 @@ function parseStructuredSummary(responseContent: string): StructuredSummary | nu
       ? emotionLevel 
       : undefined;
     
+    let objectiveProblems: ObjectiveProblemResult[] | undefined;
+    const rawProblems = parsed.objectiveProblems || parsed.problemasObjetivos || parsed.problemas_objetivos;
+    if (Array.isArray(rawProblems) && rawProblems.length > 0) {
+      objectiveProblems = rawProblems
+        .filter((p: any) => p && typeof p.id === 'number' && typeof p.name === 'string')
+        .map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          matchScore: typeof p.matchScore === 'number' ? p.matchScore : undefined,
+        }));
+      if (objectiveProblems.length === 0) objectiveProblems = undefined;
+    }
+
     return {
       clientRequest: parsed.clientRequest || parsed.solicitacaoCliente || parsed.solicitacao_cliente || undefined,
       agentActions: parsed.agentActions || parsed.acoesAtendente || parsed.acoes_atendente || undefined,
       currentStatus: parsed.currentStatus || parsed.statusAtual || parsed.status_atual || undefined,
       importantInfo: parsed.importantInfo || parsed.informacoesImportantes || parsed.informacoes_importantes || undefined,
       customerEmotionLevel: validEmotionLevel,
+      objectiveProblems,
     };
   } catch {
     return null;
@@ -108,7 +130,8 @@ export async function generateSummary(
   responseFormat: string | null,
   modelName: string = "gpt-4o-mini",
   conversationId?: number,
-  externalConversationId?: string
+  externalConversationId?: string,
+  toolFlags?: Partial<ToolFlags>
 ): Promise<SummaryResult> {
   const messagesContext = formatMessagesContext(payload.last20Messages);
   const lastMessageContext = formatLastMessage(payload.lastMessage);
@@ -135,6 +158,7 @@ export async function generateSummary(
     maxTokens: 1024,
     contextType: "conversation",
     contextId: externalConversationId || (conversationId ? String(conversationId) : undefined),
+    toolFlags,
   });
 
   if (!result.success || !result.responseContent) {
@@ -163,7 +187,8 @@ export async function generateAndSaveSummary(
   modelName: string,
   conversationId: number,
   externalConversationId: string | null,
-  lastEventId: number
+  lastEventId: number,
+  toolFlags?: Partial<ToolFlags>
 ): Promise<SummaryResult> {
   const result = await generateSummary(
     payload,
@@ -171,7 +196,8 @@ export async function generateAndSaveSummary(
     responseFormat,
     modelName,
     conversationId,
-    externalConversationId || undefined
+    externalConversationId || undefined,
+    toolFlags
   );
 
   if (result.success) {
@@ -184,6 +210,7 @@ export async function generateAndSaveSummary(
       currentStatus: result.structured?.currentStatus,
       importantInfo: result.structured?.importantInfo,
       customerEmotionLevel: result.structured?.customerEmotionLevel,
+      objectiveProblems: result.structured?.objectiveProblems,
       lastEventId,
     });
 

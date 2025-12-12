@@ -83,7 +83,15 @@ export async function generateConversationSummary(event: EventStandard): Promise
       }
     }
 
-    console.log(`[Summary Orchestrator] Generating summary for conversation ${event.conversationId} with ${reversedMessages.length} messages, useGeneralSettings=${config.useGeneralSettings}`);
+    const toolFlags = {
+      useKnowledgeBaseTool: config.useKnowledgeBaseTool ?? false,
+      useProductCatalogTool: config.useProductCatalogTool ?? false,
+      useSubjectIntentTool: config.useSubjectIntentTool ?? false,
+      useZendeskKnowledgeBaseTool: config.useZendeskKnowledgeBaseTool ?? false,
+      useObjectiveProblemTool: config.useObjectiveProblemTool ?? false,
+    };
+
+    console.log(`[Summary Orchestrator] Generating summary for conversation ${event.conversationId} with ${reversedMessages.length} messages, useGeneralSettings=${config.useGeneralSettings}, useObjectiveProblemTool=${toolFlags.useObjectiveProblemTool}`);
 
     const result = await generateAndSaveSummary(
       payload,
@@ -92,7 +100,8 @@ export async function generateConversationSummary(event: EventStandard): Promise
       config.modelName,
       event.conversationId,
       event.externalConversationId,
-      event.id
+      event.id,
+      toolFlags
     );
 
     if (result.success) {

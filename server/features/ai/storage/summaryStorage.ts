@@ -34,6 +34,7 @@ export const summaryStorage = {
           currentStatus: data.currentStatus,
           importantInfo: data.importantInfo,
           customerEmotionLevel: data.customerEmotionLevel,
+          objectiveProblems: data.objectiveProblems,
           lastEventId: data.lastEventId,
           externalConversationId: data.externalConversationId,
           product: data.product,
