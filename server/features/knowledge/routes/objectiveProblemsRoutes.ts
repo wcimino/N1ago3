@@ -5,6 +5,7 @@ import {
   createObjectiveProblem,
   updateObjectiveProblem,
   deleteObjectiveProblem,
+  getAllProducts,
 } from "../storage/objectiveProblemsStorage.js";
 
 const router = Router();
@@ -16,6 +17,16 @@ router.get("/api/knowledge/objective-problems", async (_req, res) => {
   } catch (error) {
     console.error("Error fetching objective problems:", error);
     res.status(500).json({ error: "Failed to fetch objective problems" });
+  }
+});
+
+router.get("/api/knowledge/objective-problems/products", async (_req, res) => {
+  try {
+    const products = await getAllProducts();
+    res.json(products);
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({ error: "Failed to fetch products" });
   }
 });
 
@@ -35,7 +46,7 @@ router.get("/api/knowledge/objective-problems/:id", async (req, res) => {
 
 router.post("/api/knowledge/objective-problems", async (req, res) => {
   try {
-    const { name, description, synonyms, examples, presentedBy, isActive } = req.body;
+    const { name, description, synonyms, examples, presentedBy, isActive, productIds } = req.body;
     
     if (!name || !description) {
       return res.status(400).json({ error: "Name and description are required" });
@@ -53,7 +64,7 @@ router.post("/api/knowledge/objective-problems", async (req, res) => {
       examples: examples || [],
       presentedBy: presentedBy || "customer",
       isActive: isActive !== undefined ? isActive : true,
-    });
+    }, productIds);
 
     res.status(201).json(problem);
   } catch (error: any) {
@@ -68,7 +79,7 @@ router.post("/api/knowledge/objective-problems", async (req, res) => {
 router.put("/api/knowledge/objective-problems/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { name, description, synonyms, examples, presentedBy, isActive } = req.body;
+    const { name, description, synonyms, examples, presentedBy, isActive, productIds } = req.body;
 
     const validPresentedBy = ["customer", "system", "both"];
     if (presentedBy && !validPresentedBy.includes(presentedBy)) {
@@ -83,7 +94,7 @@ router.put("/api/knowledge/objective-problems/:id", async (req, res) => {
     if (presentedBy !== undefined) updateData.presentedBy = presentedBy;
     if (isActive !== undefined) updateData.isActive = isActive;
 
-    const problem = await updateObjectiveProblem(id, updateData);
+    const problem = await updateObjectiveProblem(id, updateData, productIds);
     if (!problem) {
       return res.status(404).json({ error: "Objective problem not found" });
     }
