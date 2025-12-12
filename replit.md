@@ -70,6 +70,12 @@ The React frontend provides a real-time dashboard for events and conversations, 
     - Used by AI tools (`createKnowledgeBaseTool`, `buildKnowledgeBaseTool`), API endpoints, and learning adapters
     - Security: Uses parameterized SQL queries to prevent SQL injection
 *   **Enrichment Agent Modular Architecture:** Refactored into a sequential pipeline (`enrichmentOpenAICaller`, `enrichmentRunLogger`, `enrichmentRunProcessor`, `enrichmentOrchestrator`) to ensure robust logging of AI enrichment attempts.
+*   **Centralized AI Agent Configuration Metadata (Dec 2024):** All AI agent configuration pages (Summary, Classification, Response, Learning, Enrichment) now consume a central metadata registry at `client/src/features/ai/config/agentConfigMetadata.ts`. This eliminates code duplication and ensures consistent behavior across all agents. Each agent's metadata defines:
+    - Labels and descriptions (title, enabledLabel, eventTriggerLabel, etc.)
+    - Textarea sizes (promptRows, responseFormatRows)
+    - Recommended model
+    - Available tools (showKnowledgeBaseTool, showProductCatalogTool, showZendeskKnowledgeBaseTool, showSubjectIntentTool, showObjectiveProblemTool)
+    - All pages use the shared `OpenaiConfigForm` component which receives these props from metadata
 
 ## OpenAI Services Architecture
 
