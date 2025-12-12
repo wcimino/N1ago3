@@ -232,8 +232,8 @@ export async function searchObjectiveProblems(
       .from(knowledgeBaseObjectiveProblemsHasProductsCatalog)
       .where(eq(knowledgeBaseObjectiveProblemsHasProductsCatalog.productId, productId));
     
-    const validProblemIds = new Set(problemIdsWithProduct.map(p => p.problemId));
-    problems = problems.filter(p => validProblemIds.has(p.id));
+    const validProblemIds = new Set(problemIdsWithProduct.map((p: typeof problemIdsWithProduct[number]) => p.problemId));
+    problems = problems.filter((p: KnowledgeBaseObjectiveProblem) => validProblemIds.has(p.id));
   }
 
   const allProducts = await db.select().from(ifoodProducts);
