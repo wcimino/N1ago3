@@ -2,14 +2,22 @@ export type AuthorType = "customer" | "user" | "agent" | "business" | "app" | "b
 
 export type MessageSender = "customer" | "n1ago" | "zendeskBot" | "human";
 
-export function getMessageSender(authorType: string, authorName?: string | null): MessageSender {
+const N1AGO_INTEGRATION_IDS = [
+  "69357782256891c6fda71018",
+  "693577c73ef61062218d9705",
+];
+
+export function getMessageSender(authorType: string, authorName?: string | null, authorId?: string | null): MessageSender {
   if (authorType === "customer" || authorType === "user") {
     return "customer";
   }
   
   const name = (authorName || "").toLowerCase();
   
-  // N1ago detection - messages sent by our AI agent
+  // N1ago detection - messages sent by our AI agent (by integration ID or name)
+  if (authorId && N1AGO_INTEGRATION_IDS.includes(authorId)) {
+    return "n1ago";
+  }
   if (name.includes("n1ago")) {
     return "n1ago";
   }
@@ -29,8 +37,8 @@ export function getMessageSender(authorType: string, authorName?: string | null)
   return "human";
 }
 
-export function getAuthorColor(authorType: string, authorName?: string | null): string {
-  const sender = getMessageSender(authorType, authorName);
+export function getAuthorColor(authorType: string, authorName?: string | null, authorId?: string | null): string {
+  const sender = getMessageSender(authorType, authorName, authorId);
   
   switch (sender) {
     case "customer":

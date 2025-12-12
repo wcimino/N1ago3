@@ -201,12 +201,23 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
               />
               
               <div className="px-3 py-2 bg-white border-b border-gray-200 flex-shrink-0">
-                <SegmentedTabs
-                  tabs={contentTabs}
-                  activeTab={contentTab}
-                  onChange={(tab) => setContentTab(tab as ContentTab)}
-                  iconOnlyMobile
-                />
+                <div className="flex items-center justify-between">
+                  <SegmentedTabs
+                    tabs={contentTabs}
+                    activeTab={contentTab}
+                    onChange={(tab) => setContentTab(tab as ContentTab)}
+                    iconOnlyMobile
+                  />
+                  {contentTab === "chat" && (
+                    <button
+                      onClick={() => setShowSuggestions(!showSuggestions)}
+                      className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors ml-2"
+                    >
+                      {showSuggestions ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      <span className="hidden xs:inline">{showSuggestions ? "Ocultar" : "Exibir"}</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
@@ -216,7 +227,11 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                 {contentTab === "chat" && (
                   <ConversationChat
                     messages={selectedConversation?.messages || []}
-                    suggestedResponses={selectedConversation?.suggested_responses || []}
+                    suggestedResponses={
+                      showSuggestions 
+                        ? (selectedConversation?.suggested_responses || [])
+                        : []
+                    }
                     onImageClick={setExpandedImage}
                     formatDateTime={formatDateTimeShort}
                     chatEndRef={chatEndRef}

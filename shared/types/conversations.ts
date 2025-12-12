@@ -38,6 +38,7 @@ export interface ImagePayload {
 export interface Message {
   id: number;
   author_type: string;
+  author_id: string | null;
   author_name: string | null;
   content_type: string;
   content_text: string | null;

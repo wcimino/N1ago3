@@ -181,7 +181,7 @@ function FormResponseContent({ payload }: { payload: FormResponsePayload }) {
 export function MessageBubble({ message, onImageClick, currentHandlerName }: MessageBubbleProps) {
   const { formatDateTimeShort } = useDateFormatters();
   const isCustomer = isCustomerMessage(message.author_type);
-  const sender = getMessageSender(message.author_type, message.author_name);
+  const sender = getMessageSender(message.author_type, message.author_name, message.author_id);
   const hasImage = message.content_type === "image" && message.content_payload && "mediaUrl" in message.content_payload;
   
   const timestamp = message.zendesk_timestamp || message.received_at;
@@ -271,7 +271,7 @@ export function MessageBubble({ message, onImageClick, currentHandlerName }: Mes
     <div className={`flex ${isCustomer ? "justify-start" : "justify-end"}`}>
       <div className={`max-w-[75%] ${getBubbleStyle()} shadow-sm px-4 py-2`}>
         <div className="flex items-center gap-2 mb-1">
-          <span className={`w-2 h-2 rounded-full ${getAuthorColor(message.author_type, message.author_name)}`} />
+          <span className={`w-2 h-2 rounded-full ${getAuthorColor(message.author_type, message.author_name, message.author_id)}`} />
           <span className={`text-xs font-medium ${isCustomer ? "text-gray-700" : textColors.main}`}>
             {displayName}
           </span>

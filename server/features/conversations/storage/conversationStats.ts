@@ -213,6 +213,7 @@ export const conversationStats = {
               JSON_BUILD_OBJECT(
                 'id', e.id,
                 'author_type', e.author_type,
+                'author_id', e.author_id,
                 'author_name', e.author_name,
                 'content_type', COALESCE(e.event_subtype, 'text'),
                 'content_text', e.content_text,
