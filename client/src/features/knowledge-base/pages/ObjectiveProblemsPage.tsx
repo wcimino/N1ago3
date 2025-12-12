@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit2, Trash2, X, Check, AlertCircle, ChevronRight, ChevronDown } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Check, AlertCircle, ChevronRight, ChevronDown, Minus } from "lucide-react";
+import { FilterBar } from "../../../shared/components/ui/FilterBar";
 
 interface Product {
   id: number;
@@ -42,12 +43,34 @@ const emptyForm: FormData = {
   productIds: [],
 };
 
+interface ProductHierarchy {
+  name: string;
+  productId?: number;
+  problems: ObjectiveProblem[];
+  children: ProductHierarchy[];
+}
+
 export function ObjectiveProblemsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyForm);
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState("");
   const queryClient = useQueryClient();
+
+  const togglePath = (path: string) => {
+    setExpandedPaths(prev => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+  };
 
   const toggleExpanded = (productName: string) => {
     setExpandedProducts(prev => {
@@ -78,6 +101,80 @@ export function ObjectiveProblemsPage() {
       return res.json();
     },
   });
+
+  const filteredProblems = useMemo(() => {
+    let result = problems;
+    
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(p => 
+        p.name.toLowerCase().includes(term) ||
+        p.description.toLowerCase().includes(term) ||
+        p.synonyms?.some(s => s.toLowerCase().includes(term)) ||
+        p.examples?.some(e => e.toLowerCase().includes(term))
+      );
+    }
+    
+    if (selectedProduct) {
+      const productIds = products
+        .filter(p => p.produto === selectedProduct)
+        .map(p => p.id);
+      result = result.filter(problem => 
+        problem.productIds?.some(id => productIds.includes(id))
+      );
+    }
+    
+    return result;
+  }, [problems, searchTerm, selectedProduct, products]);
+
+  const hierarchy = useMemo(() => {
+    const productMap = new Map<string, ProductHierarchy>();
+    const unassigned: ObjectiveProblem[] = [];
+    
+    const mainProducts = [...new Set(products.map(p => p.produto))];
+    mainProducts.forEach(name => {
+      productMap.set(name, { name, problems: [], children: [] });
+    });
+    
+    filteredProblems.forEach(problem => {
+      if (!problem.productIds || problem.productIds.length === 0) {
+        unassigned.push(problem);
+        return;
+      }
+      
+      const problemProducts = products.filter(p => problem.productIds.includes(p.id));
+      const addedToProducts = new Set<string>();
+      
+      problemProducts.forEach(product => {
+        if (!addedToProducts.has(product.produto)) {
+          const node = productMap.get(product.produto);
+          if (node) {
+            node.problems.push(problem);
+            addedToProducts.add(product.produto);
+          }
+        }
+      });
+    });
+    
+    const result: ProductHierarchy[] = [];
+    
+    mainProducts.forEach(name => {
+      const node = productMap.get(name);
+      if (node && node.problems.length > 0) {
+        result.push(node);
+      }
+    });
+    
+    if (unassigned.length > 0) {
+      result.push({ name: "Sem produto", problems: unassigned, children: [] });
+    }
+    
+    return result;
+  }, [filteredProblems, products]);
+
+  const distinctProducts = useMemo(() => {
+    return [...new Set(products.map(p => p.produto))];
+  }, [products]);
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -179,13 +276,6 @@ export function ObjectiveProblemsPage() {
     }));
   };
 
-  const getProductNames = (productIds: number[]) => {
-    return productIds
-      .map(id => products.find(p => p.id === id)?.fullName)
-      .filter(Boolean)
-      .join(", ");
-  };
-
   const groupedProducts = products.reduce((acc, product) => {
     const mainProduct = product.produto;
     if (!acc[mainProduct]) {
@@ -195,10 +285,9 @@ export function ObjectiveProblemsPage() {
     return acc;
   }, {} as Record<string, Product[]>);
 
-  const presentedByLabels = {
-    customer: "Cliente",
-    system: "Sistema",
-    both: "Ambos",
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedProduct("");
   };
 
   if (showForm) {
@@ -408,90 +497,129 @@ export function ObjectiveProblemsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-500">
-          {problems.length} problema{problems.length !== 1 ? "s" : ""} cadastrado{problems.length !== 1 ? "s" : ""}
-        </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Novo Problema
-        </button>
-      </div>
+    <>
+      <FilterBar
+        filters={[
+          { type: "search", value: searchTerm, onChange: setSearchTerm, placeholder: "Buscar..." },
+          { type: "select", value: selectedProduct, onChange: setSelectedProduct, placeholder: "Produto", options: distinctProducts },
+        ]}
+        onClear={clearFilters}
+      />
 
-      {isLoading ? (
-        <div className="text-center py-8 text-gray-500">Carregando problemas...</div>
-      ) : problems.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          <AlertCircle className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-          <p>Nenhum problema cadastrado</p>
-          <p className="text-sm">Clique em "Novo Problema" para adicionar</p>
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm text-gray-500">
+            {filteredProblems.length} problema{filteredProblems.length !== 1 ? "s" : ""} {searchTerm || selectedProduct ? "encontrado" : "cadastrado"}{filteredProblems.length !== 1 ? "s" : ""}
+          </div>
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Novo Problema
+          </button>
         </div>
-      ) : (
-        <div className="space-y-3">
-          {problems.map((problem) => (
-            <div
-              key={problem.id}
-              className={`border rounded-lg p-4 ${problem.isActive ? "bg-white" : "bg-gray-50 opacity-75"}`}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <h4 className="font-medium text-gray-900">{problem.name}</h4>
-                    {!problem.isActive && (
-                      <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
-                        Inativo
-                      </span>
+
+        {isLoading ? (
+          <div className="text-center py-8 text-gray-500">Carregando problemas...</div>
+        ) : filteredProblems.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <AlertCircle className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+            <p>Nenhum problema {searchTerm || selectedProduct ? "encontrado" : "cadastrado"}</p>
+            {!searchTerm && !selectedProduct && (
+              <p className="text-sm">Clique em "Novo Problema" para adicionar</p>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {hierarchy.map((node) => {
+              const isExpanded = expandedPaths.has(node.name);
+              const hasProblems = node.problems.length > 0;
+              
+              return (
+                <div key={node.name}>
+                  <div 
+                    className="flex items-start gap-2 py-2 px-2 sm:px-3 rounded-lg hover:bg-gray-50 cursor-pointer"
+                    onClick={() => togglePath(node.name)}
+                  >
+                    {hasProblems ? (
+                      <button className="mt-0.5 p-0.5 hover:bg-gray-200 rounded shrink-0">
+                        {isExpanded ? (
+                          <Minus className="w-4 h-4 text-gray-500" />
+                        ) : (
+                          <Plus className="w-4 h-4 text-gray-500" />
+                        )}
+                      </button>
+                    ) : (
+                      <div className="w-5 shrink-0" />
                     )}
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <span className="text-gray-900 text-base font-medium break-words">
+                          {node.name}
+                        </span>
+                        <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-purple-600">
+                          <span className="font-medium">{node.problems.length}</span> problema{node.problems.length !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">{problem.description}</p>
                   
-                  {problem.productIds && problem.productIds.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {problem.productIds.map((productId) => {
-                        const product = products.find(p => p.id === productId);
-                        if (!product) return null;
-                        return (
-                          <span
-                            key={productId}
-                            className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-green-100 text-green-800"
-                          >
-                            {product.fullName}
-                          </span>
-                        );
-                      })}
+                  {isExpanded && node.problems.length > 0 && (
+                    <div className="ml-5 sm:ml-7 space-y-1">
+                      {node.problems.map((problem) => (
+                        <div
+                          key={problem.id}
+                          className={`flex items-start gap-2 py-2 px-2 sm:px-3 rounded-lg hover:bg-gray-50 group ${!problem.isActive ? "opacity-60" : ""}`}
+                        >
+                          <div className="w-5 shrink-0" />
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="text-sm font-medium text-gray-900 break-words">
+                                {problem.name}
+                              </span>
+                              {!problem.isActive && (
+                                <span className="px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-500">
+                                  Inativo
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 line-clamp-2">{problem.description}</p>
+                          </div>
+                          
+                          <div className="flex items-center gap-1 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleEdit(problem); }}
+                              className="p-1.5 text-gray-400 hover:text-purple-500 hover:bg-purple-50 rounded"
+                              title="Editar"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm(`Tem certeza que deseja excluir "${problem.name}"?`)) {
+                                  deleteMutation.mutate(problem.id);
+                                }
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
+                              title="Excluir"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
-                
-                <div className="flex items-center gap-1 ml-4">
-                  <button
-                    onClick={() => handleEdit(problem)}
-                    className="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded"
-                    title="Editar"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (confirm(`Tem certeza que deseja excluir "${problem.name}"?`)) {
-                        deleteMutation.mutate(problem.id);
-                      }
-                    }}
-                    className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
-                    title="Excluir"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
