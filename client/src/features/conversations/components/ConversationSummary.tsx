@@ -58,34 +58,43 @@ const severityConfig: Record<string, { label: string; color: string }> = {
 };
 
 interface ObjectiveProblemsCardProps {
-  problems: ObjectiveProblemIdentified[];
+  problems?: ObjectiveProblemIdentified[] | null;
 }
 
 function ObjectiveProblemsCard({ problems }: ObjectiveProblemsCardProps) {
+  const problemsList = problems || [];
+  const hasProblems = problemsList.length > 0;
+  
   return (
     <div className="rounded-lg p-3 bg-violet-50 border border-violet-200">
       <div className="flex items-center gap-2 mb-3">
         <div className="text-violet-600">
           <AlertTriangle className="w-4 h-4" />
         </div>
-        <h4 className="font-medium text-gray-800 text-sm">Problemas Objetivos</h4>
+        <h4 className="font-medium text-gray-800 text-sm">Problemas</h4>
         <span className="ml-auto px-2 py-0.5 rounded text-xs font-medium bg-violet-100 text-violet-700">
-          {problems.length} identificado{problems.length > 1 ? "s" : ""}
+          {problemsList.length} identificado{problemsList.length !== 1 ? "s" : ""}
         </span>
       </div>
       
-      <div className="space-y-2">
-        {problems.map((problem) => (
-          <div key={problem.id} className="flex items-center justify-between bg-white rounded px-3 py-2 border border-violet-100">
-            <span className="text-sm text-gray-700 font-medium">{problem.name}</span>
-            {problem.matchScore !== undefined && (
-              <span className="text-xs text-violet-600 bg-violet-100 px-2 py-0.5 rounded">
-                {problem.matchScore}% match
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
+      {hasProblems ? (
+        <div className="space-y-2">
+          {problemsList.map((problem) => (
+            <div key={problem.id} className="flex items-center justify-between bg-white rounded px-3 py-2 border border-violet-100">
+              <span className="text-sm text-gray-700 font-medium">{problem.name}</span>
+              {problem.matchScore !== undefined && (
+                <span className="text-xs text-violet-600 bg-violet-100 px-2 py-0.5 rounded">
+                  {problem.matchScore}% match
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-sm text-gray-500 italic">
+          Nenhum problema identificado
+        </div>
+      )}
     </div>
   );
 }
@@ -231,67 +240,65 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
               </div>
             </div>
 
-            {hasStructuredData ? (
-              <div className="flex flex-col gap-3">
-                {summary.client_request && (
-                  <SummaryCardItem
-                    icon={<User className="w-4 h-4" />}
-                    title="Solicitação do Cliente"
-                    content={summary.client_request}
-                    bgColor="bg-blue-50"
-                    borderColor="border-blue-200"
-                    iconColor="text-blue-600"
-                  />
-                )}
-                
-                {summary.agent_actions && (
-                  <SummaryCardItem
-                    icon={<Headphones className="w-4 h-4" />}
-                    title="Ações do Atendente"
-                    content={summary.agent_actions}
-                    bgColor="bg-green-50"
-                    borderColor="border-green-200"
-                    iconColor="text-green-600"
-                  />
-                )}
-                
-                {summary.current_status && (
-                  <SummaryCardItem
-                    icon={<Clock className="w-4 h-4" />}
-                    title="Status Atual"
-                    content={summary.current_status}
-                    bgColor="bg-amber-50"
-                    borderColor="border-amber-200"
-                    iconColor="text-amber-600"
-                  />
-                )}
-                
-                {summary.important_info && (
-                  <SummaryCardItem
-                    icon={<Info className="w-4 h-4" />}
-                    title="Informações Importantes"
-                    content={summary.important_info}
-                    bgColor="bg-purple-50"
-                    borderColor="border-purple-200"
-                    iconColor="text-purple-600"
-                  />
-                )}
-                
-                {summary.objective_problems && summary.objective_problems.length > 0 && (
-                  <ObjectiveProblemsCard problems={summary.objective_problems} />
-                )}
-                
-                {summary.triage && (
-                  <TriageCard triage={summary.triage} />
-                )}
-              </div>
-            ) : summary.text ? (
-              <div className="pt-2 border-t border-gray-100">
-                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                  {summary.text}
-                </p>
-              </div>
-            ) : null}
+            <div className="flex flex-col gap-3">
+              {summary.client_request && (
+                <SummaryCardItem
+                  icon={<User className="w-4 h-4" />}
+                  title="Solicitação do Cliente"
+                  content={summary.client_request}
+                  bgColor="bg-blue-50"
+                  borderColor="border-blue-200"
+                  iconColor="text-blue-600"
+                />
+              )}
+              
+              {summary.agent_actions && (
+                <SummaryCardItem
+                  icon={<Headphones className="w-4 h-4" />}
+                  title="Ações do Atendente"
+                  content={summary.agent_actions}
+                  bgColor="bg-green-50"
+                  borderColor="border-green-200"
+                  iconColor="text-green-600"
+                />
+              )}
+              
+              {summary.current_status && (
+                <SummaryCardItem
+                  icon={<Clock className="w-4 h-4" />}
+                  title="Status Atual"
+                  content={summary.current_status}
+                  bgColor="bg-amber-50"
+                  borderColor="border-amber-200"
+                  iconColor="text-amber-600"
+                />
+              )}
+              
+              {summary.important_info && (
+                <SummaryCardItem
+                  icon={<Info className="w-4 h-4" />}
+                  title="Informações Importantes"
+                  content={summary.important_info}
+                  bgColor="bg-purple-50"
+                  borderColor="border-purple-200"
+                  iconColor="text-purple-600"
+                />
+              )}
+              
+              <ObjectiveProblemsCard problems={summary.objective_problems} />
+              
+              {summary.triage && (
+                <TriageCard triage={summary.triage} />
+              )}
+              
+              {!hasStructuredData && summary.text && (
+                <div className="pt-2 border-t border-gray-100">
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                    {summary.text}
+                  </p>
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>
