@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { XCircle, MessageCircle, ChevronLeft, FileText, Eye, EyeOff, ArrowRightLeft, Zap, ZapOff, XSquare, Loader2 } from "lucide-react";
+import { XCircle, MessageCircle, ChevronLeft, FileText, Eye, EyeOff, ArrowRightLeft, Zap, ZapOff, XSquare, Loader2, ArrowLeft } from "lucide-react";
 import type { UserConversationsMessagesResponse, ImagePayload } from "../../../types";
 import { ImageLightbox, LoadingState, SegmentedTabs } from "../../../shared/components/ui";
 import { HandlerBadge } from "../../../shared/components/badges/HandlerBadge";
@@ -176,7 +176,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
             onClick={() => navigate("/atendimentos")}
             className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900 flex-shrink-0"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1 min-w-0">
             <h2 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 truncate">{customerName}</h2>
