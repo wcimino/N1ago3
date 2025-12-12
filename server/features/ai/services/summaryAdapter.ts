@@ -114,10 +114,15 @@ function parseStructuredSummary(responseContent: string): StructuredSummary | nu
 
     const rawRequestType = parsed.customerRequestType || parsed.tipoSolicitacaoCliente || parsed.tipo_solicitacao_cliente ||
       parsed.triage?.anamnese?.customerRequestType || undefined;
-    const validRequestTypes = ['Suporte', 'Informações', 'Contratação', 'Quer suporte', 'Quer contratar', 'Quer informações'];
-    const customerRequestType = validRequestTypes.includes(rawRequestType) 
-      ? rawRequestType.replace('Quer ', '').replace('suporte', 'Suporte').replace('contratar', 'Contratação').replace('informações', 'Informações')
-      : undefined;
+    const requestTypeMap: Record<string, string> = {
+      'Suporte': 'Suporte',
+      'Informações': 'Informações',
+      'Contratação': 'Contratação',
+      'Quer suporte': 'Suporte',
+      'Quer contratar': 'Contratação',
+      'Quer informações': 'Informações',
+    };
+    const customerRequestType = rawRequestType && requestTypeMap[rawRequestType] ? requestTypeMap[rawRequestType] : undefined;
 
     return {
       clientRequest: parsed.clientRequest || parsed.solicitacaoCliente || parsed.solicitacao_cliente || undefined,
