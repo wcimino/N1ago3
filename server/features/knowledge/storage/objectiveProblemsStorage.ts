@@ -2,11 +2,16 @@ import { db } from "../../../db.js";
 import { 
   knowledgeBaseObjectiveProblems, 
   knowledgeBaseObjectiveProblemsHasProductsCatalog,
+  knowledgeBaseObjectiveProblemsEmbeddings,
   ifoodProducts,
   type KnowledgeBaseObjectiveProblem, 
   type InsertKnowledgeBaseObjectiveProblem 
 } from "../../../../shared/schema.js";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
+import { 
+  generateEmbedding,
+  generateContentHashFromParts 
+} from "../../../shared/embeddings/index.js";
 
 export type ObjectiveProblemWithProducts = KnowledgeBaseObjectiveProblem & {
   productIds: number[];
@@ -64,6 +69,8 @@ export async function createObjectiveProblem(
     await setProductsForProblem(problem.id, productIds);
   }
   
+  generateAndSaveEmbeddingAsync(problem);
+  
   return { ...problem, productIds: productIds || [] };
 }
 
@@ -83,6 +90,8 @@ export async function updateObjectiveProblem(
   if (productIds !== undefined) {
     await setProductsForProblem(id, productIds);
   }
+  
+  generateAndSaveEmbeddingAsync(results[0]);
   
   const currentProductIds = await getProductIdsForProblem(id);
   return { ...results[0], productIds: currentProductIds };
@@ -118,6 +127,96 @@ async function setProductsForProblem(problemId: number, productIds: number[]): P
         productId,
       })));
   }
+}
+
+function generateProblemContentForEmbedding(problem: KnowledgeBaseObjectiveProblem): string {
+  const parts: string[] = [];
+  
+  parts.push(`Problema: ${problem.name}`);
+  parts.push(`Descrição: ${problem.description}`);
+  
+  const synonyms = problem.synonyms || [];
+  if (synonyms.length > 0) {
+    parts.push(`Sinônimos: ${synonyms.join(", ")}`);
+  }
+  
+  const examples = problem.examples || [];
+  if (examples.length > 0) {
+    parts.push(`Exemplos: ${examples.join("; ")}`);
+  }
+
+  return parts.join("\n\n");
+}
+
+function generateProblemContentHash(problem: KnowledgeBaseObjectiveProblem): string {
+  const synonyms = problem.synonyms || [];
+  const examples = problem.examples || [];
+  
+  return generateContentHashFromParts([
+    problem.name,
+    problem.description,
+    synonyms.join(","),
+    examples.join(","),
+  ]);
+}
+
+export function generateAndSaveEmbeddingAsync(problem: KnowledgeBaseObjectiveProblem): void {
+  (async () => {
+    try {
+      console.log(`[ObjectiveProblem Embedding] Generating embedding for problem ${problem.id}...`);
+      
+      const contentText = generateProblemContentForEmbedding(problem);
+      const { embedding, logId, tokensUsed } = await generateEmbedding(contentText, { 
+        contextType: "knowledge_base_article" 
+      });
+      const contentHash = generateProblemContentHash(problem);
+      
+      await upsertProblemEmbedding({
+        problemId: problem.id,
+        contentHash,
+        embedding,
+        modelUsed: 'text-embedding-3-small',
+        tokensUsed,
+        openaiLogId: logId,
+      });
+      
+      console.log(`[ObjectiveProblem Embedding] Embedding generated and saved for problem ${problem.id}`);
+    } catch (error) {
+      console.error(`[ObjectiveProblem Embedding] Failed to generate embedding for problem ${problem.id}:`, error);
+    }
+  })();
+}
+
+async function upsertProblemEmbedding(params: {
+  problemId: number;
+  contentHash: string;
+  embedding: number[];
+  modelUsed?: string;
+  tokensUsed?: number | null;
+  openaiLogId?: number;
+}): Promise<void> {
+  const embeddingString = `[${params.embedding.join(',')}]`;
+  
+  await db.execute(sql`
+    INSERT INTO knowledge_base_objective_problems_embeddings (problem_id, content_hash, embedding_vector, model_used, tokens_used, openai_log_id, created_at, updated_at)
+    VALUES (
+      ${params.problemId},
+      ${params.contentHash},
+      ${embeddingString}::vector,
+      ${params.modelUsed || 'text-embedding-3-small'},
+      ${params.tokensUsed || null},
+      ${params.openaiLogId || null},
+      NOW(),
+      NOW()
+    )
+    ON CONFLICT (problem_id) DO UPDATE SET
+      content_hash = EXCLUDED.content_hash,
+      embedding_vector = EXCLUDED.embedding_vector,
+      model_used = EXCLUDED.model_used,
+      tokens_used = EXCLUDED.tokens_used,
+      openai_log_id = EXCLUDED.openai_log_id,
+      updated_at = NOW()
+  `);
 }
 
 export async function getAllProducts() {

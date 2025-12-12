@@ -406,6 +406,24 @@ export const knowledgeBaseObjectiveProblemsHasProductsCatalog = pgTable("knowled
 export type KnowledgeBaseObjectiveProblemsHasProductsCatalog = typeof knowledgeBaseObjectiveProblemsHasProductsCatalog.$inferSelect;
 export type InsertKnowledgeBaseObjectiveProblemsHasProductsCatalog = Omit<typeof knowledgeBaseObjectiveProblemsHasProductsCatalog.$inferInsert, "id" | "createdAt">;
 
+export const knowledgeBaseObjectiveProblemsEmbeddings = pgTable("knowledge_base_objective_problems_embeddings", {
+  id: serial("id").primaryKey(),
+  problemId: integer("problem_id").notNull().references(() => knowledgeBaseObjectiveProblems.id, { onDelete: "cascade" }),
+  contentHash: text("content_hash").notNull(),
+  embeddingVector: text("embedding_vector"),
+  modelUsed: text("model_used").notNull().default("text-embedding-3-small"),
+  tokensUsed: integer("tokens_used"),
+  openaiLogId: integer("openai_log_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  problemIdUnique: uniqueIndex("idx_kb_objective_problems_embeddings_problem_id").on(table.problemId),
+  contentHashIdx: index("idx_kb_objective_problems_embeddings_content_hash").on(table.contentHash),
+}));
+
+export type KnowledgeBaseObjectiveProblemsEmbedding = typeof knowledgeBaseObjectiveProblemsEmbeddings.$inferSelect;
+export type InsertKnowledgeBaseObjectiveProblemsEmbedding = typeof knowledgeBaseObjectiveProblemsEmbeddings.$inferInsert;
+
 export const ifoodProducts = pgTable("products_catalog", {
   id: serial("id").primaryKey(),
   produto: text("produto").notNull(),
