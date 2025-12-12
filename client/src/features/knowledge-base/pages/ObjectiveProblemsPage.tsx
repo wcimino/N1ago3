@@ -2,6 +2,13 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Edit2, Trash2, X, Check, AlertCircle } from "lucide-react";
 
+interface Product {
+  id: number;
+  produto: string;
+  subproduto: string | null;
+  fullName: string;
+}
+
 interface ObjectiveProblem {
   id: number;
   name: string;
@@ -10,6 +17,7 @@ interface ObjectiveProblem {
   examples: string[];
   presentedBy: "customer" | "system" | "both";
   isActive: boolean;
+  productIds: number[];
   createdAt: string;
   updatedAt: string;
 }
@@ -21,6 +29,7 @@ interface FormData {
   examples: string;
   presentedBy: "customer" | "system" | "both";
   isActive: boolean;
+  productIds: number[];
 }
 
 const emptyForm: FormData = {
@@ -30,6 +39,7 @@ const emptyForm: FormData = {
   examples: "",
   presentedBy: "customer",
   isActive: true,
+  productIds: [],
 };
 
 export function ObjectiveProblemsPage() {
@@ -47,6 +57,15 @@ export function ObjectiveProblemsPage() {
     },
   });
 
+  const { data: products = [] } = useQuery<Product[]>({
+    queryKey: ["/api/knowledge/objective-problems/products"],
+    queryFn: async () => {
+      const res = await fetch("/api/knowledge/objective-problems/products");
+      if (!res.ok) throw new Error("Failed to fetch products");
+      return res.json();
+    },
+  });
+
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
       const payload = {
@@ -56,6 +75,7 @@ export function ObjectiveProblemsPage() {
         examples: data.examples.split("\n").map(s => s.trim()).filter(Boolean),
         presentedBy: data.presentedBy,
         isActive: data.isActive,
+        productIds: data.productIds,
       };
       const res = await fetch("/api/knowledge/objective-problems", {
         method: "POST",
@@ -80,6 +100,7 @@ export function ObjectiveProblemsPage() {
         examples: data.examples.split("\n").map(s => s.trim()).filter(Boolean),
         presentedBy: data.presentedBy,
         isActive: data.isActive,
+        productIds: data.productIds,
       };
       const res = await fetch(`/api/knowledge/objective-problems/${id}`, {
         method: "PUT",
@@ -116,6 +137,7 @@ export function ObjectiveProblemsPage() {
       examples: problem.examples.join("\n"),
       presentedBy: problem.presentedBy,
       isActive: problem.isActive,
+      productIds: problem.productIds || [],
     });
     setShowForm(true);
   };
@@ -133,6 +155,22 @@ export function ObjectiveProblemsPage() {
     } else {
       createMutation.mutate(formData);
     }
+  };
+
+  const toggleProduct = (productId: number) => {
+    setFormData(prev => ({
+      ...prev,
+      productIds: prev.productIds.includes(productId)
+        ? prev.productIds.filter(id => id !== productId)
+        : [...prev.productIds, productId],
+    }));
+  };
+
+  const getProductNames = (productIds: number[]) => {
+    return productIds
+      .map(id => products.find(p => p.id === id)?.fullName)
+      .filter(Boolean)
+      .join(", ");
   };
 
   const presentedByLabels = {
@@ -176,6 +214,39 @@ export function ObjectiveProblemsPage() {
               placeholder="Descrição detalhada do problema"
               required
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Produtos relacionados (opcional)
+            </label>
+            <div className="border border-gray-300 rounded-lg max-h-48 overflow-y-auto p-2">
+              {products.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-2">Nenhum produto disponível</p>
+              ) : (
+                <div className="space-y-1">
+                  {products.map((product) => (
+                    <label
+                      key={product.id}
+                      className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.productIds.includes(product.id)}
+                        onChange={() => toggleProduct(product.id)}
+                        className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                      />
+                      <span className="text-sm text-gray-700">{product.fullName}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            {formData.productIds.length > 0 && (
+              <p className="text-xs text-gray-500 mt-1">
+                {formData.productIds.length} produto{formData.productIds.length !== 1 ? "s" : ""} selecionado{formData.productIds.length !== 1 ? "s" : ""}
+              </p>
+            )}
           </div>
 
           <div>
@@ -282,7 +353,7 @@ export function ObjectiveProblemsPage() {
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h4 className="font-medium text-gray-900">{problem.name}</h4>
                     <span className={`px-2 py-0.5 text-xs rounded-full ${
                       problem.presentedBy === "customer" ? "bg-blue-100 text-blue-700" :
@@ -298,6 +369,15 @@ export function ObjectiveProblemsPage() {
                     )}
                   </div>
                   <p className="text-sm text-gray-600 mb-2">{problem.description}</p>
+                  
+                  {problem.productIds && problem.productIds.length > 0 && (
+                    <div className="mb-2">
+                      <span className="text-xs text-gray-500">Produtos: </span>
+                      <span className="text-xs text-green-700 font-medium">
+                        {getProductNames(problem.productIds)}
+                      </span>
+                    </div>
+                  )}
                   
                   {problem.synonyms.length > 0 && (
                     <div className="mb-2">
