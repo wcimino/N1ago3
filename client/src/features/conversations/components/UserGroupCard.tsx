@@ -76,9 +76,10 @@ export function UserGroupCard({
         )}
         
         <div className="flex-1 min-w-0 space-y-2.5">
+          {/* Linha 1: nome, irritado, anonimo */}
           <div className="flex items-start gap-2">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h3 className="text-base font-semibold text-gray-900 truncate">
                   {getUserDisplayName(group)}
                 </h3>
@@ -86,6 +87,23 @@ export function UserGroupCard({
                   <span className="flex items-center gap-1 shrink-0">
                     <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                     <span className="text-xs font-medium text-green-600">{activeCount} ativa{activeCount > 1 ? "s" : ""}</span>
+                  </span>
+                )}
+                {emotion && (
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${emotion.bgColor} ${emotion.color}`}>
+                    <span>{emotion.emoji}</span>
+                    <span className="hidden sm:inline">{emotion.label}</span>
+                  </span>
+                )}
+                {group.user_info?.authenticated ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                    <UserCheck className="w-3 h-3" />
+                    <span className="hidden sm:inline">Autenticado</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200">
+                    <UserX className="w-3 h-3" />
+                    <span className="hidden sm:inline">Anônimo</span>
                   </span>
                 )}
               </div>
@@ -110,35 +128,7 @@ export function UserGroupCard({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5">
-            {emotion && (
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${emotion.bgColor} ${emotion.color}`}>
-                <span>{emotion.emoji}</span>
-                <span className="hidden sm:inline">{emotion.label}</span>
-              </span>
-            )}
-            
-            {group.user_info?.authenticated ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-                <UserCheck className="w-3 h-3" />
-                <span className="hidden sm:inline">Autenticado</span>
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200">
-                <UserX className="w-3 h-3" />
-                <span className="hidden sm:inline">Anônimo</span>
-              </span>
-            )}
-
-            <span className="inline-flex items-center gap-1 text-xs text-gray-500">
-              <MessageCircle className="w-3 h-3" />
-              <span>{group.conversation_count}</span>
-              {totalMessages > 0 && (
-                <span className="text-gray-400">• {totalMessages} msg</span>
-              )}
-            </span>
-          </div>
-
+          {/* Linha 2: cartao > cartao ... entrega ... */}
           {(productText || subjectText) && (
             <div className="flex flex-wrap gap-1.5">
               {productText && (
@@ -160,6 +150,7 @@ export function UserGroupCard({
             </div>
           )}
 
+          {/* Linha 3: data inicio, data ultima, conversas, mensagens */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
             <span className="inline-flex items-center gap-1">
               <Calendar className="w-3 h-3" />
@@ -168,6 +159,13 @@ export function UserGroupCard({
             <span className="inline-flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {formatDateTime(group.last_activity)}
+            </span>
+            <span className="inline-flex items-center gap-1 text-gray-500">
+              <MessageCircle className="w-3 h-3" />
+              <span>{group.conversation_count}</span>
+              {totalMessages > 0 && (
+                <span className="text-gray-400">• {totalMessages} msg</span>
+              )}
             </span>
           </div>
 
