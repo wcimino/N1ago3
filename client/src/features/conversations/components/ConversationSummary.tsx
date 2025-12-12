@@ -146,7 +146,7 @@ function TriageCard({ triage }: TriageCardProps) {
             <div className="flex flex-wrap gap-1 mt-1">
               {triage.objectiveProblems.map((problem, index) => (
                 <span key={index} className="px-2 py-0.5 bg-rose-100 text-rose-700 rounded text-xs">
-                  {problem}
+                  {typeof problem === 'string' ? problem : problem.name}
                 </span>
               ))}
             </div>

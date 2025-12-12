@@ -141,7 +141,7 @@ export interface TriageSeverity {
 
 export interface Triage {
   anamnese: TriageAnamnese;
-  objectiveProblems: string[];
+  objectiveProblems: (string | ObjectiveProblemIdentified)[];
   severity: TriageSeverity;
 }
 
