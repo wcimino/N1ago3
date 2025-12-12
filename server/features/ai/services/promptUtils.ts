@@ -7,6 +7,7 @@ export interface PromptVariables {
   mensagens?: string | null;
   resumoAtual?: string | null;
   catalogoProdutosSubprodutos?: string | null;
+  tipoSolicitacao?: string | null;
 }
 
 export function replacePromptVariables(
@@ -23,6 +24,7 @@ export function replacePromptVariables(
   result = result.replace(/\{\{HANDLER\}\}/g, variables.handler || 'Não identificado');
   result = result.replace(/\{\{MENSAGENS\}\}/g, variables.mensagens || variables.ultimas20Mensagens || 'Nenhuma mensagem disponível.');
   result = result.replace(/\{\{CATALOGO_PRODUTOS_SUBPRODUTOS\}\}/g, variables.catalogoProdutosSubprodutos || '[]');
+  result = result.replace(/\{\{TIPO_SOLICITACAO\}\}/g, variables.tipoSolicitacao || 'Não identificado');
 
   return result;
 }
@@ -149,4 +151,5 @@ export const AVAILABLE_VARIABLES = [
   { name: '{{MENSAGENS}}', description: 'Alias para {{ULTIMAS_20_MENSAGENS}}' },
   { name: '{{HANDLER}}', description: 'Quem está atendendo (bot/humano)' },
   { name: '{{CATALOGO_PRODUTOS_SUBPRODUTOS}}', description: 'Lista JSON de produtos e subprodutos do catálogo' },
+  { name: '{{TIPO_SOLICITACAO}}', description: 'Tipo de solicitação do cliente (Quer suporte/contratar/informações)' },
 ];

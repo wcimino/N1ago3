@@ -13,6 +13,7 @@ const AVAILABLE_VARIABLES = [
   { name: '{{MENSAGENS}}', description: 'Alias para {{ULTIMAS_20_MENSAGENS}}' },
   { name: '{{HANDLER}}', description: 'Quem está atendendo (bot/humano)' },
   { name: '{{CATALOGO_PRODUTOS_SUBPRODUTOS}}', description: 'Lista JSON de produtos e subprodutos do catálogo' },
+  { name: '{{TIPO_SOLICITACAO}}', description: 'Tipo de solicitação (Quer suporte/contratar/informações)' },
 ];
 
 export interface OpenaiConfigFormProps {
