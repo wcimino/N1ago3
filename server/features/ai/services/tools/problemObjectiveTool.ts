@@ -22,12 +22,12 @@ export function createProblemObjectiveTool(): ToolDefinition {
         },
         product: {
           type: "string",
-          description: "Nome do produto para filtrar (ex: 'Cartão de Crédito', 'Conta Digital')"
+          description: "Nome do produto (obrigatório). Ex: 'Cartão de Crédito', 'Conta Digital'"
         }
       },
-      required: []
+      required: ["product"]
     },
-    handler: async (args: { keywords?: string; product?: string }) => {
+    handler: async (args: { keywords?: string; product: string }) => {
       let productId: number | undefined;
 
       if (args.product) {
