@@ -128,6 +128,7 @@ export interface ConversationListResponse {
 
 export interface TriageAnamnese {
   customerMainComplaint: string | null;
+  customerRequestType: string | null;
   customerDeclaredObjective: string | null;
   customerDeclaredHypothesis: string | null;
   customerKeyContext: string[];

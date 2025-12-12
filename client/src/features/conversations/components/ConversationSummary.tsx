@@ -127,12 +127,38 @@ function TriageCard({ triage }: TriageCardProps) {
             <p className="text-gray-700 mt-0.5">{triage.anamnese.customerMainComplaint}</p>
           </div>
         )}
+
+        {triage.anamnese?.customerRequestType && (
+          <div>
+            <span className="font-medium text-gray-600">Tipo de solicitação</span>
+            <span className="text-gray-400 text-xs ml-1">(anamnese.customerRequestType)</span>
+            <p className="mt-0.5">
+              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                triage.anamnese.customerRequestType.toLowerCase().includes('suporte') 
+                  ? 'bg-orange-100 text-orange-700'
+                  : triage.anamnese.customerRequestType.toLowerCase().includes('contratar')
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-blue-100 text-blue-700'
+              }`}>
+                {triage.anamnese.customerRequestType}
+              </span>
+            </p>
+          </div>
+        )}
         
         {triage.anamnese?.customerDeclaredObjective && (
           <div>
             <span className="font-medium text-gray-600">Objetivo declarado</span>
             <span className="text-gray-400 text-xs ml-1">(anamnese.customerDeclaredObjective)</span>
             <p className="text-gray-700 mt-0.5">{triage.anamnese.customerDeclaredObjective}</p>
+          </div>
+        )}
+
+        {triage.anamnese?.customerDeclaredHypothesis && (
+          <div>
+            <span className="font-medium text-gray-600">Hipótese do cliente</span>
+            <span className="text-gray-400 text-xs ml-1">(anamnese.customerDeclaredHypothesis)</span>
+            <p className="text-gray-700 mt-0.5 italic">"{triage.anamnese.customerDeclaredHypothesis}"</p>
           </div>
         )}
 
