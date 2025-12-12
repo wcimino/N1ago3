@@ -1,11 +1,11 @@
-import { db } from "../../../db";
+import { db } from "../../../db.js";
 import { 
   knowledgeBaseObjectiveProblems, 
   knowledgeBaseObjectiveProblemsHasProductsCatalog,
   ifoodProducts,
   type KnowledgeBaseObjectiveProblem, 
   type InsertKnowledgeBaseObjectiveProblem 
-} from "../../../../shared/schema";
+} from "../../../../shared/schema.js";
 import { eq, inArray } from "drizzle-orm";
 
 export type ObjectiveProblemWithProducts = KnowledgeBaseObjectiveProblem & {
@@ -102,7 +102,7 @@ async function getProductIdsForProblem(problemId: number): Promise<number[]> {
     .from(knowledgeBaseObjectiveProblemsHasProductsCatalog)
     .where(eq(knowledgeBaseObjectiveProblemsHasProductsCatalog.objectiveProblemId, problemId));
   
-  return links.map(l => l.productId);
+  return links.map((l: typeof links[number]) => l.productId);
 }
 
 async function setProductsForProblem(problemId: number, productIds: number[]): Promise<void> {
