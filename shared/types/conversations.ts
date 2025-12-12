@@ -167,6 +167,7 @@ export interface ConversationSummary {
   current_status: string | null;
   important_info: string | null;
   customer_emotion_level: number | null;
+  customer_request_type: string | null;
   objective_problems: ObjectiveProblemIdentified[] | null;
   triage: Triage | null;
 }

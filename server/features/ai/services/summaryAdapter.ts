@@ -112,17 +112,8 @@ function parseStructuredSummary(responseContent: string): StructuredSummary | nu
       if (objectiveProblems.length === 0) objectiveProblems = undefined;
     }
 
-    const rawRequestType = parsed.customerRequestType || parsed.tipoSolicitacaoCliente || parsed.tipo_solicitacao_cliente ||
+    const customerRequestType = parsed.customerRequestType || parsed.tipoSolicitacaoCliente || parsed.tipo_solicitacao_cliente ||
       parsed.triage?.anamnese?.customerRequestType || undefined;
-    const requestTypeMap: Record<string, string> = {
-      'Suporte': 'Suporte',
-      'Informações': 'Informações',
-      'Contratação': 'Contratação',
-      'Quer suporte': 'Suporte',
-      'Quer contratar': 'Contratação',
-      'Quer informações': 'Informações',
-    };
-    const customerRequestType = rawRequestType && requestTypeMap[rawRequestType] ? requestTypeMap[rawRequestType] : undefined;
 
     return {
       clientRequest: parsed.clientRequest || parsed.solicitacaoCliente || parsed.solicitacao_cliente || undefined,

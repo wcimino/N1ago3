@@ -13,6 +13,7 @@ interface SummaryData {
   current_status?: string | null;
   important_info?: string | null;
   customer_emotion_level?: number | null;
+  customer_request_type?: string | null;
   objective_problems?: ObjectiveProblemIdentified[] | null;
   triage?: Triage | null;
 }
@@ -248,6 +249,25 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
                 {summary.confidence !== null && summary.confidence !== undefined && (
                   <span className="text-sm text-gray-500">
                     {summary.confidence}%
+                  </span>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500 min-w-[70px]">Tipo de conversa:</span>
+                {summary.customer_request_type ? (
+                  <span className={`px-2 py-0.5 rounded text-sm font-medium ${
+                    summary.customer_request_type.toLowerCase().includes('suporte') 
+                      ? 'bg-orange-100 text-orange-700'
+                      : summary.customer_request_type.toLowerCase().includes('contratar')
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {summary.customer_request_type}
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-sm font-medium">
+                    (vazio)
                   </span>
                 )}
               </div>

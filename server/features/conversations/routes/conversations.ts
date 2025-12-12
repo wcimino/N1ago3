@@ -165,6 +165,7 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
           current_status: summary.currentStatus,
           important_info: summary.importantInfo,
           customer_emotion_level: summary.customerEmotionLevel,
+          customer_request_type: summary.customerRequestType,
           objective_problems: summary.objectiveProblems || null,
           triage: extractTriageFromSummary(summary.summary),
         } : null,
