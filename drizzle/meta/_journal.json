@@ -85,6 +85,13 @@
       "when": 1765554155550,
       "tag": "0011_far_vision",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1765568104563,
+      "tag": "0012_cloudy_tarantula",
+      "breakpoints": true
     }
   ]
 }
