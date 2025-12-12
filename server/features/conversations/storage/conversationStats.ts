@@ -215,6 +215,117 @@ export const conversationStats = {
     };
   },
 
+  async getConversationsList(limit = 50, offset = 0, productStandardFilter?: string, intentFilter?: string, handlerFilter?: string, emotionLevelFilter?: number, clientFilter?: string, userAuthenticatedFilter?: string, handledByN1agoFilter?: string) {
+    const productCondition = productStandardFilter ? sql`AND COALESCE(cs.product_standard, cs.product) = ${productStandardFilter}` : sql``;
+    const intentCondition = intentFilter ? sql`AND cs.intent = ${intentFilter}` : sql``;
+    const emotionCondition = emotionLevelFilter ? sql`AND cs.customer_emotion_level = ${emotionLevelFilter}` : sql``;
+    
+    let handlerCondition = sql``;
+    if (handlerFilter === 'bot') {
+      handlerCondition = sql`AND (LOWER(c.current_handler_name) LIKE '%answerbot%' OR LOWER(c.current_handler_name) LIKE '%zd-answerbot%')`;
+    } else if (handlerFilter === 'human') {
+      handlerCondition = sql`AND (LOWER(c.current_handler_name) LIKE '%agentworkspace%' OR LOWER(c.current_handler_name) LIKE '%zd-agentworkspace%')`;
+    } else if (handlerFilter === 'n1ago') {
+      handlerCondition = sql`AND LOWER(c.current_handler_name) LIKE '%n1ago%'`;
+    }
+
+    let userAuthenticatedCondition = sql``;
+    if (userAuthenticatedFilter === 'authenticated') {
+      userAuthenticatedCondition = sql`AND u.authenticated = true`;
+    } else if (userAuthenticatedFilter === 'not_authenticated') {
+      userAuthenticatedCondition = sql`AND (u.authenticated = false OR u.authenticated IS NULL)`;
+    }
+
+    let handledByN1agoCondition = sql``;
+    if (handledByN1agoFilter === 'yes') {
+      handledByN1agoCondition = sql`AND c.handled_by_n1ago = true`;
+    }
+
+    const clientSearchPattern = clientFilter ? `%${clientFilter}%` : null;
+    const clientCondition = clientFilter ? sql`AND (
+      c.user_id ILIKE ${clientSearchPattern}
+      OR u.profile->>'givenName' ILIKE ${clientSearchPattern}
+      OR u.profile->>'surname' ILIKE ${clientSearchPattern}
+      OR u.profile->>'email' ILIKE ${clientSearchPattern}
+      OR CONCAT(u.profile->>'givenName', ' ', u.profile->>'surname') ILIKE ${clientSearchPattern}
+    )` : sql``;
+
+    const conversationsResult = await db.execute(sql`
+      WITH message_count_per_conv AS (
+        SELECT 
+          conversation_id,
+          COUNT(*) as message_count
+        FROM events_standard
+        WHERE event_type = 'message'
+        GROUP BY conversation_id
+      ),
+      last_message_per_conv AS (
+        SELECT 
+          conversation_id,
+          MAX(occurred_at) as last_message_at
+        FROM events_standard
+        WHERE event_type = 'message'
+        GROUP BY conversation_id
+      )
+      SELECT 
+        c.id,
+        c.external_conversation_id,
+        c.user_id,
+        c.status,
+        TO_CHAR(c.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
+        TO_CHAR(COALESCE(lm.last_message_at, c.created_at), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at,
+        TO_CHAR(c.closed_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as closed_at,
+        c.closed_reason,
+        c.current_handler,
+        c.current_handler_name,
+        COALESCE(mc.message_count, 0) as message_count,
+        COALESCE(cs.product_standard, cs.product) as product_standard,
+        cs.subproduct as subproduct_standard,
+        cs.subject,
+        cs.intent,
+        cs.customer_emotion_level,
+        u.id as user_db_id,
+        u.external_id as user_external_id,
+        u.authenticated as user_authenticated,
+        u.profile as user_profile
+      FROM conversations c
+      LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
+      LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
+      LEFT JOIN message_count_per_conv mc ON mc.conversation_id = c.id
+      LEFT JOIN users u ON c.user_id = u.sunshine_id
+      WHERE c.user_id IS NOT NULL
+        ${productCondition}
+        ${intentCondition}
+        ${handlerCondition}
+        ${emotionCondition}
+        ${clientCondition}
+        ${userAuthenticatedCondition}
+        ${handledByN1agoCondition}
+      ORDER BY COALESCE(lm.last_message_at, c.created_at) DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `);
+
+    const countResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM conversations c
+      LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
+      LEFT JOIN users u ON c.user_id = u.sunshine_id
+      WHERE c.user_id IS NOT NULL
+        ${productCondition}
+        ${intentCondition}
+        ${handlerCondition}
+        ${emotionCondition}
+        ${clientCondition}
+        ${userAuthenticatedCondition}
+        ${handledByN1agoCondition}
+    `);
+
+    return { 
+      conversations: conversationsResult.rows as any[], 
+      total: Number((countResult.rows[0] as any).count) 
+    };
+  },
+
   async getUserConversationsWithMessages(userId: string) {
     const result = await db.execute(sql`
       SELECT 

@@ -94,6 +94,38 @@ export interface GroupedConversationsResponse {
   user_groups: UserGroup[];
 }
 
+export interface ConversationListItem {
+  id: number;
+  external_conversation_id: string;
+  user_id: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  closed_at: string | null;
+  closed_reason: string | null;
+  current_handler: string | null;
+  current_handler_name: string | null;
+  message_count: number;
+  product_standard: string | null;
+  subproduct_standard: string | null;
+  subject: string | null;
+  intent: string | null;
+  customer_emotion_level: number | null;
+  user_info: {
+    id: number;
+    external_id: string | null;
+    authenticated: boolean;
+    profile: UserProfile | null;
+  } | null;
+}
+
+export interface ConversationListResponse {
+  total: number;
+  offset: number;
+  limit: number;
+  conversations: ConversationListItem[];
+}
+
 export interface ConversationSummary {
   text: string;
   generated_at: string | null;

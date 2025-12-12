@@ -5,10 +5,10 @@ import { Users, MessageCircle, Bot, Brain, UserCircle, Settings2, Star } from "l
 import { LoadingState, EmptyState, Pagination, PageHeader } from "../../../shared/components/ui";
 import { useDateFormatters, usePaginatedQuery } from "../../../shared/hooks";
 import { fetchApi } from "../../../lib/queryClient";
-import { FilterBar, UserGroupCard } from "../components";
+import { FilterBar, ConversationCard } from "../components";
 import { RoutingRulesContent } from "../../routing/components/RoutingRulesContent";
 import { FavoritosContent, useFavorites } from "../../favorites";
-import type { UserGroup } from "../../../types";
+import type { ConversationListItem } from "../../../types";
 
 interface FiltersResponse {
   productStandards: string[];
@@ -84,11 +84,11 @@ export function AtendimentosPage() {
     if (userAuthenticatedFilter) params.set("userAuthenticated", userAuthenticatedFilter);
     if (handledByN1agoFilter) params.set("handledByN1ago", handledByN1agoFilter);
     const queryString = params.toString();
-    return queryString ? `/api/conversations/grouped?${queryString}` : "/api/conversations/grouped";
+    return queryString ? `/api/conversations/list?${queryString}` : "/api/conversations/list";
   }, [productStandardFilter, intentFilter, handlerFilter, emotionLevelFilter, clientFilterDebounced, userAuthenticatedFilter, handledByN1agoFilter]);
 
   const {
-    data: userGroups,
+    data: conversations,
     total,
     page,
     totalPages,
@@ -99,11 +99,11 @@ export function AtendimentosPage() {
     hasPreviousPage,
     showingFrom,
     showingTo,
-  } = usePaginatedQuery<UserGroup>({
-    queryKey: `conversations-grouped-${productStandardFilter}-${intentFilter}-${handlerFilter}-${emotionLevelFilter}-${clientFilterDebounced}-${userAuthenticatedFilter}-${handledByN1agoFilter}`,
+  } = usePaginatedQuery<ConversationListItem>({
+    queryKey: `conversations-list-${productStandardFilter}-${intentFilter}-${handlerFilter}-${emotionLevelFilter}-${clientFilterDebounced}-${userAuthenticatedFilter}-${handledByN1agoFilter}`,
     endpoint,
     limit: 20,
-    dataKey: "user_groups",
+    dataKey: "conversations",
   });
 
   const hasFilters = productStandardFilter || intentFilter || emotionLevelFilter || clientFilterInput || userAuthenticatedFilter || handledByN1agoFilter;
@@ -186,7 +186,7 @@ export function AtendimentosPage() {
 
           {isLoading ? (
             <LoadingState />
-          ) : userGroups.length === 0 ? (
+          ) : conversations.length === 0 ? (
             <EmptyState
               icon={<MessageCircle className="w-12 h-12 text-gray-300" />}
               title={hasFilters ? "Nenhum resultado encontrado." : "Nenhuma conversa registrada ainda."}
@@ -199,11 +199,11 @@ export function AtendimentosPage() {
           ) : (
             <>
               <div className="divide-y divide-gray-200">
-                {userGroups.map((group) => (
-                  <UserGroupCard
-                    key={group.user_id}
-                    group={group}
-                    onViewConversations={(userId) => navigate(`/atendimentos/${encodeURIComponent(userId)}`)}
+                {conversations.map((conversation) => (
+                  <ConversationCard
+                    key={conversation.id}
+                    conversation={conversation}
+                    onViewConversation={(userId) => navigate(`/atendimentos/${encodeURIComponent(userId)}`)}
                     formatDateTime={formatShortDateTime}
                     favoriteIds={favoriteIds}
                     onToggleFavorite={toggleFavorite}
@@ -222,7 +222,7 @@ export function AtendimentosPage() {
                 onNextPage={nextPage}
                 hasPreviousPage={hasPreviousPage}
                 hasNextPage={hasNextPage}
-                itemLabel="usuários"
+                itemLabel="conversas"
               />
             </>
           )}

@@ -59,6 +59,52 @@ router.get("/api/conversations/grouped", isAuthenticated, requireAuthorizedUser,
   });
 });
 
+router.get("/api/conversations/list", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  const limit = parseInt(req.query.limit as string) || 50;
+  const offset = parseInt(req.query.offset as string) || 0;
+  const productStandard = req.query.productStandard as string | undefined;
+  const intent = req.query.intent as string | undefined;
+  const handler = req.query.handler as string | undefined;
+  const emotionLevel = req.query.emotionLevel ? parseInt(req.query.emotionLevel as string) : undefined;
+  const client = req.query.client as string | undefined;
+  const userAuthenticated = req.query.userAuthenticated as string | undefined;
+  const handledByN1ago = req.query.handledByN1ago as string | undefined;
+
+  const { conversations, total } = await storage.getConversationsList(limit, offset, productStandard, intent, handler, emotionLevel, client, userAuthenticated, handledByN1ago);
+
+  const enrichedConversations = conversations.map((conv: any) => ({
+    id: conv.id,
+    external_conversation_id: conv.external_conversation_id,
+    user_id: conv.user_id,
+    status: conv.status,
+    created_at: conv.created_at,
+    updated_at: conv.updated_at,
+    closed_at: conv.closed_at,
+    closed_reason: conv.closed_reason,
+    current_handler: conv.current_handler,
+    current_handler_name: conv.current_handler_name,
+    message_count: Number(conv.message_count),
+    product_standard: conv.product_standard || null,
+    subproduct_standard: conv.subproduct_standard || null,
+    subject: conv.subject || null,
+    intent: conv.intent || null,
+    customer_emotion_level: conv.customer_emotion_level || null,
+    user_info: conv.user_db_id ? {
+      id: conv.user_db_id,
+      external_id: conv.user_external_id,
+      authenticated: conv.user_authenticated || false,
+      profile: conv.user_profile,
+    } : null,
+  }));
+
+  res.json({
+    total,
+    offset,
+    limit,
+    conversations: enrichedConversations,
+  });
+});
+
 router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const result = await storage.getUserConversationsWithMessages(req.params.userId);
 
