@@ -371,6 +371,25 @@ export const knowledgeBaseEmbeddings = pgTable("knowledge_base_embeddings", {
   contentHashIdx: index("idx_knowledge_base_embeddings_content_hash").on(table.contentHash),
 }));
 
+export const knowledgeBaseObjectiveProblems = pgTable("knowledge_base_objective_problems", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description").notNull(),
+  synonyms: json("synonyms").$type<string[]>().default([]),
+  examples: json("examples").$type<string[]>().default([]),
+  presentedBy: text("presented_by").notNull().default("customer"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  nameIdx: uniqueIndex("idx_kb_objective_problems_name").on(table.name),
+  presentedByIdx: index("idx_kb_objective_problems_presented_by").on(table.presentedBy),
+  isActiveIdx: index("idx_kb_objective_problems_is_active").on(table.isActive),
+}));
+
+export type KnowledgeBaseObjectiveProblem = typeof knowledgeBaseObjectiveProblems.$inferSelect;
+export type InsertKnowledgeBaseObjectiveProblem = typeof knowledgeBaseObjectiveProblems.$inferInsert;
+
 export const ifoodProducts = pgTable("products_catalog", {
   id: serial("id").primaryKey(),
   produto: text("produto").notNull(),

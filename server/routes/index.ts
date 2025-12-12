@@ -25,6 +25,7 @@ import enrichmentRoutes from "../features/ai/routes/enrichment.js";
 import enrichmentLogsRoutes from "../features/ai/routes/enrichmentLogs.js";
 import knowledgeSubjectsRoutes from "../features/knowledge/routes/knowledgeSubjectsRoutes.js";
 import knowledgeIntentsRoutes from "../features/knowledge/routes/knowledgeIntentsRoutes.js";
+import objectiveProblemsRoutes from "../features/knowledge/routes/objectiveProblemsRoutes.js";
 
 import maintenanceRoutes from "../features/maintenance/routes/maintenance.js";
 import { zendeskArticlesRouter } from "../features/external-sources/zendesk/index.js";
@@ -55,6 +56,7 @@ export function registerRoutes(app: Express) {
   app.use(enrichmentLogsRoutes);
   app.use(knowledgeSubjectsRoutes);
   app.use(knowledgeIntentsRoutes);
+  app.use(objectiveProblemsRoutes);
   app.use("/api/zendesk-articles", zendeskArticlesRouter);
   app.use(routingRulesRoutes);
   app.use(transferRoutes);
