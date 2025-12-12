@@ -67,6 +67,7 @@ export const knowledgeSuggestionsStorage = {
     if (!suggestion) return null;
 
     await knowledgeBaseStorage.createArticle({
+      name: suggestion.name || null,
       productStandard: suggestion.productStandard || "Não classificado",
       subproductStandard: suggestion.subproductStandard,
       description: suggestion.description || "",
