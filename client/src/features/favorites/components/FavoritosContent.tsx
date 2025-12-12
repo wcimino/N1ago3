@@ -3,29 +3,47 @@ import { Star, MessageCircle } from "lucide-react";
 import { useFavorites } from "../hooks/useFavorites";
 import { LoadingState, EmptyState } from "../../../shared/components/ui";
 import { useDateFormatters } from "../../../shared/hooks";
-import { HandlerBadge } from "../../../shared/components/badges/HandlerBadge";
+import { HandlerBadge, ConversationStatusBadge } from "../../../shared/components/badges";
 import { FavoriteButton } from "./FavoriteButton";
 
-export function FavoritosContent() {
+interface FavoritosContentProps {
+  showHeader?: boolean;
+}
+
+export function FavoritosContent({ showHeader = false }: FavoritosContentProps) {
   const [, navigate] = useLocation();
   const { favorites, isLoading, toggleFavorite, isToggling } = useFavorites();
-  const { formatShortDateTime } = useDateFormatters();
+  const { formatDateTime } = useDateFormatters();
 
   if (isLoading) {
-    return <LoadingState />;
+    return showHeader ? (
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <FavoritosHeader />
+        <LoadingState />
+      </div>
+    ) : (
+      <LoadingState />
+    );
   }
 
   if (favorites.length === 0) {
-    return (
+    const emptyContent = (
       <EmptyState
         icon={<Star className="w-12 h-12 text-gray-300" />}
         title="Nenhum favorito ainda"
         description="Clique na estrela ao lado de um atendimento para marcá-lo como favorito"
       />
     );
+    
+    return showHeader ? (
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <FavoritosHeader />
+        {emptyContent}
+      </div>
+    ) : emptyContent;
   }
 
-  return (
+  const content = (
     <div className="divide-y divide-gray-200">
       {favorites.map((favorite) => (
         <div key={favorite.favoriteId} className="p-4 hover:bg-gray-50 transition-colors">
@@ -37,16 +55,12 @@ export function FavoritosContent() {
                 <span className="font-medium text-gray-900 truncate">
                   {favorite.userExternalId || favorite.userId || favorite.externalConversationId}
                 </span>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                  favorite.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"
-                }`}>
-                  {favorite.status === "active" ? "Ativa" : "Fechada"}
-                </span>
+                <ConversationStatusBadge status={favorite.status} />
               </div>
               <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
                 <span>ID: {favorite.externalConversationId.slice(0, 12)}...</span>
-                <span>Criado: {formatShortDateTime(favorite.createdAt)}</span>
-                <span>Favoritado: {formatShortDateTime(favorite.favoritedAt)}</span>
+                <span>Criado: {formatDateTime(favorite.createdAt)}</span>
+                <span>Favoritado: {formatDateTime(favorite.favoritedAt)}</span>
               </div>
             </div>
 
@@ -68,6 +82,25 @@ export function FavoritosContent() {
           </div>
         </div>
       ))}
+    </div>
+  );
+
+  return showHeader ? (
+    <div className="bg-white rounded-lg shadow overflow-hidden">
+      <FavoritosHeader />
+      {content}
+    </div>
+  ) : content;
+}
+
+function FavoritosHeader() {
+  return (
+    <div className="px-4 py-3 border-b">
+      <div className="flex items-center gap-2">
+        <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+        <h2 className="text-lg font-semibold text-gray-900">Favoritos</h2>
+      </div>
+      <p className="text-sm text-gray-500 mt-1">Atendimentos marcados como favoritos</p>
     </div>
   );
 }

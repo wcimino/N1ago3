@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Power, PowerOff, Play, Clock, MessageSquareX } from "lucide-react";
 import { useLocation } from "wouter";
+import { LoadingState } from "../../../shared/components/ui";
 
 interface AutoCloseStatus {
   enabled: boolean;
@@ -46,11 +47,7 @@ export function AutoClosePage() {
   });
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-      </div>
-    );
+    return <LoadingState />;
   }
 
   return (

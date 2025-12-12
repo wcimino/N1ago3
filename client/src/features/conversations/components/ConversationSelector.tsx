@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ConversationStatusBadge } from "../../../shared/components/badges";
 
 interface ConversationSelectorProps {
   selectedIndex: number;
@@ -9,13 +10,6 @@ interface ConversationSelectorProps {
   onPrevious: () => void;
   onNext: () => void;
 }
-
-const closedReasonLabels: Record<string, string> = {
-  inactivity: "inatividade",
-  new_conversation: "nova conversa",
-  manual: "manual",
-  external: "sistema externo",
-};
 
 export function ConversationSelector({
   selectedIndex,
@@ -40,17 +34,12 @@ export function ConversationSelector({
         <p className="text-sm font-medium text-gray-900">
           Conversa {selectedIndex + 1} de {totalCount}
         </p>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-500 flex items-center justify-center gap-2">
           {formattedDate}
-          {isActive ? (
-            <span className="ml-2 px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs">
-              ativa
-            </span>
-          ) : (
-            <span className="ml-2 px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
-              encerrada{closedReason && ` (${closedReasonLabels[closedReason] || closedReason})`}
-            </span>
-          )}
+          <ConversationStatusBadge 
+            status={isActive ? "active" : "closed"} 
+            closedReason={closedReason} 
+          />
         </p>
       </div>
       

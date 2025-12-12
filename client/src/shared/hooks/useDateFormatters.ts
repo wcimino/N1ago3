@@ -2,10 +2,8 @@ import { useCallback } from "react";
 import { useTimezone } from "../../contexts/TimezoneContext";
 import {
   formatDateTime as formatDateTimeBase,
-  formatDateTimeShort as formatDateTimeShortBase,
   formatDateTimeWithPrefix as formatDateTimeWithPrefixBase,
   formatDate as formatDateBase,
-  formatShortDateTime as formatShortDateTimeBase,
   formatRelativeTime,
   formatTime as formatTimeBase,
 } from "../../lib/dateUtils";
@@ -15,11 +13,6 @@ export function useDateFormatters() {
 
   const formatDateTime = useCallback(
     (date: string | Date) => formatDateTimeBase(date, timezone),
-    [timezone]
-  );
-
-  const formatDateTimeShort = useCallback(
-    (date: string | Date) => formatDateTimeShortBase(date, timezone),
     [timezone]
   );
 
@@ -33,11 +26,6 @@ export function useDateFormatters() {
     [timezone]
   );
 
-  const formatShortDateTime = useCallback(
-    (date: string | Date) => formatShortDateTimeBase(date, timezone),
-    [timezone]
-  );
-
   const formatTime = useCallback(
     (date: string | Date) => formatTimeBase(date, timezone),
     [timezone]
@@ -46,10 +34,12 @@ export function useDateFormatters() {
   return {
     timezone,
     formatDateTime,
-    formatDateTimeShort,
+    /** @deprecated Use formatDateTime instead */
+    formatDateTimeShort: formatDateTime,
     formatDateTimeWithPrefix,
     formatDate,
-    formatShortDateTime,
+    /** @deprecated Use formatDateTime instead */
+    formatShortDateTime: formatDateTime,
     formatRelativeTime,
     formatTime,
   };

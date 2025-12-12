@@ -12,9 +12,11 @@ export function formatDateTime(date: string | Date, timezone: string = DEFAULT_T
   return formatInTimeZone(toDate(date), timezone, "dd/MM/yyyy HH:mm", { locale: ptBR });
 }
 
-export function formatDateTimeShort(date: string | Date, timezone: string = DEFAULT_TIMEZONE): string {
-  return formatInTimeZone(toDate(date), timezone, "dd/MM/yyyy HH:mm", { locale: ptBR });
-}
+/** @deprecated Use formatDateTime instead */
+export const formatDateTimeShort = formatDateTime;
+
+/** @deprecated Use formatDateTime instead */
+export const formatShortDateTime = formatDateTime;
 
 export function formatDateTimeWithPrefix(date: string | Date, timezone: string = DEFAULT_TIMEZONE): string {
   return formatInTimeZone(toDate(date), timezone, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
@@ -22,10 +24,6 @@ export function formatDateTimeWithPrefix(date: string | Date, timezone: string =
 
 export function formatDate(date: string | Date, timezone: string = DEFAULT_TIMEZONE): string {
   return formatInTimeZone(toDate(date), timezone, "dd/MM/yyyy", { locale: ptBR });
-}
-
-export function formatShortDateTime(date: string | Date, timezone: string = DEFAULT_TIMEZONE): string {
-  return formatInTimeZone(toDate(date), timezone, "dd/MM/yyyy HH:mm", { locale: ptBR });
 }
 
 export function formatRelativeTime(date: string | Date): string {
