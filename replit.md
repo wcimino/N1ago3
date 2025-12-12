@@ -26,6 +26,7 @@ The React frontend provides a real-time dashboard for events and conversations, 
 
 *   **Webhook Ingestion & Conversation Storage:** Receives, logs, processes, and stores conversation data and events in PostgreSQL.
 *   **Real-time Dashboard:** Live view of events, metrics, and management of users/webhooks.
+*   **Atendimentos Listing:** Individual conversations displayed without user grouping. Uses `/api/conversations/list` endpoint with full filtering support (product, intent, handler, emotion level, client search, authentication status). Pagination shows total conversations.
 *   **User Management:** Secure authentication and authorization with domain and user-list restrictions.
 *   **Extensibility:** Designed for easy integration of new communication channels.
 *   **AI Integrations:** Includes Conversation Summaries, Product Classification, API Logging, and Configurable Triggers.
