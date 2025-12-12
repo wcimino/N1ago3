@@ -173,6 +173,15 @@ export function ObjectiveProblemsPage() {
       .join(", ");
   };
 
+  const groupedProducts = products.reduce((acc, product) => {
+    const mainProduct = product.produto;
+    if (!acc[mainProduct]) {
+      acc[mainProduct] = [];
+    }
+    acc[mainProduct].push(product);
+    return acc;
+  }, {} as Record<string, Product[]>);
+
   const presentedByLabels = {
     customer: "Cliente",
     system: "Sistema",
@@ -220,24 +229,35 @@ export function ObjectiveProblemsPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Produtos relacionados (opcional)
             </label>
-            <div className="border border-gray-300 rounded-lg max-h-48 overflow-y-auto p-2">
+            <div className="border border-gray-300 rounded-lg max-h-64 overflow-y-auto p-2">
               {products.length === 0 ? (
                 <p className="text-sm text-gray-500 text-center py-2">Nenhum produto disponível</p>
               ) : (
-                <div className="space-y-1">
-                  {products.map((product) => (
-                    <label
-                      key={product.id}
-                      className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.productIds.includes(product.id)}
-                        onChange={() => toggleProduct(product.id)}
-                        className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                      />
-                      <span className="text-sm text-gray-700">{product.fullName}</span>
-                    </label>
+                <div className="space-y-2">
+                  {Object.entries(groupedProducts).map(([mainProduct, subProducts]) => (
+                    <div key={mainProduct}>
+                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 py-1 bg-gray-50 rounded">
+                        {mainProduct}
+                      </div>
+                      <div className="ml-2 mt-1 space-y-0.5">
+                        {subProducts.map((product) => (
+                          <label
+                            key={product.id}
+                            className="flex items-center gap-2 p-1.5 hover:bg-gray-50 rounded cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formData.productIds.includes(product.id)}
+                              onChange={() => toggleProduct(product.id)}
+                              className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                            />
+                            <span className="text-sm text-gray-700">
+                              {product.subproduto || "(geral)"}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
