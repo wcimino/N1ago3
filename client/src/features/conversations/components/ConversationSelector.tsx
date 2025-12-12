@@ -29,14 +29,14 @@ export function ConversationSelector({
         <button
           onClick={onPrevious}
           disabled={selectedIndex === 0}
-          className="p-2 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="p-2 rounded-lg border border-gray-300 hover:border-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronLeft className="w-4 h-4 text-gray-600" />
         </button>
         <button
           onClick={onNext}
           disabled={selectedIndex === totalCount - 1}
-          className="p-2 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="p-2 rounded-lg border border-gray-300 hover:border-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronRight className="w-4 h-4 text-gray-600" />
         </button>
