@@ -9,6 +9,8 @@ import { ConversationSelector, ConversationSummary, ConversationChat, TransferCo
 import { useResizablePanel, useDateFormatters } from "../../../shared/hooks";
 import { fetchApi, apiRequest } from "../../../lib/queryClient";
 import { getUserDisplayNameFromProfile } from "../../../lib/userUtils";
+import { FavoriteButton } from "../../favorites/components/FavoriteButton";
+import { useFavorites } from "../../favorites/hooks/useFavorites";
 
 interface UserConversationsPageProps {
   params: { userId: string };
@@ -35,6 +37,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
   });
 
   const queryClient = useQueryClient();
+  const { isFavorite, toggleFavorite, isToggling } = useFavorites();
 
   const { data, isLoading, error } = useQuery<UserConversationsMessagesResponse>({
     queryKey: ["user-conversations-messages", userId],
@@ -125,6 +128,13 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
             )}
           </button>
         )}
+        <FavoriteButton
+          conversationId={selectedConversation.conversation.id}
+          isFavorite={isFavorite(selectedConversation.conversation.id)}
+          onToggle={() => toggleFavorite(selectedConversation.conversation.id)}
+          isLoading={isToggling}
+          size="sm"
+        />
         <button
           onClick={() => setShowTransferModal(true)}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-purple-600 hover:text-purple-700 border border-purple-200 hover:border-purple-300 rounded-lg hover:bg-purple-50 transition-colors"
