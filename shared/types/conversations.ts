@@ -126,6 +126,25 @@ export interface ConversationListResponse {
   conversations: ConversationListItem[];
 }
 
+export interface TriageAnamnese {
+  customerMainComplaint: string | null;
+  customerDeclaredObjective: string | null;
+  customerDeclaredHypothesis: string | null;
+  customerKeyContext: string[];
+}
+
+export interface TriageSeverity {
+  level: "low" | "medium" | "high" | "critical" | string;
+  redFlags: string[];
+  rationale: string | null;
+}
+
+export interface Triage {
+  anamnese: TriageAnamnese;
+  objectiveProblems: string[];
+  severity: TriageSeverity;
+}
+
 export interface ConversationSummary {
   text: string;
   generated_at: string | null;
@@ -141,6 +160,7 @@ export interface ConversationSummary {
   current_status: string | null;
   important_info: string | null;
   customer_emotion_level: number | null;
+  triage: Triage | null;
 }
 
 export interface ArticleUsed {

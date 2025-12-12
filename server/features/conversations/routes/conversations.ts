@@ -1,6 +1,22 @@
 import { Router, type Request, type Response } from "express";
 import { storage } from "../../../storage.js";
 import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
+import type { Triage } from "../../../../shared/types/index.js";
+
+function extractTriageFromSummary(summaryJson: string | null): Triage | null {
+  if (!summaryJson) return null;
+  try {
+    const jsonMatch = summaryJson.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (parsed.triage && typeof parsed.triage === 'object') {
+      return parsed.triage as Triage;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 const router = Router();
 
@@ -149,6 +165,7 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
           current_status: summary.currentStatus,
           important_info: summary.importantInfo,
           customer_emotion_level: summary.customerEmotionLevel,
+          triage: extractTriageFromSummary(summary.summary),
         } : null,
         suggested_responses: suggestedResponses.map(sr => ({
           text: sr.suggestedResponse,
