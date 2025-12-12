@@ -12,6 +12,9 @@ export type {
   SuggestedResponse,
   ConversationWithMessages,
   UserConversationsMessagesResponse,
+  Triage,
+  TriageAnamnese,
+  TriageSeverity,
 } from "../../../../../shared/types";
 
 export type { UserProfile } from "../../../../../shared/types";

@@ -1,4 +1,5 @@
-import { Sparkles, User, Headphones, Clock, Info } from "lucide-react";
+import { Sparkles, User, Headphones, Clock, Info, Cross } from "lucide-react";
+import type { Triage } from "../types/conversations";
 
 interface SummaryData {
   product?: string | null;
@@ -12,6 +13,7 @@ interface SummaryData {
   current_status?: string | null;
   important_info?: string | null;
   customer_emotion_level?: number | null;
+  triage?: Triage | null;
 }
 
 const emotionConfig: Record<number, { label: string; color: string; emoji: string }> = {
@@ -47,8 +49,86 @@ function SummaryCardItem({ icon, title, content, bgColor, borderColor, iconColor
   );
 }
 
+const severityConfig: Record<string, { label: string; color: string }> = {
+  low: { label: "Baixa", color: "bg-green-100 text-green-700" },
+  medium: { label: "Média", color: "bg-yellow-100 text-yellow-700" },
+  high: { label: "Alta", color: "bg-orange-100 text-orange-700" },
+  critical: { label: "Crítica", color: "bg-red-100 text-red-700" },
+};
+
+interface TriageCardProps {
+  triage: Triage;
+}
+
+function TriageCard({ triage }: TriageCardProps) {
+  const severity = severityConfig[triage.severity?.level] || { label: triage.severity?.level || "Desconhecida", color: "bg-gray-100 text-gray-700" };
+  
+  return (
+    <div className="rounded-lg p-3 bg-rose-50 border border-rose-200">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="text-rose-600">
+          <Cross className="w-4 h-4" />
+        </div>
+        <h4 className="font-medium text-gray-800 text-sm">Triagem</h4>
+        <span className={`ml-auto px-2 py-0.5 rounded text-xs font-medium ${severity.color}`}>
+          {severity.label}
+        </span>
+      </div>
+      
+      <div className="space-y-2 text-sm">
+        {triage.anamnese?.customerMainComplaint && (
+          <div>
+            <span className="font-medium text-gray-600">Queixa principal:</span>
+            <p className="text-gray-700 mt-0.5">{triage.anamnese.customerMainComplaint}</p>
+          </div>
+        )}
+        
+        {triage.anamnese?.customerDeclaredObjective && (
+          <div>
+            <span className="font-medium text-gray-600">Objetivo declarado:</span>
+            <p className="text-gray-700 mt-0.5">{triage.anamnese.customerDeclaredObjective}</p>
+          </div>
+        )}
+        
+        {triage.objectiveProblems && triage.objectiveProblems.length > 0 && (
+          <div>
+            <span className="font-medium text-gray-600">Problemas identificados:</span>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {triage.objectiveProblems.map((problem, index) => (
+                <span key={index} className="px-2 py-0.5 bg-rose-100 text-rose-700 rounded text-xs">
+                  {problem.replace(/_/g, " ")}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {triage.severity?.redFlags && triage.severity.redFlags.length > 0 && (
+          <div>
+            <span className="font-medium text-gray-600">Red flags:</span>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {triage.severity.redFlags.map((flag, index) => (
+                <span key={index} className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs">
+                  {flag.replace(/_/g, " ")}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {triage.severity?.rationale && (
+          <div>
+            <span className="font-medium text-gray-600">Justificativa:</span>
+            <p className="text-gray-700 mt-0.5 italic">{triage.severity.rationale}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function ConversationSummary({ summary }: ConversationSummaryProps) {
-  const hasStructuredData = summary?.client_request || summary?.agent_actions || summary?.current_status || summary?.important_info;
+  const hasStructuredData = summary?.client_request || summary?.agent_actions || summary?.current_status || summary?.important_info || summary?.triage;
 
   return (
     <div className="flex-1 overflow-y-auto p-4">
@@ -143,6 +223,10 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
                     borderColor="border-purple-200"
                     iconColor="text-purple-600"
                   />
+                )}
+                
+                {summary.triage && (
+                  <TriageCard triage={summary.triage} />
                 )}
               </div>
             ) : summary.text ? (
