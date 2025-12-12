@@ -71,6 +71,12 @@ export function mapMessageEvents(payload: any, root: any, source: string): Stand
         ? { actions: content.actions } 
         : null;
 
+    // For file/image messages, use altText or text as contentText fallback
+    let contentText = content.text;
+    if (!contentText && (content.type === "file" || content.type === "image")) {
+      contentText = content.altText || content.name || null;
+    }
+
     events.push({
       eventType: "message",
       eventSubtype: content.type || "text",
@@ -81,7 +87,7 @@ export function mapMessageEvents(payload: any, root: any, source: string): Stand
       authorType: mapAuthorType(author.type),
       authorId,
       authorName,
-      contentText: content.text,
+      contentText,
       contentPayload,
       occurredAt: message.received ? new Date(message.received) : new Date(),
       channelType: "chat",
