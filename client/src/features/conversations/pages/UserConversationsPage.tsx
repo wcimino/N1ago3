@@ -103,6 +103,13 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
     if (!selectedConversation) return null;
     return (
       <>
+        <FavoriteButton
+          conversationId={selectedConversation.conversation.id}
+          isFavorite={isFavorite(selectedConversation.conversation.id)}
+          onToggle={() => toggleFavorite(selectedConversation.conversation.id)}
+          isLoading={isToggling}
+          size="sm"
+        />
         <HandlerBadge 
           handlerName={selectedConversation.conversation.current_handler_name} 
           size="sm" 
@@ -128,13 +135,6 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
             )}
           </button>
         )}
-        <FavoriteButton
-          conversationId={selectedConversation.conversation.id}
-          isFavorite={isFavorite(selectedConversation.conversation.id)}
-          onToggle={() => toggleFavorite(selectedConversation.conversation.id)}
-          isLoading={isToggling}
-          size="sm"
-        />
         <button
           onClick={() => setShowTransferModal(true)}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-purple-600 hover:text-purple-700 border border-purple-200 hover:border-purple-300 rounded-lg hover:bg-purple-50 transition-colors"
