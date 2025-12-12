@@ -237,14 +237,14 @@ export async function searchObjectiveProblems(
   }
 
   const allProducts = await db.select().from(ifoodProducts);
-  const productMap = new Map(allProducts.map(p => [p.id, p.fullName]));
+  const productMap = new Map(allProducts.map((p: typeof allProducts[number]) => [p.id, p.fullName]));
 
   const searchTerms = keywords 
     ? keywords.split(/\s+/).filter(t => t.length >= 2)
     : [];
 
   const results: ObjectiveProblemSearchResult[] = await Promise.all(
-    problems.map(async (problem) => {
+    problems.map(async (problem: KnowledgeBaseObjectiveProblem) => {
       const productIds = await getProductIdsForProblem(problem.id);
       const productNames = productIds.map(id => productMap.get(id) || "").filter(Boolean);
       
