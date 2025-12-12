@@ -23,6 +23,14 @@ export interface AgentConfigMetadata {
   tools: AgentToolsConfig;
 }
 
+const allToolsEnabled: AgentToolsConfig = {
+  showKnowledgeBaseTool: true,
+  showProductCatalogTool: true,
+  showZendeskKnowledgeBaseTool: true,
+  showSubjectIntentTool: true,
+  showObjectiveProblemTool: true,
+};
+
 export const agentConfigMetadata: Record<AgentConfigType, AgentConfigMetadata> = {
   summary: {
     configType: "summary",
@@ -36,9 +44,7 @@ export const agentConfigMetadata: Record<AgentConfigType, AgentConfigMetadata> =
     promptRows: 16,
     responseFormatRows: 10,
     recommendedModel: "gpt-4o-mini",
-    tools: {
-      showObjectiveProblemTool: true,
-    },
+    tools: allToolsEnabled,
   },
 
   classification: {
@@ -53,12 +59,7 @@ export const agentConfigMetadata: Record<AgentConfigType, AgentConfigMetadata> =
     promptRows: 16,
     responseFormatRows: 6,
     recommendedModel: "gpt-4o-mini",
-    tools: {
-      showKnowledgeBaseTool: true,
-      showProductCatalogTool: true,
-      showSubjectIntentTool: true,
-      showObjectiveProblemTool: true,
-    },
+    tools: allToolsEnabled,
   },
 
   response: {
@@ -73,12 +74,7 @@ export const agentConfigMetadata: Record<AgentConfigType, AgentConfigMetadata> =
     promptRows: 20,
     responseFormatRows: 4,
     recommendedModel: "gpt-4o-mini",
-    tools: {
-      showKnowledgeBaseTool: true,
-      showProductCatalogTool: true,
-      showZendeskKnowledgeBaseTool: true,
-      showObjectiveProblemTool: true,
-    },
+    tools: allToolsEnabled,
   },
 
   learning: {
@@ -93,11 +89,7 @@ export const agentConfigMetadata: Record<AgentConfigType, AgentConfigMetadata> =
     promptRows: 24,
     responseFormatRows: 8,
     recommendedModel: "gpt-4o-mini",
-    tools: {
-      showKnowledgeBaseTool: true,
-      showProductCatalogTool: true,
-      showZendeskKnowledgeBaseTool: true,
-    },
+    tools: allToolsEnabled,
   },
 
   enrichment: {
@@ -112,11 +104,7 @@ export const agentConfigMetadata: Record<AgentConfigType, AgentConfigMetadata> =
     promptRows: 24,
     responseFormatRows: 12,
     recommendedModel: "gpt-4o",
-    tools: {
-      showKnowledgeBaseTool: true,
-      showProductCatalogTool: false,
-      showZendeskKnowledgeBaseTool: true,
-    },
+    tools: allToolsEnabled,
   },
 };
 
