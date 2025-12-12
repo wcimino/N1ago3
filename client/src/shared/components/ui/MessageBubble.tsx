@@ -1,8 +1,31 @@
 import { motion } from "framer-motion";
-import { ClipboardList, CheckCircle2, ExternalLink } from "lucide-react";
+import { ClipboardList, CheckCircle2, ExternalLink, FileText, Download } from "lucide-react";
 import { getAuthorColor, isCustomerMessage, getMessageSender } from "../../../lib/messageUtils";
 import { useDateFormatters } from "../../hooks";
 import type { Message, ImagePayload } from "../../../types";
+
+interface FilePayload {
+  type: "file";
+  mediaUrl: string;
+  mediaType?: string;
+  mediaSize?: number;
+  altText?: string;
+  text?: string;
+  attachmentId?: string;
+}
+
+function isValidFilePayload(payload: unknown): payload is FilePayload {
+  if (!payload || typeof payload !== "object") return false;
+  const p = payload as Record<string, unknown>;
+  return p.type === "file" && typeof p.mediaUrl === "string";
+}
+
+function formatFileSize(bytes: number | undefined): string {
+  if (!bytes) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 interface FormField {
   name?: string;
@@ -178,6 +201,31 @@ function FormResponseContent({ payload }: { payload: FormResponsePayload }) {
   );
 }
 
+function FileContent({ payload, fileName }: { payload: FilePayload; fileName?: string }) {
+  const displayName = fileName || payload.altText || payload.text || "Arquivo";
+  const fileSize = formatFileSize(payload.mediaSize);
+  
+  return (
+    <a 
+      href={payload.mediaUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors group"
+    >
+      <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+        <FileText className="w-5 h-5 text-blue-600" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-800 truncate">{displayName}</p>
+        {fileSize && (
+          <p className="text-xs text-gray-500">{fileSize}</p>
+        )}
+      </div>
+      <Download className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
+    </a>
+  );
+}
+
 export function MessageBubble({ message, onImageClick, currentHandlerName }: MessageBubbleProps) {
   const { formatDateTimeShort } = useDateFormatters();
   const isCustomer = isCustomerMessage(message.author_type);
@@ -219,6 +267,13 @@ export function MessageBubble({ message, onImageClick, currentHandlerName }: Mes
       const parsed = safeParsePayload<FormResponsePayload>(message.content_payload);
       if (isValidFormResponsePayload(parsed)) {
         return <FormResponseContent payload={parsed} />;
+      }
+    }
+
+    if (message.content_type === "file" && message.content_payload) {
+      const parsed = safeParsePayload<FilePayload>(message.content_payload);
+      if (isValidFilePayload(parsed)) {
+        return <FileContent payload={parsed} fileName={message.content_text || undefined} />;
       }
     }
 
