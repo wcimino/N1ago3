@@ -18,7 +18,7 @@ export async function getAllObjectiveProblems(): Promise<ObjectiveProblemWithPro
     .from(knowledgeBaseObjectiveProblems)
     .orderBy(knowledgeBaseObjectiveProblems.name);
   
-  return Promise.all(problems.map(async (problem) => {
+  return Promise.all(problems.map(async (problem: KnowledgeBaseObjectiveProblem) => {
     const productIds = await getProductIdsForProblem(problem.id);
     return { ...problem, productIds };
   }));
@@ -31,7 +31,7 @@ export async function getActiveObjectiveProblems(): Promise<ObjectiveProblemWith
     .where(eq(knowledgeBaseObjectiveProblems.isActive, true))
     .orderBy(knowledgeBaseObjectiveProblems.name);
   
-  return Promise.all(problems.map(async (problem) => {
+  return Promise.all(problems.map(async (problem: KnowledgeBaseObjectiveProblem) => {
     const productIds = await getProductIdsForProblem(problem.id);
     return { ...problem, productIds };
   }));
@@ -240,7 +240,7 @@ export async function searchObjectiveProblems(
   const productMap = new Map(allProducts.map((p: typeof allProducts[number]) => [p.id, p.fullName]));
 
   const searchTerms = keywords 
-    ? keywords.split(/\s+/).filter(t => t.length >= 2)
+    ? keywords.split(/\s+/).filter((t: string) => t.length >= 2)
     : [];
 
   const results: ObjectiveProblemSearchResult[] = await Promise.all(
