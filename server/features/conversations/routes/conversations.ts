@@ -165,6 +165,7 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
           current_status: summary.currentStatus,
           important_info: summary.importantInfo,
           customer_emotion_level: summary.customerEmotionLevel,
+          objective_problems: summary.objectiveProblems || null,
           triage: extractTriageFromSummary(summary.summary),
         } : null,
         suggested_responses: suggestedResponses.map(sr => ({
@@ -212,6 +213,7 @@ router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedU
     product: summary.product,
     subproduct: summary.subproduct,
     subject: summary.subject,
+    objective_problems: summary.objectiveProblems || null,
     intent: summary.intent,
     confidence: summary.confidence,
     client_request: summary.clientRequest,

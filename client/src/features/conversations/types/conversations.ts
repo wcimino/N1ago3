@@ -15,6 +15,7 @@ export type {
   Triage,
   TriageAnamnese,
   TriageSeverity,
+  ObjectiveProblemIdentified,
 } from "../../../../../shared/types";
 
 export type { UserProfile } from "../../../../../shared/types";

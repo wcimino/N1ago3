@@ -1,5 +1,5 @@
-import { Sparkles, User, Headphones, Clock, Info, Cross } from "lucide-react";
-import type { Triage } from "../types/conversations";
+import { Sparkles, User, Headphones, Clock, Info, Cross, AlertTriangle } from "lucide-react";
+import type { Triage, ObjectiveProblemIdentified } from "../types/conversations";
 
 interface SummaryData {
   product?: string | null;
@@ -13,6 +13,7 @@ interface SummaryData {
   current_status?: string | null;
   important_info?: string | null;
   customer_emotion_level?: number | null;
+  objective_problems?: ObjectiveProblemIdentified[] | null;
   triage?: Triage | null;
 }
 
@@ -55,6 +56,39 @@ const severityConfig: Record<string, { label: string; color: string }> = {
   high: { label: "Alta", color: "bg-orange-100 text-orange-700" },
   critical: { label: "Crítica", color: "bg-red-100 text-red-700" },
 };
+
+interface ObjectiveProblemsCardProps {
+  problems: ObjectiveProblemIdentified[];
+}
+
+function ObjectiveProblemsCard({ problems }: ObjectiveProblemsCardProps) {
+  return (
+    <div className="rounded-lg p-3 bg-violet-50 border border-violet-200">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="text-violet-600">
+          <AlertTriangle className="w-4 h-4" />
+        </div>
+        <h4 className="font-medium text-gray-800 text-sm">Problemas Objetivos</h4>
+        <span className="ml-auto px-2 py-0.5 rounded text-xs font-medium bg-violet-100 text-violet-700">
+          {problems.length} identificado{problems.length > 1 ? "s" : ""}
+        </span>
+      </div>
+      
+      <div className="space-y-2">
+        {problems.map((problem) => (
+          <div key={problem.id} className="flex items-center justify-between bg-white rounded px-3 py-2 border border-violet-100">
+            <span className="text-sm text-gray-700 font-medium">{problem.name}</span>
+            {problem.matchScore !== undefined && (
+              <span className="text-xs text-violet-600 bg-violet-100 px-2 py-0.5 rounded">
+                {problem.matchScore}% match
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 interface TriageCardProps {
   triage: Triage;
@@ -146,7 +180,7 @@ function TriageCard({ triage }: TriageCardProps) {
 }
 
 export function ConversationSummary({ summary }: ConversationSummaryProps) {
-  const hasStructuredData = summary?.client_request || summary?.agent_actions || summary?.current_status || summary?.important_info || summary?.triage;
+  const hasStructuredData = summary?.client_request || summary?.agent_actions || summary?.current_status || summary?.important_info || summary?.objective_problems?.length || summary?.triage;
 
   return (
     <div className="flex-1 overflow-y-auto p-4">
@@ -241,6 +275,10 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
                     borderColor="border-purple-200"
                     iconColor="text-purple-600"
                   />
+                )}
+                
+                {summary.objective_problems && summary.objective_problems.length > 0 && (
+                  <ObjectiveProblemsCard problems={summary.objective_problems} />
                 )}
                 
                 {summary.triage && (

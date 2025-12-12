@@ -145,6 +145,12 @@ export interface Triage {
   severity: TriageSeverity;
 }
 
+export interface ObjectiveProblemIdentified {
+  id: number;
+  name: string;
+  matchScore?: number;
+}
+
 export interface ConversationSummary {
   text: string;
   generated_at: string | null;
@@ -160,6 +166,7 @@ export interface ConversationSummary {
   current_status: string | null;
   important_info: string | null;
   customer_emotion_level: number | null;
+  objective_problems: ObjectiveProblemIdentified[] | null;
   triage: Triage | null;
 }
 
