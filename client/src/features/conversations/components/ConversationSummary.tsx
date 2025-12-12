@@ -72,31 +72,47 @@ function TriageCard({ triage }: TriageCardProps) {
         <h4 className="font-medium text-gray-800 text-sm">Triagem</h4>
         <span className={`ml-auto px-2 py-0.5 rounded text-xs font-medium ${severity.color}`}>
           {severity.label}
+          <span className="ml-1 text-gray-400 font-normal">(severity.level)</span>
         </span>
       </div>
       
       <div className="space-y-2 text-sm">
         {triage.anamnese?.customerMainComplaint && (
           <div>
-            <span className="font-medium text-gray-600">Queixa principal:</span>
+            <span className="font-medium text-gray-600">Queixa principal</span>
+            <span className="text-gray-400 text-xs ml-1">(anamnese.customerMainComplaint)</span>
             <p className="text-gray-700 mt-0.5">{triage.anamnese.customerMainComplaint}</p>
           </div>
         )}
         
         {triage.anamnese?.customerDeclaredObjective && (
           <div>
-            <span className="font-medium text-gray-600">Objetivo declarado:</span>
+            <span className="font-medium text-gray-600">Objetivo declarado</span>
+            <span className="text-gray-400 text-xs ml-1">(anamnese.customerDeclaredObjective)</span>
             <p className="text-gray-700 mt-0.5">{triage.anamnese.customerDeclaredObjective}</p>
+          </div>
+        )}
+
+        {triage.anamnese?.customerKeyContext && triage.anamnese.customerKeyContext.length > 0 && (
+          <div>
+            <span className="font-medium text-gray-600">Contexto chave</span>
+            <span className="text-gray-400 text-xs ml-1">(anamnese.customerKeyContext)</span>
+            <ul className="list-disc list-inside mt-0.5 text-gray-700">
+              {triage.anamnese.customerKeyContext.map((ctx, index) => (
+                <li key={index}>{ctx}</li>
+              ))}
+            </ul>
           </div>
         )}
         
         {triage.objectiveProblems && triage.objectiveProblems.length > 0 && (
           <div>
-            <span className="font-medium text-gray-600">Problemas identificados:</span>
+            <span className="font-medium text-gray-600">Problemas identificados</span>
+            <span className="text-gray-400 text-xs ml-1">(objectiveProblems)</span>
             <div className="flex flex-wrap gap-1 mt-1">
               {triage.objectiveProblems.map((problem, index) => (
                 <span key={index} className="px-2 py-0.5 bg-rose-100 text-rose-700 rounded text-xs">
-                  {problem.replace(/_/g, " ")}
+                  {problem}
                 </span>
               ))}
             </div>
@@ -105,11 +121,12 @@ function TriageCard({ triage }: TriageCardProps) {
         
         {triage.severity?.redFlags && triage.severity.redFlags.length > 0 && (
           <div>
-            <span className="font-medium text-gray-600">Red flags:</span>
+            <span className="font-medium text-gray-600">Red flags</span>
+            <span className="text-gray-400 text-xs ml-1">(severity.redFlags)</span>
             <div className="flex flex-wrap gap-1 mt-1">
               {triage.severity.redFlags.map((flag, index) => (
                 <span key={index} className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs">
-                  {flag.replace(/_/g, " ")}
+                  {flag}
                 </span>
               ))}
             </div>
@@ -118,7 +135,8 @@ function TriageCard({ triage }: TriageCardProps) {
         
         {triage.severity?.rationale && (
           <div>
-            <span className="font-medium text-gray-600">Justificativa:</span>
+            <span className="font-medium text-gray-600">Justificativa</span>
+            <span className="text-gray-400 text-xs ml-1">(severity.rationale)</span>
             <p className="text-gray-700 mt-0.5 italic">{triage.severity.rationale}</p>
           </div>
         )}
