@@ -457,25 +457,19 @@ export function ObjectiveProblemsPage() {
                   <p className="text-sm text-gray-600 mb-2">{problem.description}</p>
                   
                   {problem.productIds && problem.productIds.length > 0 && (
-                    <div className="mb-2">
-                      <span className="text-xs text-gray-500">Produtos: </span>
-                      <span className="text-xs text-green-700 font-medium">
-                        {getProductNames(problem.productIds)}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {problem.synonyms.length > 0 && (
-                    <div className="mb-2">
-                      <span className="text-xs text-gray-500">Sinônimos: </span>
-                      <span className="text-xs text-gray-700">{problem.synonyms.join(", ")}</span>
-                    </div>
-                  )}
-                  
-                  {problem.examples.length > 0 && (
-                    <div>
-                      <span className="text-xs text-gray-500">Exemplos: </span>
-                      <span className="text-xs text-gray-700 italic">"{problem.examples.join('", "')}"</span>
+                    <div className="flex flex-wrap gap-1">
+                      {problem.productIds.map((productId) => {
+                        const product = products.find(p => p.id === productId);
+                        if (!product) return null;
+                        return (
+                          <span
+                            key={productId}
+                            className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-green-100 text-green-800"
+                          >
+                            {product.fullName}
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
