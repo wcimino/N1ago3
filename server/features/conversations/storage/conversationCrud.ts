@@ -175,12 +175,20 @@ export const conversationCrud = {
   },
 
   async updateConversationHandler(externalConversationId: string, handlerId: string, handlerName: string) {
+    const isN1ago = handlerName?.toLowerCase().includes("n1ago");
+    
+    const updateData: Record<string, unknown> = {
+      currentHandler: handlerId,
+      currentHandlerName: handlerName,
+      updatedAt: new Date(),
+    };
+    
+    if (isN1ago) {
+      updateData.handledByN1ago = true;
+    }
+    
     const result = await db.update(conversations)
-      .set({
-        currentHandler: handlerId,
-        currentHandlerName: handlerName,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(conversations.externalConversationId, externalConversationId))
       .returning();
     
