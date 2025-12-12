@@ -96,6 +96,64 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
     { id: "chat", label: "Chat", icon: <MessageCircle className="w-4 h-4" /> },
   ];
 
+  const renderActionButtons = () => {
+    if (!selectedConversation) return null;
+    return (
+      <>
+        <HandlerBadge 
+          handlerName={selectedConversation.conversation.current_handler_name} 
+          size="sm" 
+        />
+        {selectedConversation.conversation.current_handler_name?.startsWith("n1ago") && (
+          <button
+            onClick={() => toggleAutopilotMutation.mutate({
+              conversationId: selectedConversation.conversation.id,
+              enabled: !selectedConversation.conversation.autopilot_enabled,
+            })}
+            disabled={toggleAutopilotMutation.isPending}
+            className={`inline-flex items-center justify-center w-8 h-8 text-sm border rounded-lg transition-colors ${
+              selectedConversation.conversation.autopilot_enabled
+                ? "text-amber-600 hover:text-amber-700 border-amber-200 hover:border-amber-300 hover:bg-amber-50"
+                : "text-green-600 hover:text-green-700 border-green-200 hover:border-green-300 hover:bg-green-50"
+            }`}
+            title={selectedConversation.conversation.autopilot_enabled ? "Pausar AutoPilot" : "Ativar AutoPilot"}
+          >
+            {selectedConversation.conversation.autopilot_enabled ? (
+              <ZapOff className="w-4 h-4" />
+            ) : (
+              <Zap className="w-4 h-4" />
+            )}
+          </button>
+        )}
+        <button
+          onClick={() => setShowTransferModal(true)}
+          className="inline-flex items-center justify-center w-8 h-8 text-sm text-purple-600 hover:text-purple-700 border border-purple-200 hover:border-purple-300 rounded-lg hover:bg-purple-50 transition-colors"
+          title="Transferir conversa"
+        >
+          <ArrowRightLeft className="w-4 h-4" />
+        </button>
+        {selectedConversation.conversation.status === "active" && (
+          <button
+            onClick={() => {
+              if (confirm("Tem certeza que deseja encerrar esta conversa?")) {
+                closeConversationMutation.mutate(selectedConversation.conversation.id);
+              }
+            }}
+            disabled={closeConversationMutation.isPending}
+            className="inline-flex items-center justify-center w-8 h-8 text-sm text-red-600 hover:text-red-700 border border-red-200 hover:border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+            title="Encerrar conversa"
+          >
+            {closeConversationMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <XSquare className="w-4 h-4" />
+            )}
+          </button>
+        )}
+      </>
+    );
+  };
+
   const goToPreviousConversation = () => {
     if (selectedConversationIndex > 0) {
       setSelectedConversationIndex(selectedConversationIndex - 1);
@@ -124,76 +182,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
               {data?.conversations.length || 0} {(data?.conversations.length || 0) === 1 ? "conversa" : "conversas"} - {totalMessages} msg
             </p>
           </div>
-          {selectedConversation && (
-            <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
-              <div className="hidden sm:block">
-                <HandlerBadge 
-                  handlerName={selectedConversation.conversation.current_handler_name} 
-                  size="sm" 
-                />
-              </div>
-              {selectedConversation.conversation.current_handler_name?.startsWith("n1ago") && (
-                <button
-                  onClick={() => toggleAutopilotMutation.mutate({
-                    conversationId: selectedConversation.conversation.id,
-                    enabled: !selectedConversation.conversation.autopilot_enabled,
-                  })}
-                  disabled={toggleAutopilotMutation.isPending}
-                  className={`inline-flex items-center justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-2 sm:py-1.5 text-sm border rounded-lg transition-colors ${
-                    selectedConversation.conversation.autopilot_enabled
-                      ? "text-amber-600 hover:text-amber-700 border-amber-200 hover:border-amber-300 hover:bg-amber-50"
-                      : "text-green-600 hover:text-green-700 border-green-200 hover:border-green-300 hover:bg-green-50"
-                  }`}
-                  title={selectedConversation.conversation.autopilot_enabled ? "Pausar AutoPilot" : "Ativar AutoPilot"}
-                >
-                  {selectedConversation.conversation.autopilot_enabled ? (
-                    <ZapOff className="w-4 h-4" />
-                  ) : (
-                    <Zap className="w-4 h-4" />
-                  )}
-                  <span className="hidden lg:inline ml-1">
-                    {selectedConversation.conversation.autopilot_enabled ? "Pausar" : "AutoPilot"}
-                  </span>
-                </button>
-              )}
-              <button
-                onClick={() => setShowTransferModal(true)}
-                className="inline-flex items-center justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-2 sm:py-1.5 text-sm text-purple-600 hover:text-purple-700 border border-purple-200 hover:border-purple-300 rounded-lg hover:bg-purple-50 transition-colors"
-                title="Transferir conversa"
-              >
-                <ArrowRightLeft className="w-4 h-4" />
-                <span className="hidden lg:inline ml-1">Transferir</span>
-              </button>
-              {selectedConversation.conversation.status === "active" && (
-                <button
-                  onClick={() => {
-                    if (confirm("Tem certeza que deseja encerrar esta conversa?")) {
-                      closeConversationMutation.mutate(selectedConversation.conversation.id);
-                    }
-                  }}
-                  disabled={closeConversationMutation.isPending}
-                  className="inline-flex items-center justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-2 sm:py-1.5 text-sm text-red-600 hover:text-red-700 border border-red-200 hover:border-red-300 rounded-lg hover:bg-red-50 transition-colors"
-                  title="Encerrar conversa"
-                >
-                  {closeConversationMutation.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <XSquare className="w-4 h-4" />
-                  )}
-                  <span className="hidden lg:inline ml-1">Encerrar</span>
-                </button>
-              )}
-            </div>
-          )}
         </div>
-        {selectedConversation && (
-          <div className="sm:hidden mt-2 flex items-center justify-end">
-            <HandlerBadge 
-              handlerName={selectedConversation.conversation.current_handler_name} 
-              size="sm" 
-            />
-          </div>
-        )}
       </div>
 
       <div className="flex-1 bg-gray-100 overflow-hidden flex flex-col">
@@ -229,6 +218,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                 closedReason={selectedConversation?.conversation.closed_reason}
                 onPrevious={goToPreviousConversation}
                 onNext={goToNextConversation}
+                actionButtons={renderActionButtons()}
               />
               
               <div className="px-3 py-2 bg-white border-b border-gray-200 flex-shrink-0">
@@ -282,6 +272,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                 closedReason={selectedConversation?.conversation.closed_reason}
                 onPrevious={goToPreviousConversation}
                 onNext={goToNextConversation}
+                actionButtons={renderActionButtons()}
               />
               
               <div 
