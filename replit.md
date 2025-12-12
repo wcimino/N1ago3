@@ -49,7 +49,19 @@ The React frontend provides a real-time dashboard for events and conversations, 
     - `productCatalogTool.ts`: Product catalog search
     - `subjectIntentTool.ts`: Subject and intent lookup
     - `zendeskKnowledgeBaseTool.ts`: Zendesk Help Center semantic search
+    - `problemObjectiveTool.ts`: Objective problems search with match scoring
     - Centralized prompt variables and `promptUtils.ts` for variable substitution.
+*   **Objective Problems Search Tool** (`search_knowledge_base_problem_objective`):
+    - Searches objective problems by keywords and optional product filter
+    - Returns matchScore (0-100%) indicating probability of match:
+      - 100%: Exact name match
+      - 90%: Exact synonym match
+      - 80%: Partial name match
+      - 70%: Partial synonym match
+      - 60%: Example contains search term
+      - 40%: Description contains search term
+    - Returns matchReason explaining why the score was assigned
+    - Enabled via `useObjectiveProblemTool` flag in `ToolFlags`
 *   **Unified Knowledge Base Search Helper** (`server/features/ai/services/knowledgeBaseSearchHelper.ts`):
     - `runKnowledgeBaseSearch()` provides a single entry point for KB searches
     - Always uses semantic search (embeddings) with PostgreSQL FTS fallback when no embeddings available
