@@ -329,30 +329,32 @@ export function ObjectiveProblemsPage() {
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Sinônimos (um por linha)
-            </label>
-            <textarea
-              value={formData.synonyms}
-              onChange={(e) => setFormData({ ...formData, synonyms: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              rows={3}
-              placeholder="Pagamento negado&#10;Recusa de cartão"
-            />
-          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Sinônimos (um por linha)
+              </label>
+              <textarea
+                value={formData.synonyms}
+                onChange={(e) => setFormData({ ...formData, synonyms: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                rows={3}
+                placeholder="Pagamento negado&#10;Recusa de cartão"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Exemplos de frases (um por linha)
-            </label>
-            <textarea
-              value={formData.examples}
-              onChange={(e) => setFormData({ ...formData, examples: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              rows={3}
-              placeholder="Meu cartão não passou&#10;Não consegui pagar"
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Exemplos de frases (um por linha)
+              </label>
+              <textarea
+                value={formData.examples}
+                onChange={(e) => setFormData({ ...formData, examples: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                rows={3}
+                placeholder="Meu cartão não passou&#10;Não consegui pagar"
+              />
+            </div>
           </div>
 
           <div>
