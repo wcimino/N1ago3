@@ -7,6 +7,7 @@ import {
   deleteObjectiveProblem,
   getAllProducts,
   searchObjectiveProblems,
+  getObjectiveProblemStats,
 } from "../storage/objectiveProblemsStorage.js";
 
 const router = Router();
@@ -52,6 +53,16 @@ router.get("/api/knowledge/objective-problems/search", async (req, res) => {
   } catch (error) {
     console.error("Error searching objective problems:", error);
     res.status(500).json({ error: "Failed to search objective problems" });
+  }
+});
+
+router.get("/api/knowledge/objective-problems/stats", async (_req, res) => {
+  try {
+    const stats = await getObjectiveProblemStats();
+    res.json(stats);
+  } catch (error) {
+    console.error("Error fetching objective problems stats:", error);
+    res.status(500).json({ error: "Failed to fetch stats" });
   }
 });
 

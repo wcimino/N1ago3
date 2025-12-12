@@ -1,7 +1,14 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, X, Check, AlertCircle, ChevronRight, ChevronDown, Minus } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Check, AlertCircle, ChevronRight, ChevronDown, Minus, Loader2 } from "lucide-react";
 import { FilterBar } from "../../../shared/components/ui/FilterBar";
+
+interface ObjectiveProblemStats {
+  totalProblems: number;
+  activeProblems: number;
+  withEmbedding: number;
+  withoutEmbedding: number;
+}
 
 interface Product {
   id: number;
@@ -99,6 +106,28 @@ export function ObjectiveProblemsPage() {
       const res = await fetch("/api/knowledge/objective-problems/products");
       if (!res.ok) throw new Error("Failed to fetch products");
       return res.json();
+    },
+  });
+
+  const { data: stats, refetch: refetchStats } = useQuery<ObjectiveProblemStats>({
+    queryKey: ["/api/knowledge/objective-problems/stats"],
+    queryFn: async () => {
+      const res = await fetch("/api/knowledge/objective-problems/stats");
+      if (!res.ok) throw new Error("Failed to fetch stats");
+      return res.json();
+    },
+  });
+
+  const generateEmbeddingsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/knowledge/objective-problems/embeddings/generate-all", {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Failed to generate embeddings");
+      return res.json();
+    },
+    onSuccess: () => {
+      refetchStats();
     },
   });
 
@@ -210,6 +239,7 @@ export function ObjectiveProblemsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/knowledge/objective-problems"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/objective-problems/stats"] });
       handleCancel();
     },
   });
@@ -235,6 +265,7 @@ export function ObjectiveProblemsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/knowledge/objective-problems"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/objective-problems/stats"] });
       handleCancel();
     },
   });
@@ -248,6 +279,7 @@ export function ObjectiveProblemsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/knowledge/objective-problems"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/objective-problems/stats"] });
     },
   });
 
@@ -518,6 +550,31 @@ export function ObjectiveProblemsPage() {
         ]}
         onClear={clearFilters}
       />
+
+      {stats && (
+        <div className="flex flex-wrap items-center gap-4 px-4 py-3 border-b border-gray-100">
+          <span className="text-sm text-gray-600">
+            <span className="font-semibold text-purple-700">{stats.totalProblems}</span> Problemas
+          </span>
+          <span className="text-sm text-gray-600">
+            <span className="font-semibold text-green-600">{stats.activeProblems}</span> Ativos
+          </span>
+          <button
+            onClick={() => generateEmbeddingsMutation.mutate()}
+            disabled={generateEmbeddingsMutation.isPending || stats.withoutEmbedding === 0}
+            className="text-sm text-gray-600 hover:text-purple-700 disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-1"
+            title={stats.withoutEmbedding > 0 ? "Clique para gerar embeddings faltantes" : "Todos os embeddings estão gerados"}
+          >
+            {generateEmbeddingsMutation.isPending ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : null}
+            <span className="font-semibold text-blue-600">{stats.withEmbedding}</span> Embeddings
+            {stats.withoutEmbedding > 0 && (
+              <span className="text-xs text-orange-500 ml-1">({stats.withoutEmbedding} pendente{stats.withoutEmbedding !== 1 ? "s" : ""})</span>
+            )}
+          </button>
+        </div>
+      )}
 
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">

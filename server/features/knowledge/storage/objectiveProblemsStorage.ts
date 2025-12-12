@@ -514,6 +514,36 @@ export async function hasObjectiveProblemEmbeddings(): Promise<boolean> {
   return count > 0;
 }
 
+export interface ObjectiveProblemStats {
+  totalProblems: number;
+  activeProblems: number;
+  withEmbedding: number;
+  withoutEmbedding: number;
+}
+
+export async function getObjectiveProblemStats(): Promise<ObjectiveProblemStats> {
+  const result = await db.execute(sql`
+    SELECT 
+      (SELECT COUNT(*) FROM knowledge_base_objective_problems) as total_problems,
+      (SELECT COUNT(*) FROM knowledge_base_objective_problems WHERE is_active = true) as active_problems,
+      (SELECT COUNT(*) FROM knowledge_base_objective_problems p 
+       INNER JOIN knowledge_base_objective_problems_embeddings e ON p.id = e.problem_id 
+       WHERE e.embedding_vector IS NOT NULL) as with_embedding
+  `);
+  
+  const row = (result.rows as any[])[0] || {};
+  const totalProblems = Number(row.total_problems || 0);
+  const activeProblems = Number(row.active_problems || 0);
+  const withEmbedding = Number(row.with_embedding || 0);
+  
+  return {
+    totalProblems,
+    activeProblems,
+    withEmbedding,
+    withoutEmbedding: Math.max(0, totalProblems - withEmbedding),
+  };
+}
+
 export async function getProblemsWithoutEmbeddings(): Promise<KnowledgeBaseObjectiveProblem[]> {
   const results = await db.execute(sql`
     SELECT p.* FROM knowledge_base_objective_problems p
