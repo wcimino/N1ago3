@@ -1,0 +1,32 @@
+[
+  {
+    "id": 48753,
+    "conversation_id": 356578,
+    "suggested_response": "Olá! Meu nome é Niago e estou aqui para ajudar você com sua solicitação. \n\nEntendo seu interesse em ter um cartão de crédito e que a situação atual é insatisfatória. Para resolver isso, vou encaminhar seu caso para a área responsável. Você receberá um retorno diretamente no e-mail cadastrado em até 7 dias úteis. \n\nSe precisar de mais alguma coisa enquanto isso, estou à disposição!",
+    "created_at": "2025-12-12T00:10:14.311Z"
+  },
+  {
+    "id": 48752,
+    "conversation_id": 356578,
+    "suggested_response": "Entendo sua preocupação em relação ao cartão de crédito. O seu caso foi encaminhado para o time especialista, que está analisando a situação. Não posso resolver isso por completo aqui, mas você receberá um retorno no e-mail cadastrado em até 7 dias úteis.\n\nSe precisar de mais alguma informação ou auxílio, estou à disposição!",
+    "created_at": "2025-12-12T00:10:09.512Z"
+  },
+  {
+    "id": 48751,
+    "conversation_id": 356578,
+    "suggested_response": "Olá, meu nome é Niago e sou o assistente de atendimento ao cliente especializado em serviços financeiros do iFood Pago. \n\nEntendo que você deseja um cartão de crédito. No momento, seu caso já está sendo analisado pelo nosso time especialista e você receberá um retorno em até 7 dias úteis. Assim que tivermos novidades, entraremos em contato com você. \n\nCaso tenha mais dúvidas ou questões, estou à disposição para ajudar!",
+    "created_at": "2025-12-12T00:09:59.411Z"
+  },
+  {
+    "id": 48750,
+    "conversation_id": 356578,
+    "suggested_response": "Parece que você está enfrentando dificuldades para visualizar o limite do seu cartão de crédito no aplicativo. Você deve acessar a seção “Cartões” para consultar o limite disponível. Se não conseguir, é possível que ainda não haja um limite aprovado para o crédito. \n\nPor favor, você pode confirmar se já tentou acessar essa seção?",
+    "created_at": "2025-12-12T00:09:05.212Z"
+  },
+  {
+    "id": 48749,
+    "conversation_id": 356578,
+    "suggested_response": "Oi, sou o Niago, seu assistente de atendimento ao cliente do iFood Pago! 😊\n\nEntendi que você está tendo problemas para visualizar o limite do seu cartão de crédito no aplicativo. Para consultar o limite, você deve acessar a seção específica para isso. Se ela não estiver disponível e você só estiver vendo opções de trocar senha ou cancelar, talvez seja necessário entrar em contato com a área responsável para mais esclarecimentos.\n\nPosso te encaminhar agora para a área responsável para que possam te ajudar?",
+    "created_at": "2025-12-12T00:08:58.179Z"
+  }
+]

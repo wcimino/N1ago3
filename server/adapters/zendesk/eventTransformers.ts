@@ -33,8 +33,10 @@ export function mapMessageEvents(payload: any, root: any, source: string): Stand
     const userData = payload.user || root.user;
     const messageSource = message.source || {};
     
-    // Extract the active switchboard integration ID (identifies which app sent the message)
-    const activeSwitchboardId = conversationData.activeSwitchboardIntegration?.id;
+    // Extract the active switchboard integration info
+    const activeSwitchboard = conversationData.activeSwitchboardIntegration;
+    const activeSwitchboardId = activeSwitchboard?.id;
+    const activeSwitchboardName = activeSwitchboard?.name;
     
     // Determine authorId based on message source:
     // - For user messages: use author.userId
@@ -51,8 +53,16 @@ export function mapMessageEvents(payload: any, root: any, source: string): Stand
       authorId = author.appId || activeSwitchboardId;
     }
     
-    // Set author name to "N1ago" if this message came from our integration
-    const authorName = isN1agoIntegration(authorId) ? "N1ago" : author.displayName;
+    // Check if this message was sent by N1ago:
+    // - Message is not from a user (customer)
+    // - Message came via API (source.type = "api:conversations")
+    // - AND the active switchboard is N1ago (by ID or by name containing "n1ago")
+    const isN1agoMessage = 
+      author.type !== "user" &&
+      messageSource.type === "api:conversations" && 
+      (isN1agoIntegration(authorId) || activeSwitchboardName?.toLowerCase().includes("n1ago"));
+
+    const authorName = isN1agoMessage ? "N1ago" : author.displayName;
 
     const hasActions = Array.isArray(content.actions) && content.actions.length > 0;
     const contentPayload = content.type !== "text" 
