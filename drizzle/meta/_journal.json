@@ -78,6 +78,13 @@
       "when": 1765550514247,
       "tag": "0010_broken_tyrannus",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1765554155550,
+      "tag": "0011_far_vision",
+      "breakpoints": true
     }
   ]
 }

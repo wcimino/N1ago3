@@ -6,9 +6,54 @@ import {
   updateObjectiveProblem,
   deleteObjectiveProblem,
   getAllProducts,
+  searchObjectiveProblems,
 } from "../storage/objectiveProblemsStorage.js";
 
 const router = Router();
+
+router.get("/api/knowledge/objective-problems/search", async (req, res) => {
+  try {
+    const { keywords, product, limit } = req.query;
+    
+    let productId: number | undefined;
+    if (product && typeof product === "string") {
+      const products = await getAllProducts();
+      const matchedProduct = products.find(p =>
+        p.fullName.toLowerCase().includes(product.toLowerCase()) ||
+        p.produto.toLowerCase().includes(product.toLowerCase())
+      );
+      if (matchedProduct) {
+        productId = matchedProduct.id;
+      }
+    }
+
+    const results = await searchObjectiveProblems({
+      keywords: keywords as string | undefined,
+      productId,
+      onlyActive: true,
+      limit: limit ? parseInt(limit as string) : 10,
+    });
+
+    const problemList = results.map(p => ({
+      id: p.id,
+      name: p.name,
+      matchScore: p.matchScore,
+      matchReason: p.matchReason,
+      description: p.description,
+      synonyms: p.synonyms,
+      examples: p.examples,
+      products: p.productNames,
+    }));
+
+    res.json({
+      message: `Encontrados ${results.length} problemas objetivos`,
+      problems: problemList
+    });
+  } catch (error) {
+    console.error("Error searching objective problems:", error);
+    res.status(500).json({ error: "Failed to search objective problems" });
+  }
+});
 
 router.get("/api/knowledge/objective-problems", async (_req, res) => {
   try {

@@ -185,6 +185,7 @@ export const openaiApiConfig = pgTable("openai_api_config", {
   useProductCatalogTool: boolean("use_product_catalog_tool").default(false).notNull(),
   useSubjectIntentTool: boolean("use_subject_intent_tool").default(false).notNull(),
   useZendeskKnowledgeBaseTool: boolean("use_zendesk_knowledge_base_tool").default(false).notNull(),
+  useObjectiveProblemTool: boolean("use_objective_problem_tool").default(false).notNull(),
   useGeneralSettings: boolean("use_general_settings").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
