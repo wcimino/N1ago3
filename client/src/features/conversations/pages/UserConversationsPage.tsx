@@ -13,7 +13,7 @@ import { FavoriteButton } from "../../favorites/components/FavoriteButton";
 import { useFavorites } from "../../favorites/hooks/useFavorites";
 
 interface UserConversationsPageProps {
-  params: { userId: string };
+  params: { userId: string; conversationId?: string };
 }
 
 type ContentTab = "resumo" | "chat";
@@ -21,6 +21,7 @@ type ContentTab = "resumo" | "chat";
 export function UserConversationsPage({ params }: UserConversationsPageProps) {
   const [, navigate] = useLocation();
   const userId = decodeURIComponent(params.userId);
+  const conversationIdFromUrl = params.conversationId ? parseInt(params.conversationId, 10) : null;
   const { formatDateTimeShort } = useDateFormatters();
   const [expandedImage, setExpandedImage] = useState<ImagePayload | null>(null);
   const [selectedConversationIndex, setSelectedConversationIndex] = useState(0);
@@ -81,14 +82,24 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
   }, [userId]);
 
   useEffect(() => {
-    if (sortedConversations.length > 0 && !hasInitializedSelection.current) {
-      setSelectedConversationIndex(0);
+    if (sortedConversations.length > 0) {
+      if (conversationIdFromUrl) {
+        const targetIndex = sortedConversations.findIndex(
+          (item) => item.conversation.id === conversationIdFromUrl
+        );
+        const newIndex = targetIndex >= 0 ? targetIndex : 0;
+        if (newIndex !== selectedConversationIndex || !hasInitializedSelection.current) {
+          setSelectedConversationIndex(newIndex);
+        }
+      } else if (!hasInitializedSelection.current) {
+        setSelectedConversationIndex(0);
+      }
       hasInitializedSelection.current = true;
     }
     if (sortedConversations.length > 0 && selectedConversationIndex >= sortedConversations.length) {
       setSelectedConversationIndex(sortedConversations.length - 1);
     }
-  }, [sortedConversations.length, selectedConversationIndex]);
+  }, [sortedConversations.length, selectedConversationIndex, conversationIdFromUrl]);
 
   const totalMessages = data?.conversations.reduce((acc, conv) => acc + conv.messages.length, 0) || 0;
   const selectedConversation = sortedConversations[selectedConversationIndex];

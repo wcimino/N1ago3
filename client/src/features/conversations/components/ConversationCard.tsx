@@ -13,7 +13,7 @@ const emotionConfig: Record<number, { label: string; color: string; bgColor: str
 
 interface ConversationCardProps {
   conversation: ConversationListItem;
-  onViewConversation: (userId: string) => void;
+  onViewConversation: (userId: string, conversationId: number) => void;
   formatDateTime: (date: string) => string;
   favoriteIds: number[];
   onToggleFavorite: (conversationId: number) => void;
@@ -108,7 +108,7 @@ export function ConversationCard({
                 isLoading={isTogglingFavorite}
               />
               <button
-                onClick={() => onViewConversation(conversation.user_id)}
+                onClick={() => onViewConversation(conversation.user_id, conversation.id)}
                 className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors"
               >
                 Ver

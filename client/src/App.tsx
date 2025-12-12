@@ -83,6 +83,7 @@ function AuthenticatedApp() {
           <Route path="/atendimentos" component={AtendimentosPage} />
           <Route path="/atendimentos/routing" component={AtendimentosPage} />
           <Route path="/atendimentos/favoritos" component={AtendimentosPage} />
+          <Route path="/atendimentos/:userId/:conversationId">{(params) => <UserConversationsPage params={params} />}</Route>
           <Route path="/atendimentos/:userId">{(params) => <UserConversationsPage params={params} />}</Route>
           <Route path="/settings/maintenance/export" component={ExportPage} />
           <Route path="/settings/maintenance/export/:rest*" component={ExportPage} />

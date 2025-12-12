@@ -203,7 +203,7 @@ export function AtendimentosPage() {
                   <ConversationCard
                     key={conversation.id}
                     conversation={conversation}
-                    onViewConversation={(userId) => navigate(`/atendimentos/${encodeURIComponent(userId)}`)}
+                    onViewConversation={(userId, conversationId) => navigate(`/atendimentos/${encodeURIComponent(userId)}/${conversationId}`)}
                     formatDateTime={formatShortDateTime}
                     favoriteIds={favoriteIds}
                     onToggleFavorite={toggleFavorite}
