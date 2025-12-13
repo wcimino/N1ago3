@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Users, AlertTriangle, RefreshCw } from "lucide-react";
 import { useReportData, PeriodFilter } from "../hooks/useReportData";
 import { PeriodFilter as PeriodFilterComponent } from "../components/PeriodFilter";
 import { ReportTable, Column } from "../components/ReportTable";
+import { SegmentedTabs } from "../../../shared/components/ui/SegmentedTabs";
 
 interface ProductProblemCount {
   product: string;
@@ -15,6 +16,13 @@ interface CustomerConversationCount {
   customerName: string;
   conversationCount: number;
 }
+
+type ReportTab = "product-problem" | "customer-conversations";
+
+const tabs = [
+  { id: "product-problem", label: "Produto e Problema", icon: <AlertTriangle className="w-4 h-4" /> },
+  { id: "customer-conversations", label: "Conversas por Cliente", icon: <Users className="w-4 h-4" /> },
+];
 
 const productProblemColumns: Column<ProductProblemCount>[] = [
   { key: "product", header: "Produto" },
@@ -39,26 +47,34 @@ const customerConversationColumns: Column<CustomerConversationCount>[] = [
 ];
 
 export function ReportsPage() {
+  const [activeTab, setActiveTab] = useState<ReportTab>("product-problem");
   const [period, setPeriod] = useState<PeriodFilter>("24h");
 
   const productProblemQuery = useReportData<ProductProblemCount>({
     endpoint: "/api/reports/product-problem-counts",
     period,
     queryKey: "product-problem-counts",
+    limit: 10,
   });
 
   const customerConversationQuery = useReportData<CustomerConversationCount>({
     endpoint: "/api/reports/customer-conversation-counts",
     period,
     queryKey: "customer-conversation-counts",
+    limit: 10,
   });
 
   const handleRefresh = () => {
-    productProblemQuery.refetch();
-    customerConversationQuery.refetch();
+    if (activeTab === "product-problem") {
+      productProblemQuery.refetch();
+    } else {
+      customerConversationQuery.refetch();
+    }
   };
 
-  const isFetching = productProblemQuery.isFetching || customerConversationQuery.isFetching;
+  const isFetching = activeTab === "product-problem" 
+    ? productProblemQuery.isFetching 
+    : customerConversationQuery.isFetching;
 
   return (
     <div className="space-y-6">
@@ -67,7 +83,7 @@ export function ReportsPage() {
           <BarChart3 className="w-8 h-8 text-blue-600" />
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Relatórios</h1>
-            <p className="text-sm text-gray-500">Análise de atendimentos por produto, problema e cliente</p>
+            <p className="text-sm text-gray-500">Análise de atendimentos</p>
           </div>
         </div>
         <PeriodFilterComponent
@@ -78,25 +94,53 @@ export function ReportsPage() {
         />
       </div>
 
-      <ReportTable<ProductProblemCount>
-        title="Contagem por Produto e Problema"
-        columns={productProblemColumns}
-        data={productProblemQuery.data}
-        isLoading={productProblemQuery.isLoading}
-        isError={productProblemQuery.isError}
-        error={productProblemQuery.error as Error}
-        onRetry={() => productProblemQuery.refetch()}
+      <SegmentedTabs
+        tabs={tabs}
+        activeTab={activeTab}
+        onChange={(tabId) => setActiveTab(tabId as ReportTab)}
       />
 
-      <ReportTable<CustomerConversationCount>
-        title="Conversas por Cliente"
-        columns={customerConversationColumns}
-        data={customerConversationQuery.data}
-        isLoading={customerConversationQuery.isLoading}
-        isError={customerConversationQuery.isError}
-        error={customerConversationQuery.error as Error}
-        onRetry={() => customerConversationQuery.refetch()}
-      />
+      {activeTab === "product-problem" && (
+        <ReportTable<ProductProblemCount>
+          title="Contagem por Produto e Problema"
+          columns={productProblemColumns}
+          data={productProblemQuery.data}
+          isLoading={productProblemQuery.isLoading}
+          isError={productProblemQuery.isError}
+          error={productProblemQuery.error}
+          onRetry={() => productProblemQuery.refetch()}
+          page={productProblemQuery.page}
+          totalPages={productProblemQuery.totalPages}
+          total={productProblemQuery.total}
+          showingFrom={productProblemQuery.showingFrom}
+          showingTo={productProblemQuery.showingTo}
+          onPreviousPage={productProblemQuery.previousPage}
+          onNextPage={productProblemQuery.nextPage}
+          hasPreviousPage={productProblemQuery.hasPreviousPage}
+          hasNextPage={productProblemQuery.hasNextPage}
+        />
+      )}
+
+      {activeTab === "customer-conversations" && (
+        <ReportTable<CustomerConversationCount>
+          title="Conversas por Cliente"
+          columns={customerConversationColumns}
+          data={customerConversationQuery.data}
+          isLoading={customerConversationQuery.isLoading}
+          isError={customerConversationQuery.isError}
+          error={customerConversationQuery.error}
+          onRetry={() => customerConversationQuery.refetch()}
+          page={customerConversationQuery.page}
+          totalPages={customerConversationQuery.totalPages}
+          total={customerConversationQuery.total}
+          showingFrom={customerConversationQuery.showingFrom}
+          showingTo={customerConversationQuery.showingTo}
+          onPreviousPage={customerConversationQuery.previousPage}
+          onNextPage={customerConversationQuery.nextPage}
+          hasPreviousPage={customerConversationQuery.hasPreviousPage}
+          hasNextPage={customerConversationQuery.hasNextPage}
+        />
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { RefreshCw, AlertCircle } from "lucide-react";
+import { Pagination } from "../../../shared/components/ui/Pagination";
 
 export interface Column<T> {
   key: keyof T | string;
@@ -15,6 +16,15 @@ interface ReportTableProps<T> {
   isError: boolean;
   error?: Error | null;
   onRetry?: () => void;
+  page?: number;
+  totalPages?: number;
+  total?: number;
+  showingFrom?: number;
+  showingTo?: number;
+  onPreviousPage?: () => void;
+  onNextPage?: () => void;
+  hasPreviousPage?: boolean;
+  hasNextPage?: boolean;
 }
 
 export function ReportTable<T extends Record<string, any>>({
@@ -25,6 +35,15 @@ export function ReportTable<T extends Record<string, any>>({
   isError,
   error,
   onRetry,
+  page = 0,
+  totalPages = 1,
+  total = 0,
+  showingFrom = 0,
+  showingTo = 0,
+  onPreviousPage,
+  onNextPage,
+  hasPreviousPage = false,
+  hasNextPage = false,
 }: ReportTableProps<T>) {
   const alignClass = (align?: "left" | "right" | "center") => {
     switch (align) {
@@ -33,6 +52,8 @@ export function ReportTable<T extends Record<string, any>>({
       default: return "text-left";
     }
   };
+
+  const showPagination = total > 0 && onPreviousPage && onNextPage;
 
   return (
     <div className="bg-white rounded-lg border shadow-sm">
@@ -65,39 +86,55 @@ export function ReportTable<T extends Record<string, any>>({
           Nenhum dado encontrado
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50 border-b">
-                {columns.map((col) => (
-                  <th
-                    key={String(col.key)}
-                    className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider ${alignClass(col.align)}`}
-                  >
-                    {col.header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {data.map((row, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  {columns.map((col) => {
-                    const value = row[col.key as keyof T];
-                    return (
-                      <td
-                        key={String(col.key)}
-                        className={`px-6 py-4 whitespace-nowrap text-sm ${alignClass(col.align)} ${col.align === "right" ? "font-medium text-gray-900" : "text-gray-600"}`}
-                      >
-                        {col.render ? col.render(value, row) : (value ?? "-")}
-                      </td>
-                    );
-                  })}
+        <>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50 border-b">
+                  {columns.map((col) => (
+                    <th
+                      key={String(col.key)}
+                      className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider ${alignClass(col.align)}`}
+                    >
+                      {col.header}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {data.map((row, index) => (
+                  <tr key={index} className="hover:bg-gray-50">
+                    {columns.map((col) => {
+                      const value = row[col.key as keyof T];
+                      return (
+                        <td
+                          key={String(col.key)}
+                          className={`px-6 py-4 whitespace-nowrap text-sm ${alignClass(col.align)} ${col.align === "right" ? "font-medium text-gray-900" : "text-gray-600"}`}
+                        >
+                          {col.render ? col.render(value, row) : (value ?? "-")}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {showPagination && (
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              showingFrom={showingFrom}
+              showingTo={showingTo}
+              total={total}
+              onPreviousPage={onPreviousPage}
+              onNextPage={onNextPage}
+              hasPreviousPage={hasPreviousPage}
+              hasNextPage={hasNextPage}
+              itemLabel="registros"
+            />
+          )}
+        </>
       )}
     </div>
   );
