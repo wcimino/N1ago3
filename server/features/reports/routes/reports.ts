@@ -7,7 +7,16 @@ const router = Router();
 
 router.get("/api/reports/product-problem-counts", async (req, res) => {
   try {
-    const results = await db.execute(sql`
+    const period = req.query.period as string || "all";
+    
+    let dateFilter = "";
+    if (period === "1h") {
+      dateFilter = "AND cs.created_at >= NOW() - INTERVAL '1 hour'";
+    } else if (period === "24h") {
+      dateFilter = "AND cs.created_at >= NOW() - INTERVAL '24 hours'";
+    }
+
+    const results = await db.execute(sql.raw(`
       WITH problem_data AS (
         SELECT 
           COALESCE(cs.product_standard, cs.product, 'Não identificado') as product,
@@ -17,6 +26,7 @@ router.get("/api/reports/product-problem-counts", async (req, res) => {
         WHERE cs.objective_problems IS NOT NULL 
           AND cs.objective_problems::text != '[]'
           AND cs.objective_problems::text != 'null'
+          ${dateFilter}
       )
       SELECT 
         product,
@@ -26,7 +36,7 @@ router.get("/api/reports/product-problem-counts", async (req, res) => {
       FROM problem_data
       GROUP BY product, subproduct, problem->>'name'
       ORDER BY count DESC, product, subproduct, problem_name
-    `);
+    `));
 
     const formattedResults = results.rows.map((row: any) => ({
       product: row.product || "Não identificado",

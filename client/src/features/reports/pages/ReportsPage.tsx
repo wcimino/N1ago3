@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BarChart3, RefreshCw, AlertCircle } from "lucide-react";
 
@@ -8,11 +9,21 @@ interface ProductProblemCount {
   count: number;
 }
 
+type PeriodFilter = "1h" | "24h" | "all";
+
+const periodLabels: Record<PeriodFilter, string> = {
+  "1h": "Última 1h",
+  "24h": "Últimas 24h",
+  "all": "Todo período",
+};
+
 export function ReportsPage() {
+  const [period, setPeriod] = useState<PeriodFilter>("24h");
+
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery<ProductProblemCount[]>({
-    queryKey: ["reports", "product-problem-counts"],
+    queryKey: ["reports", "product-problem-counts", period],
     queryFn: async () => {
-      const response = await fetch("/api/reports/product-problem-counts");
+      const response = await fetch(`/api/reports/product-problem-counts?period=${period}`);
       if (!response.ok) throw new Error("Falha ao carregar relatório");
       return response.json();
     },
@@ -28,14 +39,25 @@ export function ReportsPage() {
             <p className="text-sm text-gray-500">Análise de atendimentos por produto e problema</p>
           </div>
         </div>
-        <button
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
-          Atualizar
-        </button>
+        <div className="flex items-center gap-2">
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value as PeriodFilter)}
+            className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {Object.entries(periodLabels).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
+            Atualizar
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg border shadow-sm">
