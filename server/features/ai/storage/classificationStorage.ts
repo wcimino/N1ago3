@@ -197,45 +197,51 @@ export const classificationStorage = {
       since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     }
 
-    // Count distinct conversations with identified problems grouped by problem name
-    // The objectiveProblems field is a JSON array: [{ id, name, matchScore? }]
-    const results = await db
-      .select({
-        problemName: sql<string>`problem_obj->>'name'`,
-        count: sql<number>`count(DISTINCT ${conversations.id})::int`,
-      })
-      .from(eventsStandard)
-      .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
-      .innerJoin(conversationsSummary, eq(conversations.id, conversationsSummary.conversationId))
-      .innerJoin(
-        sql`jsonb_array_elements(${conversationsSummary.objectiveProblems}::jsonb) AS problem_obj`,
-        sql`true`
+    // First get the distinct conversation IDs with activity in the period
+    // Then count problems grouped by name
+    const results = await db.execute<{ problem_name: string; count: number }>(sql`
+      WITH active_conversations AS (
+        SELECT DISTINCT c.id as conversation_id
+        FROM ${eventsStandard} e
+        INNER JOIN ${conversations} c ON e.conversation_id = c.id
+        WHERE e.occurred_at >= ${since}
+      ),
+      conversations_with_problems AS (
+        SELECT 
+          ac.conversation_id,
+          cs.objective_problems
+        FROM active_conversations ac
+        INNER JOIN ${conversationsSummary} cs ON ac.conversation_id = cs.conversation_id
+        WHERE cs.objective_problems IS NOT NULL
+          AND jsonb_array_length(cs.objective_problems::jsonb) > 0
       )
-      .where(and(
-        gte(eventsStandard.occurredAt, since),
-        isNotNull(conversationsSummary.objectiveProblems)
-      ))
-      .groupBy(sql`problem_obj->>'name'`)
-      .orderBy(sql`count(DISTINCT ${conversations.id}) desc`);
+      SELECT 
+        problem_obj->>'name' as problem_name,
+        COUNT(DISTINCT cwp.conversation_id)::int as count
+      FROM conversations_with_problems cwp
+      CROSS JOIN LATERAL jsonb_array_elements(cwp.objective_problems::jsonb) AS problem_obj
+      GROUP BY problem_obj->>'name'
+      ORDER BY count DESC
+    `);
 
-    // Calculate total distinct conversations with any problem identified
-    const totalResult = results.reduce((sum, r) => sum + r.count, 0);
-    const uniqueConversationsWithProblems = await db
-      .select({
-        total: sql<number>`count(DISTINCT ${conversations.id})::int`,
-      })
-      .from(eventsStandard)
-      .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
-      .innerJoin(conversationsSummary, eq(conversations.id, conversationsSummary.conversationId))
-      .where(and(
-        gte(eventsStandard.occurredAt, since),
-        isNotNull(conversationsSummary.objectiveProblems),
-        sql`jsonb_array_length(${conversationsSummary.objectiveProblems}::jsonb) > 0`
-      ));
+    // Get total distinct conversations with any problem
+    const totalResult = await db.execute<{ total: number }>(sql`
+      WITH active_conversations AS (
+        SELECT DISTINCT c.id as conversation_id
+        FROM ${eventsStandard} e
+        INNER JOIN ${conversations} c ON e.conversation_id = c.id
+        WHERE e.occurred_at >= ${since}
+      )
+      SELECT COUNT(DISTINCT ac.conversation_id)::int as total
+      FROM active_conversations ac
+      INNER JOIN ${conversationsSummary} cs ON ac.conversation_id = cs.conversation_id
+      WHERE cs.objective_problems IS NOT NULL
+        AND jsonb_array_length(cs.objective_problems::jsonb) > 0
+    `);
 
     return { 
-      items: results as { problemName: string; count: number }[], 
-      total: uniqueConversationsWithProblems[0]?.total || 0 
+      items: results.rows.map(r => ({ problemName: r.problem_name, count: r.count })), 
+      total: totalResult.rows[0]?.total || 0 
     };
   },
 };
