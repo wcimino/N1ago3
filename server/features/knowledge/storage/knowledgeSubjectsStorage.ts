@@ -1,5 +1,5 @@
 import { db } from "../../../db.js";
-import { knowledgeSubjects, ifoodProducts, knowledgeIntents, knowledgeBase } from "../../../../shared/schema.js";
+import { knowledgeSubjects, productsCatalog, knowledgeIntents, knowledgeBase } from "../../../../shared/schema.js";
 import { eq, desc, ilike, or, and, sql, inArray, type SQL } from "drizzle-orm";
 import type { KnowledgeSubject, InsertKnowledgeSubject } from "../../../../shared/schema.js";
 
@@ -37,10 +37,10 @@ export const knowledgeSubjectsStorage = {
       synonyms: knowledgeSubjects.synonyms,
       createdAt: knowledgeSubjects.createdAt,
       updatedAt: knowledgeSubjects.updatedAt,
-      productName: ifoodProducts.fullName,
+      productName: productsCatalog.fullName,
     })
       .from(knowledgeSubjects)
-      .leftJoin(ifoodProducts, eq(knowledgeSubjects.productCatalogId, ifoodProducts.id))
+      .leftJoin(productsCatalog, eq(knowledgeSubjects.productCatalogId, productsCatalog.id))
       .orderBy(desc(knowledgeSubjects.updatedAt));
 
     return results;

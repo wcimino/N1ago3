@@ -9,7 +9,7 @@ import {
 } from "../../../lib/productHierarchy";
 import { useTreeExpansion } from "../../../shared/components/ui";
 
-interface IfoodProduct {
+interface ProductCatalogItem {
   id: number;
   produto: string;
   subproduto: string | null;
@@ -35,9 +35,9 @@ export function useProductCatalog() {
   const [addingTo, setAddingTo] = useState<{ parentNode: ProductTreeNode | null; level: ProductLevelType } | null>(null);
   const [editingNode, setEditingNode] = useState<ProductTreeNode | null>(null);
 
-  const { data: products, isLoading } = useQuery<IfoodProduct[]>({
+  const { data: products, isLoading } = useQuery<ProductCatalogItem[]>({
     queryKey: ["product-catalog"],
-    queryFn: () => fetchApi<IfoodProduct[]>("/api/product-catalog"),
+    queryFn: () => fetchApi<ProductCatalogItem[]>("/api/product-catalog"),
   });
 
   const tree = useMemo(() => buildProductTree(products || []), [products]);

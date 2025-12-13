@@ -1,5 +1,5 @@
 import { db } from "../../../db.js";
-import { knowledgeBase, knowledgeBaseEmbeddings, knowledgeIntents, knowledgeSubjects, ifoodProducts } from "../../../../shared/schema.js";
+import { knowledgeBase, knowledgeBaseEmbeddings, knowledgeIntents, knowledgeSubjects, productsCatalog } from "../../../../shared/schema.js";
 import { eq, desc, asc, ilike, or, and, isNull, sql, type SQL } from "drizzle-orm";
 import type { KnowledgeBaseArticle, InsertKnowledgeBaseArticle, KnowledgeIntent, KnowledgeBaseEmbedding } from "../../../../shared/schema.js";
 import { generateContentHash, generateArticleEmbedding, embeddingToString } from "../services/knowledgeBaseEmbeddingService.js";
@@ -289,11 +289,11 @@ export const knowledgeBaseStorage = {
     const conditions: SQL[] = [];
     
     if (filters?.product) {
-      conditions.push(eq(ifoodProducts.produto, filters.product));
+      conditions.push(eq(productsCatalog.produto, filters.product));
     }
     
     if (filters?.subproduct) {
-      conditions.push(eq(ifoodProducts.subproduto, filters.subproduct));
+      conditions.push(eq(productsCatalog.subproduto, filters.subproduct));
     }
 
     let query = db
@@ -305,13 +305,13 @@ export const knowledgeBaseStorage = {
         subjectId: knowledgeSubjects.id,
         subjectName: knowledgeSubjects.name,
         subjectSynonyms: knowledgeSubjects.synonyms,
-        productName: ifoodProducts.produto,
-        subproductName: ifoodProducts.subproduto,
+        productName: productsCatalog.produto,
+        subproductName: productsCatalog.subproduto,
         articleId: knowledgeBase.id,
       })
       .from(knowledgeIntents)
       .innerJoin(knowledgeSubjects, eq(knowledgeIntents.subjectId, knowledgeSubjects.id))
-      .innerJoin(ifoodProducts, eq(knowledgeSubjects.productCatalogId, ifoodProducts.id))
+      .innerJoin(productsCatalog, eq(knowledgeSubjects.productCatalogId, productsCatalog.id))
       .leftJoin(knowledgeBase, eq(knowledgeBase.intentId, knowledgeIntents.id));
 
     if (conditions.length > 0) {
@@ -542,12 +542,12 @@ export const knowledgeBaseStorage = {
         subjectId: knowledgeSubjects.id,
         subjectName: knowledgeSubjects.name,
         subjectSynonyms: knowledgeSubjects.synonyms,
-        productName: ifoodProducts.produto,
-        subproductName: ifoodProducts.subproduto,
+        productName: productsCatalog.produto,
+        subproductName: productsCatalog.subproduto,
       })
       .from(knowledgeIntents)
       .innerJoin(knowledgeSubjects, eq(knowledgeIntents.subjectId, knowledgeSubjects.id))
-      .innerJoin(ifoodProducts, eq(knowledgeSubjects.productCatalogId, ifoodProducts.id))
+      .innerJoin(productsCatalog, eq(knowledgeSubjects.productCatalogId, productsCatalog.id))
       .where(eq(knowledgeIntents.id, article.intentId))
       .limit(1);
 

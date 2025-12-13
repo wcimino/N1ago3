@@ -1,48 +1,48 @@
 import { db } from "../../../db.js";
-import { ifoodProducts, type IfoodProduct, type InsertIfoodProduct } from "../../../../shared/schema.js";
+import { productsCatalog, type ProductCatalog, type InsertProductCatalog } from "../../../../shared/schema.js";
 import { eq, asc } from "drizzle-orm";
 
 export const productCatalogStorage = {
-  async getAll(): Promise<IfoodProduct[]> {
+  async getAll(): Promise<ProductCatalog[]> {
     return db
       .select()
-      .from(ifoodProducts)
-      .orderBy(asc(ifoodProducts.produto), asc(ifoodProducts.subproduto));
+      .from(productsCatalog)
+      .orderBy(asc(productsCatalog.produto), asc(productsCatalog.subproduto));
   },
 
-  async getById(id: number): Promise<IfoodProduct | null> {
+  async getById(id: number): Promise<ProductCatalog | null> {
     const result = await db
       .select()
-      .from(ifoodProducts)
-      .where(eq(ifoodProducts.id, id))
+      .from(productsCatalog)
+      .where(eq(productsCatalog.id, id))
       .limit(1);
     return result[0] || null;
   },
 
   async getDistinctProdutos(): Promise<string[]> {
     const result = await db
-      .selectDistinct({ produto: ifoodProducts.produto })
-      .from(ifoodProducts)
-      .orderBy(asc(ifoodProducts.produto));
+      .selectDistinct({ produto: productsCatalog.produto })
+      .from(productsCatalog)
+      .orderBy(asc(productsCatalog.produto));
     return result.map(r => r.produto);
   },
 
   async getDistinctSubprodutos(produto?: string): Promise<string[]> {
     let query = db
-      .selectDistinct({ subproduto: ifoodProducts.subproduto })
-      .from(ifoodProducts);
+      .selectDistinct({ subproduto: productsCatalog.subproduto })
+      .from(productsCatalog);
     
     if (produto) {
-      query = query.where(eq(ifoodProducts.produto, produto)) as typeof query;
+      query = query.where(eq(productsCatalog.produto, produto)) as typeof query;
     }
     
-    const result = await query.orderBy(asc(ifoodProducts.subproduto));
+    const result = await query.orderBy(asc(productsCatalog.subproduto));
     return result.map(r => r.subproduto).filter((s): s is string => s !== null);
   },
 
-  async create(data: InsertIfoodProduct): Promise<IfoodProduct> {
+  async create(data: InsertProductCatalog): Promise<ProductCatalog> {
     const [result] = await db
-      .insert(ifoodProducts)
+      .insert(productsCatalog)
       .values({
         ...data,
         createdAt: new Date(),
@@ -52,30 +52,30 @@ export const productCatalogStorage = {
     return result;
   },
 
-  async update(id: number, data: Partial<InsertIfoodProduct>): Promise<IfoodProduct | null> {
+  async update(id: number, data: Partial<InsertProductCatalog>): Promise<ProductCatalog | null> {
     const [result] = await db
-      .update(ifoodProducts)
+      .update(productsCatalog)
       .set({
         ...data,
         updatedAt: new Date(),
       })
-      .where(eq(ifoodProducts.id, id))
+      .where(eq(productsCatalog.id, id))
       .returning();
     return result || null;
   },
 
   async delete(id: number): Promise<boolean> {
     const result = await db
-      .delete(ifoodProducts)
-      .where(eq(ifoodProducts.id, id));
+      .delete(productsCatalog)
+      .where(eq(productsCatalog.id, id));
     return (result.rowCount ?? 0) > 0;
   },
 
   async getFullNames(): Promise<string[]> {
     const result = await db
-      .select({ fullName: ifoodProducts.fullName })
-      .from(ifoodProducts)
-      .orderBy(asc(ifoodProducts.fullName));
+      .select({ fullName: productsCatalog.fullName })
+      .from(productsCatalog)
+      .orderBy(asc(productsCatalog.fullName));
     return result.map(r => r.fullName);
   },
 };

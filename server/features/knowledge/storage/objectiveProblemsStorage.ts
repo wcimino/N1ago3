@@ -3,7 +3,7 @@ import {
   knowledgeBaseObjectiveProblems, 
   knowledgeBaseObjectiveProblemsHasProductsCatalog,
   knowledgeBaseObjectiveProblemsEmbeddings,
-  ifoodProducts,
+  productsCatalog,
   type KnowledgeBaseObjectiveProblem, 
   type InsertKnowledgeBaseObjectiveProblem 
 } from "../../../../shared/schema.js";
@@ -222,8 +222,8 @@ async function upsertProblemEmbedding(params: {
 export async function getAllProducts() {
   return db
     .select()
-    .from(ifoodProducts)
-    .orderBy(ifoodProducts.fullName);
+    .from(productsCatalog)
+    .orderBy(productsCatalog.fullName);
 }
 
 export interface SearchObjectiveProblemsParams {
@@ -335,7 +335,7 @@ export async function searchObjectiveProblems(
     problems = problems.filter((p: KnowledgeBaseObjectiveProblem) => validProblemIds.has(p.id));
   }
 
-  const allProducts = await db.select().from(ifoodProducts);
+  const allProducts = await db.select().from(productsCatalog);
   const productMap = new Map(allProducts.map((p: typeof allProducts[number]) => [p.id, p.fullName]));
 
   const searchTerms = keywords 
@@ -481,7 +481,7 @@ export async function searchObjectiveProblemsBySimilarity(
     `);
   }
   
-  const allProducts = await db.select().from(ifoodProducts);
+  const allProducts = await db.select().from(productsCatalog);
   const productMap = new Map(allProducts.map((prod: typeof allProducts[number]) => [prod.id, prod.fullName]));
   
   const enrichedResults = await Promise.all(

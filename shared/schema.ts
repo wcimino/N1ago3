@@ -395,7 +395,7 @@ export type InsertKnowledgeBaseObjectiveProblem = typeof knowledgeBaseObjectiveP
 export const knowledgeBaseObjectiveProblemsHasProductsCatalog = pgTable("knowledge_base_objective_problems_has_products_catalog", {
   id: serial("id").primaryKey(),
   objectiveProblemId: integer("objective_problem_id").notNull().references(() => knowledgeBaseObjectiveProblems.id, { onDelete: "cascade" }),
-  productId: integer("product_id").notNull().references(() => ifoodProducts.id, { onDelete: "cascade" }),
+  productId: integer("product_id").notNull().references(() => productsCatalog.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   uniqueLink: uniqueIndex("idx_kb_objective_problems_products_unique").on(table.objectiveProblemId, table.productId),
@@ -424,7 +424,7 @@ export const knowledgeBaseObjectiveProblemsEmbeddings = pgTable("knowledge_base_
 export type KnowledgeBaseObjectiveProblemsEmbedding = typeof knowledgeBaseObjectiveProblemsEmbeddings.$inferSelect;
 export type InsertKnowledgeBaseObjectiveProblemsEmbedding = typeof knowledgeBaseObjectiveProblemsEmbeddings.$inferInsert;
 
-export const ifoodProducts = pgTable("products_catalog", {
+export const productsCatalog = pgTable("products_catalog", {
   id: serial("id").primaryKey(),
   produto: text("produto").notNull(),
   subproduto: text("subproduto"),
@@ -605,8 +605,8 @@ export type InsertKnowledgeBaseEmbedding = Omit<typeof knowledgeBaseEmbeddings.$
 export type KnowledgeSuggestion = typeof knowledgeSuggestions.$inferSelect;
 export type InsertKnowledgeSuggestion = Omit<typeof knowledgeSuggestions.$inferInsert, "id" | "createdAt" | "updatedAt">;
 
-export type IfoodProduct = typeof ifoodProducts.$inferSelect;
-export type InsertIfoodProduct = Omit<typeof ifoodProducts.$inferInsert, "id" | "createdAt" | "updatedAt">;
+export type ProductCatalog = typeof productsCatalog.$inferSelect;
+export type InsertProductCatalog = Omit<typeof productsCatalog.$inferInsert, "id" | "createdAt" | "updatedAt">;
 
 export type LearningAttempt = typeof learningAttempts.$inferSelect;
 export type InsertLearningAttempt = Omit<typeof learningAttempts.$inferInsert, "id" | "createdAt">;
@@ -622,7 +622,7 @@ export type InsertZendeskArticleEmbedding = Omit<typeof zendeskArticleEmbeddings
 // Knowledge Subjects - Assuntos vinculados a produtos
 export const knowledgeSubjects = pgTable("knowledge_subjects", {
   id: serial("id").primaryKey(),
-  productCatalogId: integer("product_catalog_id").notNull().references(() => ifoodProducts.id),
+  productCatalogId: integer("product_catalog_id").notNull().references(() => productsCatalog.id),
   name: text("name").notNull(),
   synonyms: json("synonyms").$type<string[]>().default([]).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -784,15 +784,13 @@ export const knowledgeBaseSolutions = pgTable("knowledge_base_solutions", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
-  product: text("product"),
-  subject: text("subject"),
+  productId: integer("product_id").references(() => productsCatalog.id),
   conditions: json("conditions").$type<Record<string, unknown>>(),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
-  productIdx: index("idx_kb_solutions_product").on(table.product),
-  subjectIdx: index("idx_kb_solutions_subject").on(table.subject),
+  productIdx: index("idx_kb_solutions_product").on(table.productId),
   isActiveIdx: index("idx_kb_solutions_is_active").on(table.isActive),
 }));
 
