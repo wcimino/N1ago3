@@ -4,23 +4,18 @@ import { conversations } from "../../../../shared/schema.js";
 import { eq } from "drizzle-orm";
 import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
 import { ZendeskApiService } from "../../../services/zendeskApiService.js";
+import { TargetResolver } from "../services/targetResolver.js";
 
 const router = Router();
-
-const TARGET_INTEGRATIONS: Record<string, () => string> = {
-  n1ago: ZendeskApiService.getN1agoIntegrationId,
-  human: ZendeskApiService.getAgentWorkspaceIntegrationId,
-  bot: ZendeskApiService.getAnswerBotIntegrationId,
-};
 
 router.post("/api/conversations/:conversationId/transfer", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
     const { conversationId } = req.params;
     const { target, reason } = req.body;
 
-    if (!target || !TARGET_INTEGRATIONS[target]) {
+    if (!target || !TargetResolver.isValidTarget(target)) {
       return res.status(400).json({ 
-        error: "Invalid target. Must be one of: n1ago, human, bot" 
+        error: `Invalid target. Must be one of: ${TargetResolver.VALID_TARGETS.join(", ")}` 
       });
     }
 
@@ -34,7 +29,11 @@ router.post("/api/conversations/:conversationId/transfer", isAuthenticated, requ
     }
 
     const externalConversationId = conversation.externalConversationId;
-    const targetIntegrationId = TARGET_INTEGRATIONS[target]();
+    const targetIntegrationId = TargetResolver.getIntegrationId(target);
+
+    if (!targetIntegrationId) {
+      return res.status(400).json({ error: "Could not resolve target integration" });
+    }
 
     const result = await ZendeskApiService.passControl(
       externalConversationId,
@@ -51,19 +50,15 @@ router.post("/api/conversations/:conversationId/transfer", isAuthenticated, requ
       });
     }
 
-    const handlerNameMap: Record<string, string> = {
-      n1ago: "n1ago",
-      human: "zd-agentWorkspace",
-      bot: "zd-answerBot",
-    };
+    const handlerName = TargetResolver.getHandlerName(target);
 
     const updateData: Record<string, any> = { 
       currentHandler: targetIntegrationId,
-      currentHandlerName: handlerNameMap[target],
+      currentHandlerName: handlerName,
       updatedAt: new Date() 
     };
     
-    if (target === "n1ago") {
+    if (TargetResolver.isN1ago(target)) {
       updateData.handledByN1ago = true;
     }
     
@@ -75,7 +70,7 @@ router.post("/api/conversations/:conversationId/transfer", isAuthenticated, requ
     res.json({ 
       success: true, 
       message: `Conversation transferred to ${target}`,
-      newHandler: handlerNameMap[target]
+      newHandler: handlerName
     });
   } catch (error) {
     console.error("[TransferRoutes] Error transferring conversation:", error);

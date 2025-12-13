@@ -1,13 +1,10 @@
 import { routingStorage } from "../storage/routingStorage.js";
+import { routingTrackingStorage } from "../storage/routingTrackingStorage.js";
+import { TargetResolver } from "./targetResolver.js";
 import { ZendeskApiService } from "../../../services/zendeskApiService.js";
 import { userStorage } from "../../conversations/storage/userStorage.js";
-import { db } from "../../../db.js";
-import { conversations } from "../../../../shared/schema.js";
-import { eq } from "drizzle-orm";
+import { conversationStorage } from "../../conversations/storage/index.js";
 import type { EventStandard, RoutingRule } from "../../../../shared/schema.js";
-
-const processedAllocateNextN = new Set<string>();
-const processedTransferOngoing = new Set<string>();
 
 function shouldProcessRouting(event: EventStandard): boolean {
   if (event.eventType !== "conversation_started" && event.eventType !== "message") {
@@ -21,27 +18,10 @@ function shouldProcessRouting(event: EventStandard): boolean {
   return true;
 }
 
-function getTargetIntegrationId(target: string): string | null {
-  switch (target.toLowerCase()) {
-    case "n1ago":
-      return ZendeskApiService.getN1agoIntegrationId();
-    case "human":
-      return ZendeskApiService.getAgentWorkspaceIntegrationId();
-    case "bot":
-      return ZendeskApiService.getAnswerBotIntegrationId();
-    default:
-      return null;
-  }
-}
-
 function evaluateRule(rule: RoutingRule, event: EventStandard, userAuthenticated: boolean | undefined): { matches: boolean; reason: string } {
   if (rule.ruleType === "allocate_next_n") {
     if (event.eventType !== "conversation_started") {
       return { matches: false, reason: "not conversation_started event" };
-    }
-    
-    if (processedAllocateNextN.has(event.externalConversationId!)) {
-      return { matches: false, reason: "conversation already processed for allocate_next_n" };
     }
     
     if (!routingStorage.matchesAuthFilter(rule, userAuthenticated)) {
@@ -64,10 +44,6 @@ function evaluateRule(rule: RoutingRule, event: EventStandard, userAuthenticated
       return { matches: false, reason: "no message text" };
     }
     
-    if (processedTransferOngoing.has(event.externalConversationId!)) {
-      return { matches: false, reason: "conversation already routed via transfer_ongoing" };
-    }
-    
     if (!routingStorage.matchesText(rule.matchText, event.contentText)) {
       return { matches: false, reason: `text mismatch (rule="${rule.matchText?.substring(0, 30)}...", msg="${event.contentText.substring(0, 30)}...")` };
     }
@@ -76,6 +52,96 @@ function evaluateRule(rule: RoutingRule, event: EventStandard, userAuthenticated
   }
   
   return { matches: false, reason: `unknown rule type: ${rule.ruleType}` };
+}
+
+async function executeRoutingWithRollback(
+  rule: RoutingRule,
+  externalConversationId: string,
+  targetIntegrationId: string
+): Promise<{ success: boolean; error?: string }> {
+  let slotConsumed = false;
+  let trackingAdded = false;
+
+  try {
+    console.log(`[Routing] Rule ${rule.id}: Calling passControl -> ${rule.target}`);
+    
+    const passControlResult = await ZendeskApiService.passControl(
+      externalConversationId,
+      targetIntegrationId,
+      { source: "routing_rule", ruleId: rule.id, ruleType: rule.ruleType },
+      "routing",
+      `rule:${rule.id}`
+    );
+
+    if (!passControlResult.success) {
+      return { success: false, error: `passControl failed: ${passControlResult.error}` };
+    }
+
+    console.log(`[Routing] Rule ${rule.id}: passControl SUCCESS, marking as processed...`);
+
+    await routingTrackingStorage.markConversationProcessed(
+      externalConversationId,
+      rule.id,
+      rule.ruleType
+    );
+    trackingAdded = true;
+
+    console.log(`[Routing] Rule ${rule.id}: Consuming slot...`);
+
+    const consumeResult = await routingStorage.tryConsumeRuleSlot(rule.id);
+    
+    if (!consumeResult.success) {
+      console.log(`[Routing] Rule ${rule.id}: No available slots, rolling back tracking...`);
+      await routingTrackingStorage.removeConversationTracking(externalConversationId, rule.ruleType);
+      return { success: false, error: "No available slots (race condition)" };
+    }
+    
+    slotConsumed = true;
+    console.log(`[Routing] Rule ${rule.id}: Slot consumed (${consumeResult.rule?.allocatedCount}/${consumeResult.rule?.allocateCount})`);
+
+    if (TargetResolver.isN1ago(rule.target)) {
+      try {
+        await conversationStorage.updateConversationHandler(
+          externalConversationId,
+          targetIntegrationId,
+          TargetResolver.getHandlerName(rule.target) || "n1ago"
+        );
+        console.log(`[Routing] Rule ${rule.id}: Marked conversation as handled by N1ago`);
+      } catch (handlerError) {
+        console.error(`[Routing] Rule ${rule.id}: Failed to update handler, but routing succeeded:`, handlerError);
+      }
+    }
+    
+    if (consumeResult.shouldDeactivate) {
+      await routingStorage.deactivateRule(rule.id);
+      console.log(`[Routing] Rule ${rule.id}: Deactivated (all slots consumed)`);
+    }
+
+    return { success: true };
+    
+  } catch (error) {
+    console.error(`[Routing] Rule ${rule.id}: ERROR during routing execution:`, error);
+    
+    if (slotConsumed) {
+      try {
+        await routingStorage.releaseRuleSlot(rule.id);
+        console.log(`[Routing] Rule ${rule.id}: Rolled back slot consumption`);
+      } catch (rollbackError) {
+        console.error(`[Routing] Rule ${rule.id}: Failed to rollback slot:`, rollbackError);
+      }
+    }
+    
+    if (trackingAdded) {
+      try {
+        await routingTrackingStorage.removeConversationTracking(externalConversationId, rule.ruleType);
+        console.log(`[Routing] Rule ${rule.id}: Rolled back tracking`);
+      } catch (rollbackError) {
+        console.error(`[Routing] Rule ${rule.id}: Failed to rollback tracking:`, rollbackError);
+      }
+    }
+    
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+  }
 }
 
 export async function processRoutingEvent(event: EventStandard): Promise<void> {
@@ -106,6 +172,16 @@ export async function processRoutingEvent(event: EventStandard): Promise<void> {
   console.log(`[Routing] Found ${activeRules.length} active rule(s), evaluating...`);
 
   for (const rule of activeRules) {
+    const alreadyProcessed = await routingTrackingStorage.hasProcessedConversation(
+      externalConversationId,
+      rule.ruleType
+    );
+    
+    if (alreadyProcessed) {
+      console.log(`[Routing] Rule ${rule.id} (${rule.ruleType}): skipped - conversation already processed for this rule type`);
+      continue;
+    }
+
     const { matches, reason } = evaluateRule(rule, event, userAuthenticated);
     
     console.log(`[Routing] Rule ${rule.id} (${rule.ruleType}): ${matches ? "MATCH" : "no match"} - ${reason}`);
@@ -114,72 +190,27 @@ export async function processRoutingEvent(event: EventStandard): Promise<void> {
       continue;
     }
 
-    const targetIntegrationId = getTargetIntegrationId(rule.target);
+    const targetIntegrationId = TargetResolver.getIntegrationId(rule.target);
     
     if (!targetIntegrationId) {
       console.error(`[Routing] Rule ${rule.id}: Unknown target "${rule.target}"`);
       continue;
     }
 
-    const consumeResult = await routingStorage.tryConsumeRuleSlot(rule.id);
-    
-    if (!consumeResult.success) {
-      console.log(`[Routing] Rule ${rule.id}: No available slots`);
+    const routingResult = await executeRoutingWithRollback(rule, externalConversationId, targetIntegrationId);
+
+    if (routingResult.success) {
+      console.log(`[Routing] Rule ${rule.id}: SUCCESS - Conversation ${externalConversationId} routed to ${rule.target}`);
+      return;
+    } else {
+      console.log(`[Routing] Rule ${rule.id}: FAILED - ${routingResult.error}, trying next rule...`);
       continue;
     }
-    
-    console.log(`[Routing] Rule ${rule.id}: Slot consumed (${consumeResult.rule?.allocatedCount}/${consumeResult.rule?.allocateCount})`);
-
-    const trackingSet = rule.ruleType === "allocate_next_n" ? processedAllocateNextN : processedTransferOngoing;
-    trackingSet.add(externalConversationId);
-
-    try {
-      console.log(`[Routing] Rule ${rule.id}: Calling passControl -> ${rule.target}`);
-      
-      const result = await ZendeskApiService.passControl(
-        externalConversationId,
-        targetIntegrationId,
-        { source: "routing_rule", ruleId: rule.id, ruleType: rule.ruleType },
-        "routing",
-        `rule:${rule.id}`
-      );
-
-      if (result.success) {
-        console.log(`[Routing] Rule ${rule.id}: SUCCESS - Conversation ${externalConversationId} routed to ${rule.target}`);
-        
-        if (rule.target.toLowerCase() === "n1ago") {
-          await db
-            .update(conversations)
-            .set({ handledByN1ago: true, updatedAt: new Date() })
-            .where(eq(conversations.externalConversationId, externalConversationId));
-          console.log(`[Routing] Rule ${rule.id}: Marked conversation as handled by N1ago`);
-        }
-        
-        if (consumeResult.shouldDeactivate) {
-          await routingStorage.deactivateRule(rule.id);
-          console.log(`[Routing] Rule ${rule.id}: Deactivated (all slots consumed)`);
-        }
-      } else {
-        console.error(`[Routing] Rule ${rule.id}: FAILED - ${result.error}`);
-        trackingSet.delete(externalConversationId);
-      }
-    } catch (error) {
-      console.error(`[Routing] Rule ${rule.id}: ERROR -`, error);
-      trackingSet.delete(externalConversationId);
-    }
-
-    return;
   }
   
-  console.log(`[Routing] No matching rules for conversation ${externalConversationId}`);
-}
-
-export function clearProcessedConversations(): void {
-  processedAllocateNextN.clear();
-  processedTransferOngoing.clear();
+  console.log(`[Routing] No matching rules successfully applied for conversation ${externalConversationId}`);
 }
 
 export const RoutingOrchestrator = {
   processRoutingEvent,
-  clearProcessedConversations,
 };

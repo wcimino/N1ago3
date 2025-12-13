@@ -1,5 +1,6 @@
 import { ZendeskApiService } from "../../../services/zendeskApiService.js";
 import { conversationStorage } from "../../conversations/storage/index.js";
+import { TargetResolver } from "../../routing/services/targetResolver.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 
 interface HandoffContext {
@@ -45,7 +46,7 @@ export async function processHandoffEvent(event: EventStandard): Promise<void> {
         activeSwitchboard.id,
         activeSwitchboard.name
       );
-      const isN1ago = activeSwitchboard.name?.toLowerCase().includes("n1ago");
+      const isN1ago = TargetResolver.isN1ago(activeSwitchboard.id) || TargetResolver.isN1ago(activeSwitchboard.name || "");
       console.log(`[HandoffOrchestrator] Updated conversation handler: ${conversationExternalId} -> ${activeSwitchboard.name}${isN1ago ? ' (marked as handled by N1ago)' : ''}`);
     } catch (error) {
       console.error(`[HandoffOrchestrator] Failed to update conversation handler:`, error);
