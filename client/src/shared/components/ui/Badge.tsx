@@ -7,6 +7,7 @@ export type BadgeVariant =
   | "info" 
   | "purple" 
   | "teal" 
+  | "primary"
   | "default";
 
 export type BadgeSize = "sm" | "md";
@@ -27,6 +28,7 @@ const variantStyles: Record<BadgeVariant, string> = {
   info: "bg-blue-100 text-blue-800",
   purple: "bg-purple-100 text-purple-800",
   teal: "bg-teal-100 text-teal-800",
+  primary: "bg-primary-100 text-primary-800",
   default: "bg-gray-100 text-gray-800",
 };
 
