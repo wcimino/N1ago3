@@ -132,6 +132,24 @@ function parseStructuredSummary(responseContent: string): StructuredSummary | nu
       if (objectiveProblems.length === 0) objectiveProblems = undefined;
     }
 
+    let articlesAndObjectiveProblems: ArticleAndProblemResult[] | undefined;
+    const rawArticlesAndProblems = parsed.articlesAndObjectiveProblems || parsed.artigosEProblemas || parsed.artigos_e_problemas;
+    if (Array.isArray(rawArticlesAndProblems) && rawArticlesAndProblems.length > 0) {
+      articlesAndObjectiveProblems = rawArticlesAndProblems
+        .filter((item: any) => item && typeof item.id === 'number' && (item.source === 'article' || item.source === 'problem'))
+        .map((item: any) => ({
+          source: item.source as "article" | "problem",
+          id: item.id,
+          name: item.name || null,
+          description: item.description || '',
+          resolution: item.resolution,
+          matchScore: typeof item.matchScore === 'number' ? item.matchScore : undefined,
+          matchReason: item.matchReason,
+          products: Array.isArray(item.products) ? item.products : undefined,
+        }));
+      if (articlesAndObjectiveProblems.length === 0) articlesAndObjectiveProblems = undefined;
+    }
+
     const customerRequestType = parsed.customerRequestType || parsed.tipoSolicitacaoCliente || parsed.tipo_solicitacao_cliente ||
       parsed.triage?.anamnese?.customerRequestType || undefined;
 
@@ -143,6 +161,7 @@ function parseStructuredSummary(responseContent: string): StructuredSummary | nu
       customerEmotionLevel: validEmotionLevel,
       customerRequestType,
       objectiveProblems,
+      articlesAndObjectiveProblems,
     };
   } catch {
     return null;
@@ -237,6 +256,7 @@ export async function generateAndSaveSummary(
       customerEmotionLevel: result.structured?.customerEmotionLevel,
       customerRequestType: result.structured?.customerRequestType,
       objectiveProblems: result.structured?.objectiveProblems,
+      articlesAndObjectiveProblems: result.structured?.articlesAndObjectiveProblems,
       lastEventId,
     });
 

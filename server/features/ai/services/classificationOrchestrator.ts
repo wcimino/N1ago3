@@ -101,7 +101,7 @@ export async function classifyConversationProduct(event: EventStandard): Promise
       config.useKnowledgeBaseTool ?? false,
       config.useProductCatalogTool ?? false,
       config.useSubjectIntentTool ?? false,
-      config.useCombinedKnowledgeSearchTool ?? false
+      false
     );
 
     if (result.success) {
