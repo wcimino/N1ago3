@@ -8,7 +8,7 @@ import {
 } from "../../../../shared/services/openai/index.js";
 import { storage } from "../../../storage/index.js";
 import type { OpenaiApiLog } from "../../../../shared/schema.js";
-import { buildToolsFromFlags, type ToolFlags } from "./aiTools.js";
+import { buildToolsFromFlags, type ToolFlags, type ToolFlagsContext } from "./aiTools.js";
 
 export type { ToolDefinition };
 
@@ -22,6 +22,7 @@ export interface OpenAICallParams {
   contextId?: string;
   tools?: ToolDefinition[];
   toolFlags?: ToolFlags;
+  toolFlagsContext?: ToolFlagsContext;
   maxIterations?: number;
   finalToolName?: string;
 }
@@ -42,7 +43,7 @@ export interface OpenAICallResult {
 export async function callOpenAI(params: OpenAICallParams): Promise<OpenAICallResult> {
   let tools = params.tools || [];
   if (params.toolFlags) {
-    const flagTools = buildToolsFromFlags(params.toolFlags);
+    const flagTools = buildToolsFromFlags(params.toolFlags, params.toolFlagsContext);
     tools = [...tools, ...flagTools];
   }
 

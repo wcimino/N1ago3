@@ -1,6 +1,6 @@
 import { db } from "../../../db.js";
 import { conversationsSummary } from "../../../../shared/schema.js";
-import { eq, desc, gte, lte, and, isNotNull, type SQL } from "drizzle-orm";
+import { eq, desc, gte, lte, and, isNotNull, sql, type SQL } from "drizzle-orm";
 import type { ConversationSummary, InsertConversationSummary } from "../../../../shared/schema.js";
 
 export const summaryStorage = {
@@ -19,6 +19,29 @@ export const summaryStorage = {
   },
 
   async upsertConversationSummary(data: InsertConversationSummary): Promise<ConversationSummary> {
+    const updateSet: Record<string, any> = {
+      summary: data.summary,
+      clientRequest: data.clientRequest,
+      agentActions: data.agentActions,
+      currentStatus: data.currentStatus,
+      importantInfo: data.importantInfo,
+      customerEmotionLevel: data.customerEmotionLevel,
+      customerRequestType: data.customerRequestType,
+      objectiveProblems: data.objectiveProblems,
+      lastEventId: data.lastEventId,
+      externalConversationId: data.externalConversationId,
+      product: data.product,
+      intent: data.intent,
+      confidence: data.confidence,
+      classifiedAt: data.classifiedAt,
+      generatedAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    if (data.articlesAndObjectiveProblems !== undefined) {
+      updateSet.articlesAndObjectiveProblems = data.articlesAndObjectiveProblems;
+    }
+
     const [summary] = await db.insert(conversationsSummary)
       .values({
         ...data,
@@ -27,25 +50,7 @@ export const summaryStorage = {
       })
       .onConflictDoUpdate({
         target: conversationsSummary.conversationId,
-        set: {
-          summary: data.summary,
-          clientRequest: data.clientRequest,
-          agentActions: data.agentActions,
-          currentStatus: data.currentStatus,
-          importantInfo: data.importantInfo,
-          customerEmotionLevel: data.customerEmotionLevel,
-          customerRequestType: data.customerRequestType,
-          objectiveProblems: data.objectiveProblems,
-          articlesAndObjectiveProblems: data.articlesAndObjectiveProblems,
-          lastEventId: data.lastEventId,
-          externalConversationId: data.externalConversationId,
-          product: data.product,
-          intent: data.intent,
-          confidence: data.confidence,
-          classifiedAt: data.classifiedAt,
-          generatedAt: new Date(),
-          updatedAt: new Date(),
-        },
+        set: updateSet,
       })
       .returning();
     return summary;
@@ -54,13 +59,30 @@ export const summaryStorage = {
   async updateArticlesAndProblems(
     conversationId: number,
     articlesAndObjectiveProblems: Array<{ source: "article" | "problem"; id: number; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; products?: string[] }>
-  ): Promise<void> {
-    await db.update(conversationsSummary)
-      .set({
-        articlesAndObjectiveProblems,
-        updatedAt: new Date(),
-      })
-      .where(eq(conversationsSummary.conversationId, conversationId));
+  ): Promise<{ created: boolean; updated: boolean }> {
+    const existing = await db.select({ id: conversationsSummary.id })
+      .from(conversationsSummary)
+      .where(eq(conversationsSummary.conversationId, conversationId))
+      .limit(1);
+    
+    if (existing.length > 0) {
+      await db.update(conversationsSummary)
+        .set({
+          articlesAndObjectiveProblems,
+          updatedAt: new Date(),
+        })
+        .where(eq(conversationsSummary.conversationId, conversationId));
+      return { created: false, updated: true };
+    } else {
+      await db.insert(conversationsSummary)
+        .values({
+          conversationId,
+          summary: "",
+          articlesAndObjectiveProblems,
+          generatedAt: new Date(),
+        });
+      return { created: true, updated: false };
+    }
   },
 
   async getSummariesForExport(filters: {

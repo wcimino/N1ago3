@@ -2,6 +2,7 @@ import { runKnowledgeBaseSearch } from "../knowledgeBaseSearchHelper.js";
 import { runProblemObjectiveSearch } from "./problemObjectiveTool.js";
 import { buildSearchContext } from "./searchContext.js";
 import type { ToolDefinition } from "../openaiApiService.js";
+import { summaryStorage } from "../../storage/summaryStorage.js";
 
 export interface CombinedSearchResult {
   source: "article" | "problem";
@@ -101,6 +102,10 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
 }
 
 export function createCombinedKnowledgeSearchTool(): ToolDefinition {
+  return createCombinedKnowledgeSearchToolWithContext(undefined);
+}
+
+export function createCombinedKnowledgeSearchToolWithContext(conversationId?: number): ToolDefinition {
   return {
     name: "search_knowledge_base_articles_and_problems",
     description: "Busca artigos e problemas objetivos na base de conhecimento. Retorna resultados de ambas as fontes com indicação de origem (source: article | problem).",
@@ -129,6 +134,20 @@ export function createCombinedKnowledgeSearchTool(): ToolDefinition {
         keywords: args.keywords,
         limit: 5
       });
+      
+      if (conversationId && result.results.length > 0) {
+        try {
+          const saveResult = await summaryStorage.updateArticlesAndProblems(conversationId, result.results);
+          if (saveResult.created) {
+            console.log(`[Combined Knowledge Search Tool] Created summary with ${result.articleCount} articles and ${result.problemCount} problems for conversation ${conversationId}`);
+          } else if (saveResult.updated) {
+            console.log(`[Combined Knowledge Search Tool] Updated summary with ${result.articleCount} articles and ${result.problemCount} problems for conversation ${conversationId}`);
+          }
+        } catch (error) {
+          console.error(`[Combined Knowledge Search Tool] Error saving results for conversation ${conversationId}:`, error);
+        }
+      }
+      
       return JSON.stringify(result);
     }
   };

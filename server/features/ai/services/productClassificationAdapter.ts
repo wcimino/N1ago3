@@ -35,7 +35,8 @@ export async function classifyConversation(
   externalConversationId?: string,
   useKnowledgeBaseTool: boolean = false,
   useProductCatalogTool: boolean = false,
-  useSubjectIntentTool: boolean = false
+  useSubjectIntentTool: boolean = false,
+  useCombinedKnowledgeSearchTool: boolean = false
 ): Promise<ClassificationResult> {
   if (!promptSystem || !promptSystem.trim()) {
     console.error("[Classification Adapter] Erro: Prompt de classificação não configurado no banco de dados");
@@ -91,6 +92,10 @@ export async function classifyConversation(
       useKnowledgeBaseTool,
       useProductCatalogTool: effectiveUseProductCatalogTool,
       useSubjectIntentTool,
+      useCombinedKnowledgeSearchTool,
+    },
+    toolFlagsContext: {
+      conversationId,
     },
     maxIterations: 5,
   });
@@ -153,7 +158,8 @@ export async function classifyAndSave(
   externalConversationId: string | null,
   useKnowledgeBaseTool: boolean = false,
   useProductCatalogTool: boolean = false,
-  useSubjectIntentTool: boolean = false
+  useSubjectIntentTool: boolean = false,
+  useCombinedKnowledgeSearchTool: boolean = false
 ): Promise<ClassificationResult> {
   const result = await classifyConversation(
     payload,
@@ -164,7 +170,8 @@ export async function classifyAndSave(
     externalConversationId || undefined,
     useKnowledgeBaseTool,
     useProductCatalogTool,
-    useSubjectIntentTool
+    useSubjectIntentTool,
+    useCombinedKnowledgeSearchTool
   );
 
   if (result.success && result.product) {
