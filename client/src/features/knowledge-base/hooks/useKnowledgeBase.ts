@@ -479,6 +479,22 @@ export function useKnowledgeBase(activeTab: string) {
     enabled: activeTab === "articles",
   });
 
+  const generateEmbeddingsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/knowledge/embeddings/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ limit: 50, includeOutdated: true }),
+      });
+      if (!res.ok) throw new Error("Failed to generate embeddings");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/embeddings/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/articles"] });
+    },
+  });
+
   const { data: intentStatistics = [] } = useQuery<{ intentId: number; viewCount: number }[]>({
     queryKey: ["/api/knowledge/articles/statistics/by-intent"],
     queryFn: async () => {
@@ -542,5 +558,7 @@ export function useKnowledgeBase(activeTab: string) {
     intents,
     catalogStats,
     intentViewCountMap,
+    generateEmbeddingsMutation,
+    embeddingStats,
   };
 }

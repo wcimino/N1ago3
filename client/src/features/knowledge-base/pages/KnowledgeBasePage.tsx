@@ -121,6 +121,8 @@ export function KnowledgeBasePage() {
     intents,
     catalogStats,
     intentViewCountMap,
+    generateEmbeddingsMutation,
+    embeddingStats,
   } = useKnowledgeBase(activeTab);
 
   const allPathsCount = useMemo(() => {
@@ -392,7 +394,14 @@ export function KnowledgeBasePage() {
                           { value: catalogStats.subjectsCount, label: "Assuntos" },
                           { value: catalogStats.intentsCount, label: "Intenções" },
                           { value: catalogStats.articlesCount, label: "Artigos" },
-                          { value: catalogStats.embeddingsCount, label: "Embeddings" },
+                          { 
+                            value: catalogStats.embeddingsCount, 
+                            label: "Embeddings", 
+                            onClick: () => generateEmbeddingsMutation.mutate(),
+                            isLoading: generateEmbeddingsMutation.isPending,
+                            disabled: !embeddingStats || (embeddingStats.withoutEmbedding === 0 && embeddingStats.outdated === 0),
+                            highlight: embeddingStats && (embeddingStats.withoutEmbedding > 0 || embeddingStats.outdated > 0),
+                          },
                         ]}
                       />
                       <button
