@@ -85,13 +85,18 @@ export const productCatalogStorage = {
     const subproductLower = subproduct?.toLowerCase();
 
     const matched = products.find(p => {
-      const produtoMatch = p.produto.toLowerCase().includes(productLower) || 
-                           p.fullName.toLowerCase().includes(productLower);
+      const produtoLower = p.produto.toLowerCase();
+      const fullNameLower = p.fullName.toLowerCase();
+      const produtoMatch = productLower.includes(produtoLower) || 
+                           produtoLower.includes(productLower) ||
+                           productLower.includes(fullNameLower) ||
+                           fullNameLower.includes(productLower);
       
       if (!produtoMatch) return false;
       
       if (subproductLower && p.subproduto) {
-        return p.subproduto.toLowerCase().includes(subproductLower);
+        const subprodutoLower = p.subproduto.toLowerCase();
+        return subproductLower.includes(subprodutoLower) || subprodutoLower.includes(subproductLower);
       }
       
       return true;
