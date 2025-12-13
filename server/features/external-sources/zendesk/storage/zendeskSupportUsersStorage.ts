@@ -178,3 +178,19 @@ export async function getSyncLogs(
     .orderBy(desc(externalDataSyncLogs.startedAt))
     .limit(limit);
 }
+
+export async function getLatestAddNewSyncLog(sourceType: string): Promise<ExternalDataSyncLog | null> {
+  const result = await db
+    .select()
+    .from(externalDataSyncLogs)
+    .where(
+      and(
+        eq(externalDataSyncLogs.sourceType, sourceType),
+        eq(externalDataSyncLogs.syncType, "add-new")
+      )
+    )
+    .orderBy(desc(externalDataSyncLogs.startedAt))
+    .limit(1);
+  
+  return result[0] ?? null;
+}
