@@ -87,6 +87,7 @@ export const rootCausesStorage = {
       name: knowledgeBaseSolutions.name,
       description: knowledgeBaseSolutions.description,
       productId: knowledgeBaseSolutions.productId,
+      conditions: knowledgeBaseSolutions.conditions,
       isActive: knowledgeBaseSolutions.isActive,
       createdAt: knowledgeBaseSolutions.createdAt,
       updatedAt: knowledgeBaseSolutions.updatedAt,
