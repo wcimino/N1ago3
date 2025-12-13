@@ -5,10 +5,9 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-        <div className="mx-auto mb-6">
-          <N1agoLogo className="w-16 h-16 mx-auto" />
+        <div className="mx-auto mb-8">
+          <N1agoLogo className="h-12 w-auto mx-auto" variant="full" />
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">N1ago</h1>
         
         <a
           href="/api/login"

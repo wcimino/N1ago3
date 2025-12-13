@@ -23,9 +23,9 @@ function AuthenticatedApp() {
       <header className="bg-white shadow-sm border-b sticky top-0 z-40">
         <div className="w-full px-3 sm:px-6 lg:px-8">
           <div className="flex items-center py-2 sm:py-3 gap-2">
-            <Link href="/" className="flex items-center gap-2 text-xl sm:text-2xl font-bold text-gray-900 hover:text-gray-700 shrink-0">
-              <N1agoLogo className="w-8 h-8" />
-              <span className="hidden sm:inline">N1ago</span>
+            <Link href="/" className="flex items-center text-gray-900 hover:text-gray-700 shrink-0">
+              <N1agoLogo className="w-8 h-8 sm:hidden" variant="icon" />
+              <N1agoLogo className="hidden sm:block h-8 w-auto" variant="full" />
             </Link>
             
             <nav className="flex items-center flex-1 overflow-x-auto scrollbar-hide">
