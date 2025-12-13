@@ -10,12 +10,12 @@ export function N1agoLogo({ className = "w-8 h-8" }: N1agoLogoProps) {
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      <circle cx="32" cy="34" r="18" fill="#3B82F6" />
-      <circle cx="26" cy="32" r="3" fill="white" />
-      <circle cx="38" cy="32" r="3" fill="white" />
+      <circle cx="32" cy="34" r="18" fill="#FBBF24" />
+      <circle cx="26" cy="32" r="3" fill="#1E293B" />
+      <circle cx="38" cy="32" r="3" fill="#1E293B" />
       <path
         d="M26 42C28 44 36 44 38 42"
-        stroke="white"
+        stroke="#1E293B"
         strokeWidth="2.5"
         strokeLinecap="round"
       />
@@ -27,6 +27,13 @@ export function N1agoLogo({ className = "w-8 h-8" }: N1agoLogoProps) {
       />
       <circle cx="10" cy="34" r="6" fill="#1E40AF" />
       <circle cx="54" cy="34" r="6" fill="#1E40AF" />
+      <path
+        d="M10 40V48"
+        stroke="#1E40AF"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <circle cx="14" cy="50" r="4" fill="#1E40AF" />
     </svg>
   );
 }
