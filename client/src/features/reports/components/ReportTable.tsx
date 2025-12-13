@@ -1,5 +1,6 @@
 import { RefreshCw, AlertCircle } from "lucide-react";
 import { Pagination } from "../../../shared/components/ui/Pagination";
+import { Button } from "../../../shared/components/ui";
 
 export interface Column<T> {
   key: keyof T | string;
@@ -73,12 +74,13 @@ export function ReportTable<T extends Record<string, any>>({
             {error instanceof Error ? error.message : "Tente novamente"}
           </p>
           {onRetry && (
-            <button
+            <Button
               onClick={onRetry}
-              className="mt-4 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-900"
+              className="mt-4"
+              size="sm"
             >
               Tentar novamente
-            </button>
+            </Button>
           )}
         </div>
       ) : !data || data.length === 0 ? (

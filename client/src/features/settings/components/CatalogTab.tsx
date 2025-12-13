@@ -1,5 +1,6 @@
 import { useLocation } from "wouter";
 import { Package, ArrowRight, Users, Building2 } from "lucide-react";
+import { Button } from "../../../shared/components/ui";
 
 export function CatalogTab() {
   const [, navigate] = useLocation();
@@ -17,13 +18,13 @@ export function CatalogTab() {
               <p className="text-sm text-gray-600">Gerencie os usuários cadastrados no sistema</p>
             </div>
           </div>
-          <button
+          <Button
             onClick={() => navigate("/settings/catalog/users")}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-900 transition-colors shrink-0 w-full sm:w-auto"
+            rightIcon={<ArrowRight className="w-4 h-4" />}
+            className="shrink-0 w-full sm:w-auto"
           >
             Acessar
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -38,13 +39,13 @@ export function CatalogTab() {
               <p className="text-sm text-gray-600">Gerencie as organizações cadastradas no sistema</p>
             </div>
           </div>
-          <button
+          <Button
             onClick={() => navigate("/settings/catalog/organizations")}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-900 transition-colors shrink-0 w-full sm:w-auto"
+            rightIcon={<ArrowRight className="w-4 h-4" />}
+            className="shrink-0 w-full sm:w-auto"
           >
             Acessar
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -59,13 +60,13 @@ export function CatalogTab() {
               <p className="text-sm text-gray-600">Cadastre os produtos disponíveis para padronização e base de conhecimento</p>
             </div>
           </div>
-          <button
+          <Button
             onClick={() => navigate("/settings/catalog/products")}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-900 transition-colors shrink-0 w-full sm:w-auto"
+            rightIcon={<ArrowRight className="w-4 h-4" />}
+            className="shrink-0 w-full sm:w-auto"
           >
             Acessar
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
     </div>

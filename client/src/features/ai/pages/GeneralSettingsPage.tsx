@@ -1,5 +1,5 @@
 import { useGeneralSettings } from "../../../shared/hooks/useGeneralSettings";
-import { LoadingState } from "../../../shared/components/ui";
+import { LoadingState, Button } from "../../../shared/components/ui";
 
 const SETTINGS_ORDER = [
   "communication_style",
@@ -54,13 +54,13 @@ export function GeneralSettingsPage() {
                 Você tem alterações não salvas
               </span>
             )}
-            <button
+            <Button
               onClick={save}
               disabled={!hasChanges || isSaving}
-              className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
+              isLoading={isSaving}
             >
               {isSaving ? "Salvando..." : "Salvar configurações"}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

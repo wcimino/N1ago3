@@ -3,7 +3,7 @@ import {
   Plus, Loader2, AlertCircle, CheckCircle2, ArrowLeft
 } from "lucide-react";
 import { ProductTreeNode } from "../../../lib/productHierarchy";
-import { TreeView } from "../../../shared/components/ui";
+import { TreeView, Button } from "../../../shared/components/ui";
 import { ProductAddForm, ProductEditForm } from "../components";
 import { ProductTreeActions } from "../components/ProductTreeActions";
 import { useProductCatalog } from "../hooks";
@@ -93,13 +93,13 @@ export function ProductCatalogPage() {
         <div className="flex justify-between items-center mb-4">
           <h4 className="text-sm font-medium text-gray-700">Catálogo de Produtos</h4>
           {!addingTo && (
-            <button
+            <Button
               onClick={handleStartAddProduto}
-              className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary-900 text-sm font-medium"
+              size="sm"
+              leftIcon={<Plus className="w-4 h-4" />}
             >
-              <Plus className="w-4 h-4" />
               Novo Produto
-            </button>
+            </Button>
           )}
         </div>
 

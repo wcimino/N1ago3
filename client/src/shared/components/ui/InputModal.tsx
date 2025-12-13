@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
+import { Button } from "./Button";
 
 interface InputModalProps {
   isOpen: boolean;
@@ -78,19 +79,12 @@ export function InputModal({
           />
 
           <div className="flex justify-end gap-3 mt-6">
-            <button
-              onClick={onClose}
-              className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
+            <Button variant="secondary" onClick={onClose}>
               {cancelLabel}
-            </button>
-            <button
-              onClick={handleConfirm}
-              disabled={!value.trim()}
-              className="px-4 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary-900 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
-            >
+            </Button>
+            <Button onClick={handleConfirm} disabled={!value.trim()}>
               {confirmLabel}
-            </button>
+            </Button>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { apiRequest, fetchApi } from "../../../lib/queryClient";
 import { useDateFormatters } from "../../../shared/hooks";
-import { LoadingState, EmptyState, LoadingSpinner } from "../../../shared/components";
+import { LoadingState, EmptyState, Button } from "../../../shared/components";
 import type { AuthorizedUser } from "../../../types";
 
 export function AuthorizedUsersPage() {
@@ -90,14 +90,13 @@ export function AuthorizedUsersPage() {
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <button
+          <Button
             type="submit"
-            disabled={addMutation.isPending}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-900 disabled:opacity-50"
+            isLoading={addMutation.isPending}
+            leftIcon={<Plus className="w-4 h-4" />}
           >
-            {addMutation.isPending ? <LoadingSpinner size="sm" /> : <Plus className="w-4 h-4" />}
             Adicionar
-          </button>
+          </Button>
         </form>
       </div>
 

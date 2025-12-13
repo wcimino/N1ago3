@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, ChevronDown, ChevronRight, UserPlus } from "lucide-react";
 import { apiRequest, fetchApi } from "../../../lib/queryClient";
-import { LoadingState, EmptyState, LoadingSpinner } from "../../../shared/components";
+import { LoadingState, EmptyState, LoadingSpinner, Button } from "../../../shared/components";
 import { useDateFormatters } from "../../../shared/hooks";
 import type { AuthorizedUser } from "../../../types";
 
@@ -104,14 +104,14 @@ export function AccessControlTab() {
 
               {error && <p className="text-sm text-red-600">{error}</p>}
 
-              <button
+              <Button
                 type="submit"
                 disabled={addMutation.isPending}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-900 disabled:opacity-50"
+                isLoading={addMutation.isPending}
+                leftIcon={!addMutation.isPending ? <Plus className="w-4 h-4" /> : undefined}
               >
-                {addMutation.isPending ? <LoadingSpinner size="sm" /> : <Plus className="w-4 h-4" />}
                 Adicionar
-              </button>
+              </Button>
             </form>
           </div>
         )}

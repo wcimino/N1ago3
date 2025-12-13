@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi, apiRequest } from "../../../lib/queryClient";
-import { LoadingState } from "../../../shared/components/ui";
+import { LoadingState, Button } from "../../../shared/components/ui";
 import type { EventTypeMapping, EventTypeMappingsResponse } from "../../../types";
 
 export function EventTypeMappingsPage() {
@@ -95,19 +95,23 @@ export function EventTypeMappingsPage() {
             />
           </div>
           <div className="flex gap-2">
-            <button
+            <Button
               onClick={() => saveEdit(mapping.id)}
               disabled={updateMutation.isPending}
-              className="flex-1 px-3 py-2 bg-primary text-white rounded-lg text-sm hover:bg-primary-900"
+              isLoading={updateMutation.isPending}
+              size="sm"
+              fullWidth
             >
               Salvar
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setEditingId(null)}
-              className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200"
+              variant="secondary"
+              size="sm"
+              fullWidth
             >
               Cancelar
-            </button>
+            </Button>
           </div>
         </div>
       ) : (

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronRight, ChevronDown, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { Button } from "../../../shared/components/ui";
 
 interface SubproductNode {
   subproduct: string;
@@ -104,13 +105,12 @@ export function HierarchicalReportTable({
           <p className="text-gray-600">
             {error?.message || "Erro ao carregar dados"}
           </p>
-          <button
+          <Button
             onClick={onRetry}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-900 transition-colors"
+            leftIcon={<RefreshCw className="w-4 h-4" />}
           >
-            <RefreshCw className="w-4 h-4" />
             Tentar novamente
-          </button>
+          </Button>
         </div>
       </div>
     );

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Route, ArrowRight, Bot, Brain, UserCircle, Plus, Trash2, Power, PowerOff, MessageCircle, Sparkles, Clock } from "lucide-react";
 import { fetchApi } from "../../../lib/queryClient";
 import { useDateFormatters } from "../../../shared/hooks";
+import { Button } from "../../../shared/components/ui";
 
 interface RoutingRule {
   id: number;
@@ -149,13 +150,14 @@ export function RoutingRulesContent() {
               <Sparkles className="w-5 h-5 text-purple-600" />
               <h4 className="text-base font-semibold text-gray-900">Novas Conversas</h4>
             </div>
-            <button
+            <Button
               onClick={() => setActiveForm(activeForm === "new_conversation" ? null : "new_conversation")}
-              className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
+              size="sm"
+              leftIcon={<Plus className="w-4 h-4" />}
+              className="bg-purple-600 hover:bg-purple-700"
             >
-              <Plus className="w-4 h-4" />
               Nova Regra
-            </button>
+            </Button>
           </div>
           <p className="text-sm text-gray-500 mt-1">
             Regras para alocar conversas que acabaram de iniciar
@@ -203,20 +205,23 @@ export function RoutingRulesContent() {
                   </select>
                 </div>
                 <div className="flex gap-2">
-                  <button
+                  <Button
                     type="submit"
                     disabled={createRule.isPending}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors text-sm"
+                    isLoading={createRule.isPending}
+                    size="sm"
+                    className="bg-purple-600 hover:bg-purple-700"
                   >
-                    {createRule.isPending ? "Criando..." : "Criar Regra"}
-                  </button>
-                  <button
+                    Criar Regra
+                  </Button>
+                  <Button
                     type="button"
                     onClick={() => setActiveForm(null)}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                    variant="ghost"
+                    size="sm"
                   >
                     Cancelar
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>
@@ -282,13 +287,13 @@ export function RoutingRulesContent() {
               <MessageCircle className="w-5 h-5 text-blue-600" />
               <h4 className="text-base font-semibold text-gray-900">Conversas em Andamento</h4>
             </div>
-            <button
+            <Button
               onClick={() => setActiveForm(activeForm === "ongoing_conversation" ? null : "ongoing_conversation")}
-              className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary-900 transition-colors"
+              size="sm"
+              leftIcon={<Plus className="w-4 h-4" />}
             >
-              <Plus className="w-4 h-4" />
               Nova Regra
-            </button>
+            </Button>
           </div>
           <p className="text-sm text-gray-500 mt-1">
             Regras para transferir conversas baseado no conteúdo da mensagem
@@ -334,20 +339,22 @@ export function RoutingRulesContent() {
                   </select>
                 </div>
                 <div className="flex gap-2">
-                  <button
+                  <Button
                     type="submit"
                     disabled={createRule.isPending || !ongoingConvForm.matchText.trim()}
-                    className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-900 disabled:opacity-50 transition-colors text-sm"
+                    isLoading={createRule.isPending}
+                    size="sm"
                   >
-                    {createRule.isPending ? "Criando..." : "Criar Regra"}
-                  </button>
-                  <button
+                    Criar Regra
+                  </Button>
+                  <Button
                     type="button"
                     onClick={() => setActiveForm(null)}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                    variant="ghost"
+                    size="sm"
                   >
                     Cancelar
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>

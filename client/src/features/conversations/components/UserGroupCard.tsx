@@ -1,5 +1,6 @@
 import { MessageCircle, UserCheck, UserX, ArrowRight, Clock, Calendar } from "lucide-react";
 import { HandlerBadge, getHandlerInfo } from "../../../shared/components/badges/HandlerBadge";
+import { Button } from "../../../shared/components/ui/Button";
 import { getUserDisplayName, getActiveConversationsCount } from "../../../lib/userUtils";
 import { FavoriteButton } from "../../favorites/components/FavoriteButton";
 import type { UserGroup } from "../../../types";
@@ -112,13 +113,13 @@ export function UserGroupCard({
                   isLoading={isTogglingFavorite}
                 />
               )}
-              <button
+              <Button
                 onClick={() => onViewConversations(group.user_id)}
-                className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-900 active:bg-primary-950 transition-colors"
+                size="sm"
+                rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
               >
                 Ver
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             </div>
           </div>
 

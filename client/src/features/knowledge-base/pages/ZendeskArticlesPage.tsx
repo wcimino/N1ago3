@@ -17,6 +17,7 @@ import {
   Loader2,
   Sparkles,
 } from "lucide-react";
+import { Button } from "../../../shared/components/ui";
 
 interface ZendeskArticle {
   id: number;
@@ -289,14 +290,15 @@ export function ZendeskArticlesPage() {
           </span>
         </div>
         
-        <button
+        <Button
           onClick={() => syncMutation.mutate()}
           disabled={syncMutation.isPending}
-          className="flex items-center gap-2 px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary-900 transition-colors disabled:opacity-50"
+          isLoading={syncMutation.isPending}
+          size="sm"
+          leftIcon={<RefreshCw className="w-4 h-4" />}
         >
-          <RefreshCw className={`w-4 h-4 ${syncMutation.isPending ? "animate-spin" : ""}`} />
-          {syncMutation.isPending ? "Sincronizando..." : "Sincronizar"}
-        </button>
+          Sincronizar
+        </Button>
       </div>
       
       {syncMutation.isSuccess && (

@@ -1,5 +1,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { AlertTriangle, X } from "lucide-react";
+import { Button } from "./Button";
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -56,22 +57,12 @@ export function ConfirmModal({
           </p>
 
           <div className="flex justify-end gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
+            <Button onClick={onClose} variant="secondary">
               {cancelLabel}
-            </button>
-            <button
-              onClick={handleConfirm}
-              className={`px-4 py-2.5 text-sm font-medium text-white rounded-lg transition-colors ${
-                variant === "danger" 
-                  ? "bg-red-600 hover:bg-red-700" 
-                  : "bg-amber-600 hover:bg-amber-700"
-              }`}
-            >
+            </Button>
+            <Button onClick={handleConfirm} variant="danger">
               {confirmLabel}
-            </button>
+            </Button>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

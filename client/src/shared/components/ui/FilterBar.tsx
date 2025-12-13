@@ -1,5 +1,6 @@
 import { Filter, X, Search, ChevronDown } from "lucide-react";
 import React, { useState } from "react";
+import { Button } from "./Button";
 
 interface FilterOption {
   value: string;
@@ -115,22 +116,20 @@ function FilterSheet({
         
         <div className="sticky bottom-0 bg-white border-t px-4 py-3 flex gap-3">
           {onClear && hasActiveFilters && (
-            <button
+            <Button
+              variant="secondary"
+              fullWidth
               onClick={() => {
                 onClear();
                 onClose();
               }}
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
             >
               Limpar
-            </button>
+            </Button>
           )}
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-900 transition-colors"
-          >
+          <Button fullWidth onClick={onClose}>
             Aplicar
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { ArrowLeft, User, Loader2, Mail, Phone, Building2, Clock, Shield, Globe } from "lucide-react";
 import { fetchApi } from "../../../lib/queryClient";
 import { useDateFormatters } from "../../../shared/hooks";
+import { Button } from "../../../shared/components/ui/Button";
 
 interface ZendeskUserDetail {
   id: number;
@@ -103,9 +104,14 @@ export function ZendeskUserDetailPage({ params }: ZendeskUserDetailPageProps) {
     return (
       <div className="bg-white rounded-lg shadow p-8">
         <p className="text-red-500">Erro ao carregar usuário</p>
-        <button onClick={() => navigate("/settings/external-data/zendesk-users")} className="mt-4 text-primary hover:underline">
+        <Button
+          onClick={() => navigate("/settings/external-data/zendesk-users")}
+          variant="ghost"
+          leftIcon={<ArrowLeft className="w-4 h-4" />}
+          className="mt-4"
+        >
           Voltar para lista
-        </button>
+        </Button>
       </div>
     );
   }
@@ -113,12 +119,13 @@ export function ZendeskUserDetailPage({ params }: ZendeskUserDetailPageProps) {
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="px-4 py-3 border-b flex items-center gap-4">
-        <button
+        <Button
           onClick={() => navigate("/settings/external-data/zendesk-users")}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          variant="ghost"
+          size="sm"
         >
           <ArrowLeft className="w-5 h-5" />
-        </button>
+        </Button>
         <div className="flex-1">
           <h1 className="text-lg font-semibold">{user.name}</h1>
           <p className="text-sm text-gray-500">{user.email}</p>

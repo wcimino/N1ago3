@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { CheckboxListItem, CollapsibleSection, LoadingState, Modal } from "../../../shared/components/ui";
+import { CheckboxListItem, CollapsibleSection, LoadingState, Modal, Button } from "../../../shared/components/ui";
 import { useOpenaiApiConfig } from "../../../shared/hooks";
 import { AUTHOR_TYPE_OPTIONS, MODEL_OPTIONS } from "../../../lib/constants";
 import { Info, Copy, Check } from "lucide-react";
@@ -326,13 +326,13 @@ export function OpenaiConfigForm({
             {state.hasChanges && (
               <span className="text-sm text-yellow-600 self-center">Você tem alterações não salvas</span>
             )}
-            <button
+            <Button
               onClick={() => actions.save()}
-              disabled={!state.hasChanges || isSaving}
-              className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!state.hasChanges}
+              isLoading={isSaving}
             >
               {isSaving ? "Salvando..." : "Salvar configuração"}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 import { Star, MessageCircle } from "lucide-react";
 import { useFavorites } from "../hooks/useFavorites";
-import { LoadingState, EmptyState } from "../../../shared/components/ui";
+import { LoadingState, EmptyState, Button } from "../../../shared/components/ui";
 import { useDateFormatters } from "../../../shared/hooks";
 import { HandlerBadge, ConversationStatusBadge } from "../../../shared/components/badges";
 import { FavoriteButton } from "./FavoriteButton";
@@ -71,13 +71,12 @@ export function FavoritosContent({ showHeader = false }: FavoritosContentProps) 
                 onToggle={() => toggleFavorite(favorite.conversationId)}
                 isLoading={isToggling}
               />
-              <button
+              <Button
                 onClick={() => navigate(`/atendimentos/${encodeURIComponent(favorite.userId || favorite.externalConversationId)}`)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-900 transition-colors"
+                leftIcon={<MessageCircle className="w-4 h-4" />}
               >
-                <MessageCircle className="w-4 h-4" />
                 Ver
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Save, X, FileText, Tag, MessageSquare, CheckCircle, StickyNote, Sparkles, Loader2, XCircle, Check, Settings } from "lucide-react";
-import { ModernSelect } from "@/shared/components/ui";
+import { ModernSelect, Button } from "@/shared/components/ui";
 import { SuggestionCardBase } from "./SuggestionCardBase";
 import type { KnowledgeSubject, KnowledgeIntent, ProductCatalogItem } from "../../../types";
 import type { KnowledgeBaseArticle, KnowledgeBaseFormData } from "../hooks/useKnowledgeBase";
@@ -477,22 +477,24 @@ export function KnowledgeBaseForm({
             )}
           </button>
         )}
-        <button
+        <Button
           type="button"
           onClick={onCancel}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          variant="outline"
+          size="sm"
+          leftIcon={<X className="w-4 h-4" />}
         >
-          <X className="w-4 h-4" />
           Cancelar
-        </button>
-        <button
+        </Button>
+        <Button
           type="submit"
           disabled={!isValid || isLoading}
-          className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          isLoading={isLoading}
+          size="sm"
+          leftIcon={<Save className="w-4 h-4" />}
         >
-          <Save className="w-4 h-4" />
-          {isLoading ? "Salvando..." : "Salvar Artigo"}
-        </button>
+          Salvar Artigo
+        </Button>
       </div>
     </form>
   );
