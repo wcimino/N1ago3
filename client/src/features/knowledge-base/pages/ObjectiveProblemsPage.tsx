@@ -685,7 +685,7 @@ export function ObjectiveProblemsPage() {
                                     
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2">
-                                        <span className="text-sm font-medium text-gray-900 break-words">
+                                        <span className="text-sm text-gray-700 break-words">
                                           {problem.name}
                                         </span>
                                         {!problem.isActive && (
@@ -734,7 +734,7 @@ export function ObjectiveProblemsPage() {
                           
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-gray-900 break-words">
+                              <span className="text-sm text-gray-700 break-words">
                                 {problem.name}
                               </span>
                               {!problem.isActive && (
