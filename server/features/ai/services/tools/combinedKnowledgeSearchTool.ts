@@ -21,6 +21,99 @@ export interface CombinedSearchResult {
   products?: string[];
 }
 
+export interface CombinedSearchParams {
+  product: string;
+  subproduct?: string;
+  keywords?: string;
+  limit?: number;
+}
+
+export interface CombinedSearchResponse {
+  message: string;
+  results: CombinedSearchResult[];
+  resolvedFilters: {
+    product: string | null;
+    subproduct: string | null;
+  };
+  articleCount: number;
+  problemCount: number;
+}
+
+export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): Promise<CombinedSearchResponse> {
+  const limit = params.limit || 5;
+  let productId: number | undefined;
+  let resolvedProduct: string | null = null;
+  let resolvedSubproduct: string | null = null;
+
+  if (params.product) {
+    const resolved = await productCatalogStorage.resolveProductId(params.product, params.subproduct);
+    if (resolved) {
+      productId = resolved.id;
+      resolvedProduct = resolved.produto;
+      resolvedSubproduct = resolved.subproduto;
+    }
+  }
+
+  const [articlesResult, problemsResult] = await Promise.all([
+    runKnowledgeBaseSearch({
+      product: params.product,
+      subproduct: params.subproduct,
+      keywords: params.keywords,
+      limit
+    }),
+    searchProblems(params.keywords, productId, limit)
+  ]);
+
+  const results: CombinedSearchResult[] = [];
+
+  for (const article of articlesResult.articles) {
+    results.push({
+      source: "article",
+      id: article.id,
+      name: article.name,
+      description: article.description,
+      resolution: article.resolution,
+      matchScore: article.relevanceScore,
+    });
+  }
+
+  for (const problem of problemsResult) {
+    results.push({
+      source: "problem",
+      id: problem.id,
+      name: problem.name,
+      description: problem.description || "",
+      matchScore: problem.matchScore,
+      matchReason: problem.matchReason,
+      products: problem.products,
+    });
+  }
+
+  if (results.length === 0) {
+    return {
+      message: "Nenhum resultado encontrado na base de conhecimento",
+      results: [],
+      resolvedFilters: {
+        product: resolvedProduct || params.product,
+        subproduct: resolvedSubproduct || params.subproduct || null
+      },
+      articleCount: 0,
+      problemCount: 0
+    };
+  }
+
+  return {
+    message: `Encontrados ${articlesResult.articles.length} artigos e ${problemsResult.length} problemas`,
+    results,
+    resolvedFilters: {
+      product: resolvedProduct,
+      subproduct: resolvedSubproduct
+    },
+    articleCount: articlesResult.articles.length,
+    problemCount: problemsResult.length
+  };
+}
+
 export function createCombinedKnowledgeSearchTool(): ToolDefinition {
   return {
     name: "search_knowledge_base_articles_and_problems",
@@ -44,73 +137,13 @@ export function createCombinedKnowledgeSearchTool(): ToolDefinition {
       required: ["product"]
     },
     handler: async (args: { product: string; subproduct?: string; keywords?: string }) => {
-      let productId: number | undefined;
-      let resolvedProduct: string | null = null;
-      let resolvedSubproduct: string | null = null;
-
-      if (args.product) {
-        const resolved = await productCatalogStorage.resolveProductId(args.product, args.subproduct);
-        if (resolved) {
-          productId = resolved.id;
-          resolvedProduct = resolved.produto;
-          resolvedSubproduct = resolved.subproduto;
-        }
-      }
-
-      const [articlesResult, problemsResult] = await Promise.all([
-        runKnowledgeBaseSearch({
-          product: args.product,
-          subproduct: args.subproduct,
-          keywords: args.keywords,
-          limit: 5
-        }),
-        searchProblems(args.keywords, productId)
-      ]);
-
-      const results: CombinedSearchResult[] = [];
-
-      for (const article of articlesResult.articles) {
-        results.push({
-          source: "article",
-          id: article.id,
-          name: article.name,
-          description: article.description,
-          resolution: article.resolution,
-          matchScore: article.relevanceScore,
-        });
-      }
-
-      for (const problem of problemsResult) {
-        results.push({
-          source: "problem",
-          id: problem.id,
-          name: problem.name,
-          description: problem.description || "",
-          matchScore: problem.matchScore,
-          matchReason: problem.matchReason,
-          products: problem.products,
-        });
-      }
-
-      if (results.length === 0) {
-        return JSON.stringify({
-          message: "Nenhum resultado encontrado na base de conhecimento",
-          results: [],
-          resolvedFilters: {
-            product: resolvedProduct || args.product,
-            subproduct: resolvedSubproduct || args.subproduct
-          }
-        });
-      }
-
-      return JSON.stringify({
-        message: `Encontrados ${articlesResult.articles.length} artigos e ${problemsResult.length} problemas`,
-        results,
-        resolvedFilters: {
-          product: resolvedProduct,
-          subproduct: resolvedSubproduct
-        }
+      const result = await runCombinedKnowledgeSearch({
+        product: args.product,
+        subproduct: args.subproduct,
+        keywords: args.keywords,
+        limit: 5
       });
+      return JSON.stringify(result);
     }
   };
 }
@@ -124,7 +157,7 @@ interface ProblemResult {
   products: string[];
 }
 
-async function searchProblems(keywords: string | undefined, productId: number | undefined): Promise<ProblemResult[]> {
+async function searchProblems(keywords: string | undefined, productId: number | undefined, limit: number = 5): Promise<ProblemResult[]> {
   const hasEmbeddings = await hasObjectiveProblemEmbeddings();
   
   if (keywords && hasEmbeddings) {
@@ -134,7 +167,7 @@ async function searchProblems(keywords: string | undefined, productId: number | 
       queryEmbedding: embedding,
       productId,
       onlyActive: true,
-      limit: 5,
+      limit,
     });
 
     return semanticResults.map((p: SemanticSearchResult) => ({
@@ -151,7 +184,7 @@ async function searchProblems(keywords: string | undefined, productId: number | 
     keywords,
     productId,
     onlyActive: true,
-    limit: 5,
+    limit,
   });
 
   return results.map((p: ObjectiveProblemSearchResult) => ({

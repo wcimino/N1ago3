@@ -89,7 +89,7 @@ export function KnowledgeBaseSearchTool({ isExpanded, onToggle }: KnowledgeBaseS
 
   return (
     <ExpandableSearchTool
-      title="search_knowledge_base"
+      title="search_knowledge_base_articles"
       description="Busca artigos na base de conhecimento por produto, intenção e palavras-chave"
       icon={<BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />}
       iconBgColor="bg-indigo-100"

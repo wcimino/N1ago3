@@ -3,6 +3,7 @@ import { KnowledgeBaseSearchTool } from "../components/KnowledgeBaseSearchTool";
 import { ProductCatalogSearchTool } from "../components/ProductCatalogSearchTool";
 import { ZendeskKnowledgeBaseSearchTool } from "../components/ZendeskKnowledgeBaseSearchTool";
 import { ProblemObjectiveSearchTool } from "../components/ProblemObjectiveSearchTool";
+import { CombinedKnowledgeSearchTool } from "../components/CombinedKnowledgeSearchTool";
 
 export function ToolsPage() {
   const [expandedTool, setExpandedTool] = useState<string | null>(null);
@@ -13,6 +14,11 @@ export function ToolsPage() {
 
   return (
     <div className="space-y-6">
+      <CombinedKnowledgeSearchTool
+        isExpanded={expandedTool === "combined_search"}
+        onToggle={() => toggleTool("combined_search")}
+      />
+
       <KnowledgeBaseSearchTool
         isExpanded={expandedTool === "knowledge_base"}
         onToggle={() => toggleTool("knowledge_base")}

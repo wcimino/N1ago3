@@ -5,6 +5,7 @@ import { batchGenerateEmbeddings, generateArticleEmbedding, generateContentHash 
 import { KnowledgeBaseStatisticsStorage } from "../storage/knowledgeBaseStatisticsStorage.js";
 import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
 import type { InsertKnowledgeBaseArticle } from "../../../../shared/schema.js";
+import { runCombinedKnowledgeSearch } from "../services/tools/combinedKnowledgeSearchTool.js";
 
 const router = Router();
 
@@ -126,8 +127,8 @@ router.get("/api/knowledge/search", isAuthenticated, requireAuthorizedUser, asyn
       total: result.articles.length,
       query: { product, keywords: keywordsArray },
       resolvedFilters: {
-        subject: result.resolvedSubject,
-        intent: result.resolvedIntent
+        product: result.resolvedProduct,
+        subproduct: result.resolvedSubproduct
       }
     });
   } catch (error) {
@@ -313,6 +314,28 @@ router.get("/api/knowledge/articles/statistics/by-intent", async (req, res) => {
   } catch (error) {
     console.error("Error fetching intent statistics:", error);
     res.status(500).json({ error: "Failed to fetch statistics" });
+  }
+});
+
+router.get("/api/ai/tools/combined-search", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+  try {
+    const { product, subproduct, keywords, limit } = req.query;
+
+    if (!product) {
+      return res.status(400).json({ error: "Product parameter is required" });
+    }
+
+    const result = await runCombinedKnowledgeSearch({
+      product: product as string,
+      subproduct: subproduct as string | undefined,
+      keywords: keywords as string | undefined,
+      limit: limit ? parseInt(limit as string) : 10,
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error("Error in combined knowledge search:", error);
+    res.status(500).json({ error: "Failed to search knowledge base" });
   }
 });
 
