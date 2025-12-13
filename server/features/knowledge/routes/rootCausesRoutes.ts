@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { rootCausesStorage } from "../storage/rootCausesStorage.js";
+import { rootCausesStorage, type ProblemWithQuestions } from "../storage/rootCausesStorage.js";
 import type { InsertKnowledgeBaseRootCause } from "../../../../shared/schema.js";
 
 const router = Router();
@@ -49,8 +49,8 @@ router.get("/api/knowledge/root-causes/:id", async (req, res) => {
 
 router.post("/api/knowledge/root-causes", async (req, res) => {
   try {
-    const { problemIds, solutionIds, ...data }: InsertKnowledgeBaseRootCause & { 
-      problemIds?: number[];
+    const { problems, solutionIds, ...data }: InsertKnowledgeBaseRootCause & { 
+      problems?: ProblemWithQuestions[];
       solutionIds?: number[];
     } = req.body;
     
@@ -60,8 +60,8 @@ router.post("/api/knowledge/root-causes", async (req, res) => {
     
     const rootCause = await rootCausesStorage.create(data);
     
-    if (problemIds && problemIds.length > 0) {
-      await rootCausesStorage.setProblems(rootCause.id, problemIds);
+    if (problems && problems.length > 0) {
+      await rootCausesStorage.setProblemsWithQuestions(rootCause.id, problems);
     }
     
     if (solutionIds && solutionIds.length > 0) {
@@ -83,8 +83,8 @@ router.put("/api/knowledge/root-causes/:id", async (req, res) => {
       return res.status(400).json({ error: "Invalid ID" });
     }
     
-    const { problemIds, solutionIds, ...data }: Partial<InsertKnowledgeBaseRootCause> & { 
-      problemIds?: number[];
+    const { problems, solutionIds, ...data }: Partial<InsertKnowledgeBaseRootCause> & { 
+      problems?: ProblemWithQuestions[];
       solutionIds?: number[];
     } = req.body;
     
@@ -94,8 +94,8 @@ router.put("/api/knowledge/root-causes/:id", async (req, res) => {
       return res.status(404).json({ error: "Root cause not found" });
     }
     
-    if (problemIds !== undefined) {
-      await rootCausesStorage.setProblems(id, problemIds);
+    if (problems !== undefined) {
+      await rootCausesStorage.setProblemsWithQuestions(id, problems);
     }
     
     if (solutionIds !== undefined) {

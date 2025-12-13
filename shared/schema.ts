@@ -830,10 +830,16 @@ export const knowledgeBaseRootCauses = pgTable("knowledge_base_root_causes", {
 export type KnowledgeBaseRootCause = typeof knowledgeBaseRootCauses.$inferSelect;
 export type InsertKnowledgeBaseRootCause = Omit<typeof knowledgeBaseRootCauses.$inferInsert, "id" | "createdAt" | "updatedAt">;
 
+export interface ValidationQuestion {
+  question: string;
+  order: number;
+}
+
 export const knowledgeBaseRootCauseHasKnowledgeBaseObjectiveProblems = pgTable("knowledge_base_root_cause_has_knowledge_base_objective_problems", {
   id: serial("id").primaryKey(),
   rootCauseId: integer("root_cause_id").notNull().references(() => knowledgeBaseRootCauses.id, { onDelete: "cascade" }),
   problemId: integer("problem_id").notNull().references(() => knowledgeBaseObjectiveProblems.id, { onDelete: "cascade" }),
+  validationQuestions: json("validation_questions").$type<ValidationQuestion[]>().default([]).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   rootCauseIdx: index("idx_kb_root_cause_problems_root_cause").on(table.rootCauseId),

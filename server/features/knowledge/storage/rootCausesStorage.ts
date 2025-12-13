@@ -12,7 +12,17 @@ import type {
   InsertKnowledgeBaseRootCause,
   KnowledgeBaseObjectiveProblem,
   KnowledgeBaseSolution,
+  ValidationQuestion,
 } from "../../../../shared/schema.js";
+
+export interface ProblemWithQuestions {
+  problemId: number;
+  validationQuestions: ValidationQuestion[];
+}
+
+export interface ProblemDataWithQuestions extends KnowledgeBaseObjectiveProblem {
+  validationQuestions: ValidationQuestion[];
+}
 
 export const rootCausesStorage = {
   async getAll(filters?: {
@@ -47,7 +57,7 @@ export const rootCausesStorage = {
   },
 
   async getByIdWithRelations(id: number): Promise<(KnowledgeBaseRootCause & {
-    problems: KnowledgeBaseObjectiveProblem[];
+    problems: ProblemDataWithQuestions[];
     solutions: KnowledgeBaseSolution[];
   }) | null> {
     const rootCause = await this.getById(id);
@@ -63,6 +73,7 @@ export const rootCausesStorage = {
       isActive: knowledgeBaseObjectiveProblems.isActive,
       createdAt: knowledgeBaseObjectiveProblems.createdAt,
       updatedAt: knowledgeBaseObjectiveProblems.updatedAt,
+      validationQuestions: knowledgeBaseRootCauseHasKnowledgeBaseObjectiveProblems.validationQuestions,
     })
       .from(knowledgeBaseRootCauseHasKnowledgeBaseObjectiveProblems)
       .innerJoin(
@@ -119,46 +130,18 @@ export const rootCausesStorage = {
     return result.length > 0;
   },
 
-  async addProblem(rootCauseId: number, problemId: number): Promise<void> {
-    await db.insert(knowledgeBaseRootCauseHasKnowledgeBaseObjectiveProblems)
-      .values({ rootCauseId, problemId })
-      .onConflictDoNothing();
-  },
-
-  async removeProblem(rootCauseId: number, problemId: number): Promise<boolean> {
-    const result = await db.delete(knowledgeBaseRootCauseHasKnowledgeBaseObjectiveProblems)
-      .where(and(
-        eq(knowledgeBaseRootCauseHasKnowledgeBaseObjectiveProblems.rootCauseId, rootCauseId),
-        eq(knowledgeBaseRootCauseHasKnowledgeBaseObjectiveProblems.problemId, problemId)
-      ))
-      .returning();
-    return result.length > 0;
-  },
-
-  async setProblems(rootCauseId: number, problemIds: number[]): Promise<void> {
+  async setProblemsWithQuestions(rootCauseId: number, problems: ProblemWithQuestions[]): Promise<void> {
     await db.delete(knowledgeBaseRootCauseHasKnowledgeBaseObjectiveProblems)
       .where(eq(knowledgeBaseRootCauseHasKnowledgeBaseObjectiveProblems.rootCauseId, rootCauseId));
 
-    if (problemIds.length > 0) {
+    if (problems.length > 0) {
       await db.insert(knowledgeBaseRootCauseHasKnowledgeBaseObjectiveProblems)
-        .values(problemIds.map(problemId => ({ rootCauseId, problemId })));
+        .values(problems.map(p => ({ 
+          rootCauseId, 
+          problemId: p.problemId,
+          validationQuestions: p.validationQuestions || [],
+        })));
     }
-  },
-
-  async addSolution(rootCauseId: number, solutionId: number): Promise<void> {
-    await db.insert(knowledgeBaseRootCauseHasKnowledgeBaseSolutions)
-      .values({ rootCauseId, solutionId })
-      .onConflictDoNothing();
-  },
-
-  async removeSolution(rootCauseId: number, solutionId: number): Promise<boolean> {
-    const result = await db.delete(knowledgeBaseRootCauseHasKnowledgeBaseSolutions)
-      .where(and(
-        eq(knowledgeBaseRootCauseHasKnowledgeBaseSolutions.rootCauseId, rootCauseId),
-        eq(knowledgeBaseRootCauseHasKnowledgeBaseSolutions.solutionId, solutionId)
-      ))
-      .returning();
-    return result.length > 0;
   },
 
   async setSolutions(rootCauseId: number, solutionIds: number[]): Promise<void> {
@@ -171,11 +154,14 @@ export const rootCausesStorage = {
     }
   },
 
-  async getProblemIds(rootCauseId: number): Promise<number[]> {
-    const results = await db.select({ problemId: knowledgeBaseRootCauseHasKnowledgeBaseObjectiveProblems.problemId })
+  async getProblemsWithQuestions(rootCauseId: number): Promise<ProblemWithQuestions[]> {
+    const results = await db.select({ 
+      problemId: knowledgeBaseRootCauseHasKnowledgeBaseObjectiveProblems.problemId,
+      validationQuestions: knowledgeBaseRootCauseHasKnowledgeBaseObjectiveProblems.validationQuestions,
+    })
       .from(knowledgeBaseRootCauseHasKnowledgeBaseObjectiveProblems)
       .where(eq(knowledgeBaseRootCauseHasKnowledgeBaseObjectiveProblems.rootCauseId, rootCauseId));
-    return results.map(r => r.problemId);
+    return results;
   },
 
   async getSolutionIds(rootCauseId: number): Promise<number[]> {
