@@ -1,15 +1,33 @@
 import { useState } from "react";
-import { BarChart3, Users, AlertTriangle, RefreshCw } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { BarChart3, Users, AlertTriangle } from "lucide-react";
 import { useReportData, PeriodFilter } from "../hooks/useReportData";
 import { PeriodFilter as PeriodFilterComponent } from "../components/PeriodFilter";
 import { ReportTable, Column } from "../components/ReportTable";
+import { HierarchicalReportTable } from "../components/HierarchicalReportTable";
 import { SegmentedTabs } from "../../../shared/components/ui/SegmentedTabs";
+import { fetchApi } from "../../../lib/queryClient";
 
-interface ProductProblemCount {
+interface SubproductNode {
+  subproduct: string;
+  count: number;
+}
+
+interface ProductNode {
   product: string;
-  subproduct: string | null;
+  count: number;
+  subproducts: SubproductNode[];
+}
+
+interface ProblemNode {
   problem: string;
   count: number;
+  products: ProductNode[];
+}
+
+interface HierarchicalProblemData {
+  problems: ProblemNode[];
+  total: number;
 }
 
 interface CustomerConversationCount {
@@ -20,20 +38,8 @@ interface CustomerConversationCount {
 type ReportTab = "product-problem" | "customer-conversations";
 
 const tabs = [
-  { id: "product-problem", label: "Produto e Problema", icon: <AlertTriangle className="w-4 h-4" /> },
+  { id: "product-problem", label: "Problemas", icon: <AlertTriangle className="w-4 h-4" /> },
   { id: "customer-conversations", label: "Conversas por Cliente", icon: <Users className="w-4 h-4" /> },
-];
-
-const productProblemColumns: Column<ProductProblemCount>[] = [
-  { key: "product", header: "Produto" },
-  { key: "subproduct", header: "Subproduto" },
-  { key: "problem", header: "Problema" },
-  { 
-    key: "count", 
-    header: "Quantidade", 
-    align: "right",
-    render: (value: number) => value.toLocaleString("pt-BR"),
-  },
 ];
 
 const customerConversationColumns: Column<CustomerConversationCount>[] = [
@@ -50,11 +56,9 @@ export function ReportsPage() {
   const [activeTab, setActiveTab] = useState<ReportTab>("product-problem");
   const [period, setPeriod] = useState<PeriodFilter>("24h");
 
-  const productProblemQuery = useReportData<ProductProblemCount>({
-    endpoint: "/api/reports/product-problem-counts",
-    period,
-    queryKey: "product-problem-counts",
-    limit: 10,
+  const hierarchicalProblemQuery = useQuery<HierarchicalProblemData>({
+    queryKey: ["problem-hierarchy", period],
+    queryFn: () => fetchApi<HierarchicalProblemData>(`/api/reports/problem-hierarchy?period=${period}`),
   });
 
   const customerConversationQuery = useReportData<CustomerConversationCount>({
@@ -66,14 +70,14 @@ export function ReportsPage() {
 
   const handleRefresh = () => {
     if (activeTab === "product-problem") {
-      productProblemQuery.refetch();
+      hierarchicalProblemQuery.refetch();
     } else {
       customerConversationQuery.refetch();
     }
   };
 
   const isFetching = activeTab === "product-problem" 
-    ? productProblemQuery.isFetching 
+    ? hierarchicalProblemQuery.isFetching 
     : customerConversationQuery.isFetching;
 
   return (
@@ -101,23 +105,14 @@ export function ReportsPage() {
       />
 
       {activeTab === "product-problem" && (
-        <ReportTable<ProductProblemCount>
-          title="Contagem por Produto e Problema"
-          columns={productProblemColumns}
-          data={productProblemQuery.data}
-          isLoading={productProblemQuery.isLoading}
-          isError={productProblemQuery.isError}
-          error={productProblemQuery.error}
-          onRetry={() => productProblemQuery.refetch()}
-          page={productProblemQuery.page}
-          totalPages={productProblemQuery.totalPages}
-          total={productProblemQuery.total}
-          showingFrom={productProblemQuery.showingFrom}
-          showingTo={productProblemQuery.showingTo}
-          onPreviousPage={productProblemQuery.previousPage}
-          onNextPage={productProblemQuery.nextPage}
-          hasPreviousPage={productProblemQuery.hasPreviousPage}
-          hasNextPage={productProblemQuery.hasNextPage}
+        <HierarchicalReportTable
+          title="Contagem por Problema"
+          data={hierarchicalProblemQuery.data?.problems ?? []}
+          total={hierarchicalProblemQuery.data?.total ?? 0}
+          isLoading={hierarchicalProblemQuery.isLoading}
+          isError={hierarchicalProblemQuery.isError}
+          error={hierarchicalProblemQuery.error}
+          onRetry={() => hierarchicalProblemQuery.refetch()}
         />
       )}
 

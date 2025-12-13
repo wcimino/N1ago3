@@ -34,4 +34,15 @@ router.get("/api/reports/customer-conversation-counts", async (req, res) => {
   }
 });
 
+router.get("/api/reports/problem-hierarchy", async (req, res) => {
+  try {
+    const period = validatePeriod(req.query.period as string);
+    const results = await reportsService.getHierarchicalProblemData(period);
+    res.json(results);
+  } catch (error) {
+    console.error("Error fetching hierarchical problem data:", error);
+    res.status(500).json({ error: "Falha ao gerar relatório" });
+  }
+});
+
 export default router;

@@ -9,6 +9,28 @@ export interface ProductProblemCount {
   count: number;
 }
 
+export interface SubproductNode {
+  subproduct: string;
+  count: number;
+}
+
+export interface ProductNode {
+  product: string;
+  count: number;
+  subproducts: SubproductNode[];
+}
+
+export interface ProblemNode {
+  problem: string;
+  count: number;
+  products: ProductNode[];
+}
+
+export interface HierarchicalProblemData {
+  problems: ProblemNode[];
+  total: number;
+}
+
 export interface CustomerConversationCount {
   customerName: string;
   conversationCount: number;
@@ -135,5 +157,87 @@ export const reportsService = {
     }));
 
     return { data, total };
+  },
+
+  async getHierarchicalProblemData(
+    period: PeriodFilter
+  ): Promise<HierarchicalProblemData> {
+    const dateFilter = getPeriodDateFilter(period, "cs");
+
+    const results = await db.execute(sql.raw(`
+      WITH problem_data AS (
+        SELECT 
+          COALESCE(cs.product_standard, cs.product, 'Não identificado') as product,
+          COALESCE(cs.subproduct, '-') as subproduct,
+          jsonb_array_elements(cs.objective_problems::jsonb)->>'name' as problem_name
+        FROM conversations_summary cs
+        WHERE cs.objective_problems IS NOT NULL 
+          AND cs.objective_problems::text != '[]'
+          AND cs.objective_problems::text != 'null'
+          ${dateFilter}
+      )
+      SELECT 
+        COALESCE(problem_name, 'Não identificado') as problem,
+        product,
+        subproduct,
+        COUNT(*) as count
+      FROM problem_data
+      GROUP BY problem_name, product, subproduct
+      ORDER BY problem_name, product, subproduct
+    `));
+
+    const problemMap = new Map<string, {
+      count: number;
+      products: Map<string, {
+        count: number;
+        subproducts: Map<string, number>;
+      }>;
+    }>();
+
+    let total = 0;
+
+    for (const row of results.rows as any[]) {
+      const problem = row.problem || "Não identificado";
+      const product = row.product || "Não identificado";
+      const subproduct = row.subproduct || "-";
+      const count = parseInt(row.count, 10);
+
+      total += count;
+
+      if (!problemMap.has(problem)) {
+        problemMap.set(problem, { count: 0, products: new Map() });
+      }
+      const problemNode = problemMap.get(problem)!;
+      problemNode.count += count;
+
+      if (!problemNode.products.has(product)) {
+        problemNode.products.set(product, { count: 0, subproducts: new Map() });
+      }
+      const productNode = problemNode.products.get(product)!;
+      productNode.count += count;
+
+      productNode.subproducts.set(
+        subproduct,
+        (productNode.subproducts.get(subproduct) || 0) + count
+      );
+    }
+
+    const problems: ProblemNode[] = Array.from(problemMap.entries())
+      .map(([problem, data]) => ({
+        problem,
+        count: data.count,
+        products: Array.from(data.products.entries())
+          .map(([product, prodData]) => ({
+            product,
+            count: prodData.count,
+            subproducts: Array.from(prodData.subproducts.entries())
+              .map(([subproduct, count]) => ({ subproduct, count }))
+              .sort((a, b) => b.count - a.count),
+          }))
+          .sort((a, b) => b.count - a.count),
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    return { problems, total };
   },
 };
