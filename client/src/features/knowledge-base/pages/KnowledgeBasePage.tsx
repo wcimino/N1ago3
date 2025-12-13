@@ -1,12 +1,13 @@
 import { useState, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, BookOpen, X, Lightbulb, BarChart3, Cloud, Database, ChevronsUpDown, ChevronsDownUp, AlertCircle } from "lucide-react";
+import { Plus, BookOpen, X, Lightbulb, BarChart3, Cloud, Database, ChevronsUpDown, ChevronsDownUp, AlertCircle, Play } from "lucide-react";
 import { KnowledgeBaseForm } from "../components/KnowledgeBaseForm";
 import { HierarchyNodeItem } from "../components/HierarchyNodeItem";
 import { SuggestionsPage } from "./SuggestionsPage";
 import { LearningAttemptsPage } from "./LearningAttemptsPage";
 import { ZendeskArticlesPage } from "./ZendeskArticlesPage";
 import { ObjectiveProblemsPage } from "./ObjectiveProblemsPage";
+import { ActionsPage } from "./ActionsPage";
 import { PageHeader, FilterBar, StatsBar, InputModal } from "../../../shared/components/ui";
 import { ConfirmModal } from "../../../shared/components/ui/ConfirmModal";
 import { useKnowledgeBase } from "../hooks/useKnowledgeBase";
@@ -14,6 +15,7 @@ import { useKnowledgeBase } from "../hooks/useKnowledgeBase";
 const tabs = [
   { id: "articles", label: "Artigos", icon: <BookOpen className="w-4 h-4" /> },
   { id: "problems", label: "Problemas", icon: <AlertCircle className="w-4 h-4" /> },
+  { id: "actions", label: "Ações", icon: <Play className="w-4 h-4" /> },
   { id: "suggestions", label: "Sugestões", icon: <Lightbulb className="w-4 h-4" /> },
   { id: "processing", label: "Processamento", icon: <BarChart3 className="w-4 h-4" /> },
 ];
@@ -305,6 +307,10 @@ export function KnowledgeBasePage() {
           ) : activeTab === "problems" ? (
             <div className="p-4">
               <ObjectiveProblemsPage />
+            </div>
+          ) : activeTab === "actions" ? (
+            <div className="p-4">
+              <ActionsPage />
             </div>
           ) : showForm ? (
             <div className="p-4">

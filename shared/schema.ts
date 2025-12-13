@@ -760,3 +760,22 @@ export const embeddingGenerationLogs = pgTable("embedding_generation_logs", {
 
 export type EmbeddingGenerationLog = typeof embeddingGenerationLogs.$inferSelect;
 export type InsertEmbeddingGenerationLog = Omit<typeof embeddingGenerationLogs.$inferInsert, "id" | "createdAt">;
+
+export const knowledgeBaseActions = pgTable("knowledge_base_actions", {
+  id: serial("id").primaryKey(),
+  actionType: text("action_type").notNull(),
+  description: text("description").notNull(),
+  requiredInput: text("required_input"),
+  messageTemplate: text("message_template"),
+  ownerTeam: text("owner_team"),
+  sla: text("sla"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  actionTypeIdx: index("idx_kb_actions_action_type").on(table.actionType),
+  isActiveIdx: index("idx_kb_actions_is_active").on(table.isActive),
+}));
+
+export type KnowledgeBaseAction = typeof knowledgeBaseActions.$inferSelect;
+export type InsertKnowledgeBaseAction = Omit<typeof knowledgeBaseActions.$inferInsert, "id" | "createdAt" | "updatedAt">;
