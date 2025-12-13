@@ -142,6 +142,8 @@ function mapApiUserToDbUser(apiUser: ZendeskUserApiResponse): InsertZendeskSuppo
 }
 
 async function fetchUsersPage(url: string): Promise<ZendeskUsersListResponse> {
+  console.log(`[ZendeskSupportUsers] Fetching URL: ${url}`);
+  
   const response = await fetch(url, {
     headers: { 
       Authorization: getAuthHeader(),
@@ -150,13 +152,17 @@ async function fetchUsersPage(url: string): Promise<ZendeskUsersListResponse> {
   });
   
   if (!response.ok) {
-    throw new Error(`Zendesk API error: ${response.status} ${response.statusText}`);
+    const errorBody = await response.text();
+    console.error(`[ZendeskSupportUsers] API Error - URL: ${url}, Status: ${response.status}, Body: ${errorBody}`);
+    throw new Error(`Zendesk API error: ${response.status} ${response.statusText} - ${errorBody}`);
   }
   
   return response.json();
 }
 
 async function fetchIncrementalUsersPage(url: string): Promise<ZendeskIncrementalUsersResponse> {
+  console.log(`[ZendeskSupportUsers] Fetching incremental URL: ${url}`);
+  
   const response = await fetch(url, {
     headers: { 
       Authorization: getAuthHeader(),
@@ -165,7 +171,9 @@ async function fetchIncrementalUsersPage(url: string): Promise<ZendeskIncrementa
   });
   
   if (!response.ok) {
-    throw new Error(`Zendesk Incremental API error: ${response.status} ${response.statusText}`);
+    const errorBody = await response.text();
+    console.error(`[ZendeskSupportUsers] Incremental API Error - URL: ${url}, Status: ${response.status}, Body: ${errorBody}`);
+    throw new Error(`Zendesk Incremental API error: ${response.status} ${response.statusText} - ${errorBody}`);
   }
   
   return response.json();
