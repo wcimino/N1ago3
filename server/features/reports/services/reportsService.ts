@@ -95,19 +95,11 @@ export const reportsService = {
 
     const countResult = await db.execute(sql.raw(`
       SELECT COUNT(*) as total FROM (
-        SELECT 
-          u.profile->>'givenName',
-          u.profile->>'surname',
-          u.profile->>'email',
-          u.external_id
+        SELECT c.user_id
         FROM conversations c
-        LEFT JOIN users u ON c.user_external_id = u.external_id
-        WHERE 1=1 ${dateFilter}
-        GROUP BY 
-          u.profile->>'givenName',
-          u.profile->>'surname',
-          u.profile->>'email',
-          u.external_id
+        LEFT JOIN users u ON c.user_id = u.sunshine_id
+        WHERE c.user_id IS NOT NULL ${dateFilter}
+        GROUP BY c.user_id
       ) subq
     `));
 
@@ -122,18 +114,17 @@ export const reportsService = {
             COALESCE(u.profile->>'surname', '')
           )), ''),
           u.profile->>'email',
-          u.external_id,
-          'Cliente não identificado'
+          c.user_id
         ) as customer_name,
         COUNT(DISTINCT c.id) as conversation_count
       FROM conversations c
-      LEFT JOIN users u ON c.user_external_id = u.external_id
-      WHERE 1=1 ${dateFilter}
+      LEFT JOIN users u ON c.user_id = u.sunshine_id
+      WHERE c.user_id IS NOT NULL ${dateFilter}
       GROUP BY 
+        c.user_id,
         u.profile->>'givenName',
         u.profile->>'surname',
-        u.profile->>'email',
-        u.external_id
+        u.profile->>'email'
       ORDER BY conversation_count DESC
       LIMIT ${limit} OFFSET ${offset}
     `));
