@@ -1,7 +1,6 @@
-import { useState } from "react";
 import { Search, Layers, Package, FileText, Target } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { ExpandableSearchTool } from "../../../shared/components/ui";
+import { useSearchTool } from "../hooks/useSearchTool";
 
 interface CombinedResult {
   source: "article" | "problem";
@@ -21,6 +20,8 @@ interface CombinedSearchResponse {
     product: string | null;
     subproduct: string | null;
   };
+  articleCount: number;
+  problemCount: number;
 }
 
 interface CombinedKnowledgeSearchToolProps {
@@ -29,39 +30,15 @@ interface CombinedKnowledgeSearchToolProps {
 }
 
 export function CombinedKnowledgeSearchTool({ isExpanded, onToggle }: CombinedKnowledgeSearchToolProps) {
-  const [product, setProduct] = useState("");
-  const [subproduct, setSubproduct] = useState("");
-  const [keywords, setKeywords] = useState("");
-  const [searchTrigger, setSearchTrigger] = useState(0);
-
-  const { data, isLoading, error } = useQuery<CombinedSearchResponse>({
-    queryKey: ["combined-knowledge-search", product, subproduct, keywords, searchTrigger],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (product) params.set("product", product);
-      if (subproduct) params.set("subproduct", subproduct);
-      if (keywords) params.set("keywords", keywords);
-      params.set("limit", "10");
-      
-      const res = await fetch(`/api/ai/tools/combined-search?${params.toString()}`, {
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Falha na busca");
-      return res.json();
-    },
-    enabled: searchTrigger > 0 && isExpanded,
+  const { values, setValue, isLoading, error, data, search, handleKeyPress } = useSearchTool<CombinedSearchResponse>({
+    toolId: "combined-knowledge-search",
+    endpoint: "/api/ai/tools/combined-search",
+    fields: [
+      { name: "product", label: "Produto", type: "text", required: true },
+      { name: "subproduct", label: "Subproduto", type: "text" },
+      { name: "keywords", label: "Palavras-chave", type: "text" },
+    ],
   });
-
-  const handleSearch = () => {
-    if (!product.trim()) return;
-    setSearchTrigger(prev => prev + 1);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
 
   const articleCount = data?.results?.filter(r => r.source === "article").length || 0;
   const problemCount = data?.results?.filter(r => r.source === "problem").length || 0;
@@ -76,8 +53,8 @@ export function CombinedKnowledgeSearchTool({ isExpanded, onToggle }: CombinedKn
       isExpanded={isExpanded}
       onToggle={onToggle}
       isLoading={isLoading}
-      onSearch={handleSearch}
-      error={error as Error | null}
+      onSearch={search}
+      error={error}
       helpText="Busca <strong>unificada</strong> que retorna artigos e problemas objetivos de uma só vez. Cada resultado indica sua origem (article ou problem)."
       resultsCount={data?.results?.length}
       resultsLabel="resultados"
@@ -146,8 +123,8 @@ export function CombinedKnowledgeSearchTool({ isExpanded, onToggle }: CombinedKn
             <Package className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              value={product}
-              onChange={(e) => setProduct(e.target.value)}
+              value={values.product || ""}
+              onChange={(e) => setValue("product", e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Ex: Cartão de Crédito, Conta Digital"
               className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
@@ -161,8 +138,8 @@ export function CombinedKnowledgeSearchTool({ isExpanded, onToggle }: CombinedKn
           </label>
           <input
             type="text"
-            value={subproduct}
-            onChange={(e) => setSubproduct(e.target.value)}
+            value={values.subproduct || ""}
+            onChange={(e) => setValue("subproduct", e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Ex: Gold, Platinum, PJ"
             className="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
@@ -177,8 +154,8 @@ export function CombinedKnowledgeSearchTool({ isExpanded, onToggle }: CombinedKn
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              value={keywords}
-              onChange={(e) => setKeywords(e.target.value)}
+              value={values.keywords || ""}
+              onChange={(e) => setValue("keywords", e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Ex: cobrança indevida, limite"
               className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500"

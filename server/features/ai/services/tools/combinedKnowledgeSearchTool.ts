@@ -1,13 +1,6 @@
 import { runKnowledgeBaseSearch } from "../knowledgeBaseSearchHelper.js";
-import { 
-  searchObjectiveProblems, 
-  searchObjectiveProblemsBySimilarity,
-  hasObjectiveProblemEmbeddings,
-  type ObjectiveProblemSearchResult,
-  type SemanticSearchResult 
-} from "../../../knowledge/storage/objectiveProblemsStorage.js";
-import { productCatalogStorage } from "../../../products/storage/productCatalogStorage.js";
-import { generateEmbedding } from "../../../../shared/embeddings/index.js";
+import { runProblemObjectiveSearch } from "./problemObjectiveTool.js";
+import { buildSearchContext } from "./searchContext.js";
 import type { ToolDefinition } from "../openaiApiService.js";
 
 export interface CombinedSearchResult {
@@ -40,28 +33,21 @@ export interface CombinedSearchResponse {
 }
 
 export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): Promise<CombinedSearchResponse> {
-  const limit = params.limit || 5;
-  let productId: number | undefined;
-  let resolvedProduct: string | null = null;
-  let resolvedSubproduct: string | null = null;
-
-  if (params.product) {
-    const resolved = await productCatalogStorage.resolveProductId(params.product, params.subproduct);
-    if (resolved) {
-      productId = resolved.id;
-      resolvedProduct = resolved.produto;
-      resolvedSubproduct = resolved.subproduto;
-    }
-  }
+  const ctx = await buildSearchContext(params, 5);
 
   const [articlesResult, problemsResult] = await Promise.all([
     runKnowledgeBaseSearch({
       product: params.product,
       subproduct: params.subproduct,
       keywords: params.keywords,
-      limit
+      limit: ctx.limit
     }),
-    searchProblems(params.keywords, productId, limit)
+    runProblemObjectiveSearch({
+      product: params.product,
+      subproduct: params.subproduct,
+      keywords: params.keywords,
+      limit: ctx.limit
+    })
   ]);
 
   const results: CombinedSearchResult[] = [];
@@ -77,7 +63,7 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
     });
   }
 
-  for (const problem of problemsResult) {
+  for (const problem of problemsResult.problems) {
     results.push({
       source: "problem",
       id: problem.id,
@@ -94,8 +80,8 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
       message: "Nenhum resultado encontrado na base de conhecimento",
       results: [],
       resolvedFilters: {
-        product: resolvedProduct || params.product,
-        subproduct: resolvedSubproduct || params.subproduct || null
+        product: ctx.resolvedProduct || params.product,
+        subproduct: ctx.resolvedSubproduct || params.subproduct || null
       },
       articleCount: 0,
       problemCount: 0
@@ -103,14 +89,14 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
   }
 
   return {
-    message: `Encontrados ${articlesResult.articles.length} artigos e ${problemsResult.length} problemas`,
+    message: `Encontrados ${articlesResult.articles.length} artigos e ${problemsResult.problems.length} problemas`,
     results,
     resolvedFilters: {
-      product: resolvedProduct,
-      subproduct: resolvedSubproduct
+      product: ctx.resolvedProduct,
+      subproduct: ctx.resolvedSubproduct
     },
     articleCount: articlesResult.articles.length,
-    problemCount: problemsResult.length
+    problemCount: problemsResult.problems.length
   };
 }
 
@@ -146,53 +132,4 @@ export function createCombinedKnowledgeSearchTool(): ToolDefinition {
       return JSON.stringify(result);
     }
   };
-}
-
-interface ProblemResult {
-  id: number;
-  name: string;
-  description: string | null;
-  matchScore: number;
-  matchReason: string;
-  products: string[];
-}
-
-async function searchProblems(keywords: string | undefined, productId: number | undefined, limit: number = 5): Promise<ProblemResult[]> {
-  const hasEmbeddings = await hasObjectiveProblemEmbeddings();
-  
-  if (keywords && hasEmbeddings) {
-    const { embedding } = await generateEmbedding(keywords, { contextType: "query" });
-    
-    const semanticResults = await searchObjectiveProblemsBySimilarity({
-      queryEmbedding: embedding,
-      productId,
-      onlyActive: true,
-      limit,
-    });
-
-    return semanticResults.map((p: SemanticSearchResult) => ({
-      id: p.id,
-      name: p.name,
-      description: p.description,
-      matchScore: p.similarity,
-      matchReason: `Similaridade semântica: ${p.similarity}%`,
-      products: p.productNames || [],
-    }));
-  }
-
-  const results = await searchObjectiveProblems({
-    keywords,
-    productId,
-    onlyActive: true,
-    limit,
-  });
-
-  return results.map((p: ObjectiveProblemSearchResult) => ({
-    id: p.id,
-    name: p.name,
-    description: p.description,
-    matchScore: p.matchScore,
-    matchReason: p.matchReason,
-    products: p.productNames || [],
-  }));
 }

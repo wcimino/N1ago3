@@ -1,7 +1,6 @@
-import { useState } from "react";
 import { Search, Target, Package } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { ExpandableSearchTool } from "../../../shared/components/ui";
+import { useSearchTool } from "../hooks/useSearchTool";
 
 interface ProblemResult {
   id: number;
@@ -25,36 +24,14 @@ interface ProblemObjectiveSearchToolProps {
 }
 
 export function ProblemObjectiveSearchTool({ isExpanded, onToggle }: ProblemObjectiveSearchToolProps) {
-  const [keywords, setKeywords] = useState("");
-  const [product, setProduct] = useState("");
-  const [searchTrigger, setSearchTrigger] = useState(0);
-
-  const { data, isLoading, error } = useQuery<ProblemSearchResponse>({
-    queryKey: ["problem-objective-search", keywords, product, searchTrigger],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (keywords) params.set("keywords", keywords);
-      if (product) params.set("product", product);
-      params.set("limit", "10");
-      
-      const res = await fetch(`/api/knowledge/objective-problems/search?${params.toString()}`, {
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Falha na busca");
-      return res.json();
-    },
-    enabled: searchTrigger > 0 && isExpanded,
+  const { values, setValue, isLoading, error, data, search, handleKeyPress } = useSearchTool<ProblemSearchResponse>({
+    toolId: "problem-objective-search",
+    endpoint: "/api/knowledge/objective-problems/search",
+    fields: [
+      { name: "keywords", label: "Palavras-chave", type: "text" },
+      { name: "product", label: "Produto", type: "text" },
+    ],
   });
-
-  const handleSearch = () => {
-    setSearchTrigger(prev => prev + 1);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
 
   return (
     <ExpandableSearchTool
@@ -66,8 +43,8 @@ export function ProblemObjectiveSearchTool({ isExpanded, onToggle }: ProblemObje
       isExpanded={isExpanded}
       onToggle={onToggle}
       isLoading={isLoading}
-      onSearch={handleSearch}
-      error={error as Error | null}
+      onSearch={search}
+      error={error}
       helpText="Usada pelo agente para identificar qual é o <strong>problema real</strong> do cliente baseado no que ele descreve."
       resultsCount={data?.problems?.length}
       resultsLabel="problemas"
@@ -114,8 +91,8 @@ export function ProblemObjectiveSearchTool({ isExpanded, onToggle }: ProblemObje
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              value={keywords}
-              onChange={(e) => setKeywords(e.target.value)}
+              value={values.keywords || ""}
+              onChange={(e) => setValue("keywords", e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Ex: cobrança indevida, cancelar pedido"
               className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
@@ -129,8 +106,8 @@ export function ProblemObjectiveSearchTool({ isExpanded, onToggle }: ProblemObje
           </label>
           <input
             type="text"
-            value={product}
-            onChange={(e) => setProduct(e.target.value)}
+            value={values.product || ""}
+            onChange={(e) => setValue("product", e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Ex: Cartão de Crédito, Conta Digital"
             className="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500"

@@ -1,7 +1,6 @@
-import { useState } from "react";
 import { Database } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { ExpandableSearchTool } from "../../../shared/components/ui";
+import { useSearchTool } from "../hooks/useSearchTool";
 
 interface ProductResult {
   id: number;
@@ -16,30 +15,12 @@ interface ProductCatalogSearchToolProps {
 }
 
 export function ProductCatalogSearchTool({ isExpanded, onToggle }: ProductCatalogSearchToolProps) {
-  const [query, setQuery] = useState("");
-  const [searchTrigger, setSearchTrigger] = useState(0);
-
-  const { data, isLoading, error } = useQuery<ProductResult[]>({
-    queryKey: ["product-catalog-search", query, searchTrigger],
-    queryFn: async () => {
-      const res = await fetch(`/api/product-catalog?q=${encodeURIComponent(query)}`, {
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Falha na busca");
-      return res.json();
-    },
-    enabled: searchTrigger > 0 && isExpanded,
+  const { values, setValue, isLoading, error, data, search, handleKeyPress } = useSearchTool<ProductResult[]>({
+    toolId: "product-catalog-search",
+    endpoint: "/api/product-catalog",
+    fields: [{ name: "q", label: "Buscar produto", type: "text" }],
+    transformParams: (v) => ({ q: v.q }),
   });
-
-  const handleSearch = () => {
-    setSearchTrigger(prev => prev + 1);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
 
   return (
     <ExpandableSearchTool
@@ -51,8 +32,8 @@ export function ProductCatalogSearchTool({ isExpanded, onToggle }: ProductCatalo
       isExpanded={isExpanded}
       onToggle={onToggle}
       isLoading={isLoading}
-      onSearch={handleSearch}
-      error={error as Error | null}
+      onSearch={search}
+      error={error}
       helpText="Usada pelo agente de <strong>Aprendizado</strong> para buscar classificações válidas no catálogo de produtos."
       resultsCount={data?.length}
       resultsLabel="produtos"
@@ -84,8 +65,8 @@ export function ProductCatalogSearchTool({ isExpanded, onToggle }: ProductCatalo
         <label className="block text-sm font-medium text-gray-700 mb-1">Buscar produto</label>
         <input
           type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          value={values.q || ""}
+          onChange={(e) => setValue("q", e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="Ex: Antecipação, Cartão, Conta Digital..."
           className="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
