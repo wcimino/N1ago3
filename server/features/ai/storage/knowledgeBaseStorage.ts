@@ -34,7 +34,7 @@ export interface IntentWithArticle {
 export const knowledgeBaseStorage = {
   async getAllArticles(filters?: {
     search?: string;
-    productStandard?: string;
+    productId?: number;
     subproductStandard?: string;
     subjectId?: number;
     intentId?: number;
@@ -55,8 +55,8 @@ export const knowledgeBaseStorage = {
       );
     }
 
-    if (filters?.productStandard) {
-      conditions.push(eq(knowledgeBase.productStandard, filters.productStandard));
+    if (filters?.productId) {
+      conditions.push(eq(knowledgeBase.productId, filters.productId));
     }
 
     if (filters?.subproductStandard) {
@@ -91,13 +91,13 @@ export const knowledgeBaseStorage = {
   async searchArticlesWithRelevance(
     keywords: string,
     options: {
-      productStandard?: string;
+      productId?: number;
       subjectId?: number;
       intentId?: number;
       limit?: number;
     } = {}
   ): Promise<SearchArticleResult[]> {
-    const { productStandard, subjectId, intentId, limit = 5 } = options;
+    const { productId, subjectId, intentId, limit = 5 } = options;
     const normalizedSearch = normalizeForFts(keywords);
     
     if (!normalizedSearch.trim()) {
@@ -108,8 +108,8 @@ export const knowledgeBaseStorage = {
     
     const conditions: SQL[] = [];
     
-    if (productStandard) {
-      conditions.push(eq(knowledgeBase.productStandard, productStandard));
+    if (productId) {
+      conditions.push(eq(knowledgeBase.productId, productId));
     }
     if (subjectId) {
       conditions.push(eq(knowledgeBase.subjectId, subjectId));
@@ -459,7 +459,7 @@ export const knowledgeBaseStorage = {
   async searchBySimilarity(
     queryEmbedding: number[],
     options: { 
-      productStandard?: string;
+      productId?: number;
       subjectId?: number;
       intentId?: number;
       limit?: number;
@@ -472,8 +472,8 @@ export const knowledgeBaseStorage = {
     const conditions: SQL[] = [];
     conditions.push(sql`e.embedding_vector IS NOT NULL`);
     
-    if (options.productStandard) {
-      conditions.push(sql`a.product_standard = ${options.productStandard}`);
+    if (options.productId) {
+      conditions.push(sql`a.product_id = ${options.productId}`);
     }
     if (options.subjectId) {
       conditions.push(sql`a.subject_id = ${options.subjectId}`);

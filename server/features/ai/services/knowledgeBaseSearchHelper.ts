@@ -1,7 +1,7 @@
 import { knowledgeBaseStorage } from "../storage/knowledgeBaseStorage.js";
 import { KnowledgeBaseStatisticsStorage } from "../storage/knowledgeBaseStatisticsStorage.js";
 import { generateEmbedding as generateKBEmbedding } from "./knowledgeBaseEmbeddingService.js";
-import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
+import { buildSearchContext } from "./tools/searchContext.js";
 
 const RELEVANCE_THRESHOLD = 0.05;
 
@@ -59,22 +59,22 @@ export async function runKnowledgeBaseSearch(
   params: KBSearchParams,
   context: KBSearchContext = {}
 ): Promise<KBSearchResult> {
-  let resolvedProduct: string | null = null;
-  let resolvedSubproduct: string | null = null;
+  const ctx = await buildSearchContext(params, 5);
 
-  if (params.product) {
-    const resolved = await productCatalogStorage.resolveProductId(params.product, params.subproduct);
-    if (resolved) {
-      resolvedProduct = resolved.produto;
-      resolvedSubproduct = resolved.subproduto;
-    }
+  if (params.product && !ctx.productId) {
+    console.log(`[KB Search] Product '${params.product}' not found in catalog, returning empty results`);
+    return {
+      articles: [],
+      resolvedProduct: null,
+      resolvedSubproduct: null
+    };
   }
 
   const keywordsStr = Array.isArray(params.keywords) 
     ? params.keywords.join(" ") 
     : params.keywords || "";
   
-  const limit = params.limit || 5;
+  const limit = params.limit || ctx.limit;
 
   interface ArticleWithRelevance {
     id: number;
@@ -97,16 +97,16 @@ export async function runKnowledgeBaseSearch(
       try {
         const queryText = buildEnrichedQueryText({
           keywords: keywordsStr,
-          product: resolvedProduct || params.product,
-          subproduct: resolvedSubproduct || params.subproduct,
+          product: ctx.resolvedProduct || params.product,
+          subproduct: ctx.resolvedSubproduct || params.subproduct,
         });
-        console.log(`[KB Search] Semantic search: product=${resolvedProduct || params.product || 'none'}, subproduct=${resolvedSubproduct || 'none'}, keywords="${keywordsStr.substring(0, 50)}..."`);
+        console.log(`[KB Search] Semantic search: productId=${ctx.productId || 'none'}, product=${ctx.resolvedProduct || params.product || 'none'}, keywords="${keywordsStr.substring(0, 50)}..."`);
         
         const { embedding: queryEmbedding } = await generateKBEmbedding(queryText);
         const semanticResults = await knowledgeBaseStorage.searchBySimilarity(
           queryEmbedding,
           {
-            productStandard: resolvedProduct || undefined,
+            productId: ctx.productId,
             limit
           }
         );
@@ -127,7 +127,7 @@ export async function runKnowledgeBaseSearch(
       } catch (error) {
         console.error("[KB Search] Semantic search failed, falling back to full-text:", error);
         const searchResults = await knowledgeBaseStorage.searchArticlesWithRelevance(keywordsStr, {
-          productStandard: resolvedProduct || undefined,
+          productId: ctx.productId,
           limit: limit * 2
         });
         articles = searchResults
@@ -147,9 +147,9 @@ export async function runKnowledgeBaseSearch(
         console.log(`[KB Search] FTS fallback found ${articles.length} articles`);
       }
     } else {
-      console.log(`[KB Search] No embeddings, using FTS: product=${resolvedProduct || params.product || 'none'}, keywords="${keywordsStr.substring(0, 50)}..."`);
+      console.log(`[KB Search] No embeddings, using FTS: productId=${ctx.productId || 'none'}, product=${ctx.resolvedProduct || params.product || 'none'}, keywords="${keywordsStr.substring(0, 50)}..."`);
       const searchResults = await knowledgeBaseStorage.searchArticlesWithRelevance(keywordsStr, {
-        productStandard: resolvedProduct || undefined,
+        productId: ctx.productId,
         limit: limit * 2
       });
       articles = searchResults
@@ -169,9 +169,9 @@ export async function runKnowledgeBaseSearch(
       console.log(`[KB Search] FTS found ${articles.length} articles`);
     }
   } else if (params.product) {
-    console.log(`[KB Search] No keywords, filtering by product: ${resolvedProduct || params.product}`);
+    console.log(`[KB Search] No keywords, filtering by productId: ${ctx.productId || 'none'}, product: ${ctx.resolvedProduct || params.product}`);
     const allArticles = await knowledgeBaseStorage.getAllArticles({
-      productStandard: resolvedProduct || undefined,
+      productId: ctx.productId,
       limit
     });
     articles = allArticles.map(a => ({
@@ -206,7 +206,7 @@ export async function runKnowledgeBaseSearch(
 
   return {
     articles,
-    resolvedProduct,
-    resolvedSubproduct
+    resolvedProduct: ctx.resolvedProduct,
+    resolvedSubproduct: ctx.resolvedSubproduct
   };
 }
