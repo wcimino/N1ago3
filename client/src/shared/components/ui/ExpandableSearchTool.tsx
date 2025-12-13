@@ -38,6 +38,22 @@ const colorVariants: Record<string, { button: string; focus: string }> = {
     button: "bg-purple-600 hover:bg-purple-700",
     focus: "focus:ring-purple-500",
   },
+  rose: {
+    button: "bg-rose-600 hover:bg-rose-700",
+    focus: "focus:ring-rose-500",
+  },
+  violet: {
+    button: "bg-violet-600 hover:bg-violet-700",
+    focus: "focus:ring-violet-500",
+  },
+  teal: {
+    button: "bg-teal-600 hover:bg-teal-700",
+    focus: "focus:ring-teal-500",
+  },
+  amber: {
+    button: "bg-amber-600 hover:bg-amber-700",
+    focus: "focus:ring-amber-500",
+  },
 };
 
 export function ExpandableSearchTool({
