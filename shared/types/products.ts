@@ -27,3 +27,18 @@ export interface EmotionStatsResponse {
   last_hour: EmotionStatsPeriod;
   today: EmotionStatsPeriod;
 }
+
+export interface ProblemCount {
+  problemName: string;
+  count: number;
+}
+
+export interface ProblemStatsPeriod {
+  items: ProblemCount[];
+  total: number;
+}
+
+export interface ProblemStatsResponse {
+  last_hour: ProblemStatsPeriod;
+  today: ProblemStatsPeriod;
+}

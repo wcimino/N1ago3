@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { MessageCircle, Activity, Package, AlertCircle, Heart, Sparkles, Clock } from "lucide-react";
+import { MessageCircle, Activity, Package, AlertCircle, Heart, Sparkles, Clock, AlertTriangle } from "lucide-react";
 import { fetchApi } from "../../lib/queryClient";
 import { DonutChart, HourlyBarChart, StatsCard, StatsTableHeader, StatsRow } from "../components";
 import { useTimezone } from "../../contexts/TimezoneContext";
-import type { UsersStatsResponse, StatsResponse, ProductStatsResponse, EmotionStatsResponse } from "../../types";
+import type { UsersStatsResponse, StatsResponse, ProductStatsResponse, EmotionStatsResponse, ProblemStatsResponse } from "../../types";
 
 interface OpenAIStatsResponse {
   last_24h: { 
@@ -172,6 +172,77 @@ function EmotionsCard({ emotionStats }: { emotionStats: EmotionStatsResponse | u
   );
 }
 
+function ProblemsCard({ problemStats }: { problemStats: ProblemStatsResponse | undefined }) {
+  const lastHourItems = problemStats?.last_hour?.items || [];
+  const todayItems = problemStats?.today?.items || [];
+  const lastHourMap = new Map(lastHourItems.map(p => [p.problemName, p.count]));
+  const todayMap = new Map(todayItems.map(p => [p.problemName, p.count]));
+  const allProblems = [...new Set([...lastHourMap.keys(), ...todayMap.keys()])];
+  
+  allProblems.sort((a, b) => (todayMap.get(b) || 0) - (todayMap.get(a) || 0));
+  
+  if (allProblems.length === 0) {
+    return <p className="text-sm text-gray-400 italic">Nenhum problema identificado</p>;
+  }
+  
+  const totalLastHour = problemStats?.last_hour?.total || 0;
+  const totalToday = problemStats?.today?.total || 0;
+  
+  const top5Problems = allProblems.slice(0, 5);
+  const othersProblems = allProblems.slice(5);
+  
+  const othersLastHour = othersProblems.reduce((sum, p) => sum + (lastHourMap.get(p) || 0), 0);
+  const othersToday = othersProblems.reduce((sum, p) => sum + (todayMap.get(p) || 0), 0);
+  const othersCount = othersProblems.length;
+  
+  return (
+    <div>
+      <StatsTableHeader colorScheme="purple" />
+      <div className="flex items-center justify-between py-1.5 border-b border-gray-100 bg-gray-50 -mx-5 px-5 rounded-t">
+        <span className="text-sm font-bold text-gray-800">TOTAL</span>
+        <div className="flex items-center gap-3 shrink-0">
+          {totalLastHour ? (
+            <span className="font-bold text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
+              {formatNumber(totalLastHour)}
+            </span>
+          ) : (
+            <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
+          )}
+          {totalToday ? (
+            <span className="font-bold text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded text-xs min-w-[24px] text-center">
+              {formatNumber(totalToday)}
+            </span>
+          ) : (
+            <span className="text-gray-300 text-xs min-w-[24px] text-center">-</span>
+          )}
+          <div className="w-4" />
+        </div>
+      </div>
+      <div className="space-y-1">
+        {top5Problems.map((problem) => (
+          <StatsRow
+            key={problem}
+            label={problem}
+            lastHourValue={lastHourMap.get(problem)}
+            todayValue={todayMap.get(problem)}
+            colorScheme="purple"
+            formatNumber={formatNumber}
+          />
+        ))}
+        {othersCount > 0 && (
+          <StatsRow
+            label={`Outros (${othersCount})`}
+            lastHourValue={othersLastHour || undefined}
+            todayValue={othersToday || undefined}
+            colorScheme="purple"
+            formatNumber={formatNumber}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 function OpenAIStatsCard({ openaiStats }: { openaiStats: OpenAIStatsResponse | undefined }) {
   const stats = openaiStats?.last_24h;
   
@@ -289,6 +360,12 @@ export function HomePage() {
     refetchInterval: 30000,
   });
 
+  const { data: problemStats } = useQuery<ProblemStatsResponse>({
+    queryKey: ["problems-stats"],
+    queryFn: () => fetchApi<ProblemStatsResponse>("/api/problems/stats"),
+    refetchInterval: 30000,
+  });
+
   const { data: openaiStats } = useQuery<OpenAIStatsResponse>({
     queryKey: ["openai-stats", timezone],
     queryFn: () => fetchApi<OpenAIStatsResponse>(`/api/openai/stats?timezone=${encodeURIComponent(timezone)}`),
@@ -318,6 +395,14 @@ export function HomePage() {
             Sentimentos
           </h2>
           <EmotionsCard emotionStats={emotionStats} />
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-5">
+          <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-4 h-4 text-purple-600" />
+            Problemas
+          </h2>
+          <ProblemsCard problemStats={problemStats} />
         </div>
 
         <StatsCard
