@@ -145,11 +145,11 @@ export function ConversationCard({
                 <span 
                   key={index}
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 max-w-full truncate"
-                  title={`${problem.name}${problem.matchScore ? ` (${Math.round(problem.matchScore * 100)}% match)` : ''}`}
+                  title={`${problem.name}${problem.matchScore ? ` (${Math.round(problem.matchScore)}% match)` : ''}`}
                 >
                   {problem.name}
                   {problem.matchScore && (
-                    <span className="text-amber-500 text-[10px]">{Math.round(problem.matchScore * 100)}%</span>
+                    <span className="text-amber-500 text-[10px]">{Math.round(problem.matchScore)}%</span>
                   )}
                 </span>
               ))}
