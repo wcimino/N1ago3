@@ -25,17 +25,30 @@ BEGIN
 END $$;
 
 -- 4. Migrar dados existentes: associar product_id baseado no product_standard ou product
--- Primeiro tenta match exato com full_name, depois com produto
+-- Match exato com full_name
 UPDATE "conversations_summary" cs
 SET "product_id" = pc.id
 FROM "products_catalog" pc
 WHERE cs."product_id" IS NULL
-  AND (
-    cs."product_standard" = pc."full_name"
-    OR cs."product" = pc."full_name"
-    OR cs."product_standard" = pc."produto"
-    OR cs."product" = pc."produto"
-  );
+  AND cs."product_standard" = pc."full_name";
+
+UPDATE "conversations_summary" cs
+SET "product_id" = pc.id
+FROM "products_catalog" pc
+WHERE cs."product_id" IS NULL
+  AND cs."product" = pc."full_name";
+
+UPDATE "conversations_summary" cs
+SET "product_id" = pc.id
+FROM "products_catalog" pc
+WHERE cs."product_id" IS NULL
+  AND cs."product_standard" = pc."produto";
+
+UPDATE "conversations_summary" cs
+SET "product_id" = pc.id
+FROM "products_catalog" pc
+WHERE cs."product_id" IS NULL
+  AND cs."product" = pc."produto";
 
 -- 5. Migrar dados com match parcial (para nomes como "Cartão de Crédito" -> "Cartão")
 UPDATE "conversations_summary" cs
