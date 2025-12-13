@@ -49,6 +49,12 @@ The React frontend offers a real-time dashboard for events and conversations, ad
 *   **Unified Knowledge Base Search Helper:** Provides a single entry point for knowledge base searches, using semantic search with PostgreSQL FTS fallback, and recording article views.
 *   **Enrichment Agent Modular Architecture:** Refactored into a sequential pipeline for robust logging of AI enrichment attempts.
 *   **Centralized AI Agent Configuration Metadata:** All AI agent configuration pages consume a central metadata registry for consistency.
+*   **Reports Feature Architecture:** Reports are modular with shared infrastructure:
+    - `server/features/reports/utils/dateFilter.ts`: Reusable period filter helper (1h, 24h, all)
+    - `server/features/reports/services/reportsService.ts`: Service layer with SQL queries
+    - `server/features/reports/routes/reports.ts`: Thin route handlers
+    - `client/src/features/reports/hooks/useReportData.ts`: Generic data fetching hook
+    - `client/src/features/reports/components/`: Reusable components (ReportTable, PeriodFilter)
 
 **OpenAI Services Architecture:**
 
