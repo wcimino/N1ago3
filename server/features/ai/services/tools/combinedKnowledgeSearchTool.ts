@@ -1,6 +1,6 @@
 import { runKnowledgeBaseSearch } from "../knowledgeBaseSearchHelper.js";
 import { runProblemObjectiveSearch } from "./problemObjectiveTool.js";
-import { buildSearchContext } from "./searchContext.js";
+import { productCatalogStorage } from "../../../products/storage/productCatalogStorage.js";
 import type { ToolDefinition } from "../openaiApiService.js";
 import { summaryStorage } from "../../storage/summaryStorage.js";
 
@@ -16,8 +16,7 @@ export interface CombinedSearchResult {
 }
 
 export interface CombinedSearchParams {
-  product: string;
-  subproduct?: string;
+  productId: number;
   keywords?: string;
   limit?: number;
 }
@@ -25,29 +24,24 @@ export interface CombinedSearchParams {
 export interface CombinedSearchResponse {
   message: string;
   results: CombinedSearchResult[];
-  resolvedFilters: {
-    product: string | null;
-    subproduct: string | null;
-  };
+  productId: number;
   articleCount: number;
   problemCount: number;
 }
 
 export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): Promise<CombinedSearchResponse> {
-  const ctx = await buildSearchContext(params, 5);
+  const { productId, keywords, limit = 5 } = params;
 
   const [articlesResult, problemsResult] = await Promise.all([
     runKnowledgeBaseSearch({
-      product: params.product,
-      subproduct: params.subproduct,
-      keywords: params.keywords,
-      limit: ctx.limit
+      productId,
+      keywords,
+      limit
     }),
     runProblemObjectiveSearch({
-      product: params.product,
-      subproduct: params.subproduct,
-      keywords: params.keywords,
-      limit: ctx.limit
+      productId,
+      keywords,
+      limit
     })
   ]);
 
@@ -80,10 +74,7 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
     return {
       message: "Nenhum resultado encontrado na base de conhecimento",
       results: [],
-      resolvedFilters: {
-        product: ctx.resolvedProduct || params.product,
-        subproduct: ctx.resolvedSubproduct || params.subproduct || null
-      },
+      productId,
       articleCount: 0,
       problemCount: 0
     };
@@ -92,10 +83,7 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
   return {
     message: `Encontrados ${articlesResult.articles.length} artigos e ${problemsResult.problems.length} problemas`,
     results,
-    resolvedFilters: {
-      product: ctx.resolvedProduct,
-      subproduct: ctx.resolvedSubproduct
-    },
+    productId,
     articleCount: articlesResult.articles.length,
     problemCount: problemsResult.problems.length
   };
@@ -112,25 +100,20 @@ export function createCombinedKnowledgeSearchToolWithContext(conversationId?: nu
     parameters: {
       type: "object",
       properties: {
-        product: {
-          type: "string",
-          description: "Nome do produto (obrigatório). Ex: 'Cartão de Crédito', 'Conta Digital'"
-        },
-        subproduct: {
-          type: "string",
-          description: "Nome do subproduto para filtrar (ex: 'Gold', 'Platinum')"
+        productId: {
+          type: "number",
+          description: "ID do produto para filtrar (obrigatório)"
         },
         keywords: {
           type: "string",
           description: "Palavras-chave ou descrição do problema para busca"
         }
       },
-      required: ["product"]
+      required: ["productId"]
     },
-    handler: async (args: { product: string; subproduct?: string; keywords?: string }) => {
+    handler: async (args: { productId: number; keywords?: string }) => {
       const result = await runCombinedKnowledgeSearch({
-        product: args.product,
-        subproduct: args.subproduct,
+        productId: args.productId,
         keywords: args.keywords,
         limit: 5
       });

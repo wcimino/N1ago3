@@ -8,13 +8,9 @@ export function createKnowledgeBaseArticlesTool(): ToolDefinition {
     parameters: {
       type: "object",
       properties: {
-        product: {
-          type: "string",
-          description: "Nome do produto para filtrar (ex: 'Conta Digital', 'Cartão de Crédito')"
-        },
-        subproduct: {
-          type: "string",
-          description: "Nome do subproduto para filtrar (ex: 'Gold', 'Platinum')"
+        productId: {
+          type: "number",
+          description: "ID do produto para filtrar"
         },
         keywords: {
           type: "string",
@@ -23,10 +19,9 @@ export function createKnowledgeBaseArticlesTool(): ToolDefinition {
       },
       required: []
     },
-    handler: async (args: { product?: string; subproduct?: string; keywords?: string }) => {
+    handler: async (args: { productId?: number; keywords?: string }) => {
       const result = await runKnowledgeBaseSearch({
-        product: args.product,
-        subproduct: args.subproduct,
+        productId: args.productId,
         keywords: args.keywords,
         limit: 5
       });
@@ -35,10 +30,7 @@ export function createKnowledgeBaseArticlesTool(): ToolDefinition {
         return JSON.stringify({ 
           message: "Nenhum artigo encontrado na base de conhecimento",
           articles: [],
-          resolvedFilters: {
-            product: result.resolvedProduct || args.product,
-            subproduct: result.resolvedSubproduct || args.subproduct
-          }
+          productId: args.productId || null
         });
       }
       
@@ -54,10 +46,7 @@ export function createKnowledgeBaseArticlesTool(): ToolDefinition {
       return JSON.stringify({
         message: `Encontrados ${result.articles.length} artigos relevantes`,
         articles: articleList,
-        resolvedFilters: {
-          product: result.resolvedProduct,
-          subproduct: result.resolvedSubproduct
-        }
+        productId: result.productId
       });
     }
   };
