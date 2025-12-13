@@ -10,6 +10,10 @@ export async function getAllActiveRules(): Promise<RoutingRule[]> {
       and(
         eq(routingRules.isActive, true),
         or(
+          sql`${routingRules.expiresAt} IS NULL`,
+          sql`${routingRules.expiresAt} > NOW()`
+        ),
+        or(
           sql`${routingRules.allocateCount} IS NULL`,
           sql`${routingRules.allocatedCount} < ${routingRules.allocateCount}`
         )
@@ -87,10 +91,21 @@ export async function deactivateRule(ruleId: number): Promise<void> {
     .where(eq(routingRules.id, ruleId));
 }
 
+export async function releaseRuleSlot(ruleId: number): Promise<void> {
+  await db
+    .update(routingRules)
+    .set({
+      allocatedCount: sql`GREATEST(${routingRules.allocatedCount} - 1, 0)`,
+      updatedAt: new Date(),
+    })
+    .where(eq(routingRules.id, ruleId));
+}
+
 export const routingStorage = {
   getAllActiveRules,
   matchesText,
   matchesAuthFilter,
   tryConsumeRuleSlot,
   deactivateRule,
+  releaseRuleSlot,
 };
