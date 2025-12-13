@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, BookOpen, X, Lightbulb, BarChart3, Cloud, Database, ChevronsUpDown, ChevronsDownUp, AlertCircle, Play, Puzzle } from "lucide-react";
+import { Plus, BookOpen, X, Lightbulb, BarChart3, Cloud, Database, ChevronsUpDown, ChevronsDownUp, AlertCircle, Play, Puzzle, Layers } from "lucide-react";
 import { KnowledgeBaseForm } from "../components/KnowledgeBaseForm";
 import { HierarchyNodeItem } from "../components/HierarchyNodeItem";
 import { SuggestionsPage } from "./SuggestionsPage";
@@ -13,13 +13,16 @@ import { PageHeader, FilterBar, StatsBar, InputModal } from "../../../shared/com
 import { ConfirmModal } from "../../../shared/components/ui/ConfirmModal";
 import { useKnowledgeBase } from "../hooks/useKnowledgeBase";
 
-const tabs = [
+const mainTabs = [
   { id: "articles", label: "Artigos", icon: <BookOpen className="w-4 h-4" /> },
+  { id: "suggestions", label: "Sugestões", icon: <Lightbulb className="w-4 h-4" /> },
+  { id: "processing", label: "Processamento", icon: <BarChart3 className="w-4 h-4" /> },
+];
+
+const problemSolutionTabs = [
   { id: "problems", label: "Problemas", icon: <AlertCircle className="w-4 h-4" /> },
   { id: "actions", label: "Ações", icon: <Play className="w-4 h-4" /> },
   { id: "solutions", label: "Soluções", icon: <Puzzle className="w-4 h-4" /> },
-  { id: "suggestions", label: "Sugestões", icon: <Lightbulb className="w-4 h-4" /> },
-  { id: "processing", label: "Processamento", icon: <BarChart3 className="w-4 h-4" /> },
 ];
 
 const baseTabs = [
@@ -55,7 +58,27 @@ interface ConfirmModalState {
 export function KnowledgeBasePage() {
   const [activeTab, setActiveTab] = useState("articles");
   const [activeBaseTab, setActiveBaseTab] = useState("internal");
+  const [problemSolutionGroupActive, setProblemSolutionGroupActive] = useState(false);
   const [prefilledData, setPrefilledData] = useState<PrefilledArticleData | null>(null);
+  
+  const handleMainTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+    setProblemSolutionGroupActive(false);
+  };
+  
+  const handleProblemSolutionGroupToggle = () => {
+    if (!problemSolutionGroupActive) {
+      setProblemSolutionGroupActive(true);
+      setActiveTab("problems");
+    } else {
+      setProblemSolutionGroupActive(false);
+      setActiveTab("articles");
+    }
+  };
+  
+  const handleProblemSolutionTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+  };
   const [inputModal, setInputModal] = useState<InputModalState>({
     isOpen: false,
     type: null,
@@ -285,10 +308,18 @@ export function KnowledgeBasePage() {
         primaryTabs={baseTabs}
         primaryActiveTab={activeBaseTab}
         onPrimaryTabChange={setActiveBaseTab}
-        secondaryTabs={tabs}
-        secondaryActiveTab={activeTab}
-        onSecondaryTabChange={setActiveTab}
+        secondaryTabs={mainTabs}
+        secondaryActiveTab={problemSolutionGroupActive ? "" : activeTab}
+        onSecondaryTabChange={handleMainTabChange}
         showSecondaryTabs={activeBaseTab !== "zendesk"}
+        tertiaryGroupLabel="Problemas e Soluções"
+        tertiaryGroupIcon={<Layers className="w-4 h-4" />}
+        tertiaryGroupActive={problemSolutionGroupActive}
+        onTertiaryGroupToggle={handleProblemSolutionGroupToggle}
+        tertiaryTabs={problemSolutionTabs}
+        tertiaryActiveTab={activeTab}
+        onTertiaryTabChange={handleProblemSolutionTabChange}
+        showTertiaryTabs={activeBaseTab !== "zendesk"}
       />
 
       {activeBaseTab === "zendesk" ? (
