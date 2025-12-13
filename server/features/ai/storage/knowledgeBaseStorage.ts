@@ -143,6 +143,7 @@ export const knowledgeBaseStorage = {
       .select({
         id: knowledgeBase.id,
         name: knowledgeBase.name,
+        productId: knowledgeBase.productId,
         productStandard: knowledgeBase.productStandard,
         subproductStandard: knowledgeBase.subproductStandard,
         subjectId: knowledgeBase.subjectId,
