@@ -151,6 +151,7 @@ export function SolutionsPage() {
   const [editingOriginalActionIds, setEditingOriginalActionIds] = useState<number[]>([]);
   const [showFormActionModal, setShowFormActionModal] = useState(false);
   const [pendingActionIds, setPendingActionIds] = useState<number[]>([]);
+  const [formSelectedProduto, setFormSelectedProduto] = useState<string>("");
   const queryClient = useQueryClient();
 
   const sensors = useSensors(
@@ -312,6 +313,7 @@ export function SolutionsPage() {
     setEditingId(null);
     setFormData(emptyForm);
     setEditingOriginalActionIds([]);
+    setFormSelectedProduto("");
   };
 
   const handleEdit = async (solution: KnowledgeBaseSolution) => {
@@ -334,6 +336,8 @@ export function SolutionsPage() {
       isActive: solution.isActive,
       selectedActionIds: actionIds,
     });
+    const product = productCatalog.find(p => p.id === solution.productId);
+    setFormSelectedProduto(product?.produto || "");
     setEditingId(solution.id);
     setShowForm(true);
   };
@@ -439,16 +443,23 @@ export function SolutionsPage() {
     return allActions.filter(a => a.isActive && !usedIds.has(a.id));
   }, [allActions, expandedSolution]);
 
-  const groupedProducts = useMemo(() => {
-    const groups: { [key: string]: ProductCatalog[] } = {};
-    productCatalog.forEach((product) => {
-      if (!groups[product.produto]) {
-        groups[product.produto] = [];
-      }
-      groups[product.produto].push(product);
-    });
-    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+  const uniqueProdutos = useMemo(() => {
+    const produtos = new Set<string>();
+    productCatalog.forEach((product) => produtos.add(product.produto));
+    return Array.from(produtos).sort((a, b) => a.localeCompare(b));
   }, [productCatalog]);
+
+  const subproductsForSelectedProduto = useMemo(() => {
+    if (!formSelectedProduto) return [];
+    return productCatalog
+      .filter(p => p.produto === formSelectedProduto)
+      .sort((a, b) => {
+        if (!a.subproduto && !b.subproduto) return 0;
+        if (!a.subproduto) return -1;
+        if (!b.subproduto) return 1;
+        return a.subproduto.localeCompare(b.subproduto);
+      });
+  }, [productCatalog, formSelectedProduto]);
 
   const formSelectedActions = useMemo(() => {
     const actionMap = new Map(allActions.map(a => [a.id, a]));
@@ -566,29 +577,47 @@ export function SolutionsPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Produto
-              </label>
-              <select
-                value={formData.productId === null ? "" : String(formData.productId)}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  productId: e.target.value ? parseInt(e.target.value) : null 
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 bg-white"
-              >
-                <option value="">Selecione um produto...</option>
-                {groupedProducts.map(([produtoName, products]) => (
-                  <optgroup key={produtoName} label={produtoName}>
-                    {products.map((product) => (
-                      <option key={product.id} value={product.id}>
-                        {product.subproduto ? `${produtoName} > ${product.subproduto}` : produtoName}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Produto
+                </label>
+                <select
+                  value={formSelectedProduto}
+                  onChange={(e) => {
+                    setFormSelectedProduto(e.target.value);
+                    setFormData({ ...formData, productId: null });
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 bg-white"
+                >
+                  <option value="">Selecione um produto...</option>
+                  {uniqueProdutos.map((produto) => (
+                    <option key={produto} value={produto}>{produto}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Subproduto
+                </label>
+                <select
+                  value={formData.productId === null ? "" : String(formData.productId)}
+                  onChange={(e) => setFormData({ 
+                    ...formData, 
+                    productId: e.target.value ? parseInt(e.target.value) : null 
+                  })}
+                  disabled={!formSelectedProduto}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  <option value="">Selecione...</option>
+                  {subproductsForSelectedProduto.map((product) => (
+                    <option key={product.id} value={product.id}>
+                      {product.subproduto || "(Geral)"}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
