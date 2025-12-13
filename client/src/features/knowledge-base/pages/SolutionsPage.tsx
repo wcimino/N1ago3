@@ -41,6 +41,7 @@ interface FormData {
   product: string;
   subject: string;
   isActive: boolean;
+  selectedActionIds: number[];
 }
 
 const emptyForm: FormData = {
@@ -49,6 +50,7 @@ const emptyForm: FormData = {
   product: "",
   subject: "",
   isActive: true,
+  selectedActionIds: [],
 };
 
 const actionTypeLabels: Record<string, string> = {
@@ -70,6 +72,7 @@ export function SolutionsPage() {
   const [selectedSubject, setSelectedSubject] = useState("");
   const [expandedSolutionId, setExpandedSolutionId] = useState<number | null>(null);
   const [showActionSelector, setShowActionSelector] = useState(false);
+  const [editingOriginalActionIds, setEditingOriginalActionIds] = useState<number[]>([]);
   const queryClient = useQueryClient();
 
   const invalidateAllSolutions = () => {
@@ -119,48 +122,39 @@ export function SolutionsPage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
+      const { selectedActionIds, ...solutionData } = data;
       const res = await fetch("/api/knowledge/solutions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...data,
-          description: data.description || null,
-          product: data.product || null,
-          subject: data.subject || null,
+          name: solutionData.name,
+          description: solutionData.description || null,
+          product: solutionData.product || null,
+          subject: solutionData.subject || null,
+          isActive: solutionData.isActive,
         }),
       });
       if (!res.ok) throw new Error("Failed to create solution");
       return res.json();
     },
-    onSuccess: () => {
-      invalidateAllSolutions();
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/solutions/filters"] });
-      resetForm();
-    },
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: FormData }) => {
+      const { selectedActionIds, ...solutionData } = data;
       const res = await fetch(`/api/knowledge/solutions/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...data,
-          description: data.description || null,
-          product: data.product || null,
-          subject: data.subject || null,
+          name: solutionData.name,
+          description: solutionData.description || null,
+          product: solutionData.product || null,
+          subject: solutionData.subject || null,
+          isActive: solutionData.isActive,
         }),
       });
       if (!res.ok) throw new Error("Failed to update solution");
       return res.json();
-    },
-    onSuccess: (_, variables) => {
-      invalidateAllSolutions();
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/solutions/filters"] });
-      if (expandedSolutionId === variables.id) {
-        queryClient.invalidateQueries({ queryKey: ["/api/knowledge/solutions", variables.id, "withActions"] });
-      }
-      resetForm();
     },
   });
 
@@ -235,27 +229,86 @@ export function SolutionsPage() {
     setShowForm(false);
     setEditingId(null);
     setFormData(emptyForm);
+    setEditingOriginalActionIds([]);
   };
 
-  const handleEdit = (solution: KnowledgeBaseSolution) => {
+  const handleEdit = async (solution: KnowledgeBaseSolution) => {
+    let actionIds: number[] = [];
+    try {
+      const res = await fetch(`/api/knowledge/solutions/${solution.id}?withActions=true`);
+      if (res.ok) {
+        const solutionWithActions: SolutionWithActions = await res.json();
+        actionIds = solutionWithActions.actions.map(a => a.id);
+      }
+    } catch (e) {
+      console.error("Failed to load solution actions", e);
+    }
+    
+    setEditingOriginalActionIds(actionIds);
     setFormData({
       name: solution.name,
       description: solution.description || "",
       product: solution.product || "",
       subject: solution.subject || "",
       isActive: solution.isActive,
+      selectedActionIds: actionIds,
     });
     setEditingId(solution.id);
     setShowForm(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const syncSolutionActions = async (solutionId: number, selectedActionIds: number[], originalActionIds: number[]) => {
+    const toRemove = originalActionIds.filter(id => !selectedActionIds.includes(id));
+    const toAdd = selectedActionIds.filter(id => !originalActionIds.includes(id));
+    
+    for (const actionId of toRemove) {
+      await fetch(`/api/knowledge/solutions/${solutionId}/actions/${actionId}`, { method: "DELETE" });
+    }
+    
+    for (const actionId of toAdd) {
+      await fetch(`/api/knowledge/solutions/${solutionId}/actions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actionId, actionSequence: 999 }),
+      });
+    }
+    
+    if (selectedActionIds.length > 0) {
+      await fetch(`/api/knowledge/solutions/${solutionId}/actions/reorder`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actionIds: selectedActionIds }),
+      });
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
-    if (editingId) {
-      updateMutation.mutate({ id: editingId, data: formData });
-    } else {
-      createMutation.mutate(formData);
+    
+    try {
+      if (editingId) {
+        await updateMutation.mutateAsync({ id: editingId, data: formData });
+        await syncSolutionActions(editingId, formData.selectedActionIds, editingOriginalActionIds);
+        queryClient.invalidateQueries({ queryKey: ["/api/knowledge/solutions", editingId, "withActions"] });
+      } else {
+        const newSolution = await createMutation.mutateAsync(formData);
+        if (formData.selectedActionIds.length > 0) {
+          for (let i = 0; i < formData.selectedActionIds.length; i++) {
+            const actionId = formData.selectedActionIds[i];
+            await fetch(`/api/knowledge/solutions/${newSolution.id}/actions`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ actionId, actionSequence: i + 1 }),
+            });
+          }
+        }
+      }
+      invalidateAllSolutions();
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/solutions/filters"] });
+      resetForm();
+    } catch (error) {
+      console.error("Failed to save solution", error);
     }
   };
 
@@ -443,6 +496,62 @@ export function SolutionsPage() {
                   placeholder="Assunto relacionado..."
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Ações
+              </label>
+              <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto bg-gray-50">
+                {allActions.filter(a => a.isActive).length === 0 ? (
+                  <p className="text-sm text-gray-500">Nenhuma ação ativa disponível.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {allActions.filter(a => a.isActive).map((action) => {
+                      const isSelected = formData.selectedActionIds.includes(action.id);
+                      return (
+                        <label
+                          key={action.id}
+                          className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
+                            isSelected ? "bg-violet-100 border border-violet-300" : "bg-white border border-gray-200 hover:border-violet-200"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData({
+                                  ...formData,
+                                  selectedActionIds: [...formData.selectedActionIds, action.id],
+                                });
+                              } else {
+                                setFormData({
+                                  ...formData,
+                                  selectedActionIds: formData.selectedActionIds.filter(id => id !== action.id),
+                                });
+                              }
+                            }}
+                            className="w-4 h-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <Play className="w-3 h-3 text-violet-600 flex-shrink-0" />
+                              <span className="text-xs text-gray-500">[{getActionTypeLabel(action.actionType)}]</span>
+                              <span className="text-sm text-gray-900 truncate">{action.description}</span>
+                            </div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              {formData.selectedActionIds.length > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.selectedActionIds.length} {formData.selectedActionIds.length === 1 ? "ação selecionada" : "ações selecionadas"}
+                </p>
+              )}
             </div>
 
             <div className="flex justify-end gap-2">
