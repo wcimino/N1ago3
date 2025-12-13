@@ -8,9 +8,8 @@
     <rect x="22" y="4" width="7" height="44" rx="1"/>
     <rect x="15" y="4" width="9" height="5" rx="1"/>
     
-    <!-- A as single shape: starts fused to the 1, diagonal right leg -->
-    <!-- Top connects to 1 at y=18, bottom spreads out -->
-    <polygon points="22,18 29,18 50,48 43,48 29,26 29,18"/>
+    <!-- A: diagonal starts overlapping the 1 for fusion effect -->
+    <polygon points="26,18 33,18 50,48 43,48"/>
     
     <!-- A crossbar -->
     <rect x="25" y="32" width="18" height="5" rx="1"/>
