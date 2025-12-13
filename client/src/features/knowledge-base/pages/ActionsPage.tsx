@@ -43,13 +43,13 @@ const emptyForm: FormData = {
 };
 
 const actionTypeOptions = [
-  { value: "inform", label: "Informar" },
-  { value: "ask-customer", label: "Perguntar ao cliente" },
   { value: "internal_action_human", label: "Ação interna manual" },
   { value: "escalate", label: "Escalar" },
-  { value: "transfer", label: "Transferir" },
-  { value: "resolve", label: "Resolver" },
+  { value: "inform", label: "Informar" },
   { value: "other", label: "Outro" },
+  { value: "ask-customer", label: "Perguntar ao cliente" },
+  { value: "resolve", label: "Resolver" },
+  { value: "transfer", label: "Transferir" },
 ];
 
 export function ActionsPage() {
