@@ -439,6 +439,17 @@ export function SolutionsPage() {
     return allActions.filter(a => a.isActive && !usedIds.has(a.id));
   }, [allActions, expandedSolution]);
 
+  const groupedProducts = useMemo(() => {
+    const groups: { [key: string]: ProductCatalog[] } = {};
+    productCatalog.forEach((product) => {
+      if (!groups[product.produto]) {
+        groups[product.produto] = [];
+      }
+      groups[product.produto].push(product);
+    });
+    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+  }, [productCatalog]);
+
   const formSelectedActions = useMemo(() => {
     const actionMap = new Map(allActions.map(a => [a.id, a]));
     return formData.selectedActionIds
@@ -555,6 +566,31 @@ export function SolutionsPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Produto
+              </label>
+              <select
+                value={formData.productId === null ? "" : String(formData.productId)}
+                onChange={(e) => setFormData({ 
+                  ...formData, 
+                  productId: e.target.value ? parseInt(e.target.value) : null 
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 bg-white"
+              >
+                <option value="">Selecione um produto...</option>
+                {groupedProducts.map(([produtoName, products]) => (
+                  <optgroup key={produtoName} label={produtoName}>
+                    {products.map((product) => (
+                      <option key={product.id} value={product.id}>
+                        {product.subproduto ? `${produtoName} > ${product.subproduto}` : produtoName}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -595,27 +631,6 @@ export function SolutionsPage() {
                 rows={3}
                 placeholder="Descreva a solução..."
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Produto
-              </label>
-              <select
-                value={formData.productId === null ? "" : String(formData.productId)}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  productId: e.target.value ? parseInt(e.target.value) : null 
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 bg-white"
-              >
-                <option value="">Selecione um produto...</option>
-                {productCatalog.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.fullName}
-                  </option>
-                ))}
-              </select>
             </div>
 
             <div>
