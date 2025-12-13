@@ -108,7 +108,7 @@ export async function classifyConversationProduct(event: EventStandard): Promise
     if (result.success) {
       console.log(`[Classification Orchestrator] Classification saved for conversation ${event.conversationId}: ${result.product}/${result.subproduct}/${result.subject}/${result.intent}`);
       
-      if (result.product) {
+      if (result.product && config.useCombinedKnowledgeSearchTool) {
         try {
           const existingSummary = await storage.getConversationSummary(event.conversationId);
           const keywords = existingSummary?.clientRequest || undefined;

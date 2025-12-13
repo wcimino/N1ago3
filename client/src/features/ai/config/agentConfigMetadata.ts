@@ -6,6 +6,7 @@ export interface AgentToolsConfig {
   showZendeskKnowledgeBaseTool?: boolean;
   showSubjectIntentTool?: boolean;
   showObjectiveProblemTool?: boolean;
+  showCombinedKnowledgeSearchTool?: boolean;
 }
 
 export interface AgentConfigMetadata {
@@ -29,6 +30,7 @@ const allToolsEnabled: AgentToolsConfig = {
   showZendeskKnowledgeBaseTool: true,
   showSubjectIntentTool: true,
   showObjectiveProblemTool: true,
+  showCombinedKnowledgeSearchTool: true,
 };
 
 export const agentConfigMetadata: Record<AgentConfigType, AgentConfigMetadata> = {

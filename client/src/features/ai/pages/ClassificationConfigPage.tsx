@@ -22,6 +22,7 @@ export function ClassificationConfigPage() {
       showZendeskKnowledgeBaseTool={config.tools.showZendeskKnowledgeBaseTool}
       showSubjectIntentTool={config.tools.showSubjectIntentTool}
       showObjectiveProblemTool={config.tools.showObjectiveProblemTool}
+      showCombinedKnowledgeSearchTool={config.tools.showCombinedKnowledgeSearchTool}
     />
   );
 }

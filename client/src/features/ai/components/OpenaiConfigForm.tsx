@@ -33,6 +33,7 @@ export interface OpenaiConfigFormProps {
   showSubjectIntentTool?: boolean;
   showZendeskKnowledgeBaseTool?: boolean;
   showObjectiveProblemTool?: boolean;
+  showCombinedKnowledgeSearchTool?: boolean;
   children?: ReactNode;
 }
 
@@ -53,6 +54,7 @@ export function OpenaiConfigForm({
   showSubjectIntentTool = false,
   showZendeskKnowledgeBaseTool = false,
   showObjectiveProblemTool = false,
+  showCombinedKnowledgeSearchTool = false,
   children,
 }: OpenaiConfigFormProps) {
   const { state, actions, eventTypes, isLoading, isSaving } = useOpenaiApiConfig(configType);
@@ -127,15 +129,15 @@ export function OpenaiConfigForm({
             </select>
           </div>
 
-          {(showKnowledgeBaseTool || showProductCatalogTool || showSubjectIntentTool || showZendeskKnowledgeBaseTool || showObjectiveProblemTool) && (
+          {(showKnowledgeBaseTool || showProductCatalogTool || showSubjectIntentTool || showZendeskKnowledgeBaseTool || showObjectiveProblemTool || showCombinedKnowledgeSearchTool) && (
             <CollapsibleSection
               title="Ferramentas de IA"
               description="Habilite ferramentas que o modelo pode usar para buscar informações"
               defaultOpen={false}
               badge={
-                (state.useKnowledgeBaseTool || state.useProductCatalogTool || state.useSubjectIntentTool || state.useZendeskKnowledgeBaseTool || state.useObjectiveProblemTool) && (
+                (state.useKnowledgeBaseTool || state.useProductCatalogTool || state.useSubjectIntentTool || state.useZendeskKnowledgeBaseTool || state.useObjectiveProblemTool || state.useCombinedKnowledgeSearchTool) && (
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    {[state.useKnowledgeBaseTool, state.useProductCatalogTool, state.useSubjectIntentTool, state.useZendeskKnowledgeBaseTool, state.useObjectiveProblemTool].filter(Boolean).length} ativa{[state.useKnowledgeBaseTool, state.useProductCatalogTool, state.useSubjectIntentTool, state.useZendeskKnowledgeBaseTool, state.useObjectiveProblemTool].filter(Boolean).length > 1 ? 's' : ''}
+                    {[state.useKnowledgeBaseTool, state.useProductCatalogTool, state.useSubjectIntentTool, state.useZendeskKnowledgeBaseTool, state.useObjectiveProblemTool, state.useCombinedKnowledgeSearchTool].filter(Boolean).length} ativa{[state.useKnowledgeBaseTool, state.useProductCatalogTool, state.useSubjectIntentTool, state.useZendeskKnowledgeBaseTool, state.useObjectiveProblemTool, state.useCombinedKnowledgeSearchTool].filter(Boolean).length > 1 ? 's' : ''}
                   </span>
                 )
               }
@@ -179,6 +181,14 @@ export function OpenaiConfigForm({
                     sublabel="Permite buscar problemas objetivos para identificar o problema real do cliente"
                     checked={state.useObjectiveProblemTool}
                     onChange={() => actions.setUseObjectiveProblemTool(!state.useObjectiveProblemTool)}
+                  />
+                )}
+                {showCombinedKnowledgeSearchTool && (
+                  <CheckboxListItem
+                    label="Usar Busca Combinada de Artigos e Problemas"
+                    sublabel="Após classificar, busca artigos e problemas objetivos relacionados ao produto"
+                    checked={state.useCombinedKnowledgeSearchTool}
+                    onChange={() => actions.setUseCombinedKnowledgeSearchTool(!state.useCombinedKnowledgeSearchTool)}
                   />
                 )}
               </div>

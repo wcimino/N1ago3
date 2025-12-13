@@ -18,6 +18,7 @@ export interface OpenaiApiConfigResponse {
   use_subject_intent_tool: boolean;
   use_zendesk_knowledge_base_tool: boolean;
   use_objective_problem_tool: boolean;
+  use_combined_knowledge_search_tool: boolean;
   use_general_settings: boolean;
   created_at?: string;
   updated_at?: string;
@@ -36,6 +37,7 @@ export interface OpenaiApiConfigState {
   useSubjectIntentTool: boolean;
   useZendeskKnowledgeBaseTool: boolean;
   useObjectiveProblemTool: boolean;
+  useCombinedKnowledgeSearchTool: boolean;
   useGeneralSettings: boolean;
   hasChanges: boolean;
 }
@@ -53,6 +55,7 @@ export interface OpenaiApiConfigActions {
   setUseSubjectIntentTool: (value: boolean) => void;
   setUseZendeskKnowledgeBaseTool: (value: boolean) => void;
   setUseObjectiveProblemTool: (value: boolean) => void;
+  setUseCombinedKnowledgeSearchTool: (value: boolean) => void;
   setUseGeneralSettings: (value: boolean) => void;
   save: () => void;
 }
@@ -80,6 +83,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
   const [useSubjectIntentTool, setUseSubjectIntentToolState] = useState(false);
   const [useZendeskKnowledgeBaseTool, setUseZendeskKnowledgeBaseToolState] = useState(false);
   const [useObjectiveProblemTool, setUseObjectiveProblemToolState] = useState(false);
+  const [useCombinedKnowledgeSearchTool, setUseCombinedKnowledgeSearchToolState] = useState(false);
   const [useGeneralSettings, setUseGeneralSettingsState] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -107,6 +111,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       setUseSubjectIntentToolState(config.use_subject_intent_tool ?? false);
       setUseZendeskKnowledgeBaseToolState(config.use_zendesk_knowledge_base_tool ?? false);
       setUseObjectiveProblemToolState(config.use_objective_problem_tool ?? false);
+      setUseCombinedKnowledgeSearchToolState(config.use_combined_knowledge_search_tool ?? false);
       setUseGeneralSettingsState(config.use_general_settings ?? false);
       setHasChanges(false);
     }
@@ -127,6 +132,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
         use_subject_intent_tool: useSubjectIntentTool,
         use_zendesk_knowledge_base_tool: useZendeskKnowledgeBaseTool,
         use_objective_problem_tool: useObjectiveProblemTool,
+        use_combined_knowledge_search_tool: useCombinedKnowledgeSearchTool,
         use_general_settings: useGeneralSettings,
       });
     },
@@ -206,6 +212,11 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
     markChanged();
   }, [markChanged]);
 
+  const setUseCombinedKnowledgeSearchTool = useCallback((value: boolean) => {
+    setUseCombinedKnowledgeSearchToolState(value);
+    markChanged();
+  }, [markChanged]);
+
   const setUseGeneralSettings = useCallback((value: boolean) => {
     setUseGeneralSettingsState(value);
     markChanged();
@@ -229,6 +240,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       useSubjectIntentTool,
       useZendeskKnowledgeBaseTool,
       useObjectiveProblemTool,
+      useCombinedKnowledgeSearchTool,
       useGeneralSettings,
       hasChanges,
     },
@@ -245,6 +257,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       setUseSubjectIntentTool,
       setUseZendeskKnowledgeBaseTool,
       setUseObjectiveProblemTool,
+      setUseCombinedKnowledgeSearchTool,
       setUseGeneralSettings,
       save,
     },
