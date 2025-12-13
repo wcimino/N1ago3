@@ -1,24 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 64" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 64" fill="none">
   <g fill="#1e293b">
     <!-- N: left vertical bar -->
     <rect x="6" y="18" width="7" height="30"/>
     
-    <!-- N: diagonal pointing to the 1 -->
+    <!-- N: diagonal -->
     <polygon points="6,18 13,18 26,48 19,48"/>
     
-    <!-- 1: tall vertical stem (much taller than N and A) -->
-    <rect x="22" y="4" width="7" height="44"/>
+    <!-- 1: complete shape as single path (stem + serif) -->
+    <polygon points="15,4 29,4 29,48 22,48 22,9 15,9"/>
     
-    <!-- 1: top serif -->
-    <rect x="15" y="4" width="9" height="5"/>
-    
-    <!-- A: right diagonal with proper thickness, starting from 1 -->
+    <!-- A: right diagonal -->
     <polygon points="29,18 36,18 53,48 46,48"/>
     
-    <!-- A: horizontal crossbar -->
-    <rect x="25" y="31" width="20" height="5"/>
+    <!-- A: crossbar -->
+    <rect x="25" y="31" width="14" height="5"/>
   </g>
   
-  <!-- Text "go" -->
-  <text x="70" y="44" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="500" fill="#64748b" letter-spacing="0.5">go</text>
+  <!-- Text "GO" in uppercase -->
+  <text x="70" y="44" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="600" fill="#64748b" letter-spacing="1">GO</text>
 </svg>

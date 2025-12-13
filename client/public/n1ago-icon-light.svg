@@ -1,14 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <!-- Light version for dark backgrounds - just the symbol -->
   <g fill="#f8fafc">
-    <!-- N with implicit 1: right vertical extends higher with serif -->
-    <!-- Left vertical of N -->
-    <rect x="14" y="18" width="8" height="28" rx="1"/>
-    <!-- Diagonal of N -->
-    <polygon points="14,18 22,18 42,46 34,46"/>
-    <!-- Right vertical of N (taller = implicit 1) -->
-    <rect x="34" y="12" width="8" height="34" rx="1"/>
-    <!-- Top serif on the 1 (subtle) -->
-    <rect x="30" y="12" width="8" height="4" rx="1"/>
+    <!-- N: left vertical bar -->
+    <rect x="6" y="18" width="7" height="30"/>
+    
+    <!-- N: diagonal -->
+    <polygon points="6,18 13,18 26,48 19,48"/>
+    
+    <!-- 1: complete shape as single path (stem + serif) -->
+    <polygon points="15,4 29,4 29,48 22,48 22,9 15,9"/>
+    
+    <!-- A: right diagonal -->
+    <polygon points="29,18 36,18 53,48 46,48"/>
+    
+    <!-- A: crossbar -->
+    <rect x="25" y="31" width="14" height="5"/>
   </g>
 </svg>
