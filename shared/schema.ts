@@ -345,6 +345,7 @@ export const zendeskApiLogs = pgTable("zendesk_api_logs", {
 export const knowledgeBase = pgTable("knowledge_base", {
   id: serial("id").primaryKey(),
   name: text("name"),
+  productId: integer("product_id").references(() => productsCatalog.id, { onDelete: "set null" }),
   productStandard: text("product_standard").notNull(),
   subproductStandard: text("subproduct_standard"),
   subjectId: integer("subject_id"),
@@ -356,6 +357,7 @@ export const knowledgeBase = pgTable("knowledge_base", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
+  productIdIdx: index("idx_knowledge_base_product_id").on(table.productId),
   productIdx: index("idx_knowledge_base_product").on(table.productStandard),
   subjectIdx: index("idx_knowledge_base_subject").on(table.subjectId),
   intentIdIdx: index("idx_knowledge_base_intent_id").on(table.intentId),
