@@ -5,8 +5,8 @@
     <polygon points="6,16 13,16 26,48 19,48"/>
     
     <!-- 1 = left leg of A (vertical with serif, taller than N and A) -->
-    <rect x="22" y="10" width="7" height="38" rx="1"/>
-    <rect x="17" y="10" width="7" height="5" rx="1"/>
+    <rect x="22" y="6" width="7" height="42" rx="1"/>
+    <rect x="16" y="6" width="8" height="5" rx="1"/>
     
     <!-- A: right diagonal leg starts at N height (16) + crossbar -->
     <polygon points="29,16 36,16 50,48 43,48"/>
