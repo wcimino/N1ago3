@@ -46,7 +46,7 @@ The React frontend offers a real-time dashboard for events and conversations, ad
 *   **Idempotent Event Creation:** Ensures unique event processing and prevents duplicates.
 *   **Modular AI Tools and Prompts:** AI tools are separated into individual files, and prompt variables are centralized.
 *   **Objective Problems Search Tool:** Searches objective problems by keywords and product filter, utilizing semantic search with OpenAI embeddings and falling back to text-based search.
-*   **Unified Knowledge Base Search Helper:** Provides a single entry point for knowledge base searches, using semantic search with PostgreSQL FTS fallback, and recording article views.
+*   **Unified Knowledge Base Search Helper:** Provides a single entry point for knowledge base searches, using semantic search with PostgreSQL FTS fallback, and recording article views. Supports filtering by `productId` (FK to `products_catalog`) for improved precision, with fallback to product name resolution via `buildSearchContext`.
 *   **Enrichment Agent Modular Architecture:** Refactored into a sequential pipeline for robust logging of AI enrichment attempts.
 *   **Centralized AI Agent Configuration Metadata:** All AI agent configuration pages consume a central metadata registry for consistency.
 *   **Reports Feature Architecture:** Reports are modular with shared infrastructure:
