@@ -1,16 +1,13 @@
 import { knowledgeBaseStorage } from "../storage/knowledgeBaseStorage.js";
-import { knowledgeSubjectsStorage } from "../../knowledge/storage/knowledgeSubjectsStorage.js";
-import { knowledgeIntentsStorage } from "../../knowledge/storage/knowledgeIntentsStorage.js";
 import { KnowledgeBaseStatisticsStorage } from "../storage/knowledgeBaseStatisticsStorage.js";
 import { generateEmbedding as generateKBEmbedding } from "./knowledgeBaseEmbeddingService.js";
+import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 
 const RELEVANCE_THRESHOLD = 0.05;
 
 export interface KBSearchParams {
   product?: string;
   subproduct?: string;
-  subject?: string;
-  intent?: string;
   keywords?: string | string[];
   limit?: number;
 }
@@ -34,18 +31,14 @@ export interface KBArticleResult {
 
 export interface KBSearchResult {
   articles: KBArticleResult[];
-  resolvedSubject: string | null;
-  resolvedIntent: string | null;
-  subjectId: number | null;
-  intentId: number | null;
+  resolvedProduct: string | null;
+  resolvedSubproduct: string | null;
 }
 
 function buildEnrichedQueryText(params: {
   keywords: string;
   product?: string;
   subproduct?: string;
-  subject?: string;
-  intent?: string;
 }): string {
   const parts: string[] = [];
   
@@ -56,16 +49,7 @@ function buildEnrichedQueryText(params: {
     parts.push(`Subproduto: ${params.subproduct}`);
   }
   
-  const descriptionParts: string[] = [];
-  if (params.subject) {
-    descriptionParts.push(params.subject);
-  }
-  if (params.intent) {
-    descriptionParts.push(params.intent);
-  }
-  descriptionParts.push(params.keywords);
-  
-  parts.push(`Descrição: ${descriptionParts.join(". ")}`);
+  parts.push(`Descrição: ${params.keywords}`);
   parts.push(`Resolução: ${params.keywords}`);
   
   return parts.join("\n\n");
@@ -75,24 +59,14 @@ export async function runKnowledgeBaseSearch(
   params: KBSearchParams,
   context: KBSearchContext = {}
 ): Promise<KBSearchResult> {
-  let subjectId: number | null = null;
-  let intentId: number | null = null;
-  let resolvedSubject: string | null = null;
-  let resolvedIntent: string | null = null;
+  let resolvedProduct: string | null = null;
+  let resolvedSubproduct: string | null = null;
 
-  if (params.subject) {
-    const subjects = await knowledgeSubjectsStorage.findByNameOrSynonym(params.subject);
-    if (subjects.length > 0) {
-      subjectId = subjects[0].id;
-      resolvedSubject = subjects[0].name;
-    }
-  }
-
-  if (params.intent) {
-    const intents = await knowledgeIntentsStorage.findByNameOrSynonym(params.intent, subjectId ?? undefined);
-    if (intents.length > 0) {
-      intentId = intents[0].id;
-      resolvedIntent = intents[0].name;
+  if (params.product) {
+    const resolved = await productCatalogStorage.resolveProductId(params.product, params.subproduct);
+    if (resolved) {
+      resolvedProduct = resolved.produto;
+      resolvedSubproduct = resolved.subproduto;
     }
   }
 
@@ -123,20 +97,16 @@ export async function runKnowledgeBaseSearch(
       try {
         const queryText = buildEnrichedQueryText({
           keywords: keywordsStr,
-          product: params.product,
-          subproduct: params.subproduct,
-          subject: resolvedSubject || undefined,
-          intent: resolvedIntent || undefined,
+          product: resolvedProduct || params.product,
+          subproduct: resolvedSubproduct || params.subproduct,
         });
-        console.log(`[KB Search] Semantic search: product=${params.product || 'none'}, subject=${resolvedSubject || 'none'}, intent=${resolvedIntent || 'none'}, keywords="${keywordsStr.substring(0, 50)}..."`);
+        console.log(`[KB Search] Semantic search: product=${resolvedProduct || params.product || 'none'}, subproduct=${resolvedSubproduct || 'none'}, keywords="${keywordsStr.substring(0, 50)}..."`);
         
         const { embedding: queryEmbedding } = await generateKBEmbedding(queryText);
         const semanticResults = await knowledgeBaseStorage.searchBySimilarity(
           queryEmbedding,
           {
-            productStandard: params.product,
-            subjectId: subjectId ?? undefined,
-            intentId: intentId ?? undefined,
+            productStandard: resolvedProduct || undefined,
             limit
           }
         );
@@ -157,9 +127,7 @@ export async function runKnowledgeBaseSearch(
       } catch (error) {
         console.error("[KB Search] Semantic search failed, falling back to full-text:", error);
         const searchResults = await knowledgeBaseStorage.searchArticlesWithRelevance(keywordsStr, {
-          productStandard: params.product,
-          subjectId: subjectId ?? undefined,
-          intentId: intentId ?? undefined,
+          productStandard: resolvedProduct || undefined,
           limit: limit * 2
         });
         articles = searchResults
@@ -179,11 +147,9 @@ export async function runKnowledgeBaseSearch(
         console.log(`[KB Search] FTS fallback found ${articles.length} articles`);
       }
     } else {
-      console.log(`[KB Search] No embeddings, using FTS: product=${params.product || 'none'}, keywords="${keywordsStr.substring(0, 50)}..."`);
+      console.log(`[KB Search] No embeddings, using FTS: product=${resolvedProduct || params.product || 'none'}, keywords="${keywordsStr.substring(0, 50)}..."`);
       const searchResults = await knowledgeBaseStorage.searchArticlesWithRelevance(keywordsStr, {
-        productStandard: params.product,
-        subjectId: subjectId ?? undefined,
-        intentId: intentId ?? undefined,
+        productStandard: resolvedProduct || undefined,
         limit: limit * 2
       });
       articles = searchResults
@@ -203,11 +169,9 @@ export async function runKnowledgeBaseSearch(
       console.log(`[KB Search] FTS found ${articles.length} articles`);
     }
   } else if (params.product) {
-    console.log(`[KB Search] No keywords, filtering by product: ${params.product}`);
+    console.log(`[KB Search] No keywords, filtering by product: ${resolvedProduct || params.product}`);
     const allArticles = await knowledgeBaseStorage.getAllArticles({
-      productStandard: params.product,
-      subjectId: subjectId ?? undefined,
-      intentId: intentId ?? undefined,
+      productStandard: resolvedProduct || undefined,
       limit
     });
     articles = allArticles.map(a => ({
@@ -242,9 +206,7 @@ export async function runKnowledgeBaseSearch(
 
   return {
     articles,
-    resolvedSubject,
-    resolvedIntent,
-    subjectId,
-    intentId
+    resolvedProduct,
+    resolvedSubproduct
   };
 }

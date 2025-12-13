@@ -78,4 +78,31 @@ export const productCatalogStorage = {
       .orderBy(asc(productsCatalog.fullName));
     return result.map(r => r.fullName);
   },
+
+  async resolveProductId(product: string, subproduct?: string): Promise<{ id: number; produto: string; subproduto: string | null } | null> {
+    const products = await this.getAll();
+    const productLower = product.toLowerCase();
+    const subproductLower = subproduct?.toLowerCase();
+
+    const matched = products.find(p => {
+      const produtoMatch = p.produto.toLowerCase().includes(productLower) || 
+                           p.fullName.toLowerCase().includes(productLower);
+      
+      if (!produtoMatch) return false;
+      
+      if (subproductLower && p.subproduto) {
+        return p.subproduto.toLowerCase().includes(subproductLower);
+      }
+      
+      return true;
+    });
+
+    if (!matched) return null;
+    
+    return {
+      id: matched.id,
+      produto: matched.produto,
+      subproduto: matched.subproduto
+    };
+  },
 };

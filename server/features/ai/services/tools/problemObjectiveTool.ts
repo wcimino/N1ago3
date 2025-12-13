@@ -16,28 +16,32 @@ export function createProblemObjectiveTool(): ToolDefinition {
     parameters: {
       type: "object",
       properties: {
-        keywords: {
-          type: "string",
-          description: "Descrição do problema do cliente para busca semântica (ex: 'cliente não consegue pagar com o cartão', 'cobrança apareceu duas vezes')"
-        },
         product: {
           type: "string",
           description: "Nome do produto (obrigatório). Ex: 'Cartão de Crédito', 'Conta Digital'"
+        },
+        subproduct: {
+          type: "string",
+          description: "Nome do subproduto para filtrar (ex: 'Gold', 'Platinum')"
+        },
+        keywords: {
+          type: "string",
+          description: "Descrição do problema do cliente para busca semântica (ex: 'cliente não consegue pagar com o cartão', 'cobrança apareceu duas vezes')"
         }
       },
       required: ["product"]
     },
-    handler: async (args: { keywords?: string; product: string }) => {
+    handler: async (args: { product: string; subproduct?: string; keywords?: string }) => {
       let productId: number | undefined;
+      let resolvedProduct: string | null = null;
+      let resolvedSubproduct: string | null = null;
 
       if (args.product) {
-        const products = await productCatalogStorage.getAll();
-        const matchedProduct = products.find(p =>
-          p.fullName.toLowerCase().includes(args.product!.toLowerCase()) ||
-          p.produto.toLowerCase().includes(args.product!.toLowerCase())
-        );
-        if (matchedProduct) {
-          productId = matchedProduct.id;
+        const resolved = await productCatalogStorage.resolveProductId(args.product, args.subproduct);
+        if (resolved) {
+          productId = resolved.id;
+          resolvedProduct = resolved.produto;
+          resolvedSubproduct = resolved.subproduto;
         }
       }
 
@@ -67,6 +71,7 @@ export function createProblemObjectiveTool(): ToolDefinition {
         }
 
         const problemList = semanticResults.map((p: SemanticSearchResult) => ({
+          source: "problem" as const,
           id: p.id,
           name: p.name,
           matchScore: p.similarity,
@@ -98,6 +103,7 @@ export function createProblemObjectiveTool(): ToolDefinition {
       }
 
       const problemList = results.map((p: ObjectiveProblemSearchResult) => ({
+        source: "problem" as const,
         id: p.id,
         name: p.name,
         matchScore: p.matchScore,

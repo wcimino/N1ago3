@@ -80,7 +80,7 @@ const KB_SUFFIX = `
 
 ## PROCESSO OBRIGATÓRIO QUANDO BASE DE CONHECIMENTO ATIVADA:
 1. Analise a conversa e identifique o tema/problema do cliente
-2. Use a ferramenta search_knowledge_base para buscar procedimentos na base de conhecimento
+2. Use a ferramenta search_knowledge_base_articles para buscar procedimentos na base de conhecimento
 3. Use as informações encontradas para gerar uma resposta precisa
 - SEMPRE busque na base de conhecimento antes de responder
 - Se encontrar artigos relevantes, USE as informações para responder
@@ -93,7 +93,7 @@ function buildKnowledgeBaseTool(
   onToolInvoked?: () => void
 ): ToolDefinition {
   return {
-    name: "search_knowledge_base",
+    name: "search_knowledge_base_articles",
     description: "Busca artigos na base de conhecimento com procedimentos e soluções. Use para encontrar informações sobre como resolver o problema do cliente.",
     parameters: {
       type: "object",
@@ -102,19 +102,18 @@ function buildKnowledgeBaseTool(
           type: "string",
           description: "Produto relacionado (ex: Antecipação, Repasse, Conta Digital, Cartão, Empréstimo / Crédito, Maquinona)"
         },
-        intent: {
+        subproduct: {
           type: "string",
-          description: "Intenção do cliente (ex: Dúvida, Solicitação, Reclamação, Cancelamento)"
+          description: "Subproduto para filtrar (ex: 'Gold', 'Platinum')"
         },
         keywords: {
-          type: "array",
-          items: { type: "string" },
-          description: "Palavras-chave do problema (ex: ['senha', 'login', 'acesso'])"
+          type: "string",
+          description: "Palavras-chave ou descrição do problema"
         }
       },
       required: ["product"]
     },
-    handler: async (args: { product: string; intent?: string; keywords?: string[] }) => {
+    handler: async (args: { product: string; subproduct?: string; keywords?: string }) => {
       if (onToolInvoked) {
         onToolInvoked();
       }
@@ -122,7 +121,7 @@ function buildKnowledgeBaseTool(
       const result = await runKnowledgeBaseSearch(
         {
           product: args.product,
-          intent: args.intent,
+          subproduct: args.subproduct,
           keywords: args.keywords,
           limit: 3
         },
