@@ -390,61 +390,35 @@ export function ActionsPage() {
           filteredActions.map((action) => (
             <div
               key={action.id}
-              className={`bg-white border rounded-lg p-4 ${
+              className={`bg-white border rounded-lg px-4 py-2 ${
                 action.isActive ? "border-gray-200" : "border-gray-100 bg-gray-50 opacity-60"
               }`}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-violet-100 text-violet-800">
-                      <Play className="w-3 h-3" />
-                      {getActionTypeLabel(action.actionType)}
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-violet-100 text-violet-800 flex-shrink-0">
+                    <Play className="w-3 h-3" />
+                    {getActionTypeLabel(action.actionType)}
+                  </span>
+                  <span className="text-sm text-gray-900 truncate">{action.description}</span>
+                  {!action.isActive && (
+                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 flex-shrink-0">
+                      Inativo
                     </span>
-                    {!action.isActive && (
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
-                        Inativo
-                      </span>
-                    )}
-                    {action.ownerTeam && (
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                        {action.ownerTeam}
-                      </span>
-                    )}
-                    {action.sla && (
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
-                        SLA: {action.sla}
-                      </span>
-                    )}
-                  </div>
-                  
-                  <p className="text-sm text-gray-900 font-medium">{action.description}</p>
-                  
-                  {action.messageTemplate && (
-                    <div className="flex items-start gap-2 mt-2 p-3 bg-gray-50 rounded-lg">
-                      <MessageSquare className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                      <p className="text-sm text-gray-600 whitespace-pre-wrap">{action.messageTemplate}</p>
-                    </div>
-                  )}
-                  
-                  {action.requiredInput && (
-                    <p className="text-xs text-gray-500">
-                      Input obrigatorio: <span className="font-medium">{action.requiredInput}</span>
-                    </p>
                   )}
                 </div>
 
-                <div className="flex items-center gap-1 ml-4">
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <button
                     onClick={() => handleEdit(action)}
-                    className="p-2 text-gray-500 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
+                    className="p-1.5 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded transition-colors"
                     title="Editar"
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(action.id)}
-                    className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                     title="Excluir"
                     disabled={deleteMutation.isPending}
                   >
