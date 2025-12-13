@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { XCircle, MessageCircle, ChevronLeft, FileText, Eye, EyeOff, ArrowRightLeft, Zap, ZapOff, XSquare, Loader2, ArrowLeft } from "lucide-react";
+import { XCircle, MessageCircle, ChevronLeft, FileText, Eye, EyeOff, ArrowRightLeft, Zap, ZapOff, XSquare, Loader2, ArrowLeft, User } from "lucide-react";
 import type { UserConversationsMessagesResponse, ImagePayload } from "../../../types";
 import { ImageLightbox, LoadingState, SegmentedTabs } from "../../../shared/components/ui";
 import { HandlerBadge } from "../../../shared/components/badges/HandlerBadge";
@@ -199,11 +199,16 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 truncate">{customerName}</h2>
+          {/* Customer info shown in header only on mobile - on desktop it's in left panel */}
+          <div className="flex-1 min-w-0 lg:hidden">
+            <h2 className="text-sm sm:text-base font-semibold text-gray-900 truncate">{customerName}</h2>
             <p className="text-xs text-gray-500 truncate">
               {data?.conversations.length || 0} {(data?.conversations.length || 0) === 1 ? "conversa" : "conversas"} - {totalMessages} msg
             </p>
+          </div>
+          {/* On desktop, just show a minimal header */}
+          <div className="hidden lg:block flex-1">
+            <span className="text-sm font-medium text-gray-600">Atendimento</span>
           </div>
         </div>
       </div>
@@ -287,26 +292,31 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
 
             {/* Desktop Layout - Split Panels */}
             <div className="hidden lg:flex h-full flex-col overflow-hidden">
-              <ConversationSelector
-                selectedIndex={selectedConversationIndex}
-                totalCount={sortedConversations.length}
-                formattedDate={selectedConversation && formatDateTimeShort(selectedConversation.conversation.created_at)}
-                isActive={selectedConversation?.conversation.status === "active"}
-                closedReason={selectedConversation?.conversation.closed_reason}
-                onPrevious={goToPreviousConversation}
-                onNext={goToNextConversation}
-                actionButtons={renderActionButtons()}
-              />
-              
               <div 
                 ref={containerRef}
                 className="flex-1 flex overflow-hidden"
               >
-                {/* Left Panel - Summary */}
+                {/* Left Panel - Customer Info + Summary */}
                 <div 
                   className="flex flex-col overflow-hidden bg-white border-r border-gray-200"
                   style={{ width: `${leftPanelWidth}%` }}
                 >
+                  {/* Customer Info Card */}
+                  <div className="px-4 py-3 bg-white border-b border-gray-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                        <User className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-semibold text-gray-900 truncate">{customerName}</h3>
+                        <p className="text-xs text-gray-500">
+                          {data?.conversations.length || 0} {(data?.conversations.length || 0) === 1 ? "conversa" : "conversas"} - {totalMessages} msg
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Summary Header */}
                   <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
                     <FileText className="w-4 h-4 text-purple-600" />
                     <span className="text-sm font-medium text-gray-700">Resumo</span>
@@ -327,19 +337,28 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                   className="flex-1 flex flex-col overflow-hidden bg-gray-50"
                   style={{ width: `${100 - leftPanelWidth}%` }}
                 >
-                  <div className="px-4 py-2 bg-white border-b border-gray-200 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <MessageCircle className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium text-gray-700">Chat</span>
-                    </div>
-                    <button
-                      onClick={() => setShowSuggestions(!showSuggestions)}
-                      className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
-                    >
-                      {showSuggestions ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      <span>{showSuggestions ? "Ocultar" : "Exibir"} Sugestões</span>
-                    </button>
-                  </div>
+                  {/* Chat Header with Conversation Selector */}
+                  <ConversationSelector
+                    selectedIndex={selectedConversationIndex}
+                    totalCount={sortedConversations.length}
+                    formattedDate={selectedConversation && formatDateTimeShort(selectedConversation.conversation.created_at)}
+                    isActive={selectedConversation?.conversation.status === "active"}
+                    closedReason={selectedConversation?.conversation.closed_reason}
+                    onPrevious={goToPreviousConversation}
+                    onNext={goToNextConversation}
+                    actionButtons={
+                      <>
+                        {renderActionButtons()}
+                        <button
+                          onClick={() => setShowSuggestions(!showSuggestions)}
+                          className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 rounded-lg transition-colors"
+                        >
+                          {showSuggestions ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          <span>{showSuggestions ? "Ocultar" : "Sugestões"}</span>
+                        </button>
+                      </>
+                    }
+                  />
                   <ConversationChat
                     messages={selectedConversation?.messages || []}
                     suggestedResponses={
