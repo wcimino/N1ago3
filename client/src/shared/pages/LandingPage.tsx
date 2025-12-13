@@ -11,7 +11,7 @@ export function LandingPage() {
         
         <a
           href="/api/login"
-          className="inline-flex items-center justify-center gap-2 w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          className="inline-flex items-center justify-center gap-2 w-full bg-primary text-white py-3 px-6 rounded-lg font-medium hover:bg-primary-900 transition-colors"
         >
           <LogIn className="w-5 h-5" />
           Entrar
