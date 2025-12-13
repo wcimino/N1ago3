@@ -178,8 +178,12 @@ async function findSimilarArticle(extraction: ExtractedKnowledge): Promise<{ art
     .split(/\s+/)
     .filter(word => word.length > 3) || [];
 
+  const resolved = extraction.productStandard 
+    ? await productCatalogStorage.resolveProductId(extraction.productStandard, extraction.subproductStandard || undefined)
+    : null;
+
   const result = await runKnowledgeBaseSearch({
-    product: extraction.productStandard || undefined,
+    productId: resolved?.id,
     keywords: descriptionKeywords,
     limit: 1
   });

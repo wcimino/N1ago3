@@ -4,6 +4,7 @@ import { runKnowledgeBaseSearch } from "./knowledgeBaseSearchHelper.js";
 import { createZendeskKnowledgeBaseTool } from "./aiTools.js";
 import { replacePromptVariables, formatMessagesContext, formatLastMessage, formatClassification, type ContentPayload } from "./promptUtils.js";
 import { AutoPilotService } from "../../autoPilot/services/autoPilotService.js";
+import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 
 export interface ResponsePayload {
   currentSummary: string | null;
@@ -118,10 +119,12 @@ function buildKnowledgeBaseTool(
         onToolInvoked();
       }
 
+      const resolved = await productCatalogStorage.resolveProductId(args.product, args.subproduct);
+      const productId = resolved?.id;
+
       const result = await runKnowledgeBaseSearch(
         {
-          product: args.product,
-          subproduct: args.subproduct,
+          productId,
           keywords: args.keywords,
           limit: 3
         },

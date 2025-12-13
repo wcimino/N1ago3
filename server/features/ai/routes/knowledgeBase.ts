@@ -6,15 +6,25 @@ import { KnowledgeBaseStatisticsStorage } from "../storage/knowledgeBaseStatisti
 import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
 import type { InsertKnowledgeBaseArticle } from "../../../../shared/schema.js";
 import { runCombinedKnowledgeSearch } from "../services/tools/combinedKnowledgeSearchTool.js";
+import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 
 const router = Router();
 
 router.get("/api/knowledge/articles", async (req, res) => {
   try {
-    const { search, productStandard, subjectId, intentId } = req.query;
+    const { search, productId, productStandard, subjectId, intentId } = req.query;
+    
+    let resolvedProductId: number | undefined;
+    if (productId) {
+      resolvedProductId = parseInt(productId as string);
+    } else if (productStandard) {
+      const resolved = await productCatalogStorage.resolveProductId(productStandard as string);
+      resolvedProductId = resolved?.id;
+    }
+    
     const articles = await knowledgeBaseStorage.getAllArticles({
       search: search as string | undefined,
-      productStandard: productStandard as string | undefined,
+      productId: resolvedProductId,
       subjectId: subjectId ? parseInt(subjectId as string) : undefined,
       intentId: intentId ? parseInt(intentId as string) : undefined,
     });
@@ -110,14 +120,14 @@ router.delete("/api/knowledge/articles/:id", async (req, res) => {
 
 router.get("/api/knowledge/search", isAuthenticated, requireAuthorizedUser, async (req, res) => {
   try {
-    const { product, keywords, limit } = req.query;
+    const { productId, keywords, limit } = req.query;
 
     const keywordsArray = keywords 
       ? (keywords as string).split(",").map(k => k.trim()).filter(k => k.length > 0)
       : undefined;
 
     const result = await runKnowledgeBaseSearch({
-      product: product as string | undefined,
+      productId: productId ? parseInt(productId as string) : undefined,
       keywords: keywordsArray,
       limit: parseInt(limit as string) || 10
     });
@@ -125,11 +135,7 @@ router.get("/api/knowledge/search", isAuthenticated, requireAuthorizedUser, asyn
     res.json({
       results: result.articles,
       total: result.articles.length,
-      query: { product, keywords: keywordsArray },
-      resolvedFilters: {
-        product: result.resolvedProduct,
-        subproduct: result.resolvedSubproduct
-      }
+      query: { productId: result.productId, keywords: keywordsArray }
     });
   } catch (error) {
     console.error("Error searching knowledge base:", error);
@@ -145,8 +151,10 @@ router.get("/api/knowledge/search/product", isAuthenticated, requireAuthorizedUs
       return res.status(400).json({ error: "Query parameter 'q' is required" });
     }
 
+    const resolved = await productCatalogStorage.resolveProductId(q as string);
+
     const result = await runKnowledgeBaseSearch({
-      product: q as string,
+      productId: resolved?.id,
       limit: parseInt(limit as string) || 10
     });
 
@@ -319,15 +327,14 @@ router.get("/api/knowledge/articles/statistics/by-intent", async (req, res) => {
 
 router.get("/api/ai/tools/combined-search", isAuthenticated, requireAuthorizedUser, async (req, res) => {
   try {
-    const { product, subproduct, keywords, limit } = req.query;
+    const { productId, keywords, limit } = req.query;
 
-    if (!product) {
-      return res.status(400).json({ error: "Product parameter is required" });
+    if (!productId) {
+      return res.status(400).json({ error: "productId parameter is required" });
     }
 
     const result = await runCombinedKnowledgeSearch({
-      product: product as string,
-      subproduct: subproduct as string | undefined,
+      productId: parseInt(productId as string),
       keywords: keywords as string | undefined,
       limit: limit ? parseInt(limit as string) : 10,
     });

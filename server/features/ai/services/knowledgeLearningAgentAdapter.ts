@@ -52,8 +52,10 @@ function buildSearchKnowledgeBaseTool(): ToolDefinition {
       required: ["product"]
     },
     handler: async (args: { product: string; category?: string; keywords?: string[] }) => {
+      const resolved = await productCatalogStorage.resolveProductId(args.product);
+      
       const result = await runKnowledgeBaseSearch({
-        product: args.product,
+        productId: resolved?.id,
         keywords: args.keywords,
         limit: 5
       });
