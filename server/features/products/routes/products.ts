@@ -38,6 +38,23 @@ router.get("/api/emotions/stats", isAuthenticated, requireAuthorizedUser, async 
   }
 });
 
+router.get("/api/problems/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  try {
+    const [lastHour, last24Hours] = await Promise.all([
+      storage.getObjectiveProblemStatsByPeriod("lastHour"),
+      storage.getObjectiveProblemStatsByPeriod("last24Hours"),
+    ]);
+
+    res.json({
+      last_hour: lastHour,
+      today: last24Hours,
+    });
+  } catch (error: any) {
+    console.error("[Problems Stats] Error:", error.message);
+    res.status(500).json({ error: "Failed to fetch problem stats" });
+  }
+});
+
 router.get("/api/product-standards", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
     const products = await storage.getProductStandards();

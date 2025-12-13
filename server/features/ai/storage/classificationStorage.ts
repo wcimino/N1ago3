@@ -184,4 +184,58 @@ export const classificationStorage = {
       total: totalConversations || 0 
     };
   },
+
+  async getObjectiveProblemStatsByPeriod(
+    period: "lastHour" | "last24Hours"
+  ): Promise<{ items: { problemName: string; count: number }[]; total: number }> {
+    const now = new Date();
+    let since: Date;
+
+    if (period === "lastHour") {
+      since = new Date(now.getTime() - 60 * 60 * 1000);
+    } else {
+      since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    }
+
+    // Count distinct conversations with identified problems grouped by problem name
+    // The objectiveProblems field is a JSON array: [{ id, name, matchScore? }]
+    const results = await db
+      .select({
+        problemName: sql<string>`problem_obj->>'name'`,
+        count: sql<number>`count(DISTINCT ${conversations.id})::int`,
+      })
+      .from(eventsStandard)
+      .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
+      .innerJoin(conversationsSummary, eq(conversations.id, conversationsSummary.conversationId))
+      .innerJoin(
+        sql`jsonb_array_elements(${conversationsSummary.objectiveProblems}::jsonb) AS problem_obj`,
+        sql`true`
+      )
+      .where(and(
+        gte(eventsStandard.occurredAt, since),
+        isNotNull(conversationsSummary.objectiveProblems)
+      ))
+      .groupBy(sql`problem_obj->>'name'`)
+      .orderBy(sql`count(DISTINCT ${conversations.id}) desc`);
+
+    // Calculate total distinct conversations with any problem identified
+    const totalResult = results.reduce((sum, r) => sum + r.count, 0);
+    const uniqueConversationsWithProblems = await db
+      .select({
+        total: sql<number>`count(DISTINCT ${conversations.id})::int`,
+      })
+      .from(eventsStandard)
+      .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
+      .innerJoin(conversationsSummary, eq(conversations.id, conversationsSummary.conversationId))
+      .where(and(
+        gte(eventsStandard.occurredAt, since),
+        isNotNull(conversationsSummary.objectiveProblems),
+        sql`jsonb_array_length(${conversationsSummary.objectiveProblems}::jsonb) > 0`
+      ));
+
+    return { 
+      items: results as { problemName: string; count: number }[], 
+      total: uniqueConversationsWithProblems[0]?.total || 0 
+    };
+  },
 };
