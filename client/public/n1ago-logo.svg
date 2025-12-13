@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 64" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 115 64" fill="none">
   <g fill="#1e293b">
     <!-- N: left vertical bar -->
     <rect x="6" y="18" width="7" height="30"/>
@@ -17,5 +17,5 @@
   </g>
   
   <!-- Text "GO" closer to icon -->
-  <text x="54" y="48" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="600" fill="#64748b" letter-spacing="1">GO</text>
+  <text x="52" y="48" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="600" fill="#64748b" letter-spacing="1">GO</text>
 </svg>
