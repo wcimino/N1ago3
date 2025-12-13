@@ -863,3 +863,82 @@ export const knowledgeBaseRootCauseHasKnowledgeBaseSolutions = pgTable("knowledg
 
 export type KnowledgeBaseRootCauseHasSolution = typeof knowledgeBaseRootCauseHasKnowledgeBaseSolutions.$inferSelect;
 export type InsertKnowledgeBaseRootCauseHasSolution = Omit<typeof knowledgeBaseRootCauseHasKnowledgeBaseSolutions.$inferInsert, "id" | "createdAt">;
+
+export const zendeskSupportUsers = pgTable("zendesk_support_users", {
+  id: serial("id").primaryKey(),
+  zendeskId: bigint("zendesk_id", { mode: "number" }).notNull().unique(),
+  url: text("url"),
+  name: text("name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  sharedPhoneNumber: boolean("shared_phone_number"),
+  alias: text("alias"),
+  role: text("role"),
+  roleType: integer("role_type"),
+  customRoleId: integer("custom_role_id"),
+  verified: boolean("verified"),
+  active: boolean("active"),
+  suspended: boolean("suspended"),
+  moderator: boolean("moderator"),
+  restrictedAgent: boolean("restricted_agent"),
+  organizationId: bigint("organization_id", { mode: "number" }),
+  defaultGroupId: bigint("default_group_id", { mode: "number" }),
+  timeZone: text("time_zone"),
+  ianaTimeZone: text("iana_time_zone"),
+  locale: text("locale"),
+  localeId: integer("locale_id"),
+  details: text("details"),
+  notes: text("notes"),
+  signature: text("signature"),
+  tags: json("tags").$type<string[]>(),
+  externalId: text("external_id"),
+  ticketRestriction: text("ticket_restriction"),
+  onlyPrivateComments: boolean("only_private_comments"),
+  chatOnly: boolean("chat_only"),
+  shared: boolean("shared"),
+  sharedAgent: boolean("shared_agent"),
+  twoFactorAuthEnabled: boolean("two_factor_auth_enabled"),
+  zendeskCreatedAt: timestamp("zendesk_created_at"),
+  zendeskUpdatedAt: timestamp("zendesk_updated_at"),
+  lastLoginAt: timestamp("last_login_at"),
+  userFields: json("user_fields").$type<Record<string, unknown>>(),
+  photo: json("photo").$type<Record<string, unknown>>(),
+  syncedAt: timestamp("synced_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  zendeskIdIdx: uniqueIndex("idx_zendesk_support_users_zendesk_id").on(table.zendeskId),
+  emailIdx: index("idx_zendesk_support_users_email").on(table.email),
+  roleIdx: index("idx_zendesk_support_users_role").on(table.role),
+  organizationIdx: index("idx_zendesk_support_users_organization").on(table.organizationId),
+  activeIdx: index("idx_zendesk_support_users_active").on(table.active),
+}));
+
+export type ZendeskSupportUser = typeof zendeskSupportUsers.$inferSelect;
+export type InsertZendeskSupportUser = Omit<typeof zendeskSupportUsers.$inferInsert, "id" | "createdAt" | "updatedAt">;
+
+export const externalDataSyncLogs = pgTable("external_data_sync_logs", {
+  id: serial("id").primaryKey(),
+  sourceType: text("source_type").notNull(),
+  syncType: text("sync_type").notNull(),
+  status: text("status").notNull(),
+  startedAt: timestamp("started_at").notNull(),
+  finishedAt: timestamp("finished_at"),
+  durationMs: integer("duration_ms"),
+  recordsProcessed: integer("records_processed").default(0).notNull(),
+  recordsCreated: integer("records_created").default(0).notNull(),
+  recordsUpdated: integer("records_updated").default(0).notNull(),
+  recordsDeleted: integer("records_deleted").default(0).notNull(),
+  recordsFailed: integer("records_failed").default(0).notNull(),
+  errorMessage: text("error_message"),
+  errorDetails: json("error_details"),
+  metadata: json("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  sourceTypeIdx: index("idx_external_data_sync_logs_source_type").on(table.sourceType),
+  statusIdx: index("idx_external_data_sync_logs_status").on(table.status),
+  startedAtIdx: index("idx_external_data_sync_logs_started_at").on(table.startedAt.desc()),
+}));
+
+export type ExternalDataSyncLog = typeof externalDataSyncLogs.$inferSelect;
+export type InsertExternalDataSyncLog = Omit<typeof externalDataSyncLogs.$inferInsert, "id" | "createdAt">;

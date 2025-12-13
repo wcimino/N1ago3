@@ -31,7 +31,7 @@ import knowledgeSolutionsRoutes from "../features/knowledge/routes/knowledgeSolu
 import rootCausesRoutes from "../features/knowledge/routes/rootCausesRoutes.js";
 
 import maintenanceRoutes from "../features/maintenance/routes/maintenance.js";
-import { zendeskArticlesRouter } from "../features/external-sources/zendesk/index.js";
+import { zendeskArticlesRouter, zendeskSupportUsersRouter } from "../features/external-sources/zendesk/index.js";
 import routingRulesRoutes from "../features/routing/routes/routing.js";
 import transferRoutes from "../features/routing/routes/transfer.js";
 import favoritesRoutes from "../features/favorites/routes/favorites.js";
@@ -65,6 +65,7 @@ export function registerRoutes(app: Express) {
   app.use(knowledgeSolutionsRoutes);
   app.use(rootCausesRoutes);
   app.use("/api/zendesk-articles", zendeskArticlesRouter);
+  app.use("/api/external-data/zendesk-users", zendeskSupportUsersRouter);
   app.use(routingRulesRoutes);
   app.use(transferRoutes);
   app.use(favoritesRoutes);
