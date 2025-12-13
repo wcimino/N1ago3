@@ -1,15 +1,26 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Database, Users, RefreshCw, ArrowRight, Clock, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Database, Users, RefreshCw, ArrowRight, Clock, CheckCircle, XCircle, Loader2, X, AlertCircle } from "lucide-react";
 import { fetchApi, apiRequest } from "../../../lib/queryClient";
 import { useDateFormatters } from "../../../shared/hooks";
 
 type SyncType = "full" | "incremental";
 
+interface SyncProgress {
+  processed: number;
+  created: number;
+  updated: number;
+  failed: number;
+  currentPage: number;
+  estimatedTotal: number;
+}
+
 interface SyncStatus {
   isSyncing: boolean;
   currentSyncId: number | null;
+  cancelRequested: boolean;
+  progress: SyncProgress | null;
   lastSync: {
     id: number;
     status: string;
@@ -65,10 +76,24 @@ export function ExternalDataTab() {
     },
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/external-data/zendesk-users/cancel-sync");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["zendesk-users-sync-status"] });
+    },
+  });
+
   const handleSync = () => {
     const limit = maxUsers ? parseInt(maxUsers, 10) : undefined;
     syncMutation.mutate({ syncType, maxUsers: limit });
     setTimeout(() => refetch(), 500);
+  };
+
+  const handleCancel = () => {
+    cancelMutation.mutate();
   };
 
   const getStatusIcon = (status: string) => {
@@ -77,6 +102,8 @@ export function ExternalDataTab() {
         return <CheckCircle className="w-5 h-5 text-green-500" />;
       case "failed":
         return <XCircle className="w-5 h-5 text-red-500" />;
+      case "cancelled":
+        return <AlertCircle className="w-5 h-5 text-yellow-500" />;
       case "in_progress":
         return <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />;
       default:
@@ -90,11 +117,20 @@ export function ExternalDataTab() {
         return "Concluída";
       case "failed":
         return "Falhou";
+      case "cancelled":
+        return "Cancelada";
       case "in_progress":
         return "Em andamento";
       default:
         return status;
     }
+  };
+
+  const getProgressPercentage = () => {
+    if (!syncStatus?.progress) return 0;
+    const { processed, estimatedTotal } = syncStatus.progress;
+    if (estimatedTotal <= 0) return 0;
+    return Math.min(100, Math.round((processed / estimatedTotal) * 100));
   };
 
   if (isLoading) {
@@ -158,7 +194,53 @@ export function ExternalDataTab() {
             )}
           </div>
 
-          {syncStatus?.lastSync && syncStatus.lastSync.status === "completed" && (
+          {syncStatus?.isSyncing && syncStatus.progress && (
+            <div className="bg-white rounded-lg p-4 border space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">
+                  Progresso da sincronização
+                </span>
+                <span className="text-sm text-gray-500">
+                  {syncStatus.progress.processed.toLocaleString("pt-BR")} 
+                  {syncStatus.progress.estimatedTotal > 0 && (
+                    <> / {syncStatus.progress.estimatedTotal.toLocaleString("pt-BR")}</>
+                  )}
+                  {" "}usuários
+                </span>
+              </div>
+              
+              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                <div 
+                  className="bg-orange-500 h-3 rounded-full transition-all duration-300 ease-out"
+                  style={{ width: `${getProgressPercentage()}%` }}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between text-xs text-gray-500">
+                <span>
+                  Página {syncStatus.progress.currentPage} | {" "}
+                  {syncStatus.progress.created.toLocaleString("pt-BR")} novos, {" "}
+                  {syncStatus.progress.updated.toLocaleString("pt-BR")} atualizados
+                  {syncStatus.progress.failed > 0 && (
+                    <span className="text-red-500">
+                      , {syncStatus.progress.failed.toLocaleString("pt-BR")} com erro
+                    </span>
+                  )}
+                </span>
+                <span className="font-medium text-orange-600">
+                  {getProgressPercentage()}%
+                </span>
+              </div>
+              
+              {syncStatus.cancelRequested && (
+                <div className="text-xs text-yellow-600 bg-yellow-50 px-3 py-2 rounded-lg">
+                  Cancelamento solicitado. Aguardando finalização do batch atual...
+                </div>
+              )}
+            </div>
+          )}
+
+          {syncStatus?.lastSync && !syncStatus.isSyncing && (syncStatus.lastSync.status === "completed" || syncStatus.lastSync.status === "cancelled") && (
             <div className="text-xs text-gray-500">
               {syncStatus.lastSync.recordsProcessed.toLocaleString("pt-BR")} processados, {" "}
               {syncStatus.lastSync.recordsCreated.toLocaleString("pt-BR")} novos, {" "}
@@ -212,23 +294,34 @@ export function ExternalDataTab() {
             )}
 
             <div className="flex flex-col sm:flex-row gap-2">
-              <button
-                onClick={handleSync}
-                disabled={syncStatus?.isSyncing || syncMutation.isPending}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {syncStatus?.isSyncing || syncMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Sincronizando...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="w-4 h-4" />
-                    {syncType === "incremental" ? "Sincronizar alterações" : "Sincronizar agora"}
-                  </>
-                )}
-              </button>
+              {syncStatus?.isSyncing ? (
+                <button
+                  onClick={handleCancel}
+                  disabled={syncStatus.cancelRequested || cancelMutation.isPending}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {syncStatus.cancelRequested || cancelMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Cancelando...
+                    </>
+                  ) : (
+                    <>
+                      <X className="w-4 h-4" />
+                      Cancelar sincronização
+                    </>
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={handleSync}
+                  disabled={syncMutation.isPending}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  {syncType === "incremental" ? "Sincronizar alterações" : "Sincronizar agora"}
+                </button>
+              )}
 
               <button
                 onClick={() => navigate("/settings/external-data/zendesk-users")}

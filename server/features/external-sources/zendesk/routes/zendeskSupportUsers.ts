@@ -1,8 +1,25 @@
 import { Router } from "express";
-import { syncZendeskUsers, getSyncStatus, listZendeskUsers, type SyncType } from "../services/zendeskSupportUsersService.js";
+import { syncZendeskUsers, getSyncStatus, listZendeskUsers, cancelSync, type SyncType } from "../services/zendeskSupportUsersService.js";
 import { getZendeskUserById } from "../storage/zendeskSupportUsersStorage.js";
 
 const router = Router();
+
+router.post("/cancel-sync", async (req, res) => {
+  try {
+    const result = cancelSync();
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error("[ZendeskSupportUsers] Cancel sync error:", error);
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Erro interno do servidor",
+    });
+  }
+});
 
 router.post("/sync", async (req, res) => {
   try {

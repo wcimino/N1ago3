@@ -72,6 +72,15 @@ export type SyncType = "full" | "incremental";
 
 let isSyncing = false;
 let currentSyncId: number | null = null;
+let cancelRequested = false;
+let currentProgress = {
+  processed: 0,
+  created: 0,
+  updated: 0,
+  failed: 0,
+  currentPage: 0,
+  estimatedTotal: 0,
+};
 
 function getAuthHeader(): string {
   const email = process.env.ZENDESK_SUPPORT_EMAIL;
@@ -193,6 +202,8 @@ export async function syncZendeskUsers(syncType: SyncType = "full", maxUsers?: n
   }
   
   isSyncing = true;
+  cancelRequested = false;
+  currentProgress = { processed: 0, created: 0, updated: 0, failed: 0, currentPage: 0, estimatedTotal: maxUsers || 0 };
   const startTime = Date.now();
   
   const logSyncType = syncType === "incremental" ? "incremental" : (maxUsers ? "partial" : "full");
@@ -215,6 +226,7 @@ export async function syncZendeskUsers(syncType: SyncType = "full", maxUsers?: n
   let totalCreated = 0;
   let totalUpdated = 0;
   let totalFailed = 0;
+  let wasCancelled = false;
   
   try {
     if (syncType === "incremental" && lastCompletedSync) {
@@ -227,9 +239,10 @@ export async function syncZendeskUsers(syncType: SyncType = "full", maxUsers?: n
       let url: string | null = `${getBaseUrl()}/api/v2/incremental/users.json?start_time=${incrementalStartTime}`;
       let pageCount = 0;
       
-      while (url) {
+      while (url && !cancelRequested) {
         pageCount++;
         console.log(`[ZendeskSupportUsers] Fetching incremental page ${pageCount}...`);
+        currentProgress.currentPage = pageCount;
         
         const data = await fetchIncrementalUsersPage(url);
         
@@ -261,6 +274,8 @@ export async function syncZendeskUsers(syncType: SyncType = "full", maxUsers?: n
           totalFailed += usersToUpsert.length;
         }
         
+        currentProgress = { ...currentProgress, processed: totalProcessed, created: totalCreated, updated: totalUpdated, failed: totalFailed };
+        
         await updateSyncLog(syncLog.id, {
           recordsProcessed: totalProcessed,
           recordsCreated: totalCreated,
@@ -270,9 +285,14 @@ export async function syncZendeskUsers(syncType: SyncType = "full", maxUsers?: n
         
         url = data.next_page;
         
-        if (url) {
+        if (url && !cancelRequested) {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
+      }
+      
+      if (cancelRequested) {
+        wasCancelled = true;
+        console.log(`[ZendeskSupportUsers] Sync cancelled after ${totalProcessed} records`);
       }
     } else {
       console.log(`[ZendeskSupportUsers] Starting full sync...${maxUsers ? ` (limit: ${maxUsers})` : ''}`);
@@ -280,11 +300,16 @@ export async function syncZendeskUsers(syncType: SyncType = "full", maxUsers?: n
       let url: string | null = `${getBaseUrl()}/api/v2/users.json?per_page=${BATCH_SIZE}`;
       let pageCount = 0;
       
-      while (url && (!maxUsers || totalProcessed < maxUsers)) {
+      while (url && (!maxUsers || totalProcessed < maxUsers) && !cancelRequested) {
         pageCount++;
         console.log(`[ZendeskSupportUsers] Fetching page ${pageCount}...`);
+        currentProgress.currentPage = pageCount;
         
         const data = await fetchUsersPage(url);
+        
+        if (currentProgress.estimatedTotal === 0 && data.count) {
+          currentProgress.estimatedTotal = maxUsers ? Math.min(maxUsers, data.count) : data.count;
+        }
         
         if (data.users.length === 0) {
           break;
@@ -306,6 +331,8 @@ export async function syncZendeskUsers(syncType: SyncType = "full", maxUsers?: n
           totalFailed += usersToUpsert.length;
         }
         
+        currentProgress = { ...currentProgress, processed: totalProcessed, created: totalCreated, updated: totalUpdated, failed: totalFailed };
+        
         await updateSyncLog(syncLog.id, {
           recordsProcessed: totalProcessed,
           recordsCreated: totalCreated,
@@ -315,16 +342,22 @@ export async function syncZendeskUsers(syncType: SyncType = "full", maxUsers?: n
         
         url = data.next_page;
         
-        if (url) {
+        if (url && !cancelRequested) {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
+      }
+      
+      if (cancelRequested) {
+        wasCancelled = true;
+        console.log(`[ZendeskSupportUsers] Sync cancelled after ${totalProcessed} records`);
       }
     }
     
     const durationMs = Date.now() - startTime;
+    const finalStatus = wasCancelled ? "cancelled" : "completed";
     
     await updateSyncLog(syncLog.id, {
-      status: "completed",
+      status: finalStatus,
       finishedAt: new Date(),
       durationMs,
       recordsProcessed: totalProcessed,
@@ -334,14 +367,18 @@ export async function syncZendeskUsers(syncType: SyncType = "full", maxUsers?: n
     });
     
     const syncTypeLabel = syncType === "incremental" ? "incremental" : "completa";
-    console.log(`[ZendeskSupportUsers] ${syncTypeLabel} sync completed: ${totalProcessed} processed, ${totalCreated} created, ${totalUpdated} updated, ${totalFailed} failed in ${durationMs}ms`);
+    const statusLabel = wasCancelled ? "cancelada" : "concluída";
+    console.log(`[ZendeskSupportUsers] ${syncTypeLabel} sync ${statusLabel}: ${totalProcessed} processed, ${totalCreated} created, ${totalUpdated} updated, ${totalFailed} failed in ${durationMs}ms`);
     
     isSyncing = false;
     currentSyncId = null;
+    cancelRequested = false;
     
     return {
-      success: true,
-      message: `Sincronização ${syncTypeLabel} concluída com sucesso`,
+      success: !wasCancelled,
+      message: wasCancelled 
+        ? `Sincronização ${syncTypeLabel} cancelada. ${totalProcessed} registros foram processados.`
+        : `Sincronização ${syncTypeLabel} concluída com sucesso`,
       stats: {
         processed: totalProcessed,
         created: totalCreated,
@@ -405,6 +442,8 @@ export async function getSyncStatus(): Promise<{
   return {
     isSyncing,
     currentSyncId,
+    cancelRequested,
+    progress: isSyncing ? currentProgress : null,
     lastSync: lastSyncLog ? {
       id: lastSyncLog.id,
       status: lastSyncLog.status,
@@ -419,6 +458,21 @@ export async function getSyncStatus(): Promise<{
     } : null,
     totalUsers,
     hasCompletedSync,
+  };
+}
+
+export function cancelSync(): { success: boolean; message: string } {
+  if (!isSyncing) {
+    return {
+      success: false,
+      message: "Nenhuma sincronização em andamento",
+    };
+  }
+  
+  cancelRequested = true;
+  return {
+    success: true,
+    message: "Cancelamento solicitado. A sincronização será interrompida após o batch atual.",
   };
 }
 
