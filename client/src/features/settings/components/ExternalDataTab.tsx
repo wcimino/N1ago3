@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Database, Users, RefreshCw, ArrowRight, Clock, CheckCircle, XCircle, Loader2, X, AlertCircle } from "lucide-react";
+import { Database, Users, RefreshCw, ArrowRight, Clock, CheckCircle, XCircle, Loader2, X, AlertCircle, UserPlus } from "lucide-react";
 import { fetchApi, apiRequest } from "../../../lib/queryClient";
 import { useDateFormatters } from "../../../shared/hooks";
 
@@ -37,6 +37,20 @@ interface SyncStatus {
   hasCompletedSync: boolean;
 }
 
+interface AddNewSyncStatus {
+  hasStarted: boolean;
+  isComplete: boolean;
+  nextCursor: string | null;
+  lastSync: {
+    id: number;
+    status: string;
+    startedAt: string;
+    finishedAt: string | null;
+    recordsProcessed: number;
+    recordsCreated: number;
+  } | null;
+}
+
 function formatDuration(ms: number | null): string {
   if (!ms) return "-";
   if (ms < 1000) return `${ms}ms`;
@@ -59,6 +73,22 @@ export function ExternalDataTab() {
     refetchInterval: (query) => {
       const data = query.state.data;
       return data?.isSyncing ? 2000 : false;
+    },
+  });
+
+  const { data: addNewStatus, refetch: refetchAddNew } = useQuery<AddNewSyncStatus>({
+    queryKey: ["zendesk-users-add-new-status"],
+    queryFn: () => fetchApi<AddNewSyncStatus>("/api/external-data/zendesk-users/sync-new-status"),
+  });
+
+  const syncNewMutation = useMutation({
+    mutationFn: async (params: { maxUsers?: number }) => {
+      const res = await apiRequest("POST", "/api/external-data/zendesk-users/sync-new", params.maxUsers ? { maxUsers: params.maxUsers } : {});
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["zendesk-users-sync-status"] });
+      queryClient.invalidateQueries({ queryKey: ["zendesk-users-add-new-status"] });
     },
   });
 
@@ -90,6 +120,15 @@ export function ExternalDataTab() {
     const limit = maxUsers ? parseInt(maxUsers, 10) : undefined;
     syncMutation.mutate({ syncType, maxUsers: limit });
     setTimeout(() => refetch(), 500);
+  };
+
+  const handleSyncNew = () => {
+    const limit = maxUsers ? parseInt(maxUsers, 10) : undefined;
+    syncNewMutation.mutate({ maxUsers: limit });
+    setTimeout(() => {
+      refetch();
+      refetchAddNew();
+    }, 500);
   };
 
   const handleCancel = () => {
@@ -290,6 +329,37 @@ export function ExternalDataTab() {
             {syncType === "incremental" && (
               <div className="text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
                 Sincronização incremental busca apenas usuários modificados desde a última sincronização completa.
+              </div>
+            )}
+
+            {!addNewStatus?.isComplete && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <UserPlus className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-800">Carregar base completa</span>
+                </div>
+                <p className="text-xs text-blue-700">
+                  {addNewStatus?.hasStarted 
+                    ? `Continua de onde parou. Já processados: ${addNewStatus.lastSync?.recordsProcessed.toLocaleString("pt-BR") ?? 0} usuários.`
+                    : "Importa todos os usuários do Zendesk. Pode rodar em partes - cada execução continua de onde parou."}
+                </p>
+                <button
+                  onClick={handleSyncNew}
+                  disabled={syncStatus?.isSyncing || syncNewMutation.isPending}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  {syncNewMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Processando...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4" />
+                      {addNewStatus?.hasStarted ? "Continuar importação" : "Adicionar novos usuários"}
+                    </>
+                  )}
+                </button>
               </div>
             )}
 

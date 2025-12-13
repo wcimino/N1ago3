@@ -1,8 +1,39 @@
 import { Router } from "express";
-import { syncZendeskUsers, getSyncStatus, listZendeskUsers, cancelSync, type SyncType } from "../services/zendeskSupportUsersService.js";
+import { syncZendeskUsers, getSyncStatus, listZendeskUsers, cancelSync, syncNewUsers, getAddNewSyncStatus, type SyncType } from "../services/zendeskSupportUsersService.js";
 import { getZendeskUserById } from "../storage/zendeskSupportUsersStorage.js";
 
 const router = Router();
+
+router.post("/sync-new", async (req, res) => {
+  try {
+    const maxUsers = req.body?.maxUsers ? parseInt(req.body.maxUsers, 10) : undefined;
+    const result = await syncNewUsers(maxUsers);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error("[ZendeskSupportUsers] Sync new users error:", error);
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Erro interno do servidor",
+    });
+  }
+});
+
+router.get("/sync-new-status", async (req, res) => {
+  try {
+    const status = await getAddNewSyncStatus();
+    res.json(status);
+  } catch (error) {
+    console.error("[ZendeskSupportUsers] Get add-new sync status error:", error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : "Erro interno do servidor",
+    });
+  }
+});
 
 router.post("/cancel-sync", async (req, res) => {
   try {
