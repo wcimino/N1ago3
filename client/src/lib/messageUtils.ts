@@ -14,24 +14,29 @@ export function getMessageSender(authorType: string, authorName?: string | null,
   
   const name = (authorName || "").toLowerCase();
   
-  // N1ago detection - messages sent by our AI agent (by integration ID or name)
-  if (authorId && N1AGO_INTEGRATION_IDS.includes(authorId)) {
-    return "n1ago";
-  }
+  // N1ago detection - messages sent by our AI agent (by name first, then by integration ID)
+  // Check name first to avoid false positives
   if (name.includes("n1ago")) {
     return "n1ago";
   }
   
   // Zendesk bot detection - Answer Bot or app-type messages
-  // The bot often uses the company name (e.g., "iFood Pago") as displayName
+  // The bot often uses the company name (e.g., "iFood Pago", "Assistente iFood Pago") as displayName
+  // Check this BEFORE integration ID to correctly identify Zendesk bots
   if (
     authorType === "bot" ||
     name.includes("answerbot") || 
     name.includes("zd-answerbot") ||
+    name.includes("assistente") ||
     name === "ifood pago" ||
     name.includes("pago")
   ) {
     return "zendeskBot";
+  }
+  
+  // N1ago detection by integration ID (after zendesk bot check)
+  if (authorId && N1AGO_INTEGRATION_IDS.includes(authorId)) {
+    return "n1ago";
   }
   
   return "human";
