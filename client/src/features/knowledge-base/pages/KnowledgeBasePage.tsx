@@ -397,9 +397,10 @@ export function KnowledgeBasePage() {
                           { 
                             value: catalogStats.embeddingsCount, 
                             label: "Embeddings", 
-                            onClick: () => generateEmbeddingsMutation.mutate(),
+                            onClick: embeddingStats && (embeddingStats.withoutEmbedding > 0 || embeddingStats.outdated > 0) 
+                              ? () => generateEmbeddingsMutation.mutate() 
+                              : undefined,
                             isLoading: generateEmbeddingsMutation.isPending,
-                            disabled: !embeddingStats || (embeddingStats.withoutEmbedding === 0 && embeddingStats.outdated === 0),
                             highlight: embeddingStats && (embeddingStats.withoutEmbedding > 0 || embeddingStats.outdated > 0),
                           },
                         ]}
