@@ -1,5 +1,5 @@
 import { Route, Switch, Link, Redirect } from "wouter";
-import { Home, Sparkles, Settings, LogOut, MessageCircle, BookOpen } from "lucide-react";
+import { Home, Sparkles, Settings, LogOut, MessageCircle, BookOpen, BarChart3 } from "lucide-react";
 import { useAuth } from "./shared/hooks";
 import { NavLink, EnvironmentBadge, N1agoLogo } from "./shared/components";
 import { TimezoneProvider } from "./contexts/TimezoneContext";
@@ -10,6 +10,7 @@ import { AtendimentosPage, UserConversationsPage } from "./features/conversation
 import { CadastroPage, UserStandardDetailPage, OrganizationStandardDetailPage } from "./features/cadastro";
 import { ExportPage } from "./features/export";
 import { KnowledgeBasePage } from "./features/knowledge-base";
+import { ReportsPage } from "./features/reports";
 import { RoutingRulesPage } from "./features/routing";
 import { LandingPage, LoadingPage, UnauthorizedPage, HomePage } from "./shared/pages";
 
@@ -62,6 +63,10 @@ function AuthenticatedApp() {
                 <BookOpen className="w-4 h-4" />
                 <span className="hidden sm:inline">Base de Conhecimento</span>
               </NavLink>
+              <NavLink href="/reports">
+                <BarChart3 className="w-4 h-4" />
+                <span className="hidden sm:inline">Relatórios</span>
+              </NavLink>
             </div>
             <div className="ml-auto">
               <NavLink href="/settings">
@@ -88,6 +93,7 @@ function AuthenticatedApp() {
           <Route path="/settings/maintenance/export" component={ExportPage} />
           <Route path="/settings/maintenance/export/:rest*" component={ExportPage} />
           <Route path="/knowledge-base" component={KnowledgeBasePage} />
+          <Route path="/reports" component={ReportsPage} />
           <Route path="/routing-rules" component={RoutingRulesPage} />
           <Route path="/settings">{() => <Redirect to="/settings/access" />}</Route>
           <Route path="/settings/access">{() => <SettingsPage activeTab="access" />}</Route>
