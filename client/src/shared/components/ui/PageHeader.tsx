@@ -13,11 +13,6 @@ interface PageHeaderProps {
   primaryTabs?: Tab[];
   primaryActiveTab?: string;
   onPrimaryTabChange?: (tabId: string) => void;
-  headerToggleLabel?: string;
-  headerToggleIcon?: ReactNode;
-  headerToggleActive?: boolean;
-  onHeaderToggle?: () => void;
-  showHeaderToggle?: boolean;
   secondaryTabs?: Tab[];
   secondaryActiveTab?: string;
   onSecondaryTabChange?: (tabId: string) => void;
@@ -30,11 +25,6 @@ export function PageHeader({
   primaryTabs,
   primaryActiveTab = "",
   onPrimaryTabChange,
-  headerToggleLabel,
-  headerToggleIcon,
-  headerToggleActive = false,
-  onHeaderToggle,
-  showHeaderToggle = true,
   secondaryTabs,
   secondaryActiveTab = "",
   onSecondaryTabChange,
@@ -47,29 +37,14 @@ export function PageHeader({
           {icon}
           {title}
         </h2>
-        <div className="flex items-center gap-2">
-          {showHeaderToggle && headerToggleLabel && onHeaderToggle && (
-            <button
-              onClick={onHeaderToggle}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                headerToggleActive
-                  ? "bg-purple-100 text-purple-700"
-                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
-              }`}
-            >
-              {headerToggleIcon}
-              <span className="hidden sm:inline">{headerToggleLabel}</span>
-            </button>
-          )}
-          {primaryTabs && onPrimaryTabChange && (
-            <SegmentedTabs
-              tabs={primaryTabs}
-              activeTab={primaryActiveTab}
-              onChange={onPrimaryTabChange}
-              iconOnlyMobile
-            />
-          )}
-        </div>
+        {primaryTabs && onPrimaryTabChange && (
+          <SegmentedTabs
+            tabs={primaryTabs}
+            activeTab={primaryActiveTab}
+            onChange={onPrimaryTabChange}
+            iconOnlyMobile
+          />
+        )}
       </div>
       {showSecondaryTabs && secondaryTabs && onSecondaryTabChange && (
         <div className="px-4 py-3 border-b">

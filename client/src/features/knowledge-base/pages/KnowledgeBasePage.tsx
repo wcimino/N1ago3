@@ -26,7 +26,8 @@ const problemSolutionTabs = [
 ];
 
 const baseTabs = [
-  { id: "internal", label: "Base interna", icon: <Database className="w-4 h-4" /> },
+  { id: "problems-solutions", label: "Problemas e Soluções", icon: <Layers className="w-4 h-4" /> },
+  { id: "internal", label: "Base interna de Artigos", icon: <Database className="w-4 h-4" /> },
   { id: "zendesk", label: "Base Zendesk", icon: <Cloud className="w-4 h-4" /> },
 ];
 
@@ -58,25 +59,18 @@ interface ConfirmModalState {
 export function KnowledgeBasePage() {
   const [activeTab, setActiveTab] = useState("articles");
   const [activeBaseTab, setActiveBaseTab] = useState("internal");
-  const [problemSolutionGroupActive, setProblemSolutionGroupActive] = useState(false);
   const [prefilledData, setPrefilledData] = useState<PrefilledArticleData | null>(null);
   
-  const handleMainTabChange = (tabId: string) => {
-    setActiveTab(tabId);
-    setProblemSolutionGroupActive(false);
-  };
-  
-  const handleProblemSolutionGroupToggle = () => {
-    if (!problemSolutionGroupActive) {
-      setProblemSolutionGroupActive(true);
+  const handleBaseTabChange = (tabId: string) => {
+    setActiveBaseTab(tabId);
+    if (tabId === "problems-solutions") {
       setActiveTab("problems");
-    } else {
-      setProblemSolutionGroupActive(false);
+    } else if (tabId === "internal") {
       setActiveTab("articles");
     }
   };
   
-  const handleProblemSolutionTabChange = (tabId: string) => {
+  const handleSecondaryTabChange = (tabId: string) => {
     setActiveTab(tabId);
   };
   const [inputModal, setInputModal] = useState<InputModalState>({
@@ -307,15 +301,10 @@ export function KnowledgeBasePage() {
         icon={<BookOpen className="w-5 h-5" />}
         primaryTabs={baseTabs}
         primaryActiveTab={activeBaseTab}
-        onPrimaryTabChange={setActiveBaseTab}
-        headerToggleLabel="Problemas e Soluções"
-        headerToggleIcon={<Layers className="w-4 h-4" />}
-        headerToggleActive={problemSolutionGroupActive}
-        onHeaderToggle={handleProblemSolutionGroupToggle}
-        showHeaderToggle={activeBaseTab !== "zendesk"}
-        secondaryTabs={problemSolutionGroupActive ? problemSolutionTabs : mainTabs}
+        onPrimaryTabChange={handleBaseTabChange}
+        secondaryTabs={activeBaseTab === "problems-solutions" ? problemSolutionTabs : mainTabs}
         secondaryActiveTab={activeTab}
-        onSecondaryTabChange={problemSolutionGroupActive ? handleProblemSolutionTabChange : handleMainTabChange}
+        onSecondaryTabChange={handleSecondaryTabChange}
         showSecondaryTabs={activeBaseTab !== "zendesk"}
       />
 
