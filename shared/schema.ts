@@ -779,3 +779,37 @@ export const knowledgeBaseActions = pgTable("knowledge_base_actions", {
 
 export type KnowledgeBaseAction = typeof knowledgeBaseActions.$inferSelect;
 export type InsertKnowledgeBaseAction = Omit<typeof knowledgeBaseActions.$inferInsert, "id" | "createdAt" | "updatedAt">;
+
+export const knowledgeBaseSolutions = pgTable("knowledge_base_solutions", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  product: text("product"),
+  subject: text("subject"),
+  conditions: json("conditions").$type<Record<string, unknown>>(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  productIdx: index("idx_kb_solutions_product").on(table.product),
+  subjectIdx: index("idx_kb_solutions_subject").on(table.subject),
+  isActiveIdx: index("idx_kb_solutions_is_active").on(table.isActive),
+}));
+
+export type KnowledgeBaseSolution = typeof knowledgeBaseSolutions.$inferSelect;
+export type InsertKnowledgeBaseSolution = Omit<typeof knowledgeBaseSolutions.$inferInsert, "id" | "createdAt" | "updatedAt">;
+
+export const knowledgeBaseSolutionsHasKnowledgeBaseActions = pgTable("knowledge_base_solutions_has_knowledge_base_actions", {
+  id: serial("id").primaryKey(),
+  solutionId: integer("solution_id").notNull().references(() => knowledgeBaseSolutions.id, { onDelete: "cascade" }),
+  actionId: integer("action_id").notNull().references(() => knowledgeBaseActions.id, { onDelete: "cascade" }),
+  actionSequence: integer("action_sequence").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  solutionIdx: index("idx_kb_solutions_has_actions_solution").on(table.solutionId),
+  actionIdx: index("idx_kb_solutions_has_actions_action").on(table.actionId),
+  uniqueSolutionAction: uniqueIndex("idx_kb_solutions_has_actions_unique").on(table.solutionId, table.actionId),
+}));
+
+export type KnowledgeBaseSolutionHasAction = typeof knowledgeBaseSolutionsHasKnowledgeBaseActions.$inferSelect;
+export type InsertKnowledgeBaseSolutionHasAction = Omit<typeof knowledgeBaseSolutionsHasKnowledgeBaseActions.$inferInsert, "id" | "createdAt">;
