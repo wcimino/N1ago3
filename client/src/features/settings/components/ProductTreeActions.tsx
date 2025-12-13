@@ -6,6 +6,7 @@ import {
   LEVEL_LABELS,
   getNextLevels
 } from "../../../lib/productHierarchy";
+import { ConfirmModal } from "../../../shared/components/ui/ConfirmModal";
 
 interface ProductTreeActionsProps {
   node: ProductTreeNode;
@@ -23,7 +24,8 @@ export function ProductTreeActions({
   isDeleting 
 }: ProductTreeActionsProps) {
   const [showAddMenu, setShowAddMenu] = useState(false);
-  const canAddChildren = node.level !== "categoria2";
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const canAddChildren = node.level !== "subproduto";
   const nextLevels = getNextLevels(node.level);
 
   const handleAddClick = () => {
@@ -33,6 +35,19 @@ export function ProductTreeActions({
       setShowAddMenu(!showAddMenu);
     }
   };
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (node.productId) {
+      onDelete(node.productId);
+    }
+  };
+
+  const canEdit = node.productId || node.level === "produto";
+  const canDelete = node.productId;
 
   return (
     <>
@@ -63,7 +78,7 @@ export function ProductTreeActions({
           )}
         </div>
       )}
-      {node.productId && (
+      {canEdit && (
         <button
           onClick={() => onEdit(node)}
           className="p-1 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
@@ -72,9 +87,9 @@ export function ProductTreeActions({
           <Pencil className="w-4 h-4" />
         </button>
       )}
-      {node.productId && (
+      {canDelete && (
         <button
-          onClick={() => onDelete(node.productId!)}
+          onClick={handleDeleteClick}
           disabled={isDeleting}
           className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
           title="Excluir"
@@ -82,6 +97,17 @@ export function ProductTreeActions({
           <Trash2 className="w-4 h-4" />
         </button>
       )}
+
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleConfirmDelete}
+        title="Excluir item"
+        message={`Tem certeza que deseja excluir "${node.name}"?\n\nEsta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        variant="danger"
+      />
     </>
   );
 }
