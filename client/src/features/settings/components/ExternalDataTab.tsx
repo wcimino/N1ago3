@@ -5,12 +5,15 @@ import { Database, Users, RefreshCw, ArrowRight, Clock, CheckCircle, XCircle, Lo
 import { fetchApi, apiRequest } from "../../../lib/queryClient";
 import { useDateFormatters } from "../../../shared/hooks";
 
+type SyncType = "full" | "incremental";
+
 interface SyncStatus {
   isSyncing: boolean;
   currentSyncId: number | null;
   lastSync: {
     id: number;
     status: string;
+    syncType: string | null;
     startedAt: string;
     finishedAt: string | null;
     durationMs: number | null;
@@ -20,6 +23,7 @@ interface SyncStatus {
     recordsFailed: number;
   } | null;
   totalUsers: number;
+  hasCompletedSync: boolean;
 }
 
 function formatDuration(ms: number | null): string {
@@ -36,6 +40,7 @@ export function ExternalDataTab() {
   const queryClient = useQueryClient();
   const { formatShortDateTime } = useDateFormatters();
   const [maxUsers, setMaxUsers] = useState<string>("1000");
+  const [syncType, setSyncType] = useState<SyncType>("full");
 
   const { data: syncStatus, isLoading, refetch } = useQuery<SyncStatus>({
     queryKey: ["zendesk-users-sync-status"],
@@ -47,8 +52,11 @@ export function ExternalDataTab() {
   });
 
   const syncMutation = useMutation({
-    mutationFn: async (limit?: number) => {
-      const body = limit ? { maxUsers: limit } : {};
+    mutationFn: async (params: { syncType: SyncType; maxUsers?: number }) => {
+      const body: { syncType: SyncType; maxUsers?: number } = { syncType: params.syncType };
+      if (params.maxUsers) {
+        body.maxUsers = params.maxUsers;
+      }
       const res = await apiRequest("POST", "/api/external-data/zendesk-users/sync", body);
       return res.json();
     },
@@ -59,7 +67,7 @@ export function ExternalDataTab() {
 
   const handleSync = () => {
     const limit = maxUsers ? parseInt(maxUsers, 10) : undefined;
-    syncMutation.mutate(limit);
+    syncMutation.mutate({ syncType, maxUsers: limit });
     setTimeout(() => refetch(), 500);
   };
 
@@ -164,19 +172,44 @@ export function ExternalDataTab() {
           )}
 
           <div className="flex flex-col gap-3 pt-2">
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600 whitespace-nowrap">Limite de usuários:</label>
-              <input
-                type="number"
-                value={maxUsers}
-                onChange={(e) => setMaxUsers(e.target.value)}
-                placeholder="Ex: 1000"
-                className="w-32 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                min="1"
-                max="1000000"
-              />
-              <span className="text-xs text-gray-500">(deixe vazio para todos)</span>
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600 whitespace-nowrap">Tipo de sincronização:</label>
+                <select
+                  value={syncType}
+                  onChange={(e) => setSyncType(e.target.value as SyncType)}
+                  disabled={!syncStatus?.hasCompletedSync && syncType === "incremental"}
+                  className="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white"
+                >
+                  <option value="full">Completa</option>
+                  <option value="incremental" disabled={!syncStatus?.hasCompletedSync}>
+                    Incremental {!syncStatus?.hasCompletedSync && "(requer sync anterior)"}
+                  </option>
+                </select>
+              </div>
+
+              {syncType === "full" && (
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-600 whitespace-nowrap">Limite:</label>
+                  <input
+                    type="number"
+                    value={maxUsers}
+                    onChange={(e) => setMaxUsers(e.target.value)}
+                    placeholder="Ex: 1000"
+                    className="w-28 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    min="1"
+                    max="1000000"
+                  />
+                  <span className="text-xs text-gray-500">(vazio = todos)</span>
+                </div>
+              )}
             </div>
+
+            {syncType === "incremental" && (
+              <div className="text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
+                Sincronização incremental busca apenas usuários modificados desde a última sincronização completa.
+              </div>
+            )}
 
             <div className="flex flex-col sm:flex-row gap-2">
               <button
@@ -192,7 +225,7 @@ export function ExternalDataTab() {
                 ) : (
                   <>
                     <RefreshCw className="w-4 h-4" />
-                    Sincronizar agora
+                    {syncType === "incremental" ? "Sincronizar alterações" : "Sincronizar agora"}
                   </>
                 )}
               </button>

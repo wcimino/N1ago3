@@ -60,6 +60,16 @@ interface ZendeskUsersListResponse {
   count: number;
 }
 
+interface ZendeskIncrementalUsersResponse {
+  users: ZendeskUserApiResponse[];
+  next_page: string | null;
+  end_of_stream: boolean;
+  end_time: number;
+  count: number;
+}
+
+export type SyncType = "full" | "incremental";
+
 let isSyncing = false;
 let currentSyncId: number | null = null;
 
@@ -137,7 +147,22 @@ async function fetchUsersPage(url: string): Promise<ZendeskUsersListResponse> {
   return response.json();
 }
 
-export async function syncZendeskUsers(maxUsers?: number): Promise<{
+async function fetchIncrementalUsersPage(url: string): Promise<ZendeskIncrementalUsersResponse> {
+  const response = await fetch(url, {
+    headers: { 
+      Authorization: getAuthHeader(),
+      "Content-Type": "application/json",
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Zendesk Incremental API error: ${response.status} ${response.statusText}`);
+  }
+  
+  return response.json();
+}
+
+export async function syncZendeskUsers(syncType: SyncType = "full", maxUsers?: number): Promise<{
   success: boolean;
   message: string;
   stats?: {
@@ -155,12 +180,25 @@ export async function syncZendeskUsers(maxUsers?: number): Promise<{
     };
   }
   
+  let lastCompletedSync: Awaited<ReturnType<typeof getLatestSyncLog>> = null;
+  
+  if (syncType === "incremental") {
+    lastCompletedSync = await getLatestSyncLog(SOURCE_TYPE);
+    if (!lastCompletedSync || lastCompletedSync.status !== "completed") {
+      return {
+        success: false,
+        message: "Sincronização incremental requer uma sincronização completa anterior bem-sucedida",
+      };
+    }
+  }
+  
   isSyncing = true;
   const startTime = Date.now();
   
+  const logSyncType = syncType === "incremental" ? "incremental" : (maxUsers ? "partial" : "full");
   const syncLog = await createSyncLog({
     sourceType: SOURCE_TYPE,
-    syncType: maxUsers ? "partial" : "full",
+    syncType: logSyncType,
     status: "in_progress",
     startedAt: new Date(),
     recordsProcessed: 0,
@@ -168,7 +206,7 @@ export async function syncZendeskUsers(maxUsers?: number): Promise<{
     recordsUpdated: 0,
     recordsDeleted: 0,
     recordsFailed: 0,
-    metadata: maxUsers ? { maxUsers } : null,
+    metadata: { syncType, ...(maxUsers ? { maxUsers } : {}) },
   });
   
   currentSyncId = syncLog.id;
@@ -179,48 +217,107 @@ export async function syncZendeskUsers(maxUsers?: number): Promise<{
   let totalFailed = 0;
   
   try {
-    console.log(`[ZendeskSupportUsers] Starting sync...${maxUsers ? ` (limit: ${maxUsers})` : ''}`);
-    
-    let url: string | null = `${getBaseUrl()}/api/v2/users.json?per_page=${BATCH_SIZE}`;
-    let pageCount = 0;
-    
-    while (url && (!maxUsers || totalProcessed < maxUsers)) {
-      pageCount++;
-      console.log(`[ZendeskSupportUsers] Fetching page ${pageCount}...`);
+    if (syncType === "incremental" && lastCompletedSync) {
+      const incrementalStartTime = lastCompletedSync.finishedAt 
+        ? Math.floor(lastCompletedSync.finishedAt.getTime() / 1000)
+        : Math.floor(lastCompletedSync.startedAt.getTime() / 1000);
       
-      const data = await fetchUsersPage(url);
+      console.log(`[ZendeskSupportUsers] Starting incremental sync from ${new Date(incrementalStartTime * 1000).toISOString()}...`);
       
-      if (data.users.length === 0) {
-        break;
+      let url: string | null = `${getBaseUrl()}/api/v2/incremental/users.json?start_time=${incrementalStartTime}`;
+      let pageCount = 0;
+      
+      while (url) {
+        pageCount++;
+        console.log(`[ZendeskSupportUsers] Fetching incremental page ${pageCount}...`);
+        
+        const data = await fetchIncrementalUsersPage(url);
+        
+        if (data.users.length === 0 || data.end_of_stream) {
+          if (data.users.length > 0) {
+            const usersToUpsert = data.users.map(mapApiUserToDbUser);
+            try {
+              const { created, updated } = await upsertZendeskUsersBatch(usersToUpsert);
+              totalCreated += created;
+              totalUpdated += updated;
+              totalProcessed += usersToUpsert.length;
+            } catch (err) {
+              console.error(`[ZendeskSupportUsers] Error upserting batch:`, err);
+              totalFailed += usersToUpsert.length;
+            }
+          }
+          break;
+        }
+        
+        const usersToUpsert = data.users.map(mapApiUserToDbUser);
+        
+        try {
+          const { created, updated } = await upsertZendeskUsersBatch(usersToUpsert);
+          totalCreated += created;
+          totalUpdated += updated;
+          totalProcessed += usersToUpsert.length;
+        } catch (err) {
+          console.error(`[ZendeskSupportUsers] Error upserting batch:`, err);
+          totalFailed += usersToUpsert.length;
+        }
+        
+        await updateSyncLog(syncLog.id, {
+          recordsProcessed: totalProcessed,
+          recordsCreated: totalCreated,
+          recordsUpdated: totalUpdated,
+          recordsFailed: totalFailed,
+        });
+        
+        url = data.next_page;
+        
+        if (url) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
       }
+    } else {
+      console.log(`[ZendeskSupportUsers] Starting full sync...${maxUsers ? ` (limit: ${maxUsers})` : ''}`);
       
-      let usersToProcess = data.users;
-      if (maxUsers && totalProcessed + usersToProcess.length > maxUsers) {
-        usersToProcess = usersToProcess.slice(0, maxUsers - totalProcessed);
-      }
-      const usersToUpsert = usersToProcess.map(mapApiUserToDbUser);
+      let url: string | null = `${getBaseUrl()}/api/v2/users.json?per_page=${BATCH_SIZE}`;
+      let pageCount = 0;
       
-      try {
-        const { created, updated } = await upsertZendeskUsersBatch(usersToUpsert);
-        totalCreated += created;
-        totalUpdated += updated;
-        totalProcessed += usersToUpsert.length;
-      } catch (err) {
-        console.error(`[ZendeskSupportUsers] Error upserting batch:`, err);
-        totalFailed += usersToUpsert.length;
-      }
-      
-      await updateSyncLog(syncLog.id, {
-        recordsProcessed: totalProcessed,
-        recordsCreated: totalCreated,
-        recordsUpdated: totalUpdated,
-        recordsFailed: totalFailed,
-      });
-      
-      url = data.next_page;
-      
-      if (url) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+      while (url && (!maxUsers || totalProcessed < maxUsers)) {
+        pageCount++;
+        console.log(`[ZendeskSupportUsers] Fetching page ${pageCount}...`);
+        
+        const data = await fetchUsersPage(url);
+        
+        if (data.users.length === 0) {
+          break;
+        }
+        
+        let usersToProcess = data.users;
+        if (maxUsers && totalProcessed + usersToProcess.length > maxUsers) {
+          usersToProcess = usersToProcess.slice(0, maxUsers - totalProcessed);
+        }
+        const usersToUpsert = usersToProcess.map(mapApiUserToDbUser);
+        
+        try {
+          const { created, updated } = await upsertZendeskUsersBatch(usersToUpsert);
+          totalCreated += created;
+          totalUpdated += updated;
+          totalProcessed += usersToUpsert.length;
+        } catch (err) {
+          console.error(`[ZendeskSupportUsers] Error upserting batch:`, err);
+          totalFailed += usersToUpsert.length;
+        }
+        
+        await updateSyncLog(syncLog.id, {
+          recordsProcessed: totalProcessed,
+          recordsCreated: totalCreated,
+          recordsUpdated: totalUpdated,
+          recordsFailed: totalFailed,
+        });
+        
+        url = data.next_page;
+        
+        if (url) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
       }
     }
     
@@ -236,14 +333,15 @@ export async function syncZendeskUsers(maxUsers?: number): Promise<{
       recordsFailed: totalFailed,
     });
     
-    console.log(`[ZendeskSupportUsers] Sync completed: ${totalProcessed} processed, ${totalCreated} created, ${totalUpdated} updated, ${totalFailed} failed in ${durationMs}ms`);
+    const syncTypeLabel = syncType === "incremental" ? "incremental" : "completa";
+    console.log(`[ZendeskSupportUsers] ${syncTypeLabel} sync completed: ${totalProcessed} processed, ${totalCreated} created, ${totalUpdated} updated, ${totalFailed} failed in ${durationMs}ms`);
     
     isSyncing = false;
     currentSyncId = null;
     
     return {
       success: true,
-      message: `Sincronização concluída com sucesso`,
+      message: `Sincronização ${syncTypeLabel} concluída com sucesso`,
       stats: {
         processed: totalProcessed,
         created: totalCreated,
@@ -285,6 +383,7 @@ export async function getSyncStatus(): Promise<{
   lastSync: {
     id: number;
     status: string;
+    syncType: string | null;
     startedAt: Date;
     finishedAt: Date | null;
     durationMs: number | null;
@@ -294,11 +393,14 @@ export async function getSyncStatus(): Promise<{
     recordsFailed: number;
   } | null;
   totalUsers: number;
+  hasCompletedSync: boolean;
 }> {
   const [lastSyncLog, totalUsers] = await Promise.all([
     getLatestSyncLog(SOURCE_TYPE),
     getZendeskUsersCount(),
   ]);
+  
+  const hasCompletedSync = lastSyncLog?.status === "completed";
   
   return {
     isSyncing,
@@ -306,6 +408,7 @@ export async function getSyncStatus(): Promise<{
     lastSync: lastSyncLog ? {
       id: lastSyncLog.id,
       status: lastSyncLog.status,
+      syncType: lastSyncLog.syncType,
       startedAt: lastSyncLog.startedAt,
       finishedAt: lastSyncLog.finishedAt,
       durationMs: lastSyncLog.durationMs,
@@ -315,6 +418,7 @@ export async function getSyncStatus(): Promise<{
       recordsFailed: lastSyncLog.recordsFailed,
     } : null,
     totalUsers,
+    hasCompletedSync,
   };
 }
 

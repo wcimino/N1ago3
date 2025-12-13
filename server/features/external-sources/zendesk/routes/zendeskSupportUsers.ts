@@ -1,13 +1,14 @@
 import { Router } from "express";
-import { syncZendeskUsers, getSyncStatus, listZendeskUsers } from "../services/zendeskSupportUsersService.js";
+import { syncZendeskUsers, getSyncStatus, listZendeskUsers, type SyncType } from "../services/zendeskSupportUsersService.js";
 import { getZendeskUserById } from "../storage/zendeskSupportUsersStorage.js";
 
 const router = Router();
 
 router.post("/sync", async (req, res) => {
   try {
+    const syncType: SyncType = req.body?.syncType === "incremental" ? "incremental" : "full";
     const maxUsers = req.body?.maxUsers ? parseInt(req.body.maxUsers, 10) : undefined;
-    const result = await syncZendeskUsers(maxUsers);
+    const result = await syncZendeskUsers(syncType, maxUsers);
     
     if (result.success) {
       res.json(result);
