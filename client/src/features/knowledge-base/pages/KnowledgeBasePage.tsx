@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, BookOpen, X, Lightbulb, BarChart3, Cloud, Database, ChevronsUpDown, ChevronsDownUp, AlertCircle, Play, Puzzle, Layers } from "lucide-react";
+import { Plus, BookOpen, X, Lightbulb, BarChart3, Cloud, Database, ChevronsUpDown, ChevronsDownUp, AlertCircle, Play, Puzzle, Layers, GitBranch } from "lucide-react";
 import { KnowledgeBaseForm } from "../components/KnowledgeBaseForm";
 import { HierarchyNodeItem } from "../components/HierarchyNodeItem";
 import { SuggestionsPage } from "./SuggestionsPage";
@@ -9,6 +9,7 @@ import { ZendeskArticlesPage } from "./ZendeskArticlesPage";
 import { ObjectiveProblemsPage } from "./ObjectiveProblemsPage";
 import { ActionsPage } from "./ActionsPage";
 import { SolutionsPage } from "./SolutionsPage";
+import { RootCausesPage } from "./RootCausesPage";
 import { PageHeader, FilterBar, StatsBar, InputModal } from "../../../shared/components/ui";
 import { ConfirmModal } from "../../../shared/components/ui/ConfirmModal";
 import { useKnowledgeBase } from "../hooks/useKnowledgeBase";
@@ -21,6 +22,7 @@ const mainTabs = [
 
 const problemSolutionTabs = [
   { id: "problems", label: "Problemas", icon: <AlertCircle className="w-4 h-4" /> },
+  { id: "root-causes", label: "Causas-raízes", icon: <GitBranch className="w-4 h-4" /> },
   { id: "actions", label: "Ações", icon: <Play className="w-4 h-4" /> },
   { id: "solutions", label: "Soluções", icon: <Puzzle className="w-4 h-4" /> },
 ];
@@ -326,6 +328,10 @@ export function KnowledgeBasePage() {
           ) : activeTab === "problems" ? (
             <div className="p-4">
               <ObjectiveProblemsPage />
+            </div>
+          ) : activeTab === "root-causes" ? (
+            <div className="p-4">
+              <RootCausesPage />
             </div>
           ) : activeTab === "actions" ? (
             <div className="p-4">

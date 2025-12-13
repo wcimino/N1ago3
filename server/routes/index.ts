@@ -28,6 +28,7 @@ import knowledgeIntentsRoutes from "../features/knowledge/routes/knowledgeIntent
 import objectiveProblemsRoutes from "../features/knowledge/routes/objectiveProblemsRoutes.js";
 import actionsRoutes from "../features/knowledge/routes/actionsRoutes.js";
 import knowledgeSolutionsRoutes from "../features/knowledge/routes/knowledgeSolutionsRoutes.js";
+import rootCausesRoutes from "../features/knowledge/routes/rootCausesRoutes.js";
 
 import maintenanceRoutes from "../features/maintenance/routes/maintenance.js";
 import { zendeskArticlesRouter } from "../features/external-sources/zendesk/index.js";
@@ -61,6 +62,7 @@ export function registerRoutes(app: Express) {
   app.use(objectiveProblemsRoutes);
   app.use(actionsRoutes);
   app.use(knowledgeSolutionsRoutes);
+  app.use(rootCausesRoutes);
   app.use("/api/zendesk-articles", zendeskArticlesRouter);
   app.use(routingRulesRoutes);
   app.use(transferRoutes);
