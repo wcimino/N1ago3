@@ -308,18 +308,15 @@ export function KnowledgeBasePage() {
         primaryTabs={baseTabs}
         primaryActiveTab={activeBaseTab}
         onPrimaryTabChange={setActiveBaseTab}
-        secondaryTabs={mainTabs}
-        secondaryActiveTab={problemSolutionGroupActive ? "" : activeTab}
-        onSecondaryTabChange={handleMainTabChange}
+        headerToggleLabel="Problemas e Soluções"
+        headerToggleIcon={<Layers className="w-4 h-4" />}
+        headerToggleActive={problemSolutionGroupActive}
+        onHeaderToggle={handleProblemSolutionGroupToggle}
+        showHeaderToggle={activeBaseTab !== "zendesk"}
+        secondaryTabs={problemSolutionGroupActive ? problemSolutionTabs : mainTabs}
+        secondaryActiveTab={activeTab}
+        onSecondaryTabChange={problemSolutionGroupActive ? handleProblemSolutionTabChange : handleMainTabChange}
         showSecondaryTabs={activeBaseTab !== "zendesk"}
-        tertiaryGroupLabel="Problemas e Soluções"
-        tertiaryGroupIcon={<Layers className="w-4 h-4" />}
-        tertiaryGroupActive={problemSolutionGroupActive}
-        onTertiaryGroupToggle={handleProblemSolutionGroupToggle}
-        tertiaryTabs={problemSolutionTabs}
-        tertiaryActiveTab={activeTab}
-        onTertiaryTabChange={handleProblemSolutionTabChange}
-        showTertiaryTabs={activeBaseTab !== "zendesk"}
       />
 
       {activeBaseTab === "zendesk" ? (
