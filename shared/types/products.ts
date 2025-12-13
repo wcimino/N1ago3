@@ -1,5 +1,6 @@
 export interface ProductCount {
   product: string;
+  productId: number | null;
   count: number;
 }
 

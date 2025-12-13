@@ -38,28 +38,39 @@ function formatNumber(num: number): string {
   return num.toLocaleString("pt-BR");
 }
 
+interface ProductItem {
+  product: string;
+  productId: number | null;
+  count: number;
+}
+
 function ProductsCard({ productStats }: { productStats: ProductStatsResponse | undefined }) {
   const lastHourItems = productStats?.last_hour?.items || [];
   const todayItems = productStats?.today?.items || [];
-  const lastHourMap = new Map(lastHourItems.map(p => [p.product, p.count]));
-  const todayMap = new Map(todayItems.map(p => [p.product, p.count]));
-  const allProducts = [...new Set([...lastHourMap.keys(), ...todayMap.keys()])];
   
-  allProducts.sort((a, b) => (todayMap.get(b) || 0) - (todayMap.get(a) || 0));
+  // Create maps using a unique key that combines productId and product name
+  const getKey = (p: ProductItem) => p.productId !== null ? `id:${p.productId}` : `name:${p.product}`;
   
-  if (allProducts.length === 0) {
+  const lastHourMap = new Map(lastHourItems.map(p => [getKey(p), p]));
+  const todayMap = new Map(todayItems.map(p => [getKey(p), p]));
+  const allKeys = [...new Set([...lastHourMap.keys(), ...todayMap.keys()])];
+  
+  // Sort by today count descending
+  allKeys.sort((a, b) => (todayMap.get(b)?.count || 0) - (todayMap.get(a)?.count || 0));
+  
+  if (allKeys.length === 0) {
     return <p className="text-sm text-gray-400 italic">Nenhum produto ainda</p>;
   }
   
   const totalLastHour = productStats?.last_hour?.total || 0;
   const totalToday = productStats?.today?.total || 0;
   
-  const top5Products = allProducts.slice(0, 5);
-  const othersProducts = allProducts.slice(5);
+  const top5Keys = allKeys.slice(0, 5);
+  const othersKeys = allKeys.slice(5);
   
-  const othersLastHour = othersProducts.reduce((sum, p) => sum + (lastHourMap.get(p) || 0), 0);
-  const othersToday = othersProducts.reduce((sum, p) => sum + (todayMap.get(p) || 0), 0);
-  const othersCount = othersProducts.length;
+  const othersLastHour = othersKeys.reduce((sum, key) => sum + (lastHourMap.get(key)?.count || 0), 0);
+  const othersToday = othersKeys.reduce((sum, key) => sum + (todayMap.get(key)?.count || 0), 0);
+  const othersCount = othersKeys.length;
   
   return (
     <div>
@@ -85,18 +96,27 @@ function ProductsCard({ productStats }: { productStats: ProductStatsResponse | u
         </div>
       </div>
       <div className="space-y-1">
-        {top5Products.map((product) => (
-          <StatsRow
-            key={product}
-            label={product}
-            lastHourValue={lastHourMap.get(product)}
-            todayValue={todayMap.get(product)}
-            linkTo={`/atendimentos?productStandard=${encodeURIComponent(product)}`}
-            linkTitle={`Ver atendimentos de ${product}`}
-            colorScheme="orange"
-            formatNumber={formatNumber}
-          />
-        ))}
+        {top5Keys.map((key) => {
+          const item = todayMap.get(key) || lastHourMap.get(key);
+          if (!item) return null;
+          
+          const linkTo = item.productId !== null 
+            ? `/atendimentos?productId=${item.productId}`
+            : `/atendimentos?productStandard=${encodeURIComponent(item.product)}`;
+          
+          return (
+            <StatsRow
+              key={key}
+              label={item.product}
+              lastHourValue={lastHourMap.get(key)?.count}
+              todayValue={todayMap.get(key)?.count}
+              linkTo={linkTo}
+              linkTitle={`Ver atendimentos de ${item.product}`}
+              colorScheme="orange"
+              formatNumber={formatNumber}
+            />
+          );
+        })}
         {othersCount > 0 && (
           <StatsRow
             label={`Outros (${othersCount})`}

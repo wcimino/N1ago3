@@ -79,6 +79,7 @@ router.get("/api/conversations/list", isAuthenticated, requireAuthorizedUser, as
   const limit = parseInt(req.query.limit as string) || 50;
   const offset = parseInt(req.query.offset as string) || 0;
   const productStandard = req.query.productStandard as string | undefined;
+  const productId = req.query.productId ? parseInt(req.query.productId as string) : undefined;
   const intent = req.query.intent as string | undefined;
   const handler = req.query.handler as string | undefined;
   const emotionLevel = req.query.emotionLevel ? parseInt(req.query.emotionLevel as string) : undefined;
@@ -87,7 +88,7 @@ router.get("/api/conversations/list", isAuthenticated, requireAuthorizedUser, as
   const handledByN1ago = req.query.handledByN1ago as string | undefined;
   const objectiveProblem = req.query.objectiveProblem as string | undefined;
 
-  const { conversations, total } = await storage.getConversationsList(limit, offset, productStandard, intent, handler, emotionLevel, client, userAuthenticated, handledByN1ago, objectiveProblem);
+  const { conversations, total } = await storage.getConversationsList(limit, offset, productStandard, intent, handler, emotionLevel, client, userAuthenticated, handledByN1ago, objectiveProblem, productId);
 
   const enrichedConversations = conversations.map((conv: any) => ({
     id: conv.id,

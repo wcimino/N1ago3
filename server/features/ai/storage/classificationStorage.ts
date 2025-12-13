@@ -53,7 +53,7 @@ export const classificationStorage = {
   async getTopProductsByPeriod(
     period: "lastHour" | "last24Hours",
     limit: number = 5
-  ): Promise<{ items: { product: string; count: number }[]; total: number }> {
+  ): Promise<{ items: { product: string; productId: number | null; count: number }[]; total: number }> {
     const now = new Date();
     let since: Date;
 
@@ -72,26 +72,27 @@ export const classificationStorage = {
       .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
       .where(gte(eventsStandard.occurredAt, since));
 
-    // Count distinct conversations (atendimentos) that had activity in the period grouped by product
-    // Uses COALESCE(product_standard, product) to match /atendimentos page logic
-    // - Shows product_standard if available, otherwise shows product
-    // - "Sem classificação" only when neither product nor product_standard exists
-    const productCaseExpr = sql<string>`COALESCE(${conversationsSummary.productStandard}, ${conversationsSummary.product}, 'Sem classificação')`;
-    
+    // Count distinct conversations (atendimentos) that had activity in the period grouped by productId
+    // Groups by product_id for precise filtering, falls back to product name display
     const results = await db
       .select({
-        product: productCaseExpr,
+        productId: conversationsSummary.productId,
+        product: sql<string>`COALESCE(${conversationsSummary.productStandard}, ${conversationsSummary.product}, 'Sem classificação')`,
         count: sql<number>`count(DISTINCT ${conversations.id})::int`,
       })
       .from(eventsStandard)
       .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
       .leftJoin(conversationsSummary, eq(conversations.id, conversationsSummary.conversationId))
       .where(gte(eventsStandard.occurredAt, since))
-      .groupBy(productCaseExpr)
+      .groupBy(conversationsSummary.productId, sql`COALESCE(${conversationsSummary.productStandard}, ${conversationsSummary.product}, 'Sem classificação')`)
       .orderBy(sql`count(DISTINCT ${conversations.id}) desc`);
 
     return { 
-      items: results as { product: string; count: number }[], 
+      items: results.map(r => ({
+        product: r.product || 'Sem classificação',
+        productId: r.productId,
+        count: r.count,
+      })), 
       total: totalConversations || 0 
     };
   },

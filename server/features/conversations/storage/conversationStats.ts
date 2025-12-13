@@ -215,8 +215,12 @@ export const conversationStats = {
     };
   },
 
-  async getConversationsList(limit = 50, offset = 0, productStandardFilter?: string, intentFilter?: string, handlerFilter?: string, emotionLevelFilter?: number, clientFilter?: string, userAuthenticatedFilter?: string, handledByN1agoFilter?: string, objectiveProblemFilter?: string) {
-    const productCondition = productStandardFilter ? sql`AND COALESCE(cs.product_standard, cs.product) = ${productStandardFilter}` : sql``;
+  async getConversationsList(limit = 50, offset = 0, productStandardFilter?: string, intentFilter?: string, handlerFilter?: string, emotionLevelFilter?: number, clientFilter?: string, userAuthenticatedFilter?: string, handledByN1agoFilter?: string, objectiveProblemFilter?: string, productIdFilter?: number) {
+    const productCondition = productIdFilter 
+      ? sql`AND cs.product_id = ${productIdFilter}` 
+      : productStandardFilter 
+        ? sql`AND COALESCE(cs.product_standard, cs.product) = ${productStandardFilter}` 
+        : sql``;
     const intentCondition = intentFilter ? sql`AND cs.intent = ${intentFilter}` : sql``;
     const emotionCondition = emotionLevelFilter ? sql`AND cs.customer_emotion_level = ${emotionLevelFilter}` : sql``;
     
