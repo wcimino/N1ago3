@@ -26,13 +26,23 @@ export interface ProblemSearchResponse {
   problems: ProblemSearchResult[];
 }
 
-export async function runProblemObjectiveSearch(params: {
-  product: string;
+export interface ProblemSearchParams {
+  productId?: number;
+  product?: string;
   subproduct?: string;
   keywords?: string;
   limit?: number;
-}): Promise<ProblemSearchResponse> {
-  const ctx = await buildSearchContext(params, 10);
+}
+
+export async function runProblemObjectiveSearch(params: ProblemSearchParams): Promise<ProblemSearchResponse> {
+  let resolvedProductId = params.productId;
+  const limit = params.limit ?? 10;
+  
+  if (!resolvedProductId && params.product) {
+    const ctx = await buildSearchContext({ product: params.product, subproduct: params.subproduct }, limit);
+    resolvedProductId = ctx.productId;
+  }
+  
   const hasEmbeddings = await hasObjectiveProblemEmbeddings();
   
   if (params.keywords && hasEmbeddings) {
@@ -42,14 +52,14 @@ export async function runProblemObjectiveSearch(params: {
     
     const semanticResults = await searchObjectiveProblemsBySimilarity({
       queryEmbedding: embedding,
-      productId: ctx.productId,
+      productId: resolvedProductId,
       onlyActive: true,
-      limit: ctx.limit,
+      limit,
     });
 
     if (semanticResults.length === 0) {
       return {
-        message: "Nenhum problema objetivo encontrado" + (params.product ? ` para '${params.product}'` : ""),
+        message: "Nenhum problema objetivo encontrado",
         problems: []
       };
     }
@@ -72,14 +82,14 @@ export async function runProblemObjectiveSearch(params: {
 
   const results = await searchObjectiveProblems({
     keywords: params.keywords,
-    productId: ctx.productId,
+    productId: resolvedProductId,
     onlyActive: true,
-    limit: ctx.limit,
+    limit,
   });
 
   if (results.length === 0) {
     return {
-      message: "Nenhum problema objetivo encontrado" + (params.product ? ` para '${params.product}'` : ""),
+      message: "Nenhum problema objetivo encontrado",
       problems: []
     };
   }
