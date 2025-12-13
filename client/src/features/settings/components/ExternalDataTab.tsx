@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Database, Users, RefreshCw, ArrowRight, Clock, CheckCircle, XCircle, Loader2 } from "lucide-react";
@@ -34,6 +35,7 @@ export function ExternalDataTab() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { formatShortDateTime } = useDateFormatters();
+  const [maxUsers, setMaxUsers] = useState<string>("1000");
 
   const { data: syncStatus, isLoading, refetch } = useQuery<SyncStatus>({
     queryKey: ["zendesk-users-sync-status"],
@@ -45,8 +47,9 @@ export function ExternalDataTab() {
   });
 
   const syncMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/external-data/zendesk-users/sync");
+    mutationFn: async (limit?: number) => {
+      const body = limit ? { maxUsers: limit } : {};
+      const res = await apiRequest("POST", "/api/external-data/zendesk-users/sync", body);
       return res.json();
     },
     onSuccess: () => {
@@ -55,7 +58,8 @@ export function ExternalDataTab() {
   });
 
   const handleSync = () => {
-    syncMutation.mutate();
+    const limit = maxUsers ? parseInt(maxUsers, 10) : undefined;
+    syncMutation.mutate(limit);
     setTimeout(() => refetch(), 500);
   };
 
@@ -159,32 +163,48 @@ export function ExternalDataTab() {
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-2 pt-2">
-            <button
-              onClick={handleSync}
-              disabled={syncStatus?.isSyncing || syncMutation.isPending}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {syncStatus?.isSyncing || syncMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Sincronizando...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-4 h-4" />
-                  Sincronizar agora
-                </>
-              )}
-            </button>
+          <div className="flex flex-col gap-3 pt-2">
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600 whitespace-nowrap">Limite de usuários:</label>
+              <input
+                type="number"
+                value={maxUsers}
+                onChange={(e) => setMaxUsers(e.target.value)}
+                placeholder="Ex: 1000"
+                className="w-32 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                min="1"
+                max="1000000"
+              />
+              <span className="text-xs text-gray-500">(deixe vazio para todos)</span>
+            </div>
 
-            <button
-              onClick={() => navigate("/settings/external-data/zendesk-users")}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Ver usuários
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={handleSync}
+                disabled={syncStatus?.isSyncing || syncMutation.isPending}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {syncStatus?.isSyncing || syncMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Sincronizando...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4" />
+                    Sincronizar agora
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => navigate("/settings/external-data/zendesk-users")}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Ver usuários
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

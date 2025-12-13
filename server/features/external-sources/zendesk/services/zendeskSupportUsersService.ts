@@ -137,7 +137,7 @@ async function fetchUsersPage(url: string): Promise<ZendeskUsersListResponse> {
   return response.json();
 }
 
-export async function syncZendeskUsers(): Promise<{
+export async function syncZendeskUsers(maxUsers?: number): Promise<{
   success: boolean;
   message: string;
   stats?: {
@@ -160,7 +160,7 @@ export async function syncZendeskUsers(): Promise<{
   
   const syncLog = await createSyncLog({
     sourceType: SOURCE_TYPE,
-    syncType: "full",
+    syncType: maxUsers ? "partial" : "full",
     status: "in_progress",
     startedAt: new Date(),
     recordsProcessed: 0,
@@ -168,6 +168,7 @@ export async function syncZendeskUsers(): Promise<{
     recordsUpdated: 0,
     recordsDeleted: 0,
     recordsFailed: 0,
+    metadata: maxUsers ? { maxUsers } : null,
   });
   
   currentSyncId = syncLog.id;
@@ -178,12 +179,12 @@ export async function syncZendeskUsers(): Promise<{
   let totalFailed = 0;
   
   try {
-    console.log(`[ZendeskSupportUsers] Starting sync...`);
+    console.log(`[ZendeskSupportUsers] Starting sync...${maxUsers ? ` (limit: ${maxUsers})` : ''}`);
     
     let url: string | null = `${getBaseUrl()}/api/v2/users.json?per_page=${BATCH_SIZE}`;
     let pageCount = 0;
     
-    while (url) {
+    while (url && (!maxUsers || totalProcessed < maxUsers)) {
       pageCount++;
       console.log(`[ZendeskSupportUsers] Fetching page ${pageCount}...`);
       
@@ -193,7 +194,11 @@ export async function syncZendeskUsers(): Promise<{
         break;
       }
       
-      const usersToUpsert = data.users.map(mapApiUserToDbUser);
+      let usersToProcess = data.users;
+      if (maxUsers && totalProcessed + usersToProcess.length > maxUsers) {
+        usersToProcess = usersToProcess.slice(0, maxUsers - totalProcessed);
+      }
+      const usersToUpsert = usersToProcess.map(mapApiUserToDbUser);
       
       try {
         const { created, updated } = await upsertZendeskUsersBatch(usersToUpsert);

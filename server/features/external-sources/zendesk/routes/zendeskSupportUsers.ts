@@ -5,7 +5,8 @@ const router = Router();
 
 router.post("/sync", async (req, res) => {
   try {
-    const result = await syncZendeskUsers();
+    const maxUsers = req.body?.maxUsers ? parseInt(req.body.maxUsers, 10) : undefined;
+    const result = await syncZendeskUsers(maxUsers);
     
     if (result.success) {
       res.json(result);
