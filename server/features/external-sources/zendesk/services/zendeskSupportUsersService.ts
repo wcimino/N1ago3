@@ -417,6 +417,15 @@ export async function syncZendeskUsers(syncType: SyncType = "full", maxUsers?: n
 export async function getSyncStatus(): Promise<{
   isSyncing: boolean;
   currentSyncId: number | null;
+  cancelRequested: boolean;
+  progress: {
+    processed: number;
+    created: number;
+    updated: number;
+    failed: number;
+    currentPage: number;
+    estimatedTotal: number;
+  } | null;
   lastSync: {
     id: number;
     status: string;
