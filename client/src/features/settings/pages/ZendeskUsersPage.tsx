@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ArrowLeft, Search, Users, Loader2 } from "lucide-react";
+import { ArrowLeft, Search, Users, Loader2, Eye } from "lucide-react";
 import { fetchApi } from "../../../lib/queryClient";
 import { useDateFormatters } from "../../../shared/hooks";
 
@@ -126,6 +126,7 @@ export function ZendeskUsersPage() {
                   <th className="px-4 py-3 font-medium text-gray-600">Status</th>
                   <th className="px-4 py-3 font-medium text-gray-600">Último login</th>
                   <th className="px-4 py-3 font-medium text-gray-600">Atualizado em</th>
+                  <th className="px-4 py-3 font-medium text-gray-600"></th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -152,6 +153,15 @@ export function ZendeskUsersPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-600">
                       {user.zendeskUpdatedAt ? formatShortDateTime(user.zendeskUpdatedAt) : "-"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => navigate(`/settings/external-data/zendesk-users/${user.id}`)}
+                        className="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                      >
+                        <Eye className="w-3 h-3" />
+                        Ver detalhes
+                      </button>
                     </td>
                   </tr>
                 ))}

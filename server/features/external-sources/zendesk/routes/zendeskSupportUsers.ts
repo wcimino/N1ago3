@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { syncZendeskUsers, getSyncStatus, listZendeskUsers } from "../services/zendeskSupportUsersService.js";
+import { getZendeskUserById } from "../storage/zendeskSupportUsersStorage.js";
 
 const router = Router();
 
@@ -50,6 +51,27 @@ router.get("/", async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error("[ZendeskSupportUsers] List users error:", error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : "Erro interno do servidor",
+    });
+  }
+});
+
+router.get("/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "ID inválido" });
+    }
+    
+    const user = await getZendeskUserById(id);
+    if (!user) {
+      return res.status(404).json({ error: "Usuário não encontrado" });
+    }
+    
+    res.json(user);
+  } catch (error) {
+    console.error("[ZendeskSupportUsers] Get user error:", error);
     res.status(500).json({
       error: error instanceof Error ? error.message : "Erro interno do servidor",
     });

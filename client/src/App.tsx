@@ -4,7 +4,7 @@ import { useAuth } from "./shared/hooks";
 import { NavLink, EnvironmentBadge, N1agoLogo } from "./shared/components";
 import { TimezoneProvider } from "./contexts/TimezoneContext";
 import { AIPage } from "./features/ai";
-import { SettingsPage, ProductStandardsPage, ReprocessingPage, AutoClosePage, ProductCatalogPage, DuplicatesPage, ZendeskUsersPage } from "./features/settings";
+import { SettingsPage, ProductStandardsPage, ReprocessingPage, AutoClosePage, ProductCatalogPage, DuplicatesPage, ZendeskUsersPage, ZendeskUserDetailPage } from "./features/settings";
 import { EventsLayout } from "./features/events";
 import { AtendimentosPage, UserConversationsPage } from "./features/conversations";
 import { CadastroPage, UserStandardDetailPage, OrganizationStandardDetailPage } from "./features/cadastro";
@@ -102,6 +102,7 @@ function AuthenticatedApp() {
           <Route path="/settings/maintenance">{() => <SettingsPage activeTab="maintenance" />}</Route>
           <Route path="/settings/external-data">{() => <SettingsPage activeTab="external-data" />}</Route>
           <Route path="/settings/external-data/zendesk-users" component={ZendeskUsersPage} />
+          <Route path="/settings/external-data/zendesk-users/:id">{(params) => <ZendeskUserDetailPage params={params} />}</Route>
           <Route path="/settings/product-standards" component={ProductStandardsPage} />
           <Route path="/settings/reprocessing" component={ReprocessingPage} />
           <Route path="/settings/auto-close" component={AutoClosePage} />

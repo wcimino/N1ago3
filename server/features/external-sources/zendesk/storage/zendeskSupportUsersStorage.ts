@@ -73,6 +73,16 @@ export async function getZendeskUserByZendeskId(zendeskId: number): Promise<Zend
   return result[0] ?? null;
 }
 
+export async function getZendeskUserById(id: number): Promise<ZendeskSupportUser | null> {
+  const result = await db
+    .select()
+    .from(zendeskSupportUsers)
+    .where(eq(zendeskSupportUsers.id, id))
+    .limit(1);
+  
+  return result[0] ?? null;
+}
+
 export async function upsertZendeskUser(data: InsertZendeskSupportUser): Promise<ZendeskSupportUser> {
   const result = await db
     .insert(zendeskSupportUsers)
