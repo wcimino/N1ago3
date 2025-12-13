@@ -1,15 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <g fill="#1e293b">
-    <!-- N: left vertical + diagonal -->
+    <!-- N: left vertical + diagonal pointing to the 1 -->
     <rect x="6" y="16" width="7" height="32" rx="1"/>
-    <polygon points="6,16 13,16 28,48 21,48"/>
+    <polygon points="6,16 13,16 26,48 19,48"/>
     
-    <!-- 1/I: shared stem with serif (taller) -->
-    <rect x="24" y="10" width="7" height="38" rx="1"/>
-    <rect x="19" y="10" width="7" height="5" rx="1"/>
+    <!-- 1 = left leg of A (vertical with serif) -->
+    <rect x="22" y="10" width="7" height="38" rx="1"/>
+    <rect x="17" y="10" width="7" height="5" rx="1"/>
     
-    <!-- A: classic triangle shape with crossbar -->
-    <polygon points="44,48 38,48 44,16 50,16 56,48 50,48 47,32 44,32"/>
-    <rect x="40" y="32" width="14" height="5" rx="1"/>
+    <!-- A: right diagonal leg + crossbar (1 is the left leg) -->
+    <polygon points="29,10 36,10 50,48 43,48"/>
+    <rect x="25" y="30" width="18" height="5" rx="1"/>
   </g>
 </svg>
