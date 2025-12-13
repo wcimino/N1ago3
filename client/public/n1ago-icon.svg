@@ -1,16 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <g fill="#1e293b">
-    <!-- N: left vertical + diagonal to shared stem -->
-    <rect x="8" y="16" width="7" height="32" rx="1"/>
-    <polygon points="8,16 15,16 36,48 29,48"/>
-    
-    <!-- Shared vertical stem: right of N = 1 = left leg of A -->
-    <!-- Extends higher with serif = reads as "1" -->
-    <rect x="29" y="10" width="7" height="38" rx="1"/>
-    <rect x="24" y="10" width="8" height="5" rx="1"/>
-    
-    <!-- A: right leg + crossbar -->
-    <polygon points="36,48 43,48 50,16 43,16"/>
-    <rect x="32" y="30" width="14" height="5" rx="1"/>
+    <!-- N with implicit 1: right vertical extends higher -->
+    <!-- Left vertical of N -->
+    <rect x="12" y="18" width="8" height="28" rx="1"/>
+    <!-- Diagonal of N -->
+    <polygon points="12,18 20,18 44,46 36,46"/>
+    <!-- Right vertical of N (taller = implicit 1) -->
+    <rect x="36" y="12" width="8" height="34" rx="1"/>
+    <!-- Top serif on the 1 -->
+    <rect x="31" y="12" width="8" height="5" rx="1"/>
   </g>
 </svg>
