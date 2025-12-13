@@ -24,7 +24,7 @@ export interface CombinedSearchParams {
 export interface CombinedSearchResponse {
   message: string;
   results: CombinedSearchResult[];
-  productId: number;
+  productId?: number;
   articleCount: number;
   problemCount: number;
 }
