@@ -20,36 +20,42 @@ const HANDLED_BY_N1AGO_OPTIONS = [
 interface FilterBarProps {
   productStandards: string[];
   intents: string[];
+  objectiveProblems: string[];
   productStandardFilter: string;
   intentFilter: string;
   emotionLevelFilter: string;
   clientFilter: string;
   userAuthenticatedFilter: string;
   handledByN1agoFilter: string;
+  objectiveProblemFilter: string;
   onProductStandardChange: (value: string) => void;
   onIntentChange: (value: string) => void;
   onEmotionLevelChange: (value: string) => void;
   onClientChange: (value: string) => void;
   onUserAuthenticatedChange: (value: string) => void;
   onHandledByN1agoChange: (value: string) => void;
+  onObjectiveProblemChange: (value: string) => void;
   onClear: () => void;
 }
 
 export function FilterBar({
   productStandards,
   intents,
+  objectiveProblems,
   productStandardFilter,
   intentFilter,
   emotionLevelFilter,
   clientFilter,
   userAuthenticatedFilter,
   handledByN1agoFilter,
+  objectiveProblemFilter,
   onProductStandardChange,
   onIntentChange,
   onEmotionLevelChange,
   onClientChange,
   onUserAuthenticatedChange,
   onHandledByN1agoChange,
+  onObjectiveProblemChange,
   onClear,
 }: FilterBarProps) {
   return (
@@ -58,6 +64,7 @@ export function FilterBar({
         { type: "search", value: clientFilter, onChange: onClientChange, placeholder: "Buscar..." },
         { type: "select", value: productStandardFilter, onChange: onProductStandardChange, placeholder: "Produtos", options: productStandards },
         { type: "select", value: intentFilter, onChange: onIntentChange, placeholder: "Intencoes", options: intents },
+        { type: "select", value: objectiveProblemFilter, onChange: onObjectiveProblemChange, placeholder: "Problema", options: objectiveProblems },
         { type: "select", value: emotionLevelFilter, onChange: onEmotionLevelChange, placeholder: "Emocao", options: EMOTION_OPTIONS },
         { type: "select", value: userAuthenticatedFilter, onChange: onUserAuthenticatedChange, placeholder: "Usuario", options: USER_AUTHENTICATED_OPTIONS },
         { type: "select", value: handledByN1agoFilter, onChange: onHandledByN1agoChange, placeholder: "N1ago", options: HANDLED_BY_N1AGO_OPTIONS },

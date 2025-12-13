@@ -111,6 +111,7 @@ export interface ConversationListItem {
   subject: string | null;
   intent: string | null;
   customer_emotion_level: number | null;
+  objective_problems: ObjectiveProblemIdentified[] | null;
   user_info: {
     id: number;
     external_id: string | null;

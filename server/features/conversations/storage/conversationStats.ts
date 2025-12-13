@@ -215,7 +215,7 @@ export const conversationStats = {
     };
   },
 
-  async getConversationsList(limit = 50, offset = 0, productStandardFilter?: string, intentFilter?: string, handlerFilter?: string, emotionLevelFilter?: number, clientFilter?: string, userAuthenticatedFilter?: string, handledByN1agoFilter?: string) {
+  async getConversationsList(limit = 50, offset = 0, productStandardFilter?: string, intentFilter?: string, handlerFilter?: string, emotionLevelFilter?: number, clientFilter?: string, userAuthenticatedFilter?: string, handledByN1agoFilter?: string, objectiveProblemFilter?: string) {
     const productCondition = productStandardFilter ? sql`AND COALESCE(cs.product_standard, cs.product) = ${productStandardFilter}` : sql``;
     const intentCondition = intentFilter ? sql`AND cs.intent = ${intentFilter}` : sql``;
     const emotionCondition = emotionLevelFilter ? sql`AND cs.customer_emotion_level = ${emotionLevelFilter}` : sql``;
@@ -240,6 +240,13 @@ export const conversationStats = {
     if (handledByN1agoFilter === 'yes') {
       handledByN1agoCondition = sql`AND c.handled_by_n1ago = true`;
     }
+
+    const objectiveProblemCondition = objectiveProblemFilter ? sql`AND cs.objective_problems IS NOT NULL 
+      AND jsonb_typeof(cs.objective_problems::jsonb) = 'array'
+      AND EXISTS (
+        SELECT 1 FROM jsonb_array_elements(cs.objective_problems::jsonb) AS elem
+        WHERE elem->>'name' = ${objectiveProblemFilter}
+      )` : sql``;
 
     const clientSearchPattern = clientFilter ? `%${clientFilter}%` : null;
     const clientCondition = clientFilter ? sql`AND (
@@ -284,6 +291,7 @@ export const conversationStats = {
         cs.subject,
         cs.intent,
         cs.customer_emotion_level,
+        cs.objective_problems,
         u.id as user_db_id,
         u.external_id as user_external_id,
         u.authenticated as user_authenticated,
@@ -301,6 +309,7 @@ export const conversationStats = {
         ${clientCondition}
         ${userAuthenticatedCondition}
         ${handledByN1agoCondition}
+        ${objectiveProblemCondition}
       ORDER BY c.created_at DESC, c.id DESC
       LIMIT ${limit} OFFSET ${offset}
     `);
@@ -318,6 +327,7 @@ export const conversationStats = {
         ${clientCondition}
         ${userAuthenticatedCondition}
         ${handledByN1agoCondition}
+        ${objectiveProblemCondition}
     `);
 
     return { 

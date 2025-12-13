@@ -85,8 +85,9 @@ router.get("/api/conversations/list", isAuthenticated, requireAuthorizedUser, as
   const client = req.query.client as string | undefined;
   const userAuthenticated = req.query.userAuthenticated as string | undefined;
   const handledByN1ago = req.query.handledByN1ago as string | undefined;
+  const objectiveProblem = req.query.objectiveProblem as string | undefined;
 
-  const { conversations, total } = await storage.getConversationsList(limit, offset, productStandard, intent, handler, emotionLevel, client, userAuthenticated, handledByN1ago);
+  const { conversations, total } = await storage.getConversationsList(limit, offset, productStandard, intent, handler, emotionLevel, client, userAuthenticated, handledByN1ago, objectiveProblem);
 
   const enrichedConversations = conversations.map((conv: any) => ({
     id: conv.id,
@@ -105,6 +106,7 @@ router.get("/api/conversations/list", isAuthenticated, requireAuthorizedUser, as
     subject: conv.subject || null,
     intent: conv.intent || null,
     customer_emotion_level: conv.customer_emotion_level || null,
+    objective_problems: conv.objective_problems || [],
     user_info: conv.user_db_id ? {
       id: conv.user_db_id,
       external_id: conv.user_external_id,

@@ -49,6 +49,11 @@ function formatSubjectText(subject: string | null, intent: string | null): strin
   return intent;
 }
 
+function getObjectiveProblemsDisplay(problems: { id: number; name: string; matchScore?: number }[] | null): { name: string; matchScore?: number }[] {
+  if (!problems || problems.length === 0) return [];
+  return problems.slice(0, 3);
+}
+
 export function ConversationCard({
   conversation,
   onViewConversation,
@@ -63,6 +68,7 @@ export function ConversationCard({
   
   const productText = formatProductText(conversation.product_standard, conversation.subproduct_standard);
   const subjectText = formatSubjectText(conversation.subject, conversation.intent);
+  const objectiveProblems = getObjectiveProblemsDisplay(conversation.objective_problems ?? []);
 
   return (
     <div className="p-4 hover:bg-gray-50/80 transition-colors border-b border-gray-100 last:border-b-0">
@@ -117,7 +123,7 @@ export function ConversationCard({
             </div>
           </div>
 
-          {(productText || subjectText) && (
+          {(productText || subjectText || objectiveProblems.length > 0) && (
             <div className="flex flex-wrap gap-1.5">
               {productText && (
                 <span 
@@ -135,6 +141,18 @@ export function ConversationCard({
                   {subjectText}
                 </span>
               )}
+              {objectiveProblems.map((problem, index) => (
+                <span 
+                  key={index}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 max-w-full truncate"
+                  title={`${problem.name}${problem.matchScore ? ` (${Math.round(problem.matchScore * 100)}% match)` : ''}`}
+                >
+                  {problem.name}
+                  {problem.matchScore && (
+                    <span className="text-amber-500 text-[10px]">{Math.round(problem.matchScore * 100)}%</span>
+                  )}
+                </span>
+              ))}
             </div>
           )}
 

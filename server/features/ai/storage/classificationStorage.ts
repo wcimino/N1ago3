@@ -96,7 +96,7 @@ export const classificationStorage = {
     };
   },
 
-  async getUniqueProductsAndIntents(): Promise<{ products: string[]; productStandards: string[]; intents: string[] }> {
+  async getUniqueProductsAndIntents(): Promise<{ products: string[]; productStandards: string[]; intents: string[]; objectiveProblems: string[] }> {
     const productsResult = await db
       .selectDistinct({ product: conversationsSummary.product })
       .from(conversationsSummary)
@@ -112,10 +112,20 @@ export const classificationStorage = {
       .from(conversationsSummary)
       .where(isNotNull(conversationsSummary.intent));
 
+    const objectiveProblemsResult = await db.execute(sql`
+      SELECT DISTINCT jsonb_array_elements(objective_problems::jsonb)->>'name' as problem_name
+      FROM conversations_summary
+      WHERE objective_problems IS NOT NULL 
+        AND jsonb_typeof(objective_problems::jsonb) = 'array'
+        AND jsonb_array_length(objective_problems::jsonb) > 0
+      ORDER BY problem_name
+    `);
+
     return {
       products: productsResult.map(r => r.product).filter((p): p is string => p !== null).sort(),
       productStandards: productStandardsResult.map(r => r.productStandard).filter((ps): ps is string => ps !== null).sort(),
       intents: intentsResult.map(r => r.intent).filter((i): i is string => i !== null).sort(),
+      objectiveProblems: (objectiveProblemsResult.rows as any[]).map(r => r.problem_name).filter((p): p is string => p !== null),
     };
   },
 

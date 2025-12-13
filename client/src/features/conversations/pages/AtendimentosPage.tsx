@@ -13,6 +13,7 @@ import type { ConversationListItem } from "../../../types";
 interface FiltersResponse {
   productStandards: string[];
   intents: string[];
+  objectiveProblems: string[];
 }
 
 const HANDLER_TABS = [
@@ -42,6 +43,7 @@ export function AtendimentosPage() {
   const [emotionLevelFilter, setEmotionLevelFilter] = useState<string>(initialEmotionLevel);
   const [userAuthenticatedFilter, setUserAuthenticatedFilter] = useState<string>("");
   const [handledByN1agoFilter, setHandledByN1agoFilter] = useState<string>("");
+  const [objectiveProblemFilter, setObjectiveProblemFilter] = useState<string>("");
   const [handlerFilter, setHandlerFilter] = useState<string>("all");
   const [clientFilterInput, setClientFilterInput] = useState<string>("");
   const [clientFilterDebounced, setClientFilterDebounced] = useState<string>("");
@@ -83,9 +85,10 @@ export function AtendimentosPage() {
     if (clientFilterDebounced) params.set("client", clientFilterDebounced);
     if (userAuthenticatedFilter) params.set("userAuthenticated", userAuthenticatedFilter);
     if (handledByN1agoFilter) params.set("handledByN1ago", handledByN1agoFilter);
+    if (objectiveProblemFilter) params.set("objectiveProblem", objectiveProblemFilter);
     const queryString = params.toString();
     return queryString ? `/api/conversations/list?${queryString}` : "/api/conversations/list";
-  }, [productStandardFilter, intentFilter, handlerFilter, emotionLevelFilter, clientFilterDebounced, userAuthenticatedFilter, handledByN1agoFilter]);
+  }, [productStandardFilter, intentFilter, handlerFilter, emotionLevelFilter, clientFilterDebounced, userAuthenticatedFilter, handledByN1agoFilter, objectiveProblemFilter]);
 
   const {
     data: conversations,
@@ -100,13 +103,13 @@ export function AtendimentosPage() {
     showingFrom,
     showingTo,
   } = usePaginatedQuery<ConversationListItem>({
-    queryKey: `conversations-list-${productStandardFilter}-${intentFilter}-${handlerFilter}-${emotionLevelFilter}-${clientFilterDebounced}-${userAuthenticatedFilter}-${handledByN1agoFilter}`,
+    queryKey: `conversations-list-${productStandardFilter}-${intentFilter}-${handlerFilter}-${emotionLevelFilter}-${clientFilterDebounced}-${userAuthenticatedFilter}-${handledByN1agoFilter}-${objectiveProblemFilter}`,
     endpoint,
     limit: 20,
     dataKey: "conversations",
   });
 
-  const hasFilters = productStandardFilter || intentFilter || emotionLevelFilter || clientFilterInput || userAuthenticatedFilter || handledByN1agoFilter;
+  const hasFilters = productStandardFilter || intentFilter || emotionLevelFilter || clientFilterInput || userAuthenticatedFilter || handledByN1agoFilter || objectiveProblemFilter;
 
   const clearFilters = () => {
     setProductStandardFilter("");
@@ -115,6 +118,7 @@ export function AtendimentosPage() {
     setClientFilterInput("");
     setUserAuthenticatedFilter("");
     setHandledByN1agoFilter("");
+    setObjectiveProblemFilter("");
   };
 
   const handleConfigTabChange = (tabId: string) => {
@@ -169,18 +173,21 @@ export function AtendimentosPage() {
           <FilterBar
             productStandards={filters?.productStandards || []}
             intents={filters?.intents || []}
+            objectiveProblems={filters?.objectiveProblems || []}
             productStandardFilter={productStandardFilter}
             intentFilter={intentFilter}
             emotionLevelFilter={emotionLevelFilter}
             clientFilter={clientFilterInput}
             userAuthenticatedFilter={userAuthenticatedFilter}
             handledByN1agoFilter={handledByN1agoFilter}
+            objectiveProblemFilter={objectiveProblemFilter}
             onProductStandardChange={setProductStandardFilter}
             onIntentChange={setIntentFilter}
             onEmotionLevelChange={setEmotionLevelFilter}
             onClientChange={setClientFilterInput}
             onUserAuthenticatedChange={setUserAuthenticatedFilter}
             onHandledByN1agoChange={setHandledByN1agoFilter}
+            onObjectiveProblemChange={setObjectiveProblemFilter}
             onClear={clearFilters}
           />
 
