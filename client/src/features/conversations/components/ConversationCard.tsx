@@ -115,7 +115,7 @@ export function ConversationCard({
               />
               <button
                 onClick={() => onViewConversation(conversation.user_id, conversation.id)}
-                className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors"
+                className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-900 active:bg-primary-950 transition-colors"
               >
                 Ver
                 <ArrowRight className="w-3.5 h-3.5" />

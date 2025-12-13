@@ -103,7 +103,7 @@ export function ZendeskUserDetailPage({ params }: ZendeskUserDetailPageProps) {
     return (
       <div className="bg-white rounded-lg shadow p-8">
         <p className="text-red-500">Erro ao carregar usuário</p>
-        <button onClick={() => navigate("/settings/external-data/zendesk-users")} className="mt-4 text-blue-600 hover:underline">
+        <button onClick={() => navigate("/settings/external-data/zendesk-users")} className="mt-4 text-primary hover:underline">
           Voltar para lista
         </button>
       </div>

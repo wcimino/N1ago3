@@ -95,7 +95,7 @@ export function ProductCatalogPage() {
           {!addingTo && (
             <button
               onClick={handleStartAddProduto}
-              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary-900 text-sm font-medium"
             >
               <Plus className="w-4 h-4" />
               Novo Produto

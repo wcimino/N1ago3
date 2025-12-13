@@ -93,7 +93,7 @@ export function AuthorizedUsersPage() {
           <button
             type="submit"
             disabled={addMutation.isPending}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-900 disabled:opacity-50"
           >
             {addMutation.isPending ? <LoadingSpinner size="sm" /> : <Plus className="w-4 h-4" />}
             Adicionar

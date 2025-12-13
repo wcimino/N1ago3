@@ -19,7 +19,7 @@ export function CatalogTab() {
           </div>
           <button
             onClick={() => navigate("/settings/catalog/users")}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shrink-0 w-full sm:w-auto"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-900 transition-colors shrink-0 w-full sm:w-auto"
           >
             Acessar
             <ArrowRight className="w-4 h-4" />
@@ -40,7 +40,7 @@ export function CatalogTab() {
           </div>
           <button
             onClick={() => navigate("/settings/catalog/organizations")}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shrink-0 w-full sm:w-auto"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-900 transition-colors shrink-0 w-full sm:w-auto"
           >
             Acessar
             <ArrowRight className="w-4 h-4" />
@@ -61,7 +61,7 @@ export function CatalogTab() {
           </div>
           <button
             onClick={() => navigate("/settings/catalog/products")}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shrink-0 w-full sm:w-auto"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-900 transition-colors shrink-0 w-full sm:w-auto"
           >
             Acessar
             <ArrowRight className="w-4 h-4" />

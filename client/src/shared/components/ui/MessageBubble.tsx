@@ -131,7 +131,7 @@ function ActionsContent({ actions }: { actions: MessageAction[] }) {
             href={safeUri}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-white rounded-full hover:bg-primary-900 transition-colors"
           >
             <ExternalLink className="w-3 h-3" />
             <span>{action.text}</span>

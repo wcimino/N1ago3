@@ -268,7 +268,7 @@ export function KnowledgeBaseForm({
   if (initialData && !isInitialized) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -488,7 +488,7 @@ export function KnowledgeBaseForm({
         <button
           type="submit"
           disabled={!isValid || isLoading}
-          className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <Save className="w-4 h-4" />
           {isLoading ? "Salvando..." : "Salvar Artigo"}

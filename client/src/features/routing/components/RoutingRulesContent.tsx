@@ -284,7 +284,7 @@ export function RoutingRulesContent() {
             </div>
             <button
               onClick={() => setActiveForm(activeForm === "ongoing_conversation" ? null : "ongoing_conversation")}
-              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary-900 transition-colors"
             >
               <Plus className="w-4 h-4" />
               Nova Regra
@@ -337,7 +337,7 @@ export function RoutingRulesContent() {
                   <button
                     type="submit"
                     disabled={createRule.isPending || !ongoingConvForm.matchText.trim()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm"
+                    className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-900 disabled:opacity-50 transition-colors text-sm"
                   >
                     {createRule.isPending ? "Criando..." : "Criar Regra"}
                   </button>
