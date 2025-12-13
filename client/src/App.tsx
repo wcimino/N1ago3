@@ -22,12 +22,44 @@ function AuthenticatedApp() {
       <EnvironmentBadge />
       <header className="bg-white shadow-sm border-b sticky top-0 z-40">
         <div className="w-full px-3 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-3 sm:py-4">
-            <Link href="/" className="flex items-center gap-2 text-xl sm:text-2xl font-bold text-gray-900 hover:text-gray-700">
+          <div className="flex items-center py-2 sm:py-3 gap-2">
+            <Link href="/" className="flex items-center gap-2 text-xl sm:text-2xl font-bold text-gray-900 hover:text-gray-700 shrink-0">
               <N1agoLogo className="w-8 h-8" />
-              N1ago
+              <span className="hidden sm:inline">N1ago</span>
             </Link>
-            <div className="flex items-center gap-2 sm:gap-4">
+            
+            <nav className="flex items-center flex-1 overflow-x-auto scrollbar-hide">
+              <div className="flex gap-1">
+                <NavLink href="/">
+                  <Home className="w-4 h-4" />
+                  <span className="hidden sm:inline">Home</span>
+                </NavLink>
+                <NavLink href="/atendimentos">
+                  <MessageCircle className="w-4 h-4" />
+                  <span className="hidden sm:inline">Atendimentos</span>
+                </NavLink>
+                <NavLink href="/ai">
+                  <Sparkles className="w-4 h-4" />
+                  <span className="hidden sm:inline">Configurações de IA</span>
+                </NavLink>
+                <NavLink href="/knowledge-base">
+                  <BookOpen className="w-4 h-4" />
+                  <span className="hidden sm:inline">Base de Conhecimento</span>
+                </NavLink>
+                <NavLink href="/reports">
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Relatórios</span>
+                </NavLink>
+              </div>
+              <div className="ml-auto">
+                <NavLink href="/settings">
+                  <Settings className="w-4 h-4" />
+                  <span className="hidden sm:inline">Configurações</span>
+                </NavLink>
+              </div>
+            </nav>
+
+            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
               <span className="hidden sm:inline text-sm text-gray-600 truncate max-w-[200px]">
                 {user?.email}
               </span>
@@ -45,36 +77,6 @@ function AuthenticatedApp() {
               </button>
             </div>
           </div>
-          <nav className="flex items-center -mb-px overflow-x-auto scrollbar-hide pb-px">
-            <div className="flex gap-1">
-              <NavLink href="/">
-                <Home className="w-4 h-4" />
-                <span className="hidden sm:inline">Home</span>
-              </NavLink>
-              <NavLink href="/atendimentos">
-                <MessageCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">Atendimentos</span>
-              </NavLink>
-              <NavLink href="/ai">
-                <Sparkles className="w-4 h-4" />
-                <span className="hidden sm:inline">Configurações de IA</span>
-              </NavLink>
-              <NavLink href="/knowledge-base">
-                <BookOpen className="w-4 h-4" />
-                <span className="hidden sm:inline">Base de Conhecimento</span>
-              </NavLink>
-              <NavLink href="/reports">
-                <BarChart3 className="w-4 h-4" />
-                <span className="hidden sm:inline">Relatórios</span>
-              </NavLink>
-            </div>
-            <div className="ml-auto">
-              <NavLink href="/settings">
-                <Settings className="w-4 h-4" />
-                <span className="hidden sm:inline">Configurações</span>
-              </NavLink>
-            </div>
-          </nav>
         </div>
       </header>
 
