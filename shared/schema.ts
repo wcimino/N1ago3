@@ -156,6 +156,7 @@ export const conversationsSummary = pgTable("conversations_summary", {
   currentStatus: text("current_status"),
   importantInfo: text("important_info"),
   lastEventId: integer("last_event_id"),
+  productId: integer("product_id").references(() => productsCatalog.id, { onDelete: "set null" }),
   product: text("product"),
   productStandard: text("product_standard"),
   subproduct: text("subproduct"),
