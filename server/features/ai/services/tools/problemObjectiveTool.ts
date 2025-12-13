@@ -7,7 +7,7 @@ import {
 } from "../../../knowledge/storage/objectiveProblemsStorage.js";
 import { generateEmbedding } from "../../../../shared/embeddings/index.js";
 import type { ToolDefinition } from "../openaiApiService.js";
-import { buildSearchContext } from "./searchContext.js";
+import { productCatalogStorage } from "../../../products/storage/productCatalogStorage.js";
 
 export interface ProblemSearchResult {
   source: "problem";
@@ -28,20 +28,12 @@ export interface ProblemSearchResponse {
 
 export interface ProblemSearchParams {
   productId?: number;
-  product?: string;
-  subproduct?: string;
   keywords?: string;
   limit?: number;
 }
 
 export async function runProblemObjectiveSearch(params: ProblemSearchParams): Promise<ProblemSearchResponse> {
-  let resolvedProductId = params.productId;
-  const limit = params.limit ?? 10;
-  
-  if (!resolvedProductId && params.product) {
-    const ctx = await buildSearchContext({ product: params.product, subproduct: params.subproduct }, limit);
-    resolvedProductId = ctx.productId;
-  }
+  const { productId, limit = 10 } = params;
   
   const hasEmbeddings = await hasObjectiveProblemEmbeddings();
   
@@ -52,7 +44,7 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
     
     const semanticResults = await searchObjectiveProblemsBySimilarity({
       queryEmbedding: embedding,
-      productId: resolvedProductId,
+      productId,
       onlyActive: true,
       limit,
     });
@@ -82,7 +74,7 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
 
   const results = await searchObjectiveProblems({
     keywords: params.keywords,
-    productId: resolvedProductId,
+    productId,
     onlyActive: true,
     limit,
   });
@@ -133,7 +125,12 @@ export function createProblemObjectiveTool(): ToolDefinition {
       required: ["product"]
     },
     handler: async (args: { product: string; subproduct?: string; keywords?: string }) => {
-      const result = await runProblemObjectiveSearch(args);
+      const resolved = await productCatalogStorage.resolveProductId(args.product, args.subproduct);
+      
+      const result = await runProblemObjectiveSearch({
+        productId: resolved?.id,
+        keywords: args.keywords
+      });
       return JSON.stringify(result);
     }
   };
