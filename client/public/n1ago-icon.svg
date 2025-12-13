@@ -3,19 +3,19 @@
     <!-- N: left vertical bar -->
     <rect x="6" y="18" width="7" height="30"/>
     
-    <!-- N: diagonal -->
+    <!-- N: diagonal pointing to the 1 -->
     <polygon points="6,18 13,18 26,48 19,48"/>
     
-    <!-- 1: tall vertical stem -->
+    <!-- 1: tall vertical stem (much taller than N and A) -->
     <rect x="22" y="4" width="7" height="44"/>
     
     <!-- 1: top serif -->
-    <rect x="15" y="4" width="14" height="5"/>
+    <rect x="15" y="4" width="9" height="5"/>
     
-    <!-- A: right diagonal leg overlapping 1 for fusion -->
-    <polygon points="26,18 33,18 50,48 43,48"/>
+    <!-- A: right diagonal with proper thickness, starting from 1 -->
+    <polygon points="29,18 36,18 53,48 46,48"/>
     
     <!-- A: horizontal crossbar -->
-    <rect x="25" y="32" width="18" height="5"/>
+    <rect x="25" y="31" width="20" height="5"/>
   </g>
 </svg>
