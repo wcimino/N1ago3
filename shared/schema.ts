@@ -166,6 +166,7 @@ export const conversationsSummary = pgTable("conversations_summary", {
   customerEmotionLevel: integer("customer_emotion_level"),
   customerRequestType: text("customer_request_type"),
   objectiveProblems: json("objective_problems").$type<Array<{ id: number; name: string; matchScore?: number }>>(),
+  articlesAndObjectiveProblems: json("articles_and_objective_problems").$type<Array<{ source: "article" | "problem"; id: number; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; products?: string[] }>>(),
   generatedAt: timestamp("generated_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

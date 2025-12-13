@@ -36,6 +36,7 @@ export const summaryStorage = {
           customerEmotionLevel: data.customerEmotionLevel,
           customerRequestType: data.customerRequestType,
           objectiveProblems: data.objectiveProblems,
+          articlesAndObjectiveProblems: data.articlesAndObjectiveProblems,
           lastEventId: data.lastEventId,
           externalConversationId: data.externalConversationId,
           product: data.product,
@@ -48,6 +49,18 @@ export const summaryStorage = {
       })
       .returning();
     return summary;
+  },
+
+  async updateArticlesAndProblems(
+    conversationId: number,
+    articlesAndObjectiveProblems: Array<{ source: "article" | "problem"; id: number; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; products?: string[] }>
+  ): Promise<void> {
+    await db.update(conversationsSummary)
+      .set({
+        articlesAndObjectiveProblems,
+        updatedAt: new Date(),
+      })
+      .where(eq(conversationsSummary.conversationId, conversationId));
   },
 
   async getSummariesForExport(filters: {

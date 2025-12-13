@@ -2,6 +2,8 @@ import { storage } from "../../../storage/index.js";
 import { classifyAndSave, type ClassificationPayload } from "./productClassificationAdapter.js";
 import { generalSettingsStorage } from "../storage/generalSettingsStorage.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
+import { runCombinedKnowledgeSearch } from "./tools/combinedKnowledgeSearchTool.js";
+import { summaryStorage } from "../storage/summaryStorage.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 import type { ContentPayload } from "./promptUtils.js";
 
@@ -105,6 +107,27 @@ export async function classifyConversationProduct(event: EventStandard): Promise
 
     if (result.success) {
       console.log(`[Classification Orchestrator] Classification saved for conversation ${event.conversationId}: ${result.product}/${result.subproduct}/${result.subject}/${result.intent}`);
+      
+      if (result.product) {
+        try {
+          const existingSummary = await storage.getConversationSummary(event.conversationId);
+          const keywords = existingSummary?.clientRequest || undefined;
+          
+          const combinedResult = await runCombinedKnowledgeSearch({
+            product: result.product,
+            subproduct: result.subproduct || undefined,
+            keywords,
+            limit: 5
+          });
+          
+          if (combinedResult.results.length > 0) {
+            await summaryStorage.updateArticlesAndProblems(event.conversationId, combinedResult.results);
+            console.log(`[Classification Orchestrator] Found ${combinedResult.articleCount} articles and ${combinedResult.problemCount} problems for conversation ${event.conversationId}`);
+          }
+        } catch (error) {
+          console.error(`[Classification Orchestrator] Error searching knowledge base for conversation ${event.conversationId}:`, error);
+        }
+      }
     } else {
       console.error(`[Classification Orchestrator] Failed to classify conversation ${event.conversationId}: ${result.error}`);
     }

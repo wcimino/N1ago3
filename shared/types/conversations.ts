@@ -153,6 +153,17 @@ export interface ObjectiveProblemIdentified {
   matchScore?: number;
 }
 
+export interface ArticleAndProblemResult {
+  source: "article" | "problem";
+  id: number;
+  name: string | null;
+  description: string;
+  resolution?: string;
+  matchScore?: number;
+  matchReason?: string;
+  products?: string[];
+}
+
 export interface ConversationSummary {
   text: string;
   generated_at: string | null;
@@ -170,6 +181,7 @@ export interface ConversationSummary {
   customer_emotion_level: number | null;
   customer_request_type: string | null;
   objective_problems: ObjectiveProblemIdentified[] | null;
+  articles_and_objective_problems: ArticleAndProblemResult[] | null;
   triage: Triage | null;
 }
 
