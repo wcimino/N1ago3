@@ -6,12 +6,11 @@ const router = Router();
 
 router.get("/api/knowledge/solutions", async (req, res) => {
   try {
-    const { search, product, subject, isActive } = req.query;
+    const { search, productId, isActive } = req.query;
     
     const solutions = await knowledgeSolutionsStorage.getAll({
       search: search as string | undefined,
-      product: product as string | undefined,
-      subject: subject as string | undefined,
+      productId: productId ? parseInt(productId as string) : undefined,
       isActive: isActive === undefined ? undefined : isActive === "true",
     });
     res.json(solutions);
@@ -23,11 +22,8 @@ router.get("/api/knowledge/solutions", async (req, res) => {
 
 router.get("/api/knowledge/solutions/filters", async (req, res) => {
   try {
-    const [products, subjects] = await Promise.all([
-      knowledgeSolutionsStorage.getUniqueProducts(),
-      knowledgeSolutionsStorage.getUniqueSubjects(),
-    ]);
-    res.json({ products, subjects });
+    const productIds = await knowledgeSolutionsStorage.getUniqueProductIds();
+    res.json({ productIds });
   } catch (error) {
     console.error("Error fetching solution filters:", error);
     res.status(500).json({ error: "Failed to fetch filters" });

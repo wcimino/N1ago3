@@ -6,18 +6,13 @@ import type { KnowledgeBaseSolution, InsertKnowledgeBaseSolution, KnowledgeBaseA
 export const knowledgeSolutionsStorage = {
   async getAll(filters?: {
     search?: string;
-    product?: string;
-    subject?: string;
+    productId?: number;
     isActive?: boolean;
   }): Promise<KnowledgeBaseSolution[]> {
     const conditions: SQL[] = [];
 
-    if (filters?.product) {
-      conditions.push(eq(knowledgeBaseSolutions.product, filters.product));
-    }
-
-    if (filters?.subject) {
-      conditions.push(eq(knowledgeBaseSolutions.subject, filters.subject));
+    if (filters?.productId) {
+      conditions.push(eq(knowledgeBaseSolutions.productId, filters.productId));
     }
 
     if (filters?.isActive !== undefined) {
@@ -128,17 +123,9 @@ export const knowledgeSolutionsStorage = {
     }
   },
 
-  async getUniqueProducts(): Promise<string[]> {
-    const results = await db.selectDistinct({ product: knowledgeBaseSolutions.product })
-      .from(knowledgeBaseSolutions)
-      .where(eq(knowledgeBaseSolutions.product, knowledgeBaseSolutions.product));
-    return results.map(r => r.product).filter((p): p is string => p !== null);
-  },
-
-  async getUniqueSubjects(): Promise<string[]> {
-    const results = await db.selectDistinct({ subject: knowledgeBaseSolutions.subject })
-      .from(knowledgeBaseSolutions)
-      .where(eq(knowledgeBaseSolutions.subject, knowledgeBaseSolutions.subject));
-    return results.map(r => r.subject).filter((s): s is string => s !== null);
+  async getUniqueProductIds(): Promise<number[]> {
+    const results = await db.selectDistinct({ productId: knowledgeBaseSolutions.productId })
+      .from(knowledgeBaseSolutions);
+    return results.map(r => r.productId).filter((p): p is number => p !== null);
   },
 };

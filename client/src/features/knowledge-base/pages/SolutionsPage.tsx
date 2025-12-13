@@ -20,12 +20,18 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+interface ProductCatalog {
+  id: number;
+  produto: string;
+  subproduto: string | null;
+  fullName: string;
+}
+
 interface KnowledgeBaseSolution {
   id: number;
   name: string;
   description: string | null;
-  product: string | null;
-  subject: string | null;
+  productId: number | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -48,15 +54,13 @@ interface SolutionWithActions extends KnowledgeBaseSolution {
 }
 
 interface SolutionFilters {
-  products: string[];
-  subjects: string[];
+  productIds: number[];
 }
 
 interface FormData {
   name: string;
   description: string;
-  product: string;
-  subject: string;
+  productId: number | null;
   isActive: boolean;
   selectedActionIds: number[];
 }
@@ -64,8 +68,7 @@ interface FormData {
 const emptyForm: FormData = {
   name: "",
   description: "",
-  product: "",
-  subject: "",
+  productId: null,
   isActive: true,
   selectedActionIds: [],
 };
@@ -142,8 +145,7 @@ export function SolutionsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyForm);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState("");
+  const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [expandedSolutionId, setExpandedSolutionId] = useState<number | null>(null);
   const [showActionSelector, setShowActionSelector] = useState(false);
   const [editingOriginalActionIds, setEditingOriginalActionIds] = useState<number[]>([]);
@@ -163,23 +165,22 @@ export function SolutionsPage() {
   };
 
   const { data: solutions = [], isLoading } = useQuery<KnowledgeBaseSolution[]>({
-    queryKey: ["/api/knowledge/solutions", searchTerm, selectedProduct, selectedSubject],
+    queryKey: ["/api/knowledge/solutions", searchTerm, selectedProductId],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (searchTerm) params.append("search", searchTerm);
-      if (selectedProduct) params.append("product", selectedProduct);
-      if (selectedSubject) params.append("subject", selectedSubject);
+      if (selectedProductId) params.append("productId", selectedProductId);
       const res = await fetch(`/api/knowledge/solutions?${params}`);
       if (!res.ok) throw new Error("Failed to fetch solutions");
       return res.json();
     },
   });
 
-  const { data: filters } = useQuery<SolutionFilters>({
-    queryKey: ["/api/knowledge/solutions/filters"],
+  const { data: productCatalog = [] } = useQuery<ProductCatalog[]>({
+    queryKey: ["/api/product-catalog"],
     queryFn: async () => {
-      const res = await fetch("/api/knowledge/solutions/filters");
-      if (!res.ok) throw new Error("Failed to fetch filters");
+      const res = await fetch("/api/product-catalog");
+      if (!res.ok) throw new Error("Failed to fetch products");
       return res.json();
     },
   });
@@ -212,8 +213,7 @@ export function SolutionsPage() {
         body: JSON.stringify({
           name: solutionData.name,
           description: solutionData.description || null,
-          product: solutionData.product || null,
-          subject: solutionData.subject || null,
+          productId: solutionData.productId,
           isActive: solutionData.isActive,
         }),
       });
@@ -231,8 +231,7 @@ export function SolutionsPage() {
         body: JSON.stringify({
           name: solutionData.name,
           description: solutionData.description || null,
-          product: solutionData.product || null,
-          subject: solutionData.subject || null,
+          productId: solutionData.productId,
           isActive: solutionData.isActive,
         }),
       });
@@ -331,8 +330,7 @@ export function SolutionsPage() {
     setFormData({
       name: solution.name,
       description: solution.description || "",
-      product: solution.product || "",
-      subject: solution.subject || "",
+      productId: solution.productId,
       isActive: solution.isActive,
       selectedActionIds: actionIds,
     });
@@ -519,16 +517,9 @@ export function SolutionsPage() {
               {
                 type: "select",
                 placeholder: "Produto",
-                options: (filters?.products || []).map(p => ({ value: p, label: p })),
-                value: selectedProduct,
-                onChange: setSelectedProduct,
-              },
-              {
-                type: "select",
-                placeholder: "Assunto",
-                options: (filters?.subjects || []).map(s => ({ value: s, label: s })),
-                value: selectedSubject,
-                onChange: setSelectedSubject,
+                options: productCatalog.map(p => ({ value: String(p.id), label: p.fullName })),
+                value: selectedProductId,
+                onChange: setSelectedProductId,
               },
             ]}
           />
@@ -606,32 +597,25 @@ export function SolutionsPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Produto
-                </label>
-                <input
-                  type="text"
-                  value={formData.product}
-                  onChange={(e) => setFormData({ ...formData, product: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                  placeholder="Nome do produto..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Assunto
-                </label>
-                <input
-                  type="text"
-                  value={formData.subject}
-                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                  placeholder="Assunto relacionado..."
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Produto
+              </label>
+              <select
+                value={formData.productId === null ? "" : String(formData.productId)}
+                onChange={(e) => setFormData({ 
+                  ...formData, 
+                  productId: e.target.value ? parseInt(e.target.value) : null 
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 bg-white"
+              >
+                <option value="">Selecione um produto...</option>
+                {productCatalog.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.fullName}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -796,7 +780,7 @@ export function SolutionsPage() {
       <div className="space-y-2">
         {solutions.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
-            {searchTerm || selectedProduct || selectedSubject 
+            {searchTerm || selectedProductId 
               ? "Nenhuma solução encontrada com os filtros atuais" 
               : "Nenhuma solução cadastrada"}
           </div>
@@ -825,14 +809,9 @@ export function SolutionsPage() {
                       Solução
                     </span>
                     <span className="text-sm text-gray-900 font-medium truncate">{solution.name}</span>
-                    {solution.product && (
+                    {solution.productId && (
                       <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700 flex-shrink-0">
-                        {solution.product}
-                      </span>
-                    )}
-                    {solution.subject && (
-                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700 flex-shrink-0">
-                        {solution.subject}
+                        {productCatalog.find(p => p.id === solution.productId)?.fullName || "Produto"}
                       </span>
                     )}
                     {!solution.isActive && (
