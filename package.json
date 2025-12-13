@@ -14,6 +14,9 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^3.3.4",
     "@neondatabase/serverless": "^1.0.2",
     "@radix-ui/react-dialog": "^1.0.5",

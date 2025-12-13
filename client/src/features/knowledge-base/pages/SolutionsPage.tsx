@@ -1,7 +1,24 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, X, Check, Loader2, Puzzle, ChevronDown, ChevronUp, Play, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Check, Loader2, Puzzle, ChevronDown, ChevronUp, Play, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
 import { FilterBar } from "../../../shared/components/ui/FilterBar";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface KnowledgeBaseSolution {
   id: number;
@@ -63,6 +80,63 @@ const actionTypeLabels: Record<string, string> = {
   "transfer": "Transferir",
 };
 
+interface SortableActionItemProps {
+  action: KnowledgeBaseAction;
+  index: number;
+  onRemove: (id: number) => void;
+  getActionTypeLabel: (type: string) => string;
+}
+
+function SortableActionItem({ action, index, onRemove, getActionTypeLabel }: SortableActionItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: action.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-3 py-2"
+    >
+      <button
+        type="button"
+        className="p-1 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing touch-none"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+      <span className="w-6 h-6 flex items-center justify-center text-xs font-medium bg-violet-100 text-violet-700 rounded-full flex-shrink-0">
+        {index + 1}
+      </span>
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 flex-shrink-0">
+        <Play className="w-3 h-3" />
+        {getActionTypeLabel(action.actionType)}
+      </span>
+      <span className="flex-1 text-sm text-gray-900 truncate">{action.description}</span>
+      <button
+        type="button"
+        onClick={() => onRemove(action.id)}
+        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors flex-shrink-0"
+        title="Remover ação"
+      >
+        <X className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
+
 export function SolutionsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -73,7 +147,16 @@ export function SolutionsPage() {
   const [expandedSolutionId, setExpandedSolutionId] = useState<number | null>(null);
   const [showActionSelector, setShowActionSelector] = useState(false);
   const [editingOriginalActionIds, setEditingOriginalActionIds] = useState<number[]>([]);
+  const [showFormActionModal, setShowFormActionModal] = useState(false);
+  const [pendingActionIds, setPendingActionIds] = useState<number[]>([]);
   const queryClient = useQueryClient();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const invalidateAllSolutions = () => {
     queryClient.invalidateQueries({ queryKey: ["/api/knowledge/solutions"] });
@@ -358,6 +441,59 @@ export function SolutionsPage() {
     return allActions.filter(a => a.isActive && !usedIds.has(a.id));
   }, [allActions, expandedSolution]);
 
+  const formSelectedActions = useMemo(() => {
+    const actionMap = new Map(allActions.map(a => [a.id, a]));
+    return formData.selectedActionIds
+      .map(id => actionMap.get(id))
+      .filter((a): a is KnowledgeBaseAction => a !== undefined);
+  }, [allActions, formData.selectedActionIds]);
+
+  const formAvailableActions = useMemo(() => {
+    const selectedIds = new Set(formData.selectedActionIds);
+    return allActions.filter(a => a.isActive && !selectedIds.has(a.id));
+  }, [allActions, formData.selectedActionIds]);
+
+  const handleFormDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = formData.selectedActionIds.indexOf(Number(active.id));
+      const newIndex = formData.selectedActionIds.indexOf(Number(over.id));
+      setFormData({
+        ...formData,
+        selectedActionIds: arrayMove(formData.selectedActionIds, oldIndex, newIndex),
+      });
+    }
+  };
+
+  const handleFormRemoveAction = (actionId: number) => {
+    setFormData({
+      ...formData,
+      selectedActionIds: formData.selectedActionIds.filter(id => id !== actionId),
+    });
+  };
+
+  const handleOpenActionModal = () => {
+    setPendingActionIds([]);
+    setShowFormActionModal(true);
+  };
+
+  const handleTogglePendingAction = (actionId: number) => {
+    if (pendingActionIds.includes(actionId)) {
+      setPendingActionIds(pendingActionIds.filter(id => id !== actionId));
+    } else {
+      setPendingActionIds([...pendingActionIds, actionId]);
+    }
+  };
+
+  const handleConfirmAddActions = () => {
+    setFormData({
+      ...formData,
+      selectedActionIds: [...formData.selectedActionIds, ...pendingActionIds],
+    });
+    setShowFormActionModal(false);
+    setPendingActionIds([]);
+  };
+
   const getActionTypeLabel = (type: string) => actionTypeLabels[type] || type;
 
   if (isLoading) {
@@ -499,57 +635,54 @@ export function SolutionsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ações
-              </label>
-              <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto bg-gray-50">
-                {allActions.filter(a => a.isActive).length === 0 ? (
-                  <p className="text-sm text-gray-500">Nenhuma ação ativa disponível.</p>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Ações
+                </label>
+                <button
+                  type="button"
+                  onClick={handleOpenActionModal}
+                  disabled={formAvailableActions.length === 0}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus className="w-3 h-3" />
+                  Adicionar Ação
+                </button>
+              </div>
+
+              <div className="border border-gray-300 rounded-lg p-3 min-h-[80px] bg-gray-50">
+                {formSelectedActions.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">
+                    Nenhuma ação selecionada. Clique em "Adicionar Ação" para incluir ações.
+                  </p>
                 ) : (
-                  <div className="space-y-2">
-                    {allActions.filter(a => a.isActive).map((action) => {
-                      const isSelected = formData.selectedActionIds.includes(action.id);
-                      return (
-                        <label
-                          key={action.id}
-                          className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
-                            isSelected ? "bg-violet-100 border border-violet-300" : "bg-white border border-gray-200 hover:border-violet-200"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setFormData({
-                                  ...formData,
-                                  selectedActionIds: [...formData.selectedActionIds, action.id],
-                                });
-                              } else {
-                                setFormData({
-                                  ...formData,
-                                  selectedActionIds: formData.selectedActionIds.filter(id => id !== action.id),
-                                });
-                              }
-                            }}
-                            className="w-4 h-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleFormDragEnd}
+                  >
+                    <SortableContext
+                      items={formData.selectedActionIds}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-2">
+                        {formSelectedActions.map((action, index) => (
+                          <SortableActionItem
+                            key={action.id}
+                            action={action}
+                            index={index}
+                            onRemove={handleFormRemoveAction}
+                            getActionTypeLabel={getActionTypeLabel}
                           />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <Play className="w-3 h-3 text-violet-600 flex-shrink-0" />
-                              <span className="text-xs text-gray-500">[{getActionTypeLabel(action.actionType)}]</span>
-                              <span className="text-sm text-gray-900 truncate">{action.description}</span>
-                            </div>
-                          </div>
-                        </label>
-                      );
-                    })}
-                  </div>
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
                 )}
               </div>
               {formData.selectedActionIds.length > 0 && (
                 <p className="text-xs text-gray-500 mt-1">
-                  {formData.selectedActionIds.length} {formData.selectedActionIds.length === 1 ? "ação selecionada" : "ações selecionadas"}
+                  Arraste para reordenar. {formData.selectedActionIds.length} {formData.selectedActionIds.length === 1 ? "ação selecionada" : "ações selecionadas"}
                 </p>
               )}
             </div>
@@ -575,6 +708,88 @@ export function SolutionsPage() {
               </button>
             </div>
           </form>
+
+          {showFormActionModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[80vh] flex flex-col">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+                  <h4 className="text-lg font-semibold text-gray-900">Selecionar Ações</h4>
+                  <button
+                    onClick={() => setShowFormActionModal(false)}
+                    className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4">
+                  {formAvailableActions.length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-8">
+                      Todas as ações já foram adicionadas.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {formAvailableActions.map((action) => {
+                        const isChecked = pendingActionIds.includes(action.id);
+                        return (
+                          <label
+                            key={action.id}
+                            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                              isChecked
+                                ? "bg-violet-100 border border-violet-300"
+                                : "bg-gray-50 border border-gray-200 hover:border-violet-200"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleTogglePendingAction(action.id)}
+                              className="w-4 h-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <Play className="w-3 h-3 text-violet-600 flex-shrink-0" />
+                                <span className="text-xs text-gray-500 flex-shrink-0">
+                                  [{getActionTypeLabel(action.actionType)}]
+                                </span>
+                                <span className="text-sm text-gray-900 truncate">
+                                  {action.description}
+                                </span>
+                              </div>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
+                  <span className="text-sm text-gray-500">
+                    {pendingActionIds.length} {pendingActionIds.length === 1 ? "ação selecionada" : "ações selecionadas"}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowFormActionModal(false)}
+                      className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmAddActions}
+                      disabled={pendingActionIds.length === 0}
+                      className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Adicionar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
