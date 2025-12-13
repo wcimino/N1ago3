@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { BarChart3, RefreshCw, AlertCircle } from "lucide-react";
+import { BarChart3 } from "lucide-react";
+import { useReportData, PeriodFilter } from "../hooks/useReportData";
+import { PeriodFilter as PeriodFilterComponent } from "../components/PeriodFilter";
+import { ReportTable, Column } from "../components/ReportTable";
 
 interface ProductProblemCount {
   product: string;
@@ -9,25 +11,54 @@ interface ProductProblemCount {
   count: number;
 }
 
-type PeriodFilter = "1h" | "24h" | "all";
+interface CustomerConversationCount {
+  customerName: string;
+  conversationCount: number;
+}
 
-const periodLabels: Record<PeriodFilter, string> = {
-  "1h": "Última 1h",
-  "24h": "Últimas 24h",
-  "all": "Todo período",
-};
+const productProblemColumns: Column<ProductProblemCount>[] = [
+  { key: "product", header: "Produto" },
+  { key: "subproduct", header: "Subproduto" },
+  { key: "problem", header: "Problema" },
+  { 
+    key: "count", 
+    header: "Quantidade", 
+    align: "right",
+    render: (value: number) => value.toLocaleString("pt-BR"),
+  },
+];
+
+const customerConversationColumns: Column<CustomerConversationCount>[] = [
+  { key: "customerName", header: "Cliente" },
+  { 
+    key: "conversationCount", 
+    header: "Conversas", 
+    align: "right",
+    render: (value: number) => value.toLocaleString("pt-BR"),
+  },
+];
 
 export function ReportsPage() {
   const [period, setPeriod] = useState<PeriodFilter>("24h");
 
-  const { data, isLoading, isError, error, refetch, isFetching } = useQuery<ProductProblemCount[]>({
-    queryKey: ["reports", "product-problem-counts", period],
-    queryFn: async () => {
-      const response = await fetch(`/api/reports/product-problem-counts?period=${period}`);
-      if (!response.ok) throw new Error("Falha ao carregar relatório");
-      return response.json();
-    },
+  const productProblemQuery = useReportData<ProductProblemCount>({
+    endpoint: "/api/reports/product-problem-counts",
+    period,
+    queryKey: "product-problem-counts",
   });
+
+  const customerConversationQuery = useReportData<CustomerConversationCount>({
+    endpoint: "/api/reports/customer-conversation-counts",
+    period,
+    queryKey: "customer-conversation-counts",
+  });
+
+  const handleRefresh = () => {
+    productProblemQuery.refetch();
+    customerConversationQuery.refetch();
+  };
+
+  const isFetching = productProblemQuery.isFetching || customerConversationQuery.isFetching;
 
   return (
     <div className="space-y-6">
@@ -36,96 +67,36 @@ export function ReportsPage() {
           <BarChart3 className="w-8 h-8 text-blue-600" />
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Relatórios</h1>
-            <p className="text-sm text-gray-500">Análise de atendimentos por produto e problema</p>
+            <p className="text-sm text-gray-500">Análise de atendimentos por produto, problema e cliente</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value as PeriodFilter)}
-            className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {Object.entries(periodLabels).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-          <button
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
-            Atualizar
-          </button>
-        </div>
+        <PeriodFilterComponent
+          value={period}
+          onChange={setPeriod}
+          onRefresh={handleRefresh}
+          isRefreshing={isFetching}
+        />
       </div>
 
-      <div className="bg-white rounded-lg border shadow-sm">
-        <div className="px-6 py-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">Contagem por Produto e Problema</h2>
-        </div>
+      <ReportTable<ProductProblemCount>
+        title="Contagem por Produto e Problema"
+        columns={productProblemColumns}
+        data={productProblemQuery.data}
+        isLoading={productProblemQuery.isLoading}
+        isError={productProblemQuery.isError}
+        error={productProblemQuery.error as Error}
+        onRetry={() => productProblemQuery.refetch()}
+      />
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
-          </div>
-        ) : isError ? (
-          <div className="flex flex-col items-center justify-center py-12 text-red-600">
-            <AlertCircle className="w-8 h-8 mb-2" />
-            <p className="font-medium">Erro ao carregar relatório</p>
-            <p className="text-sm text-gray-500 mt-1">{error instanceof Error ? error.message : "Tente novamente"}</p>
-            <button
-              onClick={() => refetch()}
-              className="mt-4 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-            >
-              Tentar novamente
-            </button>
-          </div>
-        ) : !data || data.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            Nenhum dado encontrado
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50 border-b">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Produto
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Subproduto
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Problema
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Quantidade
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {data.map((row, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {row.product || "-"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {row.subproduct || "-"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {row.problem || "-"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">
-                      {row.count.toLocaleString("pt-BR")}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <ReportTable<CustomerConversationCount>
+        title="Conversas por Cliente"
+        columns={customerConversationColumns}
+        data={customerConversationQuery.data}
+        isLoading={customerConversationQuery.isLoading}
+        isError={customerConversationQuery.isError}
+        error={customerConversationQuery.error as Error}
+        onRetry={() => customerConversationQuery.refetch()}
+      />
     </div>
   );
 }
