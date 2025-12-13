@@ -29,6 +29,17 @@ export interface ObjectiveProblemResult {
   matchScore?: number;
 }
 
+export interface ArticleAndProblemResult {
+  source: "article" | "problem";
+  id: number;
+  name: string | null;
+  description: string;
+  resolution?: string;
+  matchScore?: number;
+  matchReason?: string;
+  products?: string[];
+}
+
 export interface StructuredSummary {
   clientRequest?: string;
   agentActions?: string;
@@ -37,6 +48,7 @@ export interface StructuredSummary {
   customerEmotionLevel?: number;
   customerRequestType?: string;
   objectiveProblems?: ObjectiveProblemResult[];
+  articlesAndObjectiveProblems?: ArticleAndProblemResult[];
 }
 
 export interface SummaryResult {
@@ -75,7 +87,11 @@ const DEFAULT_SUMMARY_RESPONSE_FORMAT = `Responda em JSON com a seguinte estrutu
   "agentActions": "O que o atendente fez para resolver",
   "currentStatus": "Status atual: Resolvido, Em andamento, Aguardando cliente, etc",
   "importantInfo": "Informações relevantes como prazos, valores, documentos pendentes",
-  "customerEmotionLevel": 3
+  "customerEmotionLevel": 3,
+  "articlesAndObjectiveProblems": [
+    {"source": "article", "id": 1, "name": "Nome do artigo", "description": "Descrição", "matchScore": 85},
+    {"source": "problem", "id": 2, "name": "Nome do problema", "description": "Descrição", "matchScore": 75}
+  ]
 }
 
 ## Escala de Emoção do Cliente (customerEmotionLevel):
@@ -84,6 +100,10 @@ const DEFAULT_SUMMARY_RESPONSE_FORMAT = `Responda em JSON com a seguinte estrutu
 - 3: Neutro - Direto, factual, sem emoção aparente
 - 4: Levemente irritado - Impaciente, seco, reclama, pressiona
 - 5: Muito irritado/crítico - Tom agressivo, tensão alta, perda de paciência
+
+## Campo articlesAndObjectiveProblems:
+Se você usou a ferramenta de busca de artigos e problemas, inclua os resultados encontrados neste campo.
+Cada item deve ter: source ("article" ou "problem"), id, name, description e matchScore (porcentagem de relevância).
 
 Avalie o nível de emoção do cliente com base nas últimas mensagens da conversa.`;
 

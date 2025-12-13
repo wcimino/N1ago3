@@ -89,6 +89,7 @@ export async function generateConversationSummary(event: EventStandard): Promise
       useSubjectIntentTool: config.useSubjectIntentTool ?? false,
       useZendeskKnowledgeBaseTool: config.useZendeskKnowledgeBaseTool ?? false,
       useObjectiveProblemTool: config.useObjectiveProblemTool ?? false,
+      useCombinedKnowledgeSearchTool: config.useCombinedKnowledgeSearchTool ?? false,
     };
 
     console.log(`[Summary Orchestrator] Generating summary for conversation ${event.conversationId} with ${reversedMessages.length} messages, useGeneralSettings=${config.useGeneralSettings}, useObjectiveProblemTool=${toolFlags.useObjectiveProblemTool}`);
