@@ -16,7 +16,7 @@ export interface CombinedSearchResult {
 }
 
 export interface CombinedSearchParams {
-  productId: number;
+  productId?: number;
   keywords?: string;
   limit?: number;
 }
@@ -100,20 +100,26 @@ export function createCombinedKnowledgeSearchToolWithContext(conversationId?: nu
     parameters: {
       type: "object",
       properties: {
-        productId: {
-          type: "number",
-          description: "ID do produto para filtrar (obrigatório)"
+        product: {
+          type: "string",
+          description: "Nome do produto (obrigatório). Ex: 'Cartão de Crédito', 'Conta Digital'"
+        },
+        subproduct: {
+          type: "string",
+          description: "Nome do subproduto para filtrar (ex: 'Gold', 'Platinum')"
         },
         keywords: {
           type: "string",
           description: "Palavras-chave ou descrição do problema para busca"
         }
       },
-      required: ["productId"]
+      required: ["product"]
     },
-    handler: async (args: { productId: number; keywords?: string }) => {
+    handler: async (args: { product: string; subproduct?: string; keywords?: string }) => {
+      const resolved = await productCatalogStorage.resolveProductId(args.product, args.subproduct);
+      
       const result = await runCombinedKnowledgeSearch({
-        productId: args.productId,
+        productId: resolved?.id,
         keywords: args.keywords,
         limit: 5
       });
