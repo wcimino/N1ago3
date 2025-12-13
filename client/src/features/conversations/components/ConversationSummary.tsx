@@ -63,7 +63,7 @@ interface ObjectiveProblemsCardProps {
 }
 
 function ObjectiveProblemsCard({ problems }: ObjectiveProblemsCardProps) {
-  const problemsList = problems || [];
+  const problemsList = [...(problems || [])].sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0));
   const hasProblems = problemsList.length > 0;
   
   return (
