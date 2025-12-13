@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, json, integer, boolean, varchar, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, json, integer, boolean, varchar, index, uniqueIndex, numeric, bigint } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 // Session storage table for Replit Auth
@@ -811,3 +811,49 @@ export const knowledgeBaseSolutionsHasKnowledgeBaseActions = pgTable("knowledge_
 
 export type KnowledgeBaseSolutionHasAction = typeof knowledgeBaseSolutionsHasKnowledgeBaseActions.$inferSelect;
 export type InsertKnowledgeBaseSolutionHasAction = Omit<typeof knowledgeBaseSolutionsHasKnowledgeBaseActions.$inferInsert, "id" | "createdAt">;
+
+export const knowledgeBaseRootCauses = pgTable("knowledge_base_root_causes", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  observedRate30d: numeric("observed_rate_30d", { precision: 6, scale: 5 }),
+  observedN30d: bigint("observed_n_30d", { mode: "number" }),
+  observedAt: timestamp("observed_at"),
+  createdBy: text("created_by").default("system").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  isActiveIdx: index("idx_kb_root_causes_is_active").on(table.isActive),
+}));
+
+export type KnowledgeBaseRootCause = typeof knowledgeBaseRootCauses.$inferSelect;
+export type InsertKnowledgeBaseRootCause = Omit<typeof knowledgeBaseRootCauses.$inferInsert, "id" | "createdAt" | "updatedAt">;
+
+export const knowledgeBaseRootCauseHasKnowledgeBaseObjectiveProblems = pgTable("knowledge_base_root_cause_has_knowledge_base_objective_problems", {
+  id: serial("id").primaryKey(),
+  rootCauseId: integer("root_cause_id").notNull().references(() => knowledgeBaseRootCauses.id, { onDelete: "cascade" }),
+  problemId: integer("problem_id").notNull().references(() => knowledgeBaseObjectiveProblems.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  rootCauseIdx: index("idx_kb_root_cause_problems_root_cause").on(table.rootCauseId),
+  problemIdx: index("idx_kb_root_cause_problems_problem").on(table.problemId),
+  uniqueLink: uniqueIndex("idx_kb_root_cause_problems_unique").on(table.rootCauseId, table.problemId),
+}));
+
+export type KnowledgeBaseRootCauseHasProblem = typeof knowledgeBaseRootCauseHasKnowledgeBaseObjectiveProblems.$inferSelect;
+export type InsertKnowledgeBaseRootCauseHasProblem = Omit<typeof knowledgeBaseRootCauseHasKnowledgeBaseObjectiveProblems.$inferInsert, "id" | "createdAt">;
+
+export const knowledgeBaseRootCauseHasKnowledgeBaseSolutions = pgTable("knowledge_base_root_cause_has_knowledge_base_solutions", {
+  id: serial("id").primaryKey(),
+  rootCauseId: integer("root_cause_id").notNull().references(() => knowledgeBaseRootCauses.id, { onDelete: "cascade" }),
+  solutionId: integer("solution_id").notNull().references(() => knowledgeBaseSolutions.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  rootCauseIdx: index("idx_kb_root_cause_solutions_root_cause").on(table.rootCauseId),
+  solutionIdx: index("idx_kb_root_cause_solutions_solution").on(table.solutionId),
+  uniqueLink: uniqueIndex("idx_kb_root_cause_solutions_unique").on(table.rootCauseId, table.solutionId),
+}));
+
+export type KnowledgeBaseRootCauseHasSolution = typeof knowledgeBaseRootCauseHasKnowledgeBaseSolutions.$inferSelect;
+export type InsertKnowledgeBaseRootCauseHasSolution = Omit<typeof knowledgeBaseRootCauseHasKnowledgeBaseSolutions.$inferInsert, "id" | "createdAt">;
