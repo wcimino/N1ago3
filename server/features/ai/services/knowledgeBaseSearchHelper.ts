@@ -328,8 +328,9 @@ async function runTextBasedSearch(
   // Apply calculateMatchScore on top of FTS results for better scoring
   const scoredArticles = ftsResults.map(article => {
     const { score, reason } = calculateMatchScore(article, searchTerms);
-    // Combine FTS relevance with our scoring (higher of the two), scale to 0-100
-    const ftsScoreNormalized = Math.round(article.relevanceScore * 100);
+    // O FTS score já vem em escala absoluta (não 0-1), então não multiplicamos por 100
+    // Apenas garantimos que fique no range 0-100
+    const ftsScoreNormalized = Math.min(100, Math.round(article.relevanceScore));
     const combinedScore = Math.max(score, ftsScoreNormalized);
     return {
       id: article.id,

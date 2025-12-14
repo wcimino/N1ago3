@@ -115,7 +115,10 @@ export const productCatalogStorage = {
     });
 
     const matches = scored.filter(p => p.isMatch);
-    if (matches.length === 0) return null;
+    if (matches.length === 0) {
+      console.warn(`[ProductCatalog] No match found for product="${product}", subproduct="${subproduct || 'none'}"`);
+      return null;
+    }
 
     matches.sort((a, b) => b.score - a.score);
     const best = matches[0];
