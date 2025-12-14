@@ -38,7 +38,6 @@ export const conversations = pgTable("conversations", {
   userExternalId: text("user_external_id"),
   status: text("status").default("active").notNull(),
   externalStatus: text("external_status"),
-  orchestratorStatus: text("orchestrator_status").default("new"),
   closedAt: timestamp("closed_at"),
   closedReason: text("closed_reason"),
   currentHandler: text("current_handler"),
@@ -53,7 +52,6 @@ export const conversations = pgTable("conversations", {
   updatedAtIdx: index("idx_conversations_updated_at").on(table.updatedAt.desc()),
   statusIdx: index("idx_conversations_status").on(table.status),
   handledByN1agoIdx: index("idx_conversations_handled_by_n1ago").on(table.handledByN1ago),
-  orchestratorStatusIdx: index("idx_conversations_orchestrator_status").on(table.orchestratorStatus),
 }));
 
 export const eventTypeMappings = pgTable("event_type_mappings", {
@@ -78,6 +76,7 @@ export const conversationsSummary = pgTable("conversations_summary", {
   clientRequest: text("client_request"),
   agentActions: text("agent_actions"),
   currentStatus: text("current_status"),
+  orchestratorStatus: text("orchestrator_status").default("new"),
   importantInfo: text("important_info"),
   lastEventId: integer("last_event_id"),
   productId: integer("product_id").references(() => productsCatalog.id, { onDelete: "set null" }),
