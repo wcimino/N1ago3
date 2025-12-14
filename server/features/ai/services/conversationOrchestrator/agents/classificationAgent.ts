@@ -1,4 +1,4 @@
-import { processClassificationForEvent } from "../../classificationOrchestrator.js";
+import { generateAndSaveProductClassification } from "../../classificationOrchestrator.js";
 import { storage } from "../../../../../storage/index.js";
 import type { ClassificationAgentResult, OrchestratorContext } from "../types.js";
 
@@ -7,7 +7,7 @@ export class ClassificationAgent {
     const { event, conversationId } = context;
 
     try {
-      await processClassificationForEvent(event);
+      await generateAndSaveProductClassification(event);
       
       const summaryRecord = await storage.getConversationSummary(conversationId);
       

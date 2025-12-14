@@ -7,6 +7,6 @@ export { callOpenAI, getOpenaiLogs, getOpenaiLogById } from "../features/ai/serv
 export { generateSummary, generateAndSaveSummary } from "../features/ai/services/summaryAdapter.js";
 export { processSummaryForEvent } from "../features/ai/services/summaryOrchestrator.js";
 export { classifyConversation, classifyAndSave } from "../features/ai/services/productClassificationAdapter.js";
-export { processClassificationForEvent } from "../features/ai/services/classificationOrchestrator.js";
+export { generateAndSaveProductClassification } from "../features/ai/services/classificationOrchestrator.js";
 export { generateResponse, generateAndSaveResponse } from "../features/ai/services/responseAdapter.js";
 export { processResponseForEvent } from "../features/ai/services/responseOrchestrator.js";

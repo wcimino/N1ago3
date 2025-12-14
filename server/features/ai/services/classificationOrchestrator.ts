@@ -114,7 +114,7 @@ export async function classifyConversationProduct(event: EventStandard): Promise
   }
 }
 
-export async function processClassificationForEvent(event: EventStandard): Promise<void> {
+export async function generateAndSaveProductClassification(event: EventStandard): Promise<void> {
   const shouldRun = await shouldClassify(event);
   
   if (shouldRun) {
