@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, X, Check, Loader2, Play, MessageSquare } from "lucide-react";
-import { FilterBar } from "../../../shared/components/ui/FilterBar";
+import { useQuery } from "@tanstack/react-query";
+import { Play, Loader2 } from "lucide-react";
+import { CrudPageLayout, CrudListItem, FormField } from "../../../shared/components/crud";
+import { useCrudMutations } from "../../../shared/hooks";
 
 interface ActionStats {
   total: number;
@@ -43,7 +44,7 @@ const emptyForm: FormData = {
 };
 
 const actionTypeOptions = [
-  { value: "internal_action_human", label: "Ação interna manual" },
+  { value: "internal_action_human", label: "Acao interna manual" },
   { value: "escalate", label: "Escalar" },
   { value: "inform", label: "Informar" },
   { value: "other", label: "Outro" },
@@ -52,90 +53,42 @@ const actionTypeOptions = [
   { value: "transfer", label: "Transferir" },
 ];
 
+const transformFormData = (data: FormData) => ({
+  ...data,
+  requiredInput: data.requiredInput || null,
+  messageTemplate: data.messageTemplate || null,
+  ownerTeam: data.ownerTeam || null,
+  sla: data.sla || null,
+});
+
 export function ActionsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyForm);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedActionType, setSelectedActionType] = useState("");
-  const queryClient = useQueryClient();
 
   const { data: actions = [], isLoading } = useQuery<KnowledgeBaseAction[]>({
     queryKey: ["/api/knowledge/actions"],
-    queryFn: async () => {
-      const res = await fetch("/api/knowledge/actions");
-      if (!res.ok) throw new Error("Failed to fetch actions");
-      return res.json();
-    },
   });
 
   const { data: stats } = useQuery<ActionStats>({
     queryKey: ["/api/knowledge/actions/stats"],
-    queryFn: async () => {
-      const res = await fetch("/api/knowledge/actions/stats");
-      if (!res.ok) throw new Error("Failed to fetch stats");
-      return res.json();
-    },
   });
 
-  const createMutation = useMutation({
-    mutationFn: async (data: FormData) => {
-      const res = await fetch("/api/knowledge/actions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...data,
-          requiredInput: data.requiredInput || null,
-          messageTemplate: data.messageTemplate || null,
-          ownerTeam: data.ownerTeam || null,
-          sla: data.sla || null,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to create action");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/actions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/actions/stats"] });
-      resetForm();
-    },
-  });
+  const resetForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setFormData(emptyForm);
+  };
 
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: FormData }) => {
-      const res = await fetch(`/api/knowledge/actions/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...data,
-          requiredInput: data.requiredInput || null,
-          messageTemplate: data.messageTemplate || null,
-          ownerTeam: data.ownerTeam || null,
-          sla: data.sla || null,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to update action");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/actions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/actions/stats"] });
-      resetForm();
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await fetch(`/api/knowledge/actions/${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete action");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/actions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/actions/stats"] });
-    },
+  const { handleCreate, handleUpdate, handleDelete, isMutating, isDeleting } = useCrudMutations<FormData, FormData>({
+    baseUrl: "/api/knowledge/actions",
+    queryKeys: ["/api/knowledge/actions", "/api/knowledge/actions/stats"],
+    transformCreateData: transformFormData,
+    transformUpdateData: transformFormData,
+    onCreateSuccess: resetForm,
+    onUpdateSuccess: resetForm,
   });
 
   const filteredActions = useMemo(() => {
@@ -157,12 +110,6 @@ export function ActionsPage() {
     return result;
   }, [actions, searchTerm, selectedActionType]);
 
-  const resetForm = () => {
-    setShowForm(false);
-    setEditingId(null);
-    setFormData(emptyForm);
-  };
-
   const handleEdit = (action: KnowledgeBaseAction) => {
     setFormData({
       actionType: action.actionType,
@@ -180,15 +127,9 @@ export function ActionsPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingId) {
-      updateMutation.mutate({ id: editingId, data: formData });
+      handleUpdate(editingId, formData);
     } else {
-      createMutation.mutate(formData);
-    }
-  };
-
-  const handleDelete = (id: number) => {
-    if (confirm("Tem certeza que deseja excluir esta acao?")) {
-      deleteMutation.mutate(id);
+      handleCreate(formData);
     }
   };
 
@@ -205,231 +146,126 @@ export function ActionsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <FilterBar
-            filters={[
-              {
-                type: "search",
-                value: searchTerm,
-                onChange: setSearchTerm,
-                placeholder: "Buscar...",
-              },
-              {
-                type: "select",
-                placeholder: "Tipo",
-                options: actionTypeOptions.map(o => ({ value: o.value, label: o.label })),
-                value: selectedActionType,
-                onChange: setSelectedActionType,
-              },
-            ]}
+    <CrudPageLayout
+      filters={[
+        {
+          type: "search",
+          value: searchTerm,
+          onChange: setSearchTerm,
+          placeholder: "Buscar...",
+        },
+        {
+          type: "select",
+          placeholder: "Tipo",
+          options: actionTypeOptions,
+          value: selectedActionType,
+          onChange: setSelectedActionType,
+        },
+      ]}
+      stats={stats ? { ...stats, labels: { total: "Acoes" } } : undefined}
+      showForm={showForm}
+      formTitle={editingId ? "Editar Acao" : "Nova Acao"}
+      onOpenForm={() => {
+        setFormData(emptyForm);
+        setEditingId(null);
+        setShowForm(true);
+      }}
+      onCloseForm={resetForm}
+      onSubmit={handleSubmit}
+      isSaving={isMutating}
+      isEditing={!!editingId}
+      addButtonLabel="Nova Acao"
+      isEmpty={filteredActions.length === 0}
+      emptyState={
+        <div className="text-center py-12 text-gray-500">
+          {searchTerm || selectedActionType ? "Nenhuma acao encontrada com os filtros atuais" : "Nenhuma acao cadastrada"}
+        </div>
+      }
+      formContent={
+        <>
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              type="select"
+              label="Tipo de Acao"
+              required
+              value={formData.actionType}
+              onChange={(e) => setFormData({ ...formData, actionType: e.target.value })}
+              options={actionTypeOptions}
+              emptyOption="Selecione..."
+            />
+            <FormField
+              type="checkbox"
+              label="Ativo"
+              id="isActive"
+              checked={formData.isActive}
+              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+            />
+          </div>
+
+          <FormField
+            type="text"
+            label="Descricao"
+            required
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Orientar alternativas quando o cliente nao esta logado..."
           />
-        </div>
-        <button
-          onClick={() => {
-            setFormData(emptyForm);
-            setEditingId(null);
-            setShowForm(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+
+          <FormField
+            type="textarea"
+            label="Template de Mensagem"
+            value={formData.messageTemplate}
+            onChange={(e) => setFormData({ ...formData, messageTemplate: e.target.value })}
+            rows={4}
+            placeholder="Sem acesso a area logada, da pra seguir de duas formas..."
+          />
+
+          <div className="grid grid-cols-3 gap-4">
+            <FormField
+              type="text"
+              label="Input Obrigatorio"
+              value={formData.requiredInput}
+              onChange={(e) => setFormData({ ...formData, requiredInput: e.target.value })}
+              placeholder="email, cpf, etc..."
+            />
+            <FormField
+              type="text"
+              label="Time Responsavel"
+              value={formData.ownerTeam}
+              onChange={(e) => setFormData({ ...formData, ownerTeam: e.target.value })}
+              placeholder="Suporte N2, Financeiro..."
+            />
+            <FormField
+              type="text"
+              label="SLA"
+              value={formData.sla}
+              onChange={(e) => setFormData({ ...formData, sla: e.target.value })}
+              placeholder="24h, 48h..."
+            />
+          </div>
+        </>
+      }
+    >
+      {filteredActions.map((action) => (
+        <CrudListItem
+          key={action.id}
+          isActive={action.isActive}
+          onEdit={() => handleEdit(action)}
+          onDelete={() => handleDelete(action.id, "Tem certeza que deseja excluir esta acao?")}
+          isDeleting={isDeleting}
         >
-          <Plus className="w-4 h-4" />
-          Nova Acao
-        </button>
-      </div>
-
-      <div className="text-sm text-gray-500 flex gap-4">
-        <span>{stats?.total || 0} Acoes</span>
-        <span className="text-green-600">{stats?.active || 0} Ativas</span>
-        <span className="text-gray-400">{stats?.inactive || 0} Inativas</span>
-      </div>
-
-      {showForm && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">
-              {editingId ? "Editar Acao" : "Nova Acao"}
-            </h3>
-            <button onClick={resetForm} className="text-gray-500 hover:text-gray-700">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tipo de Acao *
-                </label>
-                <select
-                  value={formData.actionType}
-                  onChange={(e) => setFormData({ ...formData, actionType: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                  required
-                >
-                  <option value="">Selecione...</option>
-                  {actionTypeOptions.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="w-4 h-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
-                />
-                <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
-                  Ativo
-                </label>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Descricao *
-              </label>
-              <input
-                type="text"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                placeholder="Orientar alternativas quando o cliente nao esta logado..."
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Template de Mensagem
-              </label>
-              <textarea
-                value={formData.messageTemplate}
-                onChange={(e) => setFormData({ ...formData, messageTemplate: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                rows={4}
-                placeholder="Sem acesso a area logada, da pra seguir de duas formas..."
-              />
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Input Obrigatorio
-                </label>
-                <input
-                  type="text"
-                  value={formData.requiredInput}
-                  onChange={(e) => setFormData({ ...formData, requiredInput: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                  placeholder="email, cpf, etc..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Time Responsavel
-                </label>
-                <input
-                  type="text"
-                  value={formData.ownerTeam}
-                  onChange={(e) => setFormData({ ...formData, ownerTeam: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                  placeholder="Suporte N2, Financeiro..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  SLA
-                </label>
-                <input
-                  type="text"
-                  value={formData.sla}
-                  onChange={(e) => setFormData({ ...formData, sla: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                  placeholder="24h, 48h..."
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={createMutation.isPending || updateMutation.isPending}
-                className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50"
-              >
-                {(createMutation.isPending || updateMutation.isPending) && (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                )}
-                <Check className="w-4 h-4" />
-                {editingId ? "Salvar" : "Criar"}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      <div className="space-y-2">
-        {filteredActions.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            {searchTerm || selectedActionType ? "Nenhuma acao encontrada com os filtros atuais" : "Nenhuma acao cadastrada"}
-          </div>
-        ) : (
-          filteredActions.map((action) => (
-            <div
-              key={action.id}
-              className={`bg-white border rounded-lg px-4 py-2 ${
-                action.isActive ? "border-gray-200" : "border-gray-100 bg-gray-50 opacity-60"
-              }`}
-            >
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-violet-100 text-violet-800 flex-shrink-0">
-                    <Play className="w-3 h-3" />
-                    {getActionTypeLabel(action.actionType)}
-                  </span>
-                  <span className="text-sm text-gray-900 truncate">{action.description}</span>
-                  {!action.isActive && (
-                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 flex-shrink-0">
-                      Inativo
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <button
-                    onClick={() => handleEdit(action)}
-                    className="p-1.5 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded transition-colors"
-                    title="Editar"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(action.id)}
-                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                    title="Excluir"
-                    disabled={deleteMutation.isPending}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
+          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-violet-100 text-violet-800 flex-shrink-0">
+            <Play className="w-3 h-3" />
+            {getActionTypeLabel(action.actionType)}
+          </span>
+          <span className="text-sm text-gray-900 truncate">{action.description}</span>
+          {!action.isActive && (
+            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 flex-shrink-0">
+              Inativo
+            </span>
+          )}
+        </CrudListItem>
+      ))}
+    </CrudPageLayout>
   );
 }
