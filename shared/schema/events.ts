@@ -1,0 +1,126 @@
+import { pgTable, serial, text, timestamp, json, integer, boolean, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { productsCatalog } from "./knowledge";
+
+export const eventsStandard = pgTable("events_standard", {
+  id: serial("id").primaryKey(),
+  eventType: text("event_type").notNull(),
+  eventSubtype: text("event_subtype"),
+  source: text("source").notNull(),
+  sourceEventId: text("source_event_id"),
+  sourceRawId: integer("source_raw_id"),
+  conversationId: integer("conversation_id"),
+  externalConversationId: text("external_conversation_id"),
+  userId: integer("user_id"),
+  externalUserId: text("external_user_id"),
+  authorType: text("author_type").notNull(),
+  authorId: text("author_id"),
+  authorName: text("author_name"),
+  contentText: text("content_text"),
+  contentPayload: json("content_payload"),
+  occurredAt: timestamp("occurred_at").notNull(),
+  receivedAt: timestamp("received_at").defaultNow().notNull(),
+  processedAt: timestamp("processed_at"),
+  metadata: json("metadata"),
+  channelType: text("channel_type"),
+  processingStatus: text("processing_status").default("processed").notNull(),
+}, (table) => ({
+  occurredAtIdx: index("idx_events_standard_occurred_at").on(table.occurredAt.desc()),
+  conversationEventIdx: index("idx_events_standard_conversation_event").on(table.conversationId, table.eventType),
+  sourceIdx: index("idx_events_standard_source").on(table.source),
+  eventTypeIdx: index("idx_events_standard_event_type").on(table.eventType),
+}));
+
+export const conversations = pgTable("conversations", {
+  id: serial("id").primaryKey(),
+  externalConversationId: text("external_conversation_id").notNull().unique(),
+  externalAppId: text("external_app_id"),
+  userId: text("user_id"),
+  userExternalId: text("user_external_id"),
+  status: text("status").default("active").notNull(),
+  externalStatus: text("external_status"),
+  closedAt: timestamp("closed_at"),
+  closedReason: text("closed_reason"),
+  currentHandler: text("current_handler"),
+  currentHandlerName: text("current_handler_name"),
+  autopilotEnabled: boolean("autopilot_enabled").default(true).notNull(),
+  handledByN1ago: boolean("handled_by_n1ago").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  metadataJson: json("metadata_json"),
+}, (table) => ({
+  userIdIdx: index("idx_conversations_user_id").on(table.userId),
+  updatedAtIdx: index("idx_conversations_updated_at").on(table.updatedAt.desc()),
+  statusIdx: index("idx_conversations_status").on(table.status),
+  handledByN1agoIdx: index("idx_conversations_handled_by_n1ago").on(table.handledByN1ago),
+}));
+
+export const eventTypeMappings = pgTable("event_type_mappings", {
+  id: serial("id").primaryKey(),
+  source: text("source").notNull(),
+  eventType: text("event_type").notNull(),
+  displayName: text("display_name").notNull(),
+  description: text("description"),
+  showInList: boolean("show_in_list").default(true).notNull(),
+  icon: text("icon"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  sourceEventTypeUnique: uniqueIndex("idx_event_type_mappings_unique").on(table.source, table.eventType),
+}));
+
+export const conversationsSummary = pgTable("conversations_summary", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull(),
+  externalConversationId: text("external_conversation_id"),
+  summary: text("summary").notNull(),
+  clientRequest: text("client_request"),
+  agentActions: text("agent_actions"),
+  currentStatus: text("current_status"),
+  importantInfo: text("important_info"),
+  lastEventId: integer("last_event_id"),
+  productId: integer("product_id").references(() => productsCatalog.id, { onDelete: "set null" }),
+  product: text("product"),
+  productStandard: text("product_standard"),
+  subproduct: text("subproduct"),
+  subject: text("subject"),
+  intent: text("intent"),
+  confidence: integer("confidence"),
+  classifiedAt: timestamp("classified_at"),
+  customerEmotionLevel: integer("customer_emotion_level"),
+  customerRequestType: text("customer_request_type"),
+  objectiveProblems: json("objective_problems").$type<Array<{ id: number; name: string; matchScore?: number }>>(),
+  articlesAndObjectiveProblems: json("articles_and_objective_problems").$type<Array<{ source: "article" | "problem"; id: number; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; products?: string[] }>>(),
+  generatedAt: timestamp("generated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  conversationIdIdx: uniqueIndex("idx_conversations_summary_conversation_id").on(table.conversationId),
+}));
+
+export const responsesSuggested = pgTable("responses_suggested", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull(),
+  externalConversationId: text("external_conversation_id"),
+  suggestedResponse: text("suggested_response").notNull(),
+  lastEventId: integer("last_event_id"),
+  openaiLogId: integer("openai_log_id"),
+  inResponseTo: text("in_response_to"),
+  status: text("status").default("created").notNull(),
+  usedAt: timestamp("used_at"),
+  dismissed: boolean("dismissed").default(false).notNull(),
+  articlesUsed: json("articles_used").$type<Array<{ id: number; name: string; product: string; url?: string }>>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  conversationIdIdx: index("idx_responses_suggested_conversation_id").on(table.conversationId),
+}));
+
+export type EventStandard = typeof eventsStandard.$inferSelect;
+export type InsertEventStandard = Omit<typeof eventsStandard.$inferInsert, "id" | "receivedAt" | "processedAt">;
+export type Conversation = typeof conversations.$inferSelect;
+export type InsertConversation = Omit<typeof conversations.$inferInsert, "id" | "createdAt" | "updatedAt">;
+export type EventTypeMapping = typeof eventTypeMappings.$inferSelect;
+export type InsertEventTypeMapping = Omit<typeof eventTypeMappings.$inferInsert, "id" | "createdAt" | "updatedAt">;
+export type ConversationSummary = typeof conversationsSummary.$inferSelect;
+export type InsertConversationSummary = Omit<typeof conversationsSummary.$inferInsert, "id" | "createdAt" | "updatedAt" | "generatedAt">;
+export type SuggestedResponse = typeof responsesSuggested.$inferSelect;
+export type InsertSuggestedResponse = Omit<typeof responsesSuggested.$inferInsert, "id" | "createdAt">;
