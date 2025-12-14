@@ -68,8 +68,7 @@ export function createKnowledgeSuggestionTool(): ToolDefinition {
       confidenceScore?: number;
       skipReason?: string;
     }) => {
-      return JSON.stringify({
-        message: `Sugestão registrada: action=${args.action}`,
+      return {
         action: args.action,
         targetArticleId: args.targetArticleId,
         name: args.name,
@@ -81,7 +80,7 @@ export function createKnowledgeSuggestionTool(): ToolDefinition {
         confidenceScore: args.confidenceScore,
         skipReason: args.skipReason,
         updateReason: args.updateReason
-      });
+      };
     }
   };
 }
