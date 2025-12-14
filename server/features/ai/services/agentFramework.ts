@@ -194,11 +194,9 @@ async function buildPromptVariables(context: AgentContext): Promise<PromptVariab
   return {
     resumo: context.summary,
     resumoAtual: context.previousSummary ?? context.summary,
-    classificacao: classificationContext,
     productsAndSubproducts: productsContext,
     ultimas20Mensagens: messagesContext,
     ultimaMensagem: lastMessageContext,
-    mensagens: messagesContext,
     handler: context.handler,
     catalogoProdutosSubprodutos: catalogoJson,
     tipoSolicitacao: context.customerRequestType,
