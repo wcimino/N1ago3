@@ -11,6 +11,7 @@ import {
   type ContentPayload 
 } from "./promptUtils.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
+import { runCombinedKnowledgeSearch } from "./tools/combinedKnowledgeSearchTool.js";
 import type { OpenaiApiConfig, EventStandard } from "../../../../shared/schema.js";
 import type { ToolFlags } from "./aiTools.js";
 import memoize from "memoizee";
@@ -202,6 +203,45 @@ async function buildPromptVariables(context: AgentContext): Promise<PromptVariab
       .join('\n');
   }
 
+  let artigosProblemasListaTop5: string | null = null;
+  if (context.classification?.product && context.summary) {
+    try {
+      let customerMainComplaint: string | null = null;
+      try {
+        const summaryJson = JSON.parse(context.summary);
+        customerMainComplaint = summaryJson?.triage?.anamnese?.customerMainComplaint || summaryJson?.clientRequest || null;
+      } catch {
+        customerMainComplaint = context.summary;
+      }
+      
+      if (customerMainComplaint) {
+        const resolved = await productCatalogStorage.resolveProductId(
+          context.classification.product,
+          context.classification.subproduct ?? undefined
+        );
+        
+        const searchResult = await runCombinedKnowledgeSearch({
+          productId: resolved?.id,
+          conversationContext: customerMainComplaint,
+          limit: 5
+        });
+        
+        if (searchResult.results.length > 0) {
+          const formattedResults = searchResult.results.slice(0, 5).map(r => ({
+            tipo: r.source === "article" ? "artigo" : "problema",
+            id: r.id,
+            nome: r.name || r.description,
+            descricao: r.description,
+            score: r.matchScore || 0
+          }));
+          artigosProblemasListaTop5 = JSON.stringify(formattedResults, null, 2);
+        }
+      }
+    } catch (error) {
+      console.error('[AgentFramework] Error fetching articles/problems for context:', error);
+    }
+  }
+
   return {
     resumo: context.summary,
     resumoAtual: context.previousSummary ?? context.summary,
@@ -214,6 +254,7 @@ async function buildPromptVariables(context: AgentContext): Promise<PromptVariab
     tipoSolicitacao: context.customerRequestType,
     demandaIdentificada: context.demand,
     resultadosBusca: searchResultsFormatted,
+    artigosProblemasListaTop5,
   };
 }
 

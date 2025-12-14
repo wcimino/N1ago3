@@ -115,6 +115,10 @@ export function createCombinedKnowledgeSearchToolWithContext(conversationId?: nu
           type: "string",
           description: "Nome do produto (obrigatório). Ex: 'Cartão de Crédito', 'Conta Digital'"
         },
+        subproduct: {
+          type: "string",
+          description: "Nome do subproduto (opcional). Ex: 'PIX', 'TED', 'Crédito'"
+        },
         keywords: {
           type: "string",
           description: "Palavras-chave opcionais para filtrar/priorizar os resultados. Usado como boost sobre os resultados semânticos."
@@ -122,10 +126,10 @@ export function createCombinedKnowledgeSearchToolWithContext(conversationId?: nu
       },
       required: ["conversationContext", "product"]
     },
-    handler: async (args: { product: string; conversationContext?: string; keywords?: string }) => {
-      console.log(`[Combined Knowledge Search Tool] Called with product="${args.product}"`);
+    handler: async (args: { product: string; subproduct?: string; conversationContext?: string; keywords?: string }) => {
+      console.log(`[Combined Knowledge Search Tool] Called with product="${args.product}", subproduct="${args.subproduct || 'none'}"`);
       
-      const resolved = await productCatalogStorage.resolveProductId(args.product);
+      const resolved = await productCatalogStorage.resolveProductId(args.product, args.subproduct);
       
       if (!resolved) {
         console.warn(`[Combined Knowledge Search Tool] Product not resolved: "${args.product}" - search will NOT filter by product`);

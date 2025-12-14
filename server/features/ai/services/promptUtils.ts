@@ -10,6 +10,7 @@ export interface PromptVariables {
   tipoSolicitacao?: string | null;
   demandaIdentificada?: string | null;
   resultadosBusca?: string | null;
+  artigosProblemasListaTop5?: string | null;
 }
 
 export function replacePromptVariables(
@@ -29,6 +30,7 @@ export function replacePromptVariables(
   result = result.replace(/\{\{TIPO_SOLICITACAO\}\}/g, variables.tipoSolicitacao || 'Não identificado');
   result = result.replace(/\{\{DEMANDA_IDENTIFICADA\}\}/g, variables.demandaIdentificada || 'Nenhuma demanda identificada.');
   result = result.replace(/\{\{RESULTADOS_BUSCA\}\}/g, variables.resultadosBusca || 'Nenhum resultado de busca disponível.');
+  result = result.replace(/\{\{ARTIGOS_PROBLEMAS_LISTA_TOP_5\}\}/g, variables.artigosProblemasListaTop5 || 'Nenhum artigo ou problema encontrado.');
 
   return result;
 }
@@ -165,4 +167,5 @@ export const AVAILABLE_VARIABLES = [
   { name: '{{TIPO_SOLICITACAO}}', description: 'Tipo de solicitação do cliente (Quer suporte/contratar/informações)' },
   { name: '{{DEMANDA_IDENTIFICADA}}', description: 'Demanda identificada pelo DemandFinder (para SolutionProvider)' },
   { name: '{{RESULTADOS_BUSCA}}', description: 'Resultados da busca na base de conhecimento (para SolutionProvider)' },
+  { name: '{{ARTIGOS_PROBLEMAS_LISTA_TOP_5}}', description: 'Top 5 artigos e problemas da base de conhecimento (busca automática)' },
 ];
