@@ -1,7 +1,7 @@
 import { storage } from "../../../../storage/index.js";
 import { conversationStorage } from "../../../conversations/storage/index.js";
 import { SummaryAgent, ClassificationAgent, DemandFinderAgent, SolutionProviderAgent } from "./agents/index.js";
-import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext, type DemandFinderAgentResult, type SummaryAgentResult } from "./types.js";
+import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext, type SummaryAgentResult } from "./types.js";
 import type { EventStandard } from "../../../../../shared/schema.js";
 
 export class ConversationOrchestrator {
@@ -21,87 +21,110 @@ export class ConversationOrchestrator {
 
     console.log(`[ConversationOrchestrator] Processing event ${event.id} for conversation ${conversationId}, status: ${currentStatus}`);
 
+    if (currentStatus === ORCHESTRATOR_STATUS.ESCALATED) {
+      console.log(`[ConversationOrchestrator] Conversation ${conversationId} is escalated, skipping`);
+      return;
+    }
+
+    if (currentStatus === ORCHESTRATOR_STATUS.CLOSED) {
+      console.log(`[ConversationOrchestrator] Conversation ${conversationId} is closed, skipping`);
+      return;
+    }
+
     const context: OrchestratorContext = {
       event,
       conversationId,
       currentStatus,
     };
 
-    await this.processWithStatus(context);
+    await this.processSyncPipeline(context);
   }
 
-  private static async processWithStatus(context: OrchestratorContext): Promise<void> {
-    const { conversationId, currentStatus } = context;
-
-    switch (currentStatus) {
-      case ORCHESTRATOR_STATUS.NEW:
-        await this.handleNewConversation(context);
-        break;
-
-      case ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING:
-        await this.handleDemandUnderstanding(context);
-        break;
-
-      case ORCHESTRATOR_STATUS.DEMAND_RESOLVING:
-        await this.handleDemandResolving(context);
-        break;
-
-      case ORCHESTRATOR_STATUS.ESCALATED:
-        console.log(`[ConversationOrchestrator] Conversation ${conversationId} is escalated, skipping`);
-        break;
-
-      case ORCHESTRATOR_STATUS.CLOSED:
-        console.log(`[ConversationOrchestrator] Conversation ${conversationId} is closed, skipping`);
-        break;
-
-      default:
-        console.log(`[ConversationOrchestrator] Unknown status ${currentStatus} for conversation ${conversationId}`);
-    }
-  }
-
-  private static async handleNewConversation(context: OrchestratorContext): Promise<void> {
+  private static async processSyncPipeline(context: OrchestratorContext): Promise<void> {
     const { conversationId } = context;
-    console.log(`[ConversationOrchestrator] Handling NEW conversation ${conversationId}`);
 
-    const summaryResult = await SummaryAgent.process(context);
-    if (summaryResult.success && summaryResult.summary) {
-      context.summary = summaryResult.summary;
+    console.log(`[ConversationOrchestrator] Starting sync pipeline for conversation ${conversationId}`);
+
+    const summaryResult = await this.step1_GenerateSummary(context);
+
+    await this.step2_Classify(context);
+
+    await this.persistSummaryWithClassification(conversationId, summaryResult, context.classification);
+
+    await this.step3_DecideStatus(context);
+
+    const agentResponse = await this.step4_RouteToAgent(context);
+
+    if (agentResponse) {
+      await this.step5_SendResponse(context, agentResponse);
     }
 
-    const classificationResult = await ClassificationAgent.process(context);
-    if (classificationResult.success) {
+    console.log(`[ConversationOrchestrator] Pipeline completed for conversation ${conversationId}, final status: ${context.currentStatus}`);
+  }
+
+  private static async step1_GenerateSummary(context: OrchestratorContext): Promise<SummaryAgentResult> {
+    const { conversationId } = context;
+    console.log(`[ConversationOrchestrator] Step 1: Generating summary for conversation ${conversationId}`);
+
+    const existingSummary = await storage.getConversationSummary(conversationId);
+    
+    if (existingSummary) {
+      context.summary = existingSummary.summary;
       context.classification = {
-        product: classificationResult.product,
-        subject: classificationResult.subject,
-        intent: classificationResult.intent,
+        product: existingSummary.product || undefined,
+        subject: existingSummary.subject || undefined,
+        intent: existingSummary.intent || undefined,
       };
     }
 
+    const summaryResult = await SummaryAgent.process(context);
+    
     if (summaryResult.success && summaryResult.summary) {
-      await this.persistSummary(conversationId, summaryResult, context.classification);
+      context.summary = summaryResult.summary;
+      console.log(`[ConversationOrchestrator] Step 1: Summary generated successfully`);
+    } else {
+      console.log(`[ConversationOrchestrator] Step 1: Using existing summary`);
     }
 
-    await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING);
-    context.currentStatus = ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING;
-
-    await this.handleDemandUnderstanding(context);
+    return summaryResult;
   }
 
-  private static async handleDemandUnderstanding(context: OrchestratorContext): Promise<void> {
+  private static async step2_Classify(context: OrchestratorContext): Promise<void> {
     const { conversationId } = context;
-    console.log(`[ConversationOrchestrator] Handling DEMAND_UNDERSTANDING for conversation ${conversationId}`);
+    console.log(`[ConversationOrchestrator] Step 2: Classifying conversation ${conversationId}`);
 
-    if (!context.summary) {
-      const summaryRecord = await storage.getConversationSummary(conversationId);
-      if (summaryRecord) {
-        context.summary = summaryRecord.summary;
-        context.classification = {
-          product: summaryRecord.product || undefined,
-          subject: summaryRecord.subject || undefined,
-          intent: summaryRecord.intent || undefined,
-        };
-      }
+    const classificationResult = await ClassificationAgent.process(context);
+    
+    if (classificationResult.success) {
+      context.classification = {
+        product: classificationResult.product || context.classification?.product,
+        subject: classificationResult.subject || context.classification?.subject,
+        intent: classificationResult.intent || context.classification?.intent,
+      };
+      console.log(`[ConversationOrchestrator] Step 2: Classification successful - ${context.classification.product}/${context.classification.subject}/${context.classification.intent}`);
+    } else {
+      console.log(`[ConversationOrchestrator] Step 2: Classification failed or skipped, keeping existing`);
     }
+  }
+
+  private static async step3_DecideStatus(context: OrchestratorContext): Promise<void> {
+    const { conversationId, currentStatus } = context;
+    console.log(`[ConversationOrchestrator] Step 3: Deciding status for conversation ${conversationId}, current: ${currentStatus}`);
+
+    if (currentStatus === ORCHESTRATOR_STATUS.NEW) {
+      await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING);
+      context.currentStatus = ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING;
+      console.log(`[ConversationOrchestrator] Step 3: Status updated to DEMAND_UNDERSTANDING`);
+    } else {
+      console.log(`[ConversationOrchestrator] Step 3: Status remains ${currentStatus}`);
+    }
+  }
+
+  private static async step4_RouteToAgent(context: OrchestratorContext): Promise<string | null> {
+    const { conversationId, currentStatus } = context;
+    console.log(`[ConversationOrchestrator] Step 4: Routing to agent based on status ${currentStatus}`);
+
+    let response: string | null = null;
 
     const demandResult = await DemandFinderAgent.process(context);
 
@@ -109,29 +132,49 @@ export class ConversationOrchestrator {
       context.demand = demandResult.demand;
       context.searchResults = demandResult.searchResults;
 
-      await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.DEMAND_RESOLVING);
-      context.currentStatus = ORCHESTRATOR_STATUS.DEMAND_RESOLVING;
+      if (currentStatus !== ORCHESTRATOR_STATUS.DEMAND_RESOLVING) {
+        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.DEMAND_RESOLVING);
+        context.currentStatus = ORCHESTRATOR_STATUS.DEMAND_RESOLVING;
+      }
 
-      await this.handleDemandResolving(context);
+      console.log(`[ConversationOrchestrator] Step 4: Demand confirmed, running SolutionProvider`);
+      
+      const solutionResult = await SolutionProviderAgent.process(context);
+
+      if (solutionResult.needsEscalation) {
+        await this.escalate(context, solutionResult.escalationReason || "Unable to resolve");
+      } else if (solutionResult.resolved) {
+        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.CLOSED);
+        context.currentStatus = ORCHESTRATOR_STATUS.CLOSED;
+        console.log(`[ConversationOrchestrator] Step 4: Resolved`);
+      }
+
+      response = solutionResult.suggestedResponse || null;
+
     } else if (demandResult.needsMoreInfo) {
-      console.log(`[ConversationOrchestrator] Conversation ${conversationId} needs more info, waiting for next message`);
+      if (currentStatus === ORCHESTRATOR_STATUS.DEMAND_RESOLVING) {
+        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING);
+        context.currentStatus = ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING;
+        console.log(`[ConversationOrchestrator] Step 4: Downgraded to DEMAND_UNDERSTANDING - need more info`);
+      }
+
+      if (demandResult.followUpQuestion) {
+        console.log(`[ConversationOrchestrator] Step 4: Need more info, returning follow-up question`);
+        response = demandResult.followUpQuestion;
+      }
     } else {
-      console.log(`[ConversationOrchestrator] Demand not identified for conversation ${conversationId}, waiting`);
+      console.log(`[ConversationOrchestrator] Step 4: Demand not identified, waiting for more context`);
     }
+
+    return response;
   }
 
-  private static async handleDemandResolving(context: OrchestratorContext): Promise<void> {
+  private static async step5_SendResponse(context: OrchestratorContext, response: string): Promise<void> {
     const { conversationId } = context;
-    console.log(`[ConversationOrchestrator] Handling DEMAND_RESOLVING for conversation ${conversationId}`);
-
-    const solutionResult = await SolutionProviderAgent.process(context);
-
-    if (solutionResult.needsEscalation) {
-      await this.escalate(context, solutionResult.escalationReason || "Unable to resolve");
-    } else if (solutionResult.resolved) {
-      console.log(`[ConversationOrchestrator] Conversation ${conversationId} resolved`);
-      await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.CLOSED);
-    }
+    console.log(`[ConversationOrchestrator] Step 5: Sending response for conversation ${conversationId}`);
+    console.log(`[ConversationOrchestrator] Step 5: Response: "${response.substring(0, 100)}..."`);
+    
+    console.log(`[ConversationOrchestrator] Step 5: Response sending not implemented yet`);
   }
 
   private static async escalate(context: OrchestratorContext, reason: string): Promise<void> {
@@ -139,6 +182,7 @@ export class ConversationOrchestrator {
     console.log(`[ConversationOrchestrator] Escalating conversation ${conversationId}: ${reason}`);
 
     await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
+    context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
   }
 
   static async getConversationStatus(conversationId: number): Promise<OrchestratorStatus> {
@@ -162,11 +206,16 @@ export class ConversationOrchestrator {
     }
   }
 
-  private static async persistSummary(
+  private static async persistSummaryWithClassification(
     conversationId: number, 
     summaryResult: SummaryAgentResult,
     classification?: { product?: string; subject?: string; intent?: string }
   ): Promise<void> {
+    if (!summaryResult.success || !summaryResult.summary) {
+      console.log(`[ConversationOrchestrator] No new summary to persist`);
+      return;
+    }
+
     try {
       const existingSummary = await storage.getConversationSummary(conversationId);
       
@@ -182,7 +231,7 @@ export class ConversationOrchestrator {
       await storage.upsertConversationSummary({
         conversationId,
         externalConversationId: summaryResult.externalConversationId || undefined,
-        summary: summaryResult.summary!,
+        summary: summaryResult.summary,
         clientRequest: summaryResult.structured?.clientRequest,
         agentActions: summaryResult.structured?.agentActions,
         currentStatus: summaryResult.structured?.currentStatus,
