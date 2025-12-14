@@ -1,6 +1,15 @@
 import { db } from "../../../db.js";
 import { productsCatalog, type ProductCatalog, type InsertProductCatalog } from "../../../../shared/schema.js";
 import { eq, asc } from "drizzle-orm";
+import { createCrudStorage } from "../../../shared/storage/index.js";
+
+const baseCrud = createCrudStorage<ProductCatalog, InsertProductCatalog>({
+  table: productsCatalog,
+  idColumn: productsCatalog.id,
+  orderByColumn: productsCatalog.produto,
+  orderDirection: "asc",
+  updatedAtKey: "updatedAt",
+});
 
 export const productCatalogStorage = {
   async getAll(): Promise<ProductCatalog[]> {
@@ -10,14 +19,10 @@ export const productCatalogStorage = {
       .orderBy(asc(productsCatalog.produto), asc(productsCatalog.subproduto));
   },
 
-  async getById(id: number): Promise<ProductCatalog | null> {
-    const result = await db
-      .select()
-      .from(productsCatalog)
-      .where(eq(productsCatalog.id, id))
-      .limit(1);
-    return result[0] || null;
-  },
+  getById: baseCrud.getById,
+  create: baseCrud.create,
+  update: baseCrud.update,
+  delete: baseCrud.delete,
 
   async getDistinctProdutos(): Promise<string[]> {
     const result = await db
@@ -38,37 +43,6 @@ export const productCatalogStorage = {
     
     const result = await query.orderBy(asc(productsCatalog.subproduto));
     return result.map(r => r.subproduto).filter((s): s is string => s !== null);
-  },
-
-  async create(data: InsertProductCatalog): Promise<ProductCatalog> {
-    const [result] = await db
-      .insert(productsCatalog)
-      .values({
-        ...data,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .returning();
-    return result;
-  },
-
-  async update(id: number, data: Partial<InsertProductCatalog>): Promise<ProductCatalog | null> {
-    const [result] = await db
-      .update(productsCatalog)
-      .set({
-        ...data,
-        updatedAt: new Date(),
-      })
-      .where(eq(productsCatalog.id, id))
-      .returning();
-    return result || null;
-  },
-
-  async delete(id: number): Promise<boolean> {
-    const result = await db
-      .delete(productsCatalog)
-      .where(eq(productsCatalog.id, id));
-    return (result.rowCount ?? 0) > 0;
   },
 
   async getFullNames(): Promise<string[]> {

@@ -1,33 +1,36 @@
 import { db } from "../../../db.js";
 import { knowledgeIntents, knowledgeSubjects, knowledgeBase } from "../../../../shared/schema.js";
-import { eq, desc, ilike, or, and, sql, type SQL } from "drizzle-orm";
+import { eq, desc, ilike, or, and, sql, asc, type SQL } from "drizzle-orm";
 import type { KnowledgeIntent, InsertKnowledgeIntent } from "../../../../shared/schema.js";
+import { createCrudStorage, normalizeSynonymsInData } from "../../../shared/storage/index.js";
+
+interface IntentFilters {
+  search?: string;
+  subjectId?: number;
+}
+
+const baseCrud = createCrudStorage<KnowledgeIntent, InsertKnowledgeIntent, IntentFilters>({
+  table: knowledgeIntents,
+  idColumn: knowledgeIntents.id,
+  filterConfig: [
+    { filterKey: "search", column: knowledgeIntents.name, type: "ilike" },
+    { filterKey: "subjectId", column: knowledgeIntents.subjectId, type: "eq" },
+  ],
+  orderByColumn: knowledgeIntents.updatedAt,
+  orderDirection: "desc",
+  updatedAtKey: "updatedAt",
+  hooks: {
+    beforeCreate: (data) => normalizeSynonymsInData(data),
+    beforeUpdate: (data) => normalizeSynonymsInData(data),
+    beforeDelete: async (id) => {
+      await db.delete(knowledgeBase)
+        .where(eq(knowledgeBase.intentId, id));
+    },
+  },
+});
 
 export const knowledgeIntentsStorage = {
-  async getAll(filters?: {
-    search?: string;
-    subjectId?: number;
-  }): Promise<KnowledgeIntent[]> {
-    const query = db.select()
-      .from(knowledgeIntents);
-
-    const conditions: SQL[] = [];
-
-    if (filters?.subjectId) {
-      conditions.push(eq(knowledgeIntents.subjectId, filters.subjectId));
-    }
-
-    if (filters?.search) {
-      const searchPattern = `%${filters.search}%`;
-      conditions.push(ilike(knowledgeIntents.name, searchPattern));
-    }
-
-    if (conditions.length > 0) {
-      return await query.where(and(...conditions)).orderBy(desc(knowledgeIntents.updatedAt));
-    }
-
-    return await query.orderBy(desc(knowledgeIntents.updatedAt));
-  },
+  ...baseCrud,
 
   async getAllWithSubject(): Promise<(KnowledgeIntent & { subjectName: string | null })[]> {
     const results = await db.select({
@@ -46,58 +49,15 @@ export const knowledgeIntentsStorage = {
     return results;
   },
 
-  async getById(id: number): Promise<KnowledgeIntent | null> {
-    const [intent] = await db.select()
-      .from(knowledgeIntents)
-      .where(eq(knowledgeIntents.id, id));
-    return intent || null;
-  },
-
   async getBySubjectId(subjectId: number): Promise<KnowledgeIntent[]> {
     return await db.select()
       .from(knowledgeIntents)
       .where(eq(knowledgeIntents.subjectId, subjectId))
-      .orderBy(knowledgeIntents.name);
-  },
-
-  async create(data: InsertKnowledgeIntent): Promise<KnowledgeIntent> {
-    const normalizedSynonyms = (data.synonyms || []).map(s => s.trim().toLowerCase());
-    const [intent] = await db.insert(knowledgeIntents)
-      .values({
-        ...data,
-        synonyms: normalizedSynonyms,
-      })
-      .returning();
-    return intent;
-  },
-
-  async update(id: number, data: Partial<InsertKnowledgeIntent>): Promise<KnowledgeIntent | null> {
-    const updateData = { ...data };
-    if (updateData.synonyms) {
-      updateData.synonyms = updateData.synonyms.map(s => s.trim().toLowerCase());
-    }
-    const [intent] = await db.update(knowledgeIntents)
-      .set({
-        ...updateData,
-        updatedAt: new Date(),
-      })
-      .where(eq(knowledgeIntents.id, id))
-      .returning();
-    return intent || null;
-  },
-
-  async delete(id: number): Promise<boolean> {
-    await db.delete(knowledgeBase)
-      .where(eq(knowledgeBase.intentId, id));
-    
-    const result = await db.delete(knowledgeIntents)
-      .where(eq(knowledgeIntents.id, id))
-      .returning();
-    return result.length > 0;
+      .orderBy(asc(knowledgeIntents.name));
   },
 
   async addSynonym(id: number, synonym: string): Promise<KnowledgeIntent | null> {
-    const intent = await this.getById(id);
+    const intent = await baseCrud.getById(id);
     if (!intent) return null;
 
     const normalizedSynonym = synonym.trim().toLowerCase();
@@ -106,16 +66,16 @@ export const knowledgeIntentsStorage = {
     }
 
     const updatedSynonyms = [...intent.synonyms, normalizedSynonym];
-    return await this.update(id, { synonyms: updatedSynonyms });
+    return await baseCrud.update(id, { synonyms: updatedSynonyms });
   },
 
   async removeSynonym(id: number, synonym: string): Promise<KnowledgeIntent | null> {
-    const intent = await this.getById(id);
+    const intent = await baseCrud.getById(id);
     if (!intent) return null;
 
     const normalizedSynonym = synonym.trim().toLowerCase();
     const updatedSynonyms = intent.synonyms.filter(s => s !== normalizedSynonym);
-    return await this.update(id, { synonyms: updatedSynonyms });
+    return await baseCrud.update(id, { synonyms: updatedSynonyms });
   },
 
   async findByNameOrSynonym(searchTerm: string, subjectId?: number): Promise<KnowledgeIntent[]> {
@@ -136,6 +96,6 @@ export const knowledgeIntentsStorage = {
     return await db.select()
       .from(knowledgeIntents)
       .where(and(...conditions))
-      .orderBy(knowledgeIntents.name);
+      .orderBy(asc(knowledgeIntents.name));
   },
 };

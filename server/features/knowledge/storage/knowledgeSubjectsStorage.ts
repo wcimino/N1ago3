@@ -1,33 +1,50 @@
 import { db } from "../../../db.js";
 import { knowledgeSubjects, productsCatalog, knowledgeIntents, knowledgeBase } from "../../../../shared/schema.js";
-import { eq, desc, ilike, or, and, sql, inArray, type SQL } from "drizzle-orm";
+import { eq, desc, ilike, or, and, sql, inArray, asc, type SQL } from "drizzle-orm";
 import type { KnowledgeSubject, InsertKnowledgeSubject } from "../../../../shared/schema.js";
+import { createCrudStorage, normalizeSynonymsInData } from "../../../shared/storage/index.js";
+
+interface SubjectFilters {
+  search?: string;
+  productCatalogId?: number;
+}
+
+const baseCrud = createCrudStorage<KnowledgeSubject, InsertKnowledgeSubject, SubjectFilters>({
+  table: knowledgeSubjects,
+  idColumn: knowledgeSubjects.id,
+  filterConfig: [
+    { filterKey: "search", column: knowledgeSubjects.name, type: "ilike" },
+    { filterKey: "productCatalogId", column: knowledgeSubjects.productCatalogId, type: "eq" },
+  ],
+  orderByColumn: knowledgeSubjects.updatedAt,
+  orderDirection: "desc",
+  updatedAtKey: "updatedAt",
+  hooks: {
+    beforeCreate: (data) => normalizeSynonymsInData(data),
+    beforeUpdate: (data) => normalizeSynonymsInData(data),
+    beforeDelete: async (id) => {
+      const intentsToDelete = await db.select({ id: knowledgeIntents.id })
+        .from(knowledgeIntents)
+        .where(eq(knowledgeIntents.subjectId, id));
+      
+      const intentIds = intentsToDelete.map(i => i.id);
+      
+      if (intentIds.length > 0) {
+        await db.delete(knowledgeBase)
+          .where(inArray(knowledgeBase.intentId, intentIds));
+      }
+      
+      await db.delete(knowledgeBase)
+        .where(eq(knowledgeBase.subjectId, id));
+      
+      await db.delete(knowledgeIntents)
+        .where(eq(knowledgeIntents.subjectId, id));
+    },
+  },
+});
 
 export const knowledgeSubjectsStorage = {
-  async getAll(filters?: {
-    search?: string;
-    productCatalogId?: number;
-  }): Promise<KnowledgeSubject[]> {
-    const query = db.select()
-      .from(knowledgeSubjects);
-
-    const conditions: SQL[] = [];
-
-    if (filters?.productCatalogId) {
-      conditions.push(eq(knowledgeSubjects.productCatalogId, filters.productCatalogId));
-    }
-
-    if (filters?.search) {
-      const searchPattern = `%${filters.search}%`;
-      conditions.push(ilike(knowledgeSubjects.name, searchPattern));
-    }
-
-    if (conditions.length > 0) {
-      return await query.where(and(...conditions)).orderBy(desc(knowledgeSubjects.updatedAt));
-    }
-
-    return await query.orderBy(desc(knowledgeSubjects.updatedAt));
-  },
+  ...baseCrud,
 
   async getAllWithProduct(): Promise<(KnowledgeSubject & { productName: string | null })[]> {
     const results = await db.select({
@@ -46,72 +63,15 @@ export const knowledgeSubjectsStorage = {
     return results;
   },
 
-  async getById(id: number): Promise<KnowledgeSubject | null> {
-    const [subject] = await db.select()
-      .from(knowledgeSubjects)
-      .where(eq(knowledgeSubjects.id, id));
-    return subject || null;
-  },
-
   async getByProductCatalogId(productCatalogId: number): Promise<KnowledgeSubject[]> {
     return await db.select()
       .from(knowledgeSubjects)
       .where(eq(knowledgeSubjects.productCatalogId, productCatalogId))
-      .orderBy(knowledgeSubjects.name);
-  },
-
-  async create(data: InsertKnowledgeSubject): Promise<KnowledgeSubject> {
-    const normalizedSynonyms = (data.synonyms || []).map(s => s.trim().toLowerCase());
-    const [subject] = await db.insert(knowledgeSubjects)
-      .values({
-        ...data,
-        synonyms: normalizedSynonyms,
-      })
-      .returning();
-    return subject;
-  },
-
-  async update(id: number, data: Partial<InsertKnowledgeSubject>): Promise<KnowledgeSubject | null> {
-    const updateData = { ...data };
-    if (updateData.synonyms) {
-      updateData.synonyms = updateData.synonyms.map(s => s.trim().toLowerCase());
-    }
-    const [subject] = await db.update(knowledgeSubjects)
-      .set({
-        ...updateData,
-        updatedAt: new Date(),
-      })
-      .where(eq(knowledgeSubjects.id, id))
-      .returning();
-    return subject || null;
-  },
-
-  async delete(id: number): Promise<boolean> {
-    const intentsToDelete = await db.select({ id: knowledgeIntents.id })
-      .from(knowledgeIntents)
-      .where(eq(knowledgeIntents.subjectId, id));
-    
-    const intentIds = intentsToDelete.map(i => i.id);
-    
-    if (intentIds.length > 0) {
-      await db.delete(knowledgeBase)
-        .where(inArray(knowledgeBase.intentId, intentIds));
-    }
-    
-    await db.delete(knowledgeBase)
-      .where(eq(knowledgeBase.subjectId, id));
-    
-    await db.delete(knowledgeIntents)
-      .where(eq(knowledgeIntents.subjectId, id));
-    
-    const result = await db.delete(knowledgeSubjects)
-      .where(eq(knowledgeSubjects.id, id))
-      .returning();
-    return result.length > 0;
+      .orderBy(asc(knowledgeSubjects.name));
   },
 
   async addSynonym(id: number, synonym: string): Promise<KnowledgeSubject | null> {
-    const subject = await this.getById(id);
+    const subject = await baseCrud.getById(id);
     if (!subject) return null;
 
     const normalizedSynonym = synonym.trim().toLowerCase();
@@ -120,16 +80,16 @@ export const knowledgeSubjectsStorage = {
     }
 
     const updatedSynonyms = [...subject.synonyms, normalizedSynonym];
-    return await this.update(id, { synonyms: updatedSynonyms });
+    return await baseCrud.update(id, { synonyms: updatedSynonyms });
   },
 
   async removeSynonym(id: number, synonym: string): Promise<KnowledgeSubject | null> {
-    const subject = await this.getById(id);
+    const subject = await baseCrud.getById(id);
     if (!subject) return null;
 
     const normalizedSynonym = synonym.trim().toLowerCase();
     const updatedSynonyms = subject.synonyms.filter(s => s !== normalizedSynonym);
-    return await this.update(id, { synonyms: updatedSynonyms });
+    return await baseCrud.update(id, { synonyms: updatedSynonyms });
   },
 
   async findByNameOrSynonym(searchTerm: string, productCatalogId?: number): Promise<KnowledgeSubject[]> {
@@ -150,6 +110,6 @@ export const knowledgeSubjectsStorage = {
     return await db.select()
       .from(knowledgeSubjects)
       .where(and(...conditions))
-      .orderBy(knowledgeSubjects.name);
+      .orderBy(asc(knowledgeSubjects.name));
   },
 };

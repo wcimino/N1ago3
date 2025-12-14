@@ -4,3 +4,4 @@ export * from "./crudFactory.js";
 export * from "./relationHelpers.js";
 export * from "./paginationHelpers.js";
 export * from "./upsertHelpers.js";
+export * from "./synonymsHelpers.js";
