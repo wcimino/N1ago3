@@ -121,7 +121,7 @@ export async function searchArticlesWithRelevance(
       syncedAt: zendeskArticles.syncedAt,
       createdAt: zendeskArticles.createdAt,
       updatedAt: zendeskArticles.updatedAt,
-      relevanceScore: sql<number>`(
+      relevanceScore: sql<number>`LEAST(ROUND((
         COALESCE(
           ts_rank_cd(
             setweight(to_tsvector('portuguese', COALESCE(${zendeskArticles.title}, '')), 'A') ||
@@ -138,7 +138,7 @@ export async function searchArticlesWithRelevance(
           WHEN ${zendeskArticles.zendeskUpdatedAt} > NOW() - INTERVAL '180 days' THEN 1
           ELSE 0
         END
-      )`.as('relevance_score'),
+      ) * 100.0 / 30.0), 100)`.as('relevance_score'),
     })
     .from(zendeskArticles)
     .where(whereClause)
