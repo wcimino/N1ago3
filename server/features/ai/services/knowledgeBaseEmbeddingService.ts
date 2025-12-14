@@ -22,6 +22,7 @@ export async function generateEmbedding(text: string): Promise<EmbeddingResult> 
 }
 
 export async function generateArticleEmbedding(article: {
+  name?: string | null;
   productStandard: string;
   subproductStandard?: string | null;
   description: string;
@@ -32,6 +33,7 @@ export async function generateArticleEmbedding(article: {
 }
 
 export function generateContentHash(article: {
+  name?: string | null;
   productStandard: string;
   subproductStandard?: string | null;
   description: string;

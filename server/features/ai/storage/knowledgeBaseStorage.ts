@@ -381,6 +381,7 @@ export const knowledgeBaseStorage = {
       FROM knowledge_base a
       INNER JOIN knowledge_base_embeddings e ON a.id = e.article_id
       WHERE e.content_hash != md5(
+        COALESCE(a.name, '') || 
         COALESCE(a.product_standard, '') || 
         COALESCE(a.subproduct_standard, '') || 
         COALESCE(a.description, '') || 
@@ -406,6 +407,7 @@ export const knowledgeBaseStorage = {
         (SELECT count(*)::int FROM knowledge_base a LEFT JOIN knowledge_base_embeddings e ON a.id = e.article_id WHERE e.id IS NULL) as without_embedding,
         (SELECT count(*)::int FROM knowledge_base a INNER JOIN knowledge_base_embeddings e ON a.id = e.article_id 
          WHERE e.content_hash != md5(
+           COALESCE(a.name, '') || 
            COALESCE(a.product_standard, '') || 
            COALESCE(a.subproduct_standard, '') || 
            COALESCE(a.description, '') || 

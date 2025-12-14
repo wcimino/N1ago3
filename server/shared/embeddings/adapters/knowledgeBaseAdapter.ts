@@ -14,6 +14,11 @@ export class KnowledgeBaseEmbeddableArticle implements EmbeddableArticle {
   getContentForEmbedding(): string {
     const parts: string[] = [];
     
+    // Nome do artigo é crucial para identificar semanticamente o tema
+    if (this.article.name) {
+      parts.push(`Nome: ${this.article.name}`);
+    }
+    
     parts.push(`Produto: ${this.article.productStandard}`);
     
     if (this.article.subproductStandard) {
@@ -28,6 +33,7 @@ export class KnowledgeBaseEmbeddableArticle implements EmbeddableArticle {
 
   getContentHash(): string {
     return generateContentHashFromParts([
+      this.article.name,
       this.article.productStandard,
       this.article.subproductStandard,
       this.article.description,
@@ -45,12 +51,14 @@ export class KnowledgeBaseEmbeddableArticle implements EmbeddableArticle {
 }
 
 export function generateKBContentHash(article: {
+  name?: string | null;
   productStandard: string;
   subproductStandard?: string | null;
   description: string;
   resolution: string;
 }): string {
   return generateContentHashFromParts([
+    article.name,
     article.productStandard,
     article.subproductStandard,
     article.description,
@@ -59,12 +67,17 @@ export function generateKBContentHash(article: {
 }
 
 export function generateKBContentForEmbedding(article: {
+  name?: string | null;
   productStandard: string;
   subproductStandard?: string | null;
   description: string;
   resolution: string;
 }): string {
   const parts: string[] = [];
+  
+  if (article.name) {
+    parts.push(`Nome: ${article.name}`);
+  }
   
   parts.push(`Produto: ${article.productStandard}`);
   
