@@ -12,6 +12,7 @@ import {
   generateEmbedding,
   generateContentHashFromParts 
 } from "../../../shared/embeddings/index.js";
+import { calculateMatchScore, parseSearchTerms, type MatchField } from "../../../shared/utils/matchScoring.js";
 
 export type ObjectiveProblemWithProducts = KnowledgeBaseObjectiveProblem & {
   productIds: number[];
@@ -245,73 +246,27 @@ export interface ObjectiveProblemSearchResult {
   productNames: string[];
 }
 
-function normalizeText(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
-}
-
-function calculateMatchScore(
+function calculateProblemMatchScore(
   problem: KnowledgeBaseObjectiveProblem,
   searchTerms: string[]
 ): { score: number; reason: string } {
-  let maxScore = 0;
-  let bestReason = "";
+  const fields: MatchField[] = [
+    { name: "Nome", value: problem.name, weight: 'contains_name' },
+    { name: "Descrição", value: problem.description || "", weight: 'contains_low' },
+  ];
 
-  for (const term of searchTerms) {
-    const normalizedTerm = normalizeText(term);
-    const normalizedName = normalizeText(problem.name);
-    
-    if (normalizedName === normalizedTerm) {
-      if (100 > maxScore) {
-        maxScore = 100;
-        bestReason = `Nome exato: '${problem.name}'`;
-      }
-    } else if (normalizedName.includes(normalizedTerm)) {
-      if (80 > maxScore) {
-        maxScore = 80;
-        bestReason = `Nome contém: '${term}'`;
-      }
-    }
-
-    const synonyms = problem.synonyms || [];
-    for (const synonym of synonyms) {
-      const normalizedSynonym = normalizeText(synonym);
-      if (normalizedSynonym === normalizedTerm) {
-        if (90 > maxScore) {
-          maxScore = 90;
-          bestReason = `Sinônimo exato: '${synonym}'`;
-        }
-      } else if (normalizedSynonym.includes(normalizedTerm)) {
-        if (70 > maxScore) {
-          maxScore = 70;
-          bestReason = `Sinônimo contém: '${term}' em '${synonym}'`;
-        }
-      }
-    }
-
-    const examples = problem.examples || [];
-    for (const example of examples) {
-      if (normalizeText(example).includes(normalizedTerm)) {
-        if (60 > maxScore) {
-          maxScore = 60;
-          bestReason = `Exemplo contém: '${term}'`;
-        }
-        break;
-      }
-    }
-
-    if (normalizeText(problem.description).includes(normalizedTerm)) {
-      if (40 > maxScore) {
-        maxScore = 40;
-        bestReason = `Descrição contém: '${term}'`;
-      }
-    }
+  const synonyms = problem.synonyms || [];
+  for (const synonym of synonyms) {
+    fields.push({ name: "Sinônimo", value: synonym, weight: 'contains_secondary' });
   }
 
-  return { score: maxScore, reason: bestReason };
+  const examples = problem.examples || [];
+  for (const example of examples) {
+    fields.push({ name: "Exemplo", value: example, weight: 'contains_tertiary' });
+  }
+
+  const result = calculateMatchScore(fields, searchTerms);
+  return { score: result.score, reason: result.reason };
 }
 
 export async function searchObjectiveProblems(
@@ -339,7 +294,7 @@ export async function searchObjectiveProblems(
   const productMap = new Map(allProducts.map((p: typeof allProducts[number]) => [p.id, p.fullName]));
 
   const searchTerms = keywords 
-    ? keywords.split(/\s+/).filter((t: string) => t.length >= 2)
+    ? parseSearchTerms(keywords)
     : [];
 
   const results: ObjectiveProblemSearchResult[] = await Promise.all(
@@ -351,7 +306,7 @@ export async function searchObjectiveProblems(
       let matchReason = "Listado";
       
       if (searchTerms.length > 0) {
-        const scoreResult = calculateMatchScore(problem, searchTerms);
+        const scoreResult = calculateProblemMatchScore(problem, searchTerms);
         matchScore = scoreResult.score;
         matchReason = scoreResult.reason || "Sem match direto";
       } else {
