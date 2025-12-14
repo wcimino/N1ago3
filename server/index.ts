@@ -28,9 +28,12 @@ async function startServer() {
   registerRoutes(app);
 
   if (process.env.NODE_ENV === "production") {
-    app.use(express.static(path.join(__dirname, "public")));
+    // In production, dist/server.js runs from dist/, so public is at dist/public
+    // Use process.cwd() as fallback for bundled environments where __dirname may not resolve correctly
+    const publicPath = path.join(process.cwd(), "dist", "public");
+    app.use(express.static(publicPath));
     app.get("*", (req, res) => {
-      res.sendFile(path.join(__dirname, "public/index.html"));
+      res.sendFile(path.join(publicPath, "index.html"));
     });
   }
 
