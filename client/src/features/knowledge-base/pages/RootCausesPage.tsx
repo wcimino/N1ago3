@@ -1,27 +1,17 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, X, Loader2, GitBranch, Check, AlertCircle, Puzzle, ChevronDown, ChevronUp, HelpCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, GitBranch } from "lucide-react";
 import { FilterBar } from "../../../shared/components/ui/FilterBar";
-import { FormField } from "../../../shared/components/crud";
-import { useCrudMutations } from "../../../shared/hooks";
+import { useCrudMutations, useCrudFormState } from "../../../shared/hooks";
+import { 
+  RootCauseForm, 
+  emptyRootCauseForm,
+  type RootCauseFormData 
+} from "../components/RootCauseForm";
 
 interface ValidationQuestion {
   question: string;
   order: number;
-}
-
-interface KnowledgeBaseObjectiveProblem {
-  id: number;
-  name: string;
-  description: string;
-  isActive: boolean;
-}
-
-interface KnowledgeBaseSolution {
-  id: number;
-  name: string;
-  description: string | null;
-  isActive: boolean;
 }
 
 interface KnowledgeBaseRootCause {
@@ -37,34 +27,21 @@ interface KnowledgeBaseRootCause {
   updatedAt: string;
 }
 
-interface ProblemWithQuestions {
-  problemId: number;
-  validationQuestions: ValidationQuestion[];
-}
-
-interface FormData {
-  name: string;
-  description: string;
-  isActive: boolean;
-  problems: ProblemWithQuestions[];
-  solutionIds: number[];
-}
-
-const emptyForm: FormData = {
-  name: "",
-  description: "",
-  isActive: true,
-  problems: [],
-  solutionIds: [],
-};
-
 export function RootCausesPage() {
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState<FormData>(emptyForm);
   const [searchTerm, setSearchTerm] = useState("");
-  const [expandedProblemId, setExpandedProblemId] = useState<number | null>(null);
-  const [newQuestionByProblem, setNewQuestionByProblem] = useState<Record<number, string>>({});
+
+  const {
+    showForm,
+    editingId,
+    formData,
+    setFormData,
+    openCreateForm,
+    openEditForm,
+    resetForm,
+    isEditing,
+  } = useCrudFormState<RootCauseFormData>({
+    emptyForm: emptyRootCauseForm,
+  });
 
   const { data: rootCauses = [], isLoading } = useQuery<KnowledgeBaseRootCause[]>({
     queryKey: ["/api/knowledge/root-causes", searchTerm],
@@ -77,23 +54,7 @@ export function RootCausesPage() {
     },
   });
 
-  const { data: allProblems = [] } = useQuery<KnowledgeBaseObjectiveProblem[]>({
-    queryKey: ["/api/knowledge/objective-problems"],
-  });
-
-  const { data: allSolutions = [] } = useQuery<KnowledgeBaseSolution[]>({
-    queryKey: ["/api/knowledge/solutions"],
-  });
-
-  const resetForm = () => {
-    setShowForm(false);
-    setEditingId(null);
-    setFormData(emptyForm);
-    setExpandedProblemId(null);
-    setNewQuestionByProblem({});
-  };
-
-  const { handleCreate, handleUpdate, handleDelete, isMutating, isDeleting } = useCrudMutations<FormData, FormData>({
+  const { handleCreate, handleUpdate, handleDelete, isMutating, isDeleting } = useCrudMutations<RootCauseFormData, RootCauseFormData>({
     baseUrl: "/api/knowledge/root-causes",
     queryKeys: ["/api/knowledge/root-causes"],
     onCreateSuccess: resetForm,
@@ -112,7 +73,7 @@ export function RootCausesPage() {
       const res = await fetch(`/api/knowledge/root-causes/${rootCause.id}?withRelations=true`);
       if (res.ok) {
         const data = await res.json();
-        setFormData({
+        openEditForm(rootCause.id, {
           name: data.name,
           description: data.description,
           isActive: data.isActive,
@@ -123,7 +84,7 @@ export function RootCausesPage() {
           solutionIds: data.solutions.map((s: { id: number }) => s.id),
         });
       } else {
-        setFormData({
+        openEditForm(rootCause.id, {
           name: rootCause.name,
           description: rootCause.description,
           isActive: rootCause.isActive,
@@ -132,7 +93,7 @@ export function RootCausesPage() {
         });
       }
     } catch {
-      setFormData({
+      openEditForm(rootCause.id, {
         name: rootCause.name,
         description: rootCause.description,
         isActive: rootCause.isActive,
@@ -140,8 +101,6 @@ export function RootCausesPage() {
         solutionIds: [],
       });
     }
-    setEditingId(rootCause.id);
-    setShowForm(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -154,79 +113,6 @@ export function RootCausesPage() {
       handleCreate(formData);
     }
   };
-
-  const toggleProblem = (problemId: number) => {
-    const existing = formData.problems.find(p => p.problemId === problemId);
-    if (existing) {
-      setFormData({
-        ...formData,
-        problems: formData.problems.filter(p => p.problemId !== problemId),
-      });
-      if (expandedProblemId === problemId) {
-        setExpandedProblemId(null);
-      }
-    } else {
-      setFormData({
-        ...formData,
-        problems: [...formData.problems, { problemId, validationQuestions: [] }],
-      });
-    }
-  };
-
-  const toggleSolution = (solutionId: number) => {
-    if (formData.solutionIds.includes(solutionId)) {
-      setFormData({
-        ...formData,
-        solutionIds: formData.solutionIds.filter(id => id !== solutionId),
-      });
-    } else {
-      setFormData({
-        ...formData,
-        solutionIds: [...formData.solutionIds, solutionId],
-      });
-    }
-  };
-
-  const addQuestion = (problemId: number) => {
-    const questionText = newQuestionByProblem[problemId] || "";
-    if (!questionText.trim()) return;
-    
-    setFormData({
-      ...formData,
-      problems: formData.problems.map(p => {
-        if (p.problemId === problemId) {
-          return {
-            ...p,
-            validationQuestions: [
-              ...p.validationQuestions,
-              { question: questionText.trim(), order: p.validationQuestions.length + 1 },
-            ],
-          };
-        }
-        return p;
-      }),
-    });
-    setNewQuestionByProblem({ ...newQuestionByProblem, [problemId]: "" });
-  };
-
-  const removeQuestion = (problemId: number, questionIndex: number) => {
-    setFormData({
-      ...formData,
-      problems: formData.problems.map(p => {
-        if (p.problemId === problemId) {
-          const newQuestions = p.validationQuestions
-            .filter((_, i) => i !== questionIndex)
-            .map((q, i) => ({ ...q, order: i + 1 }));
-          return { ...p, validationQuestions: newQuestions };
-        }
-        return p;
-      }),
-    });
-  };
-
-  const activeProblems = allProblems.filter(p => p.isActive);
-  const activeSolutions = allSolutions.filter(s => s.isActive);
-  const selectedProblemIds = new Set(formData.problems.map(p => p.problemId));
 
   if (isLoading) {
     return (
@@ -250,11 +136,7 @@ export function RootCausesPage() {
           ]}
         />
         <button
-          onClick={() => {
-            setFormData(emptyForm);
-            setEditingId(null);
-            setShowForm(true);
-          }}
+          onClick={openCreateForm}
           className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
@@ -269,198 +151,14 @@ export function RootCausesPage() {
       </div>
 
       {showForm && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">
-              {editingId ? "Editar Causa-raiz" : "Nova Causa-raiz"}
-            </h3>
-            <button onClick={resetForm} className="text-gray-500 hover:text-gray-700">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <FormField
-              type="text"
-              label="Nome"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Nome da causa-raiz..."
-            />
-
-            <FormField
-              type="textarea"
-              label="Descricao"
-              required
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Descricao detalhada da causa-raiz..."
-              rows={3}
-            />
-
-            <FormField
-              type="checkbox"
-              label="Ativo"
-              id="isActive"
-              checked={formData.isActive}
-              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <AlertCircle className="w-4 h-4 inline mr-1" />
-                  Problemas Relacionados ({formData.problems.length})
-                </label>
-                <div className="border border-gray-200 rounded-lg max-h-72 overflow-y-auto">
-                  {activeProblems.length === 0 ? (
-                    <div className="p-3 text-sm text-gray-500 text-center">
-                      Nenhum problema disponível
-                    </div>
-                  ) : (
-                    activeProblems.map(problem => {
-                      const isSelected = selectedProblemIds.has(problem.id);
-                      const problemData = formData.problems.find(p => p.problemId === problem.id);
-                      const isExpanded = expandedProblemId === problem.id;
-                      const questionCount = problemData?.validationQuestions.length || 0;
-                      
-                      return (
-                        <div key={problem.id} className="border-b last:border-b-0">
-                          <div className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => toggleProblem(problem.id)}
-                              className="w-4 h-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
-                            />
-                            <span className="text-sm text-gray-700 flex-1 truncate">{problem.name}</span>
-                            {isSelected && (
-                              <>
-                                {questionCount > 0 && (
-                                  <span className="px-1.5 py-0.5 text-xs bg-violet-100 text-violet-700 rounded">
-                                    {questionCount} perguntas
-                                  </span>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => setExpandedProblemId(isExpanded ? null : problem.id)}
-                                  className="p-1 text-gray-400 hover:text-violet-600"
-                                  title="Perguntas de validação"
-                                >
-                                  {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                </button>
-                              </>
-                            )}
-                          </div>
-                          
-                          {isSelected && isExpanded && problemData && (
-                            <div className="px-3 pb-3 bg-gray-50 border-t">
-                              <div className="pt-2 space-y-2">
-                                <div className="text-xs font-medium text-gray-600 flex items-center gap-1">
-                                  <HelpCircle className="w-3 h-3" />
-                                  Perguntas de Validação
-                                </div>
-                                
-                                {problemData.validationQuestions.map((q, idx) => (
-                                  <div key={idx} className="flex items-start gap-2 bg-white p-2 rounded border">
-                                    <span className="text-xs text-gray-400 mt-0.5">{idx + 1}.</span>
-                                    <span className="flex-1 text-sm text-gray-700">{q.question}</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => removeQuestion(problem.id, idx)}
-                                      className="p-1 text-gray-400 hover:text-red-500"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                ))}
-                                
-                                <div className="flex gap-2">
-                                  <input
-                                    type="text"
-                                    value={newQuestionByProblem[problem.id] || ""}
-                                    onChange={(e) => setNewQuestionByProblem({ ...newQuestionByProblem, [problem.id]: e.target.value })}
-                                    placeholder="Nova pergunta..."
-                                    className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-violet-500"
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        addQuestion(problem.id);
-                                      }
-                                    }}
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => addQuestion(problem.id)}
-                                    className="px-2 py-1 text-sm bg-violet-100 text-violet-700 rounded hover:bg-violet-200"
-                                  >
-                                    <Plus className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Puzzle className="w-4 h-4 inline mr-1" />
-                  Soluções Relacionadas ({formData.solutionIds.length})
-                </label>
-                <div className="border border-gray-200 rounded-lg max-h-72 overflow-y-auto">
-                  {activeSolutions.length === 0 ? (
-                    <div className="p-3 text-sm text-gray-500 text-center">
-                      Nenhuma solução disponível
-                    </div>
-                  ) : (
-                    activeSolutions.map(solution => (
-                      <label
-                        key={solution.id}
-                        className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={formData.solutionIds.includes(solution.id)}
-                          onChange={() => toggleSolution(solution.id)}
-                          className="w-4 h-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
-                        />
-                        <span className="text-sm text-gray-700 truncate">{solution.name}</span>
-                      </label>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={isMutating}
-                className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors"
-              >
-                {isMutating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Check className="w-4 h-4" />
-                )}
-                {editingId ? "Salvar" : "Criar"}
-              </button>
-            </div>
-          </form>
-        </div>
+        <RootCauseForm
+          formData={formData}
+          setFormData={setFormData}
+          onSubmit={handleSubmit}
+          onCancel={resetForm}
+          isEditing={isEditing}
+          isMutating={isMutating}
+        />
       )}
 
       <div className="space-y-2">
