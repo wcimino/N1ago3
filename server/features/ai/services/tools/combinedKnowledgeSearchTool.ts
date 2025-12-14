@@ -18,6 +18,7 @@ export interface CombinedSearchResult {
 export interface CombinedSearchParams {
   productId?: number;
   keywords?: string;
+  conversationContext?: string;
   limit?: number;
 }
 
@@ -30,16 +31,18 @@ export interface CombinedSearchResponse {
 }
 
 export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): Promise<CombinedSearchResponse> {
-  const { productId, keywords, limit = 5 } = params;
+  const { productId, keywords, conversationContext, limit = 5 } = params;
 
   const [articlesResult, problemsResult] = await Promise.all([
     runKnowledgeBaseSearch({
       productId,
+      conversationContext,
       keywords,
       limit
     }),
     runProblemObjectiveSearch({
       productId,
+      conversationContext,
       keywords,
       limit
     })
@@ -112,18 +115,23 @@ export function createCombinedKnowledgeSearchToolWithContext(conversationId?: nu
           type: "string",
           description: "Nome do subproduto para filtrar (ex: 'Gold', 'Platinum')"
         },
+        conversationContext: {
+          type: "string",
+          description: "Resumo ou contexto da conversa para busca semântica principal. Quando fornecido, a busca usa o contexto para encontrar resultados semanticamente relevantes."
+        },
         keywords: {
           type: "string",
-          description: "Palavras-chave ou descrição do problema para busca"
+          description: "Palavras-chave opcionais para filtrar/priorizar os resultados. Usado como boost quando conversationContext está presente."
         }
       },
       required: ["product"]
     },
-    handler: async (args: { product: string; subproduct?: string; keywords?: string }) => {
+    handler: async (args: { product: string; subproduct?: string; conversationContext?: string; keywords?: string }) => {
       const resolved = await productCatalogStorage.resolveProductId(args.product, args.subproduct);
       
       const result = await runCombinedKnowledgeSearch({
         productId: resolved?.id,
+        conversationContext: args.conversationContext,
         keywords: args.keywords,
         limit: 5
       });

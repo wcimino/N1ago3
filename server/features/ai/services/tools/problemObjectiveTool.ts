@@ -29,16 +29,121 @@ export interface ProblemSearchResponse {
 export interface ProblemSearchParams {
   productId?: number;
   keywords?: string;
+  conversationContext?: string;
   limit?: number;
 }
 
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function applyKeywordsBoostToProblems(
+  problems: ProblemSearchResult[],
+  keywordsStr: string,
+  limit: number
+): ProblemSearchResult[] {
+  const searchTerms = keywordsStr
+    .split(/\s+/)
+    .filter(t => t.length >= 2);
+
+  if (searchTerms.length === 0) {
+    return problems.slice(0, limit);
+  }
+
+  const boostedProblems = problems.map(problem => {
+    // Normalize problem content to match normalized keywords (accent-insensitive)
+    const problemContent = normalizeText([
+      problem.name,
+      problem.description || "",
+      ...problem.synonyms,
+      ...problem.examples,
+      ...problem.products
+    ].join(" "));
+
+    let keywordBoost = 0;
+    const matchedKeywords: string[] = [];
+
+    for (const term of searchTerms) {
+      const normalizedTerm = normalizeText(term);
+      if (problemContent.includes(normalizedTerm)) {
+        keywordBoost += 5;
+        matchedKeywords.push(term);
+      }
+    }
+
+    const boostedScore = Math.min(100, problem.matchScore + keywordBoost);
+    const matchReason = matchedKeywords.length > 0
+      ? `${problem.matchReason} + keywords: ${matchedKeywords.join(", ")}`
+      : problem.matchReason;
+
+    return {
+      ...problem,
+      matchScore: boostedScore,
+      matchReason
+    };
+  });
+
+  return boostedProblems
+    .sort((a, b) => b.matchScore - a.matchScore)
+    .slice(0, limit);
+}
+
 export async function runProblemObjectiveSearch(params: ProblemSearchParams): Promise<ProblemSearchResponse> {
-  const { productId, limit = 10 } = params;
+  const { productId, conversationContext, limit = 10 } = params;
   
   const hasEmbeddings = await hasObjectiveProblemEmbeddings();
   
+  // Hybrid approach: conversationContext for main semantic search, keywords for boost/filter
+  if (conversationContext && conversationContext.trim().length > 0 && hasEmbeddings) {
+    console.log(`[ProblemObjectiveSearch] Hybrid search: using conversationContext for embedding`);
+    
+    const { embedding } = await generateEmbedding(conversationContext, { contextType: "query" });
+    
+    const semanticResults = await searchObjectiveProblemsBySimilarity({
+      queryEmbedding: embedding,
+      productId,
+      onlyActive: true,
+      limit: params.keywords ? limit * 2 : limit,
+    });
+
+    if (semanticResults.length === 0) {
+      return {
+        message: "Nenhum problema objetivo encontrado",
+        problems: []
+      };
+    }
+
+    let problems: ProblemSearchResult[] = semanticResults.map((p: SemanticSearchResult) => ({
+      source: "problem" as const,
+      id: p.id,
+      name: p.name,
+      matchScore: p.similarity,
+      matchReason: `Similaridade semântica (contexto): ${p.similarity}%`,
+      description: p.description,
+      synonyms: p.synonyms || [],
+      examples: p.examples || [],
+      products: p.productNames || [],
+    }));
+
+    // Apply keywords as boost/filter if provided
+    if (params.keywords && params.keywords.trim().length > 0) {
+      problems = applyKeywordsBoostToProblems(problems, params.keywords, limit);
+      console.log(`[ProblemObjectiveSearch] After keywords boost/filter: ${problems.length} problems`);
+    }
+
+    return {
+      message: `Encontrados ${problems.length} problemas objetivos (busca híbrida)`,
+      problems
+    };
+  }
+  
+  // Fallback: use keywords for semantic search (original behavior)
   if (params.keywords && hasEmbeddings) {
-    console.log(`[ProblemObjectiveSearch] Semantic search: "${params.keywords}"`);
+    console.log(`[ProblemObjectiveSearch] Semantic search (keywords): "${params.keywords}"`);
     
     const { embedding } = await generateEmbedding(params.keywords, { contextType: "query" });
     
@@ -72,6 +177,7 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
     };
   }
 
+  // Fallback: text-based search
   const results = await searchObjectiveProblems({
     keywords: params.keywords,
     productId,
@@ -117,18 +223,23 @@ export function createProblemObjectiveTool(): ToolDefinition {
           type: "string",
           description: "Nome do subproduto para filtrar (ex: 'Gold', 'Platinum')"
         },
+        conversationContext: {
+          type: "string",
+          description: "Resumo ou contexto da conversa para busca semântica principal. Quando fornecido, a busca usa o contexto para encontrar problemas semanticamente relevantes."
+        },
         keywords: {
           type: "string",
-          description: "Descrição do problema do cliente para busca semântica"
+          description: "Palavras-chave opcionais para filtrar/priorizar os resultados. Usado como boost quando conversationContext está presente."
         }
       },
       required: ["product"]
     },
-    handler: async (args: { product: string; subproduct?: string; keywords?: string }) => {
+    handler: async (args: { product: string; subproduct?: string; conversationContext?: string; keywords?: string }) => {
       const resolved = await productCatalogStorage.resolveProductId(args.product, args.subproduct);
       
       const result = await runProblemObjectiveSearch({
         productId: resolved?.id,
+        conversationContext: args.conversationContext,
         keywords: args.keywords
       });
       return JSON.stringify(result);

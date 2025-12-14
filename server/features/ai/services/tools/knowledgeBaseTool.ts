@@ -12,16 +12,21 @@ export function createKnowledgeBaseArticlesTool(): ToolDefinition {
           type: "number",
           description: "ID do produto para filtrar"
         },
+        conversationContext: {
+          type: "string",
+          description: "Resumo ou contexto da conversa para busca semântica principal. Quando fornecido, a busca usa o contexto para encontrar artigos semanticamente relevantes."
+        },
         keywords: {
           type: "string",
-          description: "Palavras-chave ou descrição do problema para buscar no conteúdo dos artigos"
+          description: "Palavras-chave opcionais para filtrar/priorizar os resultados. Usado como boost quando conversationContext está presente."
         }
       },
       required: []
     },
-    handler: async (args: { productId?: number; keywords?: string }) => {
+    handler: async (args: { productId?: number; conversationContext?: string; keywords?: string }) => {
       const result = await runKnowledgeBaseSearch({
         productId: args.productId,
+        conversationContext: args.conversationContext,
         keywords: args.keywords,
         limit: 5
       });
