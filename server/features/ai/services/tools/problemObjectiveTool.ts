@@ -86,7 +86,7 @@ function applyKeywordsBoostToProblems(
 }
 
 export async function runProblemObjectiveSearch(params: ProblemSearchParams): Promise<ProblemSearchResponse> {
-  const { productId, conversationContext, limit = 10 } = params;
+  const { productId, conversationContext, limit = 5 } = params;
   
   const hasEmbeddings = await hasObjectiveProblemEmbeddings();
   
