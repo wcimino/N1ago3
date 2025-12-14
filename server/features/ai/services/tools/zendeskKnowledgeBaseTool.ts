@@ -159,7 +159,7 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
                 body: a.body,
                 sectionName: a.sectionName,
                 htmlUrl: a.htmlUrl,
-                similarity: Math.round(a.relevanceScore * 100),
+                similarity: Math.round(a.relevanceScore),
               }));
             articles = applyProductMismatchPenalty(fallbackArticles, mergedContext.produto);
           }
@@ -179,7 +179,7 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
               body: a.body,
               sectionName: a.sectionName,
               htmlUrl: a.htmlUrl,
-              similarity: Math.round(a.relevanceScore * 100),
+              similarity: Math.round(a.relevanceScore),
             }));
           articles = applyProductMismatchPenalty(fullTextArticles, mergedContext.produto);
         }
