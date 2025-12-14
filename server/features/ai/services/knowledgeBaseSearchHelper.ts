@@ -143,8 +143,8 @@ export async function runKnowledgeBaseSearch(
         description: a.description,
         resolution: a.resolution,
         observations: a.observations,
-        relevanceScore: Math.round(a.similarity * 100),
-        matchReason: `Similaridade semântica (contexto): ${Math.round(a.similarity * 100)}%`
+        relevanceScore: a.similarity,
+        matchReason: `Similaridade semântica (contexto): ${a.similarity}%`
       }));
       
       console.log(`[KB Search] Context-based semantic search found ${articles.length} articles`);
@@ -181,8 +181,8 @@ export async function runKnowledgeBaseSearch(
           description: a.description,
           resolution: a.resolution,
           observations: a.observations,
-          relevanceScore: Math.round(a.similarity * 100),
-          matchReason: `Similaridade semântica: ${Math.round(a.similarity * 100)}%`
+          relevanceScore: a.similarity,
+          matchReason: `Similaridade semântica: ${a.similarity}%`
         }));
         
         console.log(`[KB Search] Semantic search found ${articles.length} articles`);
