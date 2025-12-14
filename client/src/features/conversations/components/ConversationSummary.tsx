@@ -1,5 +1,5 @@
 import { Sparkles, User, Headphones, Clock, Info as InfoIcon, Cross, AlertTriangle, BookOpen } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { Triage, ObjectiveProblemIdentified, ArticleAndProblemResult } from "../types/conversations";
 
 interface SummaryData {
@@ -61,6 +61,20 @@ interface ConfidenceTooltipProps {
 
 function ConfidenceTooltip({ confidence, reason }: ConfidenceTooltipProps) {
   const [showTooltip, setShowTooltip] = useState(false);
+  const tooltipRef = useRef<HTMLSpanElement>(null);
+  
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
+        setShowTooltip(false);
+      }
+    }
+    
+    if (showTooltip) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showTooltip]);
   
   if (confidence === null || confidence === undefined) return null;
   
@@ -68,7 +82,7 @@ function ConfidenceTooltip({ confidence, reason }: ConfidenceTooltipProps) {
     <span className="inline-flex items-center gap-1">
       <span className="text-sm text-gray-500">({confidence}%)</span>
       {reason && (
-        <span className="relative">
+        <span className="relative" ref={tooltipRef}>
           <button
             onClick={() => setShowTooltip(!showTooltip)}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -77,7 +91,7 @@ function ConfidenceTooltip({ confidence, reason }: ConfidenceTooltipProps) {
             <InfoIcon className="w-4 h-4" />
           </button>
           {showTooltip && (
-            <div className="absolute z-10 left-0 top-6 w-64 p-2 bg-gray-800 text-white text-xs rounded shadow-lg">
+            <div className="absolute z-[100] left-0 top-6 w-64 p-2 bg-gray-800 text-white text-xs rounded shadow-lg">
               {reason}
               <button 
                 onClick={() => setShowTooltip(false)}
