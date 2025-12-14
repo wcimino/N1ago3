@@ -39,8 +39,9 @@ await esbuild.build({
     'drizzle-orm',
     'memoizee',
   ],
-  sourcemap: true,
-  minify: false,
+  sourcemap: false,
+  minify: true,
+  treeShaking: true,
 });
 
-console.log('Server build complete: dist/server.js');
+console.log('Server build complete: dist/server.js (production)');
