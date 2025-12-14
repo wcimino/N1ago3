@@ -11,7 +11,8 @@ import {
   type ContentPayload 
 } from "./promptUtils.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
-import type { OpenaiApiConfig } from "../../../../shared/schema.js";
+import type { OpenaiApiConfig, EventStandard } from "../../../../shared/schema.js";
+import type { ToolFlags } from "./aiTools.js";
 
 export interface AgentContext {
   conversationId: number;
@@ -55,16 +56,6 @@ export interface AgentRunnerResult {
   error?: string;
 }
 
-export interface ToolFlags {
-  useKnowledgeBaseTool: boolean;
-  useProductCatalogTool: boolean;
-  useSubjectIntentTool: boolean;
-  useZendeskKnowledgeBaseTool: boolean;
-  useObjectiveProblemTool: boolean;
-  useCombinedKnowledgeSearchTool: boolean;
-  useKnowledgeSuggestionTool: boolean;
-}
-
 function extractToolFlags(config: OpenaiApiConfig): ToolFlags {
   return {
     useKnowledgeBaseTool: config.useKnowledgeBaseTool ?? false,
@@ -75,6 +66,68 @@ function extractToolFlags(config: OpenaiApiConfig): ToolFlags {
     useCombinedKnowledgeSearchTool: config.useCombinedKnowledgeSearchTool ?? false,
     useKnowledgeSuggestionTool: config.useKnowledgeSuggestionTool ?? false,
   };
+}
+
+export async function buildAgentContextFromEvent(
+  event: EventStandard,
+  options?: {
+    includeLastMessage?: boolean;
+    includeSummary?: boolean;
+    includeClassification?: boolean;
+  }
+): Promise<AgentContext> {
+  if (!event.conversationId) {
+    throw new Error("Cannot build context: no conversationId in event");
+  }
+
+  const [last20Messages, existingSummary] = await Promise.all([
+    storage.getLast20MessagesForConversation(event.conversationId),
+    options?.includeSummary !== false || options?.includeClassification !== false
+      ? storage.getConversationSummary(event.conversationId)
+      : null,
+  ]);
+
+  const reversedMessages = [...last20Messages].reverse();
+
+  const classification = options?.includeClassification !== false && existingSummary
+    ? {
+        product: existingSummary.product,
+        subproduct: existingSummary.subproduct,
+        subject: existingSummary.subject,
+        intent: existingSummary.intent,
+        confidence: existingSummary.confidence,
+      }
+    : null;
+
+  const context: AgentContext = {
+    conversationId: event.conversationId,
+    externalConversationId: event.externalConversationId,
+    lastEventId: event.id,
+    summary: options?.includeSummary !== false ? existingSummary?.summary || null : null,
+    previousSummary: existingSummary?.summary || null,
+    classification,
+    messages: reversedMessages.map(m => ({
+      authorType: m.authorType,
+      authorName: m.authorName,
+      contentText: m.contentText,
+      occurredAt: m.occurredAt,
+      eventSubtype: m.eventSubtype,
+      contentPayload: m.contentPayload as ContentPayload | null,
+    })),
+  };
+
+  if (options?.includeLastMessage !== false) {
+    context.lastMessage = {
+      authorType: event.authorType,
+      authorName: event.authorName,
+      contentText: event.contentText,
+      occurredAt: event.occurredAt,
+      eventSubtype: event.eventSubtype,
+      contentPayload: event.contentPayload as ContentPayload | null,
+    };
+  }
+
+  return context;
 }
 
 async function buildPromptVariables(context: AgentContext): Promise<PromptVariables> {
