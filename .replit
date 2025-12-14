@@ -61,5 +61,5 @@ ZENDESK_AGENT_WORKSPACE_ID = "5fbcf90112addf000c227bb2"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["npm", "run", "start"]
+run = ["node", "dist/server.js"]
 build = ["npm", "run", "build"]
