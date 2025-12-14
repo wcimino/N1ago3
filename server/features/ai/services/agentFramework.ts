@@ -242,6 +242,32 @@ async function buildPromptVariables(context: AgentContext): Promise<PromptVariab
     }
   }
 
+  let produtoESubprodutoMatch: string | null = null;
+  if (context.classification?.product) {
+    const resolved = await productCatalogStorage.resolveProductId(
+      context.classification.product,
+      context.classification.subproduct ?? undefined
+    );
+    if (resolved) {
+      produtoESubprodutoMatch = resolved.subproduto 
+        ? `${resolved.produto} - ${resolved.subproduto}`
+        : resolved.produto;
+    }
+  }
+
+  let tipoDeDemandaMatch: string | null = null;
+  if (context.customerRequestType) {
+    tipoDeDemandaMatch = context.customerRequestType;
+  } else if (context.classification?.customerRequestType) {
+    tipoDeDemandaMatch = context.classification.customerRequestType;
+  }
+
+  let artigoOuProblemaPrincipalMatch: string | null = null;
+  if (context.searchResults && context.searchResults.length > 0) {
+    const topResult = context.searchResults[0];
+    artigoOuProblemaPrincipalMatch = `[${topResult.source}] ${topResult.name}${topResult.matchScore ? ` (score: ${topResult.matchScore})` : ''}`;
+  }
+
   return {
     resumo: context.summary,
     resumoAtual: context.previousSummary ?? context.summary,
@@ -255,6 +281,9 @@ async function buildPromptVariables(context: AgentContext): Promise<PromptVariab
     demandaIdentificada: context.demand,
     resultadosBusca: searchResultsFormatted,
     artigosProblemasListaTop5,
+    produtoESubprodutoMatch,
+    tipoDeDemandaMatch,
+    artigoOuProblemaPrincipalMatch,
   };
 }
 

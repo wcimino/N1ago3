@@ -11,6 +11,9 @@ export interface PromptVariables {
   demandaIdentificada?: string | null;
   resultadosBusca?: string | null;
   artigosProblemasListaTop5?: string | null;
+  produtoESubprodutoMatch?: string | null;
+  tipoDeDemandaMatch?: string | null;
+  artigoOuProblemaPrincipalMatch?: string | null;
 }
 
 export function replacePromptVariables(
@@ -31,6 +34,9 @@ export function replacePromptVariables(
   result = result.replace(/\{\{DEMANDA_IDENTIFICADA\}\}/g, variables.demandaIdentificada || 'Nenhuma demanda identificada.');
   result = result.replace(/\{\{RESULTADOS_BUSCA\}\}/g, variables.resultadosBusca || 'Nenhum resultado de busca disponível.');
   result = result.replace(/\{\{ARTIGOS_PROBLEMAS_LISTA_TOP_5\}\}/g, variables.artigosProblemasListaTop5 || 'Nenhum artigo ou problema encontrado.');
+  result = result.replace(/\{\{PRODUTO_E_SUBPRODUTO_MATCH\}\}/g, variables.produtoESubprodutoMatch || 'Nenhum produto/subproduto identificado.');
+  result = result.replace(/\{\{TIPO_DE_DEMANDA_MATCH\}\}/g, variables.tipoDeDemandaMatch || 'Nenhum tipo de demanda identificado.');
+  result = result.replace(/\{\{ARTIGO_OU_PROBLEMA_PRINCIPAL_MATCH\}\}/g, variables.artigoOuProblemaPrincipalMatch || 'Nenhum artigo ou problema principal identificado.');
 
   return result;
 }
@@ -168,4 +174,7 @@ export const AVAILABLE_VARIABLES = [
   { name: '{{DEMANDA_IDENTIFICADA}}', description: 'Demanda identificada pelo DemandFinder (para SolutionProvider)' },
   { name: '{{RESULTADOS_BUSCA}}', description: 'Resultados da busca na base de conhecimento (para SolutionProvider)' },
   { name: '{{ARTIGOS_PROBLEMAS_LISTA_TOP_5}}', description: 'Top 5 artigos e problemas da base de conhecimento (busca automática)' },
+  { name: '{{PRODUTO_E_SUBPRODUTO_MATCH}}', description: 'Produto e Subproduto identificados com match na base' },
+  { name: '{{TIPO_DE_DEMANDA_MATCH}}', description: 'Tipo de demanda identificado com match' },
+  { name: '{{ARTIGO_OU_PROBLEMA_PRINCIPAL_MATCH}}', description: 'Artigo ou problema principal identificado com melhor match' },
 ];
