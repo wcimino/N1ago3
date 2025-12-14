@@ -10,6 +10,10 @@ interface OriginalArticle {
   resolution: string | null;
   internalActions?: string | null;
   observations?: string | null;
+  question?: string | null;
+  answer?: string | null;
+  keywords?: string | null;
+  questionVariation?: string[] | null;
 }
 
 interface SuggestionCardBaseProps {
@@ -98,32 +102,56 @@ export function SuggestionCardBase({
               <span>Comparação: Artigo #{originalArticle.id} → Sugestão de melhoria</span>
             </div>
 
-            <DiffPreview
-              label="Situação"
-              before={originalArticle.description}
-              after={suggestion.description}
-            />
-
-            <DiffPreview
-              label="Solução"
-              before={originalArticle.resolution}
-              after={suggestion.resolution}
-            />
-
-            {(originalArticle.internalActions || suggestion.internalActions) && (
+            {(suggestion.question || suggestion.rawExtraction?.originalQuestion) && (
               <DiffPreview
-                label="Ações Internas"
-                before={originalArticle.internalActions || ""}
-                after={suggestion.internalActions}
-                variant="internal"
+                label="Pergunta"
+                before={suggestion.rawExtraction?.originalQuestion || originalArticle.question || ""}
+                after={suggestion.question}
               />
             )}
 
-            {(originalArticle.observations || suggestion.observations) && (
+            {(suggestion.answer || suggestion.rawExtraction?.originalAnswer) && (
               <DiffPreview
-                label="Observações"
-                before={originalArticle.observations || ""}
-                after={suggestion.observations}
+                label="Resposta"
+                before={suggestion.rawExtraction?.originalAnswer || originalArticle.answer || ""}
+                after={suggestion.answer}
+              />
+            )}
+
+            {(suggestion.keywords || suggestion.rawExtraction?.originalKeywords) && (
+              <DiffPreview
+                label="Keywords"
+                before={suggestion.rawExtraction?.originalKeywords || originalArticle.keywords || ""}
+                after={suggestion.keywords}
+              />
+            )}
+
+            {suggestion.questionVariation && suggestion.questionVariation.length > 0 && (
+              <div>
+                <span className="text-xs text-gray-500">Variações de pergunta sugeridas:</span>
+                <ul className="mt-1 space-y-1">
+                  {suggestion.questionVariation.map((variation, idx) => (
+                    <li key={idx} className="text-sm bg-blue-50 p-2 rounded text-blue-800">
+                      {idx + 1}. {variation}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {(originalArticle.description || suggestion.description) && (
+              <DiffPreview
+                label="Situação (legado)"
+                before={originalArticle.description}
+                after={suggestion.description}
+              />
+            )}
+
+            {(originalArticle.resolution || suggestion.resolution) && (
+              <DiffPreview
+                label="Solução (legado)"
+                before={originalArticle.resolution}
+                after={suggestion.resolution}
               />
             )}
           </div>
@@ -137,6 +165,40 @@ export function SuggestionCardBase({
         )
       ) : (
         <>
+          {suggestion.question && (
+            <div>
+              <span className="text-xs text-gray-500">Pergunta:</span>
+              <p className="text-sm mt-1 bg-blue-50 p-2 rounded">{suggestion.question}</p>
+            </div>
+          )}
+
+          {suggestion.answer && (
+            <div>
+              <span className="text-xs text-gray-500">Resposta:</span>
+              <p className="text-sm mt-1 bg-green-50 p-2 rounded">{suggestion.answer}</p>
+            </div>
+          )}
+
+          {suggestion.keywords && (
+            <div>
+              <span className="text-xs text-gray-500">Keywords:</span>
+              <p className="text-sm mt-1 text-gray-600">{suggestion.keywords}</p>
+            </div>
+          )}
+
+          {suggestion.questionVariation && suggestion.questionVariation.length > 0 && (
+            <div>
+              <span className="text-xs text-gray-500">Variações:</span>
+              <ul className="mt-1 space-y-1">
+                {suggestion.questionVariation.map((variation, idx) => (
+                  <li key={idx} className="text-sm bg-blue-50 p-2 rounded text-blue-800">
+                    {idx + 1}. {variation}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {suggestion.description && (
             <div>
               <span className="text-xs text-gray-500">Situação:</span>
@@ -148,20 +210,6 @@ export function SuggestionCardBase({
             <div>
               <span className="text-xs text-gray-500">Solução:</span>
               <p className="text-sm mt-1 bg-green-50 p-2 rounded">{suggestion.resolution}</p>
-            </div>
-          )}
-
-          {suggestion.internalActions && (
-            <div>
-              <span className="text-xs text-orange-600">Ações Internas:</span>
-              <p className="text-sm mt-1 bg-orange-50 p-2 rounded text-orange-800">{suggestion.internalActions}</p>
-            </div>
-          )}
-
-          {suggestion.observations && (
-            <div>
-              <span className="text-xs text-gray-500">Observações:</span>
-              <p className="text-sm mt-1 text-gray-600">{suggestion.observations}</p>
             </div>
           )}
         </>

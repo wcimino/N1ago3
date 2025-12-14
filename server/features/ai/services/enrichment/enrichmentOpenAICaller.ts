@@ -4,50 +4,37 @@ import type { IntentWithArticle } from "../../storage/knowledgeBaseStorage.js";
 import type { EnrichmentConfig, OpenAIPayload } from "./types.js";
 
 function buildCreateEnrichmentSuggestionTool(intentWithArticle: IntentWithArticle): ToolDefinition {
-  const hasArticle = !!intentWithArticle.article;
-  
   return {
     name: "create_enrichment_suggestion",
-    description: hasArticle 
-      ? "Registra uma sugestão de melhoria para o artigo existente baseada na comparação com artigos do Zendesk."
-      : "Registra uma sugestão de criação de artigo para a intenção baseada nos artigos do Zendesk.",
+    description: "Registra uma sugestão de refinamento do artigo existente, melhorando a pergunta, resposta, variações e keywords.",
     parameters: {
       type: "object",
       properties: {
         action: {
           type: "string",
-          enum: hasArticle ? ["update", "skip"] : ["create", "skip"],
-          description: hasArticle 
-            ? "Ação a tomar: update (melhorar o artigo existente), skip (ignorar pois não há melhoria)"
-            : "Ação a tomar: create (criar primeiro artigo), skip (ignorar pois não há informação suficiente)"
+          enum: ["update", "skip"],
+          description: "Ação a tomar: update (refinar o artigo), skip (ignorar pois já está bom)"
         },
-        name: {
+        question: {
           type: "string",
-          description: "Nome do artigo (obrigatório se action=create)"
+          description: "Pergunta reformulada no formato que o cliente faria (ex: 'Como desbloquear meu cartão?'). Obrigatório se action=update."
         },
-        description: {
+        answer: {
           type: "string",
-          description: "Descrição do problema/situação (obrigatório se action=create ou update)"
+          description: "Resposta direta para o cliente, sem linguagem de atendente. Instruções claras e objetivas. Obrigatório se action=update."
         },
-        resolution: {
+        keywords: {
           type: "string",
-          description: "Orientações para comunicar ao cliente - verbos no infinitivo (obrigatório se action=create ou update)"
+          description: "Palavras-chave separadas por vírgula para busca (ex: 'desbloquear, liberar, bloqueado, travado'). Obrigatório se action=update."
         },
-        internalActions: {
-          type: "string",
-          description: "Ações internas do agente em sistemas internos - NÃO comunicar ao cliente (opcional, mas recomendado)"
-        },
-        observations: {
-          type: "string",
-          description: "Observações adicionais (opcional)"
-        },
-        createReason: {
-          type: "string",
-          description: "Motivo da criação do artigo (obrigatório se action=create)"
+        questionVariation: {
+          type: "array",
+          items: { type: "string" },
+          description: "4 a 6 formas alternativas de fazer a mesma pergunta (ex: ['Meu cartão está bloqueado', 'Como libero o cartão?']). Obrigatório se action=update."
         },
         updateReason: {
           type: "string",
-          description: "Motivo da atualização/melhoria proposta (obrigatório se action=update)"
+          description: "Motivo do refinamento proposto (obrigatório se action=update)"
         },
         confidenceScore: {
           type: "number",
@@ -63,7 +50,7 @@ function buildCreateEnrichmentSuggestionTool(intentWithArticle: IntentWithArticl
               similarityScore: { type: "number" }
             }
           },
-          description: "Artigos do Zendesk utilizados como fonte com scores de similaridade"
+          description: "Artigos do Zendesk utilizados como referência (opcional)"
         },
         skipReason: {
           type: "string",
@@ -141,15 +128,17 @@ function buildUserPromptForIntent(intentWithArticle: IntentWithArticle, promptTe
   }
   
   if (hasArticle) {
+    const variationsText = article.questionVariation && article.questionVariation.length > 0 
+      ? article.questionVariation.join(', ') 
+      : "Sem variações";
     prompt = prompt
       .replace(/\{\{#if_artigo_existe\}\}([\s\S]*?)\{\{\/if_artigo_existe\}\}/gi, '$1')
       .replace(/\{\{#if_artigo_nao_existe\}\}[\s\S]*?\{\{\/if_artigo_nao_existe\}\}/gi, '')
       .replace(/\{\{artigo_id\}\}/gi, String(article.id))
-      .replace(/\{\{artigo_nome\}\}/gi, article.name || intent.name)
-      .replace(/\{\{descricao\}\}/gi, article.description || "Sem descrição")
-      .replace(/\{\{resolucao\}\}/gi, article.resolution || "Sem resolução")
-      .replace(/\{\{acoes_internas\}\}/gi, article.internalActions || "Sem ações internas")
-      .replace(/\{\{observacoes\}\}/gi, article.observations || "Sem observações");
+      .replace(/\{\{pergunta\}\}/gi, article.question || "Sem pergunta")
+      .replace(/\{\{resposta\}\}/gi, article.answer || "Sem resposta")
+      .replace(/\{\{keywords\}\}/gi, article.keywords || "Sem keywords")
+      .replace(/\{\{variacoes\}\}/gi, variationsText);
   } else {
     prompt = prompt
       .replace(/\{\{#if_artigo_nao_existe\}\}([\s\S]*?)\{\{\/if_artigo_nao_existe\}\}/gi, '$1')
@@ -238,7 +227,7 @@ export async function callOpenAIForIntent(
 
   const toolResult = result.toolResult;
   
-  const validActions = ['create', 'update', 'skip'];
+  const validActions = ['update', 'skip'];
   if (!toolResult.action || !validActions.includes(toolResult.action)) {
     return {
       success: true,
@@ -252,12 +241,10 @@ export async function callOpenAIForIntent(
   return {
     success: true,
     action: toolResult.action,
-    name: toolResult.name,
-    description: toolResult.description,
-    resolution: toolResult.resolution,
-    internalActions: toolResult.internalActions,
-    observations: toolResult.observations,
-    createReason: toolResult.createReason,
+    question: toolResult.question,
+    answer: toolResult.answer,
+    keywords: toolResult.keywords,
+    questionVariation: toolResult.questionVariation || [],
     updateReason: toolResult.updateReason,
     skipReason: toolResult.skipReason,
     confidenceScore: toolResult.confidenceScore,

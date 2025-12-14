@@ -18,6 +18,10 @@ export interface KnowledgeSuggestion {
   resolution: string | null;
   internalActions: string | null;
   observations: string | null;
+  question: string | null;
+  answer: string | null;
+  keywords: string | null;
+  questionVariation: string[] | null;
   confidenceScore: number | null;
   qualityFlags: {
     isComplete?: boolean;
@@ -40,6 +44,9 @@ export interface KnowledgeSuggestion {
     intentName?: string;
     subjectName?: string;
     productName?: string;
+    originalQuestion?: string;
+    originalAnswer?: string;
+    originalKeywords?: string;
   } | null;
   createdAt: string;
   updatedAt: string;

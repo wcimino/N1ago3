@@ -35,13 +35,11 @@ export interface EnrichmentResult {
 
 export interface OpenAIPayload {
   success: boolean;
-  action?: 'create' | 'update' | 'skip';
-  name?: string;
-  description?: string;
-  resolution?: string;
-  internalActions?: string;
-  observations?: string;
-  createReason?: string;
+  action?: 'update' | 'skip';
+  question?: string;
+  answer?: string;
+  keywords?: string;
+  questionVariation?: string[];
   updateReason?: string;
   skipReason?: string;
   confidenceScore?: number;

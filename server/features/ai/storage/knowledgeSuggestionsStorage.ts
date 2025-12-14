@@ -66,17 +66,26 @@ export const knowledgeSuggestionsStorage = {
     const suggestion = await this.getSuggestionById(id);
     if (!suggestion) return null;
 
-    await knowledgeBaseStorage.createArticle({
-      name: suggestion.name || null,
-      productStandard: suggestion.productStandard || "Não classificado",
-      subproductStandard: suggestion.subproductStandard,
-      description: suggestion.description || "",
-      resolution: suggestion.resolution || "",
-      internalActions: suggestion.internalActions || null,
-      observations: suggestion.observations 
-        ? `${suggestion.observations}\n\n[Fonte: Extraído de conversa]`
-        : "[Fonte: Extraído de conversa]",
-    });
+    if (suggestion.suggestionType === "update" && suggestion.similarArticleId) {
+      const updateData: Record<string, string | string[] | null | undefined> = {};
+      if (suggestion.question) updateData.question = suggestion.question;
+      if (suggestion.answer) updateData.answer = suggestion.answer;
+      if (suggestion.keywords) updateData.keywords = suggestion.keywords;
+      if (suggestion.questionVariation && suggestion.questionVariation.length > 0) {
+        updateData.questionVariation = suggestion.questionVariation;
+      }
+      
+      if (Object.keys(updateData).length > 0) {
+        await knowledgeBaseStorage.updateArticle(suggestion.similarArticleId, updateData);
+      }
+    } else {
+      await knowledgeBaseStorage.createArticle({
+        question: suggestion.question || null,
+        answer: suggestion.answer || null,
+        keywords: suggestion.keywords || null,
+        questionVariation: suggestion.questionVariation || [],
+      });
+    }
 
     const [updated] = await db.update(knowledgeSuggestions)
       .set({
@@ -109,11 +118,13 @@ export const knowledgeSuggestionsStorage = {
     const suggestion = await this.getSuggestionById(id);
     if (!suggestion) return null;
 
-    const updateData: Record<string, string | null | undefined> = {};
-    if (suggestion.description) updateData.description = suggestion.description;
-    if (suggestion.resolution) updateData.resolution = suggestion.resolution;
-    if (suggestion.internalActions) updateData.internalActions = suggestion.internalActions;
-    if (suggestion.observations) updateData.observations = suggestion.observations;
+    const updateData: Record<string, string | string[] | null | undefined> = {};
+    if (suggestion.question) updateData.question = suggestion.question;
+    if (suggestion.answer) updateData.answer = suggestion.answer;
+    if (suggestion.keywords) updateData.keywords = suggestion.keywords;
+    if (suggestion.questionVariation && suggestion.questionVariation.length > 0) {
+      updateData.questionVariation = suggestion.questionVariation;
+    }
 
     if (Object.keys(updateData).length > 0) {
       await knowledgeBaseStorage.updateArticle(targetArticleId, updateData);

@@ -7,7 +7,7 @@ import type { EnrichmentParams, EnrichmentResult } from "./types.js";
 export async function generateEnrichmentSuggestions(params: EnrichmentParams): Promise<EnrichmentResult> {
   const suggestions: Array<{ id: number; type: string; intentId: number; articleId?: number; product?: string }> = [];
   const errors: string[] = [];
-  let articlesCreated = 0;
+  const articlesCreated = 0;
   let articlesUpdated = 0;
   let skipped = 0;
   
@@ -44,19 +44,7 @@ export async function generateEnrichmentSuggestions(params: EnrichmentParams): P
         continue;
       }
 
-      if (processResult.action === 'create') {
-        articlesCreated++;
-        if (processResult.suggestionId) {
-          await updateLogWithSuggestion(logResult.logId, processResult.suggestionId);
-          suggestions.push({
-            id: processResult.suggestionId,
-            type: 'create',
-            intentId: intent.id,
-            articleId: processResult.newArticleId,
-            product: intent.productName
-          });
-        }
-      } else if (processResult.action === 'update') {
+      if (processResult.action === 'update') {
         articlesUpdated++;
         if (processResult.suggestionId) {
           await updateLogWithSuggestion(logResult.logId, processResult.suggestionId);

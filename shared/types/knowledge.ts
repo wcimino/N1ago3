@@ -27,6 +27,10 @@ export interface KnowledgeArticle {
   description: string | null;
   resolution: string | null;
   observations: string | null;
+  question: string | null;
+  answer: string | null;
+  keywords: string | null;
+  questionVariation: string[] | null;
 }
 
 export interface KnowledgeBaseAction {

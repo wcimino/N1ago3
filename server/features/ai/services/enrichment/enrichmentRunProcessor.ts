@@ -1,12 +1,11 @@
 import { knowledgeSuggestionsStorage } from "../../storage/knowledgeSuggestionsStorage.js";
-import { knowledgeBaseStorage, type IntentWithArticle } from "../../storage/knowledgeBaseStorage.js";
+import type { IntentWithArticle } from "../../storage/knowledgeBaseStorage.js";
 import type { OpenAIPayload } from "./types.js";
 
 export interface ProcessResult {
   success: boolean;
-  action: 'create' | 'update' | 'skip';
+  action: 'update' | 'skip';
   suggestionId?: number;
-  newArticleId?: number;
   error?: string;
 }
 
@@ -33,64 +32,52 @@ export async function processEnrichmentPayload(
     };
   }
 
-  let newArticleId: number | undefined;
-  let targetArticleId: number | null = article?.id || null;
-
-  if (payload.action === 'create') {
-    console.log(`[Run Processor] Creating article for intent #${intent.id}`);
-    const newArticle = await knowledgeBaseStorage.createArticle({
-      name: payload.name || intent.name,
-      productStandard: intent.productName,
-      subproductStandard: intent.subproductName,
-      subjectId: intent.subjectId,
-      intentId: intent.id,
-      description: payload.description || "",
-      resolution: payload.resolution || "",
-      internalActions: payload.internalActions || null,
-      observations: payload.observations || null,
-    });
-    
-    newArticleId = newArticle.id;
-    targetArticleId = newArticle.id;
-    console.log(`[Run Processor] Article created: id=${newArticle.id}`);
+  if (!article) {
+    console.log(`[Run Processor] No article found for intent #${intent.id}, skipping`);
+    return {
+      success: true,
+      action: 'skip'
+    };
   }
 
-  console.log(`[Run Processor] Creating suggestion for intent #${intent.id}`);
+  console.log(`[Run Processor] Creating refinement suggestion for article #${article.id}`);
   const suggestion = await knowledgeSuggestionsStorage.createSuggestion({
     conversationId: null,
     externalConversationId: null,
-    suggestionType: payload.action,
-    name: payload.name || article?.name || intent.name,
+    suggestionType: 'update',
+    name: article.question || intent.name,
     productStandard: intent.productName,
     subproductStandard: intent.subproductName,
-    description: payload.description || article?.description,
-    resolution: payload.resolution || article?.resolution,
-    internalActions: payload.internalActions || article?.internalActions,
-    observations: payload.observations || article?.observations,
+    question: payload.question,
+    answer: payload.answer,
+    keywords: payload.keywords,
+    questionVariation: payload.questionVariation || [],
     confidenceScore: payload.confidenceScore,
-    similarArticleId: targetArticleId,
-    updateReason: payload.updateReason || payload.createReason,
+    similarArticleId: article.id,
+    updateReason: payload.updateReason,
     status: "pending",
     conversationHandler: null,
     rawExtraction: {
-      ...payload,
+      sourceArticles: payload.sourceArticles,
       intentId: intent.id,
       intentName: intent.name,
       subjectName: intent.subjectName,
       productName: intent.productName,
       subproductName: intent.subproductName,
-      enrichmentSource: "zendesk",
-      newArticleId,
-      logId
+      enrichmentSource: "refinement",
+      logId,
+      originalQuestion: article.question,
+      originalAnswer: article.answer,
+      originalKeywords: article.keywords,
+      originalQuestionVariation: article.questionVariation
     }
   });
 
-  console.log(`[Run Processor] Suggestion created: id=${suggestion.id} for intent #${intent.id}`);
+  console.log(`[Run Processor] Suggestion created: id=${suggestion.id} for article #${article.id}`);
 
   return {
     success: true,
-    action: payload.action,
-    suggestionId: suggestion.id,
-    newArticleId
+    action: 'update',
+    suggestionId: suggestion.id
   };
 }

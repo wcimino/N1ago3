@@ -192,7 +192,7 @@ export function KnowledgeBaseForm({
     });
   };
 
-  const isValid = formData.question.trim() && formData.answer.trim();
+  const isValid = (formData.question || "").trim() && (formData.answer || "").trim();
 
   const getProductName = () => {
     if (prefilledData) return prefilledData.productName;

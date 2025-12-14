@@ -103,6 +103,10 @@ export function SuggestionCard({
         description: originalArticle.description,
         resolution: originalArticle.resolution,
         observations: originalArticle.observations,
+        question: originalArticle.question,
+        answer: originalArticle.answer,
+        keywords: originalArticle.keywords,
+        questionVariation: originalArticle.questionVariation,
       } : null}
       isLoadingArticle={isLoadingArticle}
       isProcessing={isApproving || isRejecting}
