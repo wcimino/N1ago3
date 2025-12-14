@@ -177,6 +177,17 @@ async function buildPromptVariables(context: AgentContext): Promise<PromptVariab
       })
     : 'Produto/Subproduto não disponível';
 
+  let productsIdContext = 'IDs não disponíveis';
+  if (context.classification?.product) {
+    const resolved = await productCatalogStorage.resolveProductId(
+      context.classification.product,
+      context.classification.subproduct ?? undefined
+    );
+    if (resolved) {
+      productsIdContext = `ID: ${resolved.id} (${resolved.produto}${resolved.subproduto ? ' - ' + resolved.subproduto : ''})`;
+    }
+  }
+
   let catalogoJson = '[]';
   try {
     catalogoJson = await getCachedProductCatalog();
@@ -195,6 +206,7 @@ async function buildPromptVariables(context: AgentContext): Promise<PromptVariab
     resumo: context.summary,
     resumoAtual: context.previousSummary ?? context.summary,
     productsAndSubproducts: productsContext,
+    productsAndSubproductsId: productsIdContext,
     ultimas20Mensagens: messagesContext,
     ultimaMensagem: lastMessageContext,
     handler: context.handler,

@@ -115,10 +115,6 @@ export function createCombinedKnowledgeSearchToolWithContext(conversationId?: nu
           type: "string",
           description: "Nome do produto (obrigatório). Ex: 'Cartão de Crédito', 'Conta Digital'"
         },
-        subproduct: {
-          type: "string",
-          description: "Nome do subproduto para filtrar (ex: 'Gold', 'Platinum')"
-        },
         keywords: {
           type: "string",
           description: "Palavras-chave opcionais para filtrar/priorizar os resultados. Usado como boost sobre os resultados semânticos."
@@ -126,13 +122,13 @@ export function createCombinedKnowledgeSearchToolWithContext(conversationId?: nu
       },
       required: ["conversationContext", "product"]
     },
-    handler: async (args: { product: string; subproduct?: string; conversationContext?: string; keywords?: string }) => {
-      console.log(`[Combined Knowledge Search Tool] Called with product="${args.product}", subproduct="${args.subproduct || 'none'}"`);
+    handler: async (args: { product: string; conversationContext?: string; keywords?: string }) => {
+      console.log(`[Combined Knowledge Search Tool] Called with product="${args.product}"`);
       
-      const resolved = await productCatalogStorage.resolveProductId(args.product, args.subproduct);
+      const resolved = await productCatalogStorage.resolveProductId(args.product);
       
       if (!resolved) {
-        console.warn(`[Combined Knowledge Search Tool] Product not resolved: "${args.product}" / "${args.subproduct || 'none'}" - search will NOT filter by product`);
+        console.warn(`[Combined Knowledge Search Tool] Product not resolved: "${args.product}" - search will NOT filter by product`);
       } else {
         console.log(`[Combined Knowledge Search Tool] Resolved to productId=${resolved.id} (${resolved.produto})`);
       }

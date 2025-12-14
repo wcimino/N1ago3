@@ -18,7 +18,6 @@ interface CombinedSearchResponse {
   results: CombinedResult[];
   resolvedFilters: {
     product: string | null;
-    subproduct: string | null;
   };
   articleCount: number;
   problemCount: number;
@@ -35,7 +34,6 @@ export function CombinedKnowledgeSearchTool({ isExpanded, onToggle }: CombinedKn
     endpoint: "/api/ai/tools/combined-search",
     fields: [
       { name: "product", label: "Produto", type: "text", required: true },
-      { name: "subproduct", label: "Subproduto", type: "text" },
       { name: "keywords", label: "Palavras-chave", type: "text" },
     ],
   });
@@ -66,7 +64,6 @@ export function CombinedKnowledgeSearchTool({ isExpanded, onToggle }: CombinedKn
             {data.resolvedFilters.product && (
               <span className="ml-2 text-xs text-violet-500">
                 Filtro: {data.resolvedFilters.product}
-                {data.resolvedFilters.subproduct && ` / ${data.resolvedFilters.subproduct}`}
               </span>
             )}
           </div>
@@ -130,20 +127,6 @@ export function CombinedKnowledgeSearchTool({ isExpanded, onToggle }: CombinedKn
               className="w-full pl-10 pr-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
             />
           </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Subproduto (opcional)
-          </label>
-          <input
-            type="text"
-            value={values.subproduct || ""}
-            onChange={(e) => setValue("subproduct", e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Ex: Gold, Platinum, PJ"
-            className="w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-          />
         </div>
 
         <div>
