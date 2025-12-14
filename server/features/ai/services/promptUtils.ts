@@ -1,6 +1,7 @@
 export interface PromptVariables {
   resumo?: string | null;
   classificacao?: string | null;
+  productsAndSubproducts?: string | null;
   ultimas20Mensagens?: string | null;
   ultimaMensagem?: string | null;
   handler?: string | null;
@@ -19,6 +20,7 @@ export function replacePromptVariables(
   result = result.replace(/\{\{RESUMO\}\}/g, variables.resumo || 'Nenhum resumo disponível.');
   result = result.replace(/\{\{RESUMO_ATUAL\}\}/g, variables.resumoAtual || variables.resumo || 'Nenhum resumo anterior disponível.');
   result = result.replace(/\{\{CLASSIFICACAO\}\}/g, variables.classificacao || 'Classificação não disponível.');
+  result = result.replace(/\{\{PRODUCTS_AND_SUBPRODUCTS\}\}/g, variables.productsAndSubproducts || 'Produto/Subproduto não disponível.');
   result = result.replace(/\{\{ULTIMAS_20_MENSAGENS\}\}/g, variables.ultimas20Mensagens || 'Nenhuma mensagem anterior.');
   result = result.replace(/\{\{ULTIMA_MENSAGEM\}\}/g, variables.ultimaMensagem || '');
   result = result.replace(/\{\{HANDLER\}\}/g, variables.handler || 'Não identificado');
@@ -124,6 +126,17 @@ Intenção: ${classification.intent || 'Não identificada'}
 Confiança: ${classification.confidence !== null ? `${classification.confidence}%` : 'N/A'}`;
 }
 
+export function formatProductsAndSubproducts(classification: {
+  product: string | null;
+  subproduct: string | null;
+} | null): string {
+  if (!classification) {
+    return 'Produto/Subproduto não disponível';
+  }
+  return `Produto: ${classification.product || 'Não identificado'}
+Subproduto: ${classification.subproduct || 'Não identificado'}`;
+}
+
 export function buildFullPrompt(
   promptSystem: string,
   responseFormat: string | null,
@@ -146,6 +159,7 @@ export const AVAILABLE_VARIABLES = [
   { name: '{{RESUMO}}', description: 'Resumo da conversa atual' },
   { name: '{{RESUMO_ATUAL}}', description: 'Resumo anterior da conversa (para atualização)' },
   { name: '{{CLASSIFICACAO}}', description: 'Produto, Subproduto, Assunto, Intenção e Confiança' },
+  { name: '{{PRODUCTS_AND_SUBPRODUCTS}}', description: 'Produto e Subproduto classificados da conversa' },
   { name: '{{ULTIMAS_20_MENSAGENS}}', description: 'Histórico das últimas 20 mensagens' },
   { name: '{{ULTIMA_MENSAGEM}}', description: 'A mensagem mais recente' },
   { name: '{{MENSAGENS}}', description: 'Alias para {{ULTIMAS_20_MENSAGENS}}' },

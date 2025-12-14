@@ -2,7 +2,7 @@ import { callOpenAI, ToolDefinition } from "./openaiApiService.js";
 import { storage } from "../../../storage/index.js";
 import { runKnowledgeBaseSearch } from "./knowledgeBaseSearchHelper.js";
 import { createZendeskKnowledgeBaseTool } from "./aiTools.js";
-import { replacePromptVariables, formatMessagesContext, formatLastMessage, formatClassification, type ContentPayload } from "./promptUtils.js";
+import { replacePromptVariables, formatMessagesContext, formatLastMessage, formatClassification, formatProductsAndSubproducts, type ContentPayload } from "./promptUtils.js";
 import { AutoPilotService } from "../../autoPilot/services/autoPilotService.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 
@@ -230,10 +230,12 @@ export async function generateResponse(
   const messagesContext = formatMessagesContext(payload.last20Messages);
   const lastMessageContext = formatLastMessage(payload.lastMessage);
   const classificationContext = formatClassification(payload.classification);
+  const productsContext = formatProductsAndSubproducts(payload.classification);
 
   const variables = {
     resumo: payload.currentSummary,
     classificacao: classificationContext,
+    productsAndSubproducts: productsContext,
     ultimas20Mensagens: messagesContext,
     ultimaMensagem: lastMessageContext,
     mensagens: messagesContext,
