@@ -31,6 +31,7 @@ export const summaryStorage = {
       lastEventId: data.lastEventId,
       externalConversationId: data.externalConversationId,
       product: data.product,
+      subject: data.subject,
       intent: data.intent,
       confidence: data.confidence,
       classifiedAt: data.classifiedAt,

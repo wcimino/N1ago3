@@ -1,5 +1,4 @@
 import { eventStorage } from "../storage/eventStorage.js";
-import { processSummaryForEvent } from "../../ai/services/summaryOrchestrator.js";
 import { processClassificationForEvent } from "../../ai/services/classificationOrchestrator.js";
 import { processResponseForEvent } from "../../ai/services/responseOrchestrator.js";
 import { processLearningForEvent } from "../../ai/services/knowledgeLearningOrchestrator.js";
@@ -29,12 +28,6 @@ export async function dispatchEvent(event: EventStandard): Promise<void> {
     } catch (error) {
       console.error(`[EventDispatcher] Failed to process conversation orchestrator for event ${event.id}:`, error);
     }
-  }
-
-  try {
-    await processSummaryForEvent(event);
-  } catch (error) {
-    console.error(`[EventDispatcher] Failed to process summary for event ${event.id}:`, error);
   }
 
   try {

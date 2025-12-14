@@ -18,6 +18,27 @@ export interface AgentResult {
 
 export interface SummaryAgentResult extends AgentResult {
   summary?: string;
+  structured?: {
+    clientRequest?: string;
+    agentActions?: string;
+    currentStatus?: string;
+    importantInfo?: string;
+    customerEmotionLevel?: number;
+    customerRequestType?: string;
+    objectiveProblems?: Array<{ id: number; name: string; matchScore?: number }>;
+    articlesAndObjectiveProblems?: Array<{
+      source: "article" | "problem";
+      id: number;
+      name: string | null;
+      description: string;
+      resolution?: string;
+      matchScore?: number;
+      matchReason?: string;
+      products?: string[];
+    }>;
+  };
+  lastEventId?: number;
+  externalConversationId?: string | null;
 }
 
 export interface ClassificationAgentResult extends AgentResult {
