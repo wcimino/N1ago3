@@ -17,6 +17,12 @@ export async function dispatchEvent(event: EventStandard): Promise<void> {
   }
 
   try {
+    await processHandoffEvent(event);
+  } catch (error) {
+    console.error(`[EventDispatcher] Failed to process handoff for event ${event.id}:`, error);
+  }
+
+  try {
     await processSummaryForEvent(event);
   } catch (error) {
     console.error(`[EventDispatcher] Failed to process summary for event ${event.id}:`, error);
@@ -38,12 +44,6 @@ export async function dispatchEvent(event: EventStandard): Promise<void> {
     await processLearningForEvent(event);
   } catch (error) {
     console.error(`[EventDispatcher] Failed to process learning for event ${event.id}:`, error);
-  }
-
-  try {
-    await processHandoffEvent(event);
-  } catch (error) {
-    console.error(`[EventDispatcher] Failed to process handoff for event ${event.id}:`, error);
   }
 }
 
