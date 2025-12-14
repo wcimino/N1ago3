@@ -1,7 +1,7 @@
 import { storage } from "../../../../storage/index.js";
 import { conversationStorage } from "../../../conversations/storage/index.js";
 import { SummaryAgent, ClassificationAgent, DemandFinderAgent, SolutionProviderAgent } from "./agents/index.js";
-import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext, type SummaryAgentResult } from "./types.js";
+import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext } from "./types.js";
 import type { EventStandard } from "../../../../../shared/schema.js";
 
 export class ConversationOrchestrator {
@@ -45,11 +45,9 @@ export class ConversationOrchestrator {
 
     console.log(`[ConversationOrchestrator] Starting sync pipeline for conversation ${conversationId}`);
 
-    const summaryResult = await this.step1_GenerateSummary(context);
+    await this.step1_GenerateSummary(context);
 
     await this.step2_Classify(context);
-
-    await this.persistSummaryWithClassification(conversationId, summaryResult, context.classification);
 
     await this.step3_DecideStatus(context);
 
@@ -62,31 +60,27 @@ export class ConversationOrchestrator {
     console.log(`[ConversationOrchestrator] Pipeline completed for conversation ${conversationId}, final status: ${context.currentStatus}`);
   }
 
-  private static async step1_GenerateSummary(context: OrchestratorContext): Promise<SummaryAgentResult> {
+  private static async step1_GenerateSummary(context: OrchestratorContext): Promise<void> {
     const { conversationId } = context;
     console.log(`[ConversationOrchestrator] Step 1: Generating summary for conversation ${conversationId}`);
-
-    const existingSummary = await storage.getConversationSummary(conversationId);
-    
-    if (existingSummary) {
-      context.summary = existingSummary.summary;
-      context.classification = {
-        product: existingSummary.product || undefined,
-        subject: existingSummary.subject || undefined,
-        intent: existingSummary.intent || undefined,
-      };
-    }
 
     const summaryResult = await SummaryAgent.process(context);
     
     if (summaryResult.success && summaryResult.summary) {
       context.summary = summaryResult.summary;
-      console.log(`[ConversationOrchestrator] Step 1: Summary generated successfully`);
+      console.log(`[ConversationOrchestrator] Step 1: Summary generated and saved`);
     } else {
-      console.log(`[ConversationOrchestrator] Step 1: Using existing summary`);
+      const existingSummary = await storage.getConversationSummary(conversationId);
+      if (existingSummary) {
+        context.summary = existingSummary.summary;
+        context.classification = {
+          product: existingSummary.product || undefined,
+          subject: existingSummary.subject || undefined,
+          intent: existingSummary.intent || undefined,
+        };
+        console.log(`[ConversationOrchestrator] Step 1: Using existing summary`);
+      }
     }
-
-    return summaryResult;
   }
 
   private static async step2_Classify(context: OrchestratorContext): Promise<void> {
@@ -203,52 +197,6 @@ export class ConversationOrchestrator {
       console.log(`[ConversationOrchestrator] Updated conversation ${conversationId} status to: ${status}`);
     } catch (error) {
       console.error(`[ConversationOrchestrator] Error updating status for ${conversationId}:`, error);
-    }
-  }
-
-  private static async persistSummaryWithClassification(
-    conversationId: number, 
-    summaryResult: SummaryAgentResult,
-    classification?: { product?: string; subject?: string; intent?: string }
-  ): Promise<void> {
-    if (!summaryResult.success || !summaryResult.summary) {
-      console.log(`[ConversationOrchestrator] No new summary to persist`);
-      return;
-    }
-
-    try {
-      const existingSummary = await storage.getConversationSummary(conversationId);
-      
-      if (existingSummary && existingSummary.lastEventId === summaryResult.lastEventId) {
-        console.log(`[ConversationOrchestrator] Summary for event ${summaryResult.lastEventId} already persisted, skipping`);
-        return;
-      }
-
-      const finalProduct = classification?.product ?? existingSummary?.product ?? undefined;
-      const finalSubject = classification?.subject ?? existingSummary?.subject ?? undefined;
-      const finalIntent = classification?.intent ?? existingSummary?.intent ?? undefined;
-
-      await storage.upsertConversationSummary({
-        conversationId,
-        externalConversationId: summaryResult.externalConversationId || undefined,
-        summary: summaryResult.summary,
-        clientRequest: summaryResult.structured?.clientRequest,
-        agentActions: summaryResult.structured?.agentActions,
-        currentStatus: summaryResult.structured?.currentStatus,
-        importantInfo: summaryResult.structured?.importantInfo,
-        customerEmotionLevel: summaryResult.structured?.customerEmotionLevel,
-        customerRequestType: summaryResult.structured?.customerRequestType,
-        objectiveProblems: summaryResult.structured?.objectiveProblems,
-        articlesAndObjectiveProblems: summaryResult.structured?.articlesAndObjectiveProblems,
-        lastEventId: summaryResult.lastEventId!,
-        product: finalProduct,
-        subject: finalSubject,
-        intent: finalIntent,
-      });
-
-      console.log(`[ConversationOrchestrator] Summary persisted for conversation ${conversationId}`);
-    } catch (error) {
-      console.error(`[ConversationOrchestrator] Error persisting summary for ${conversationId}:`, error);
     }
   }
 }

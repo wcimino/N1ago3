@@ -1,8 +1,7 @@
 import { shouldGenerateSummary } from "../../summaryOrchestrator.js";
-import { generateSummary, type SummaryPayload } from "../../summaryAdapter.js";
+import { generateAndSaveSummary, type SummaryPayload } from "../../summaryAdapter.js";
 import { storage } from "../../../../../storage/index.js";
 import { generalSettingsStorage } from "../../../storage/generalSettingsStorage.js";
-import type { EventStandard } from "../../../../../../shared/schema.js";
 import type { SummaryAgentResult, OrchestratorContext } from "../types.js";
 import type { ContentPayload } from "../../promptUtils.js";
 
@@ -65,15 +64,16 @@ export class SummaryAgent {
         useCombinedKnowledgeSearchTool: config.useCombinedKnowledgeSearchTool ?? false,
       };
 
-      console.log(`[SummaryAgent] Generating summary for conversation ${conversationId} with ${reversedMessages.length} messages`);
+      console.log(`[SummaryAgent] Generating and saving summary for conversation ${conversationId} with ${reversedMessages.length} messages`);
 
-      const result = await generateSummary(
+      const result = await generateAndSaveSummary(
         payload,
         effectivePromptSystem,
         config.responseFormat,
         config.modelName,
         conversationId,
-        event.externalConversationId || undefined,
+        event.externalConversationId,
+        event.id,
         toolFlags
       );
 
@@ -85,7 +85,7 @@ export class SummaryAgent {
         };
       }
 
-      console.log(`[SummaryAgent] Summary generated for conversation ${conversationId}, returning data for orchestrator to persist`);
+      console.log(`[SummaryAgent] Summary generated and saved for conversation ${conversationId}`);
 
       return {
         success: true,
