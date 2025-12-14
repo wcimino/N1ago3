@@ -256,6 +256,8 @@ export async function runAgent(
 
   const variables = await buildPromptVariables(context);
 
+  const systemPromptWithVars = replacePromptVariables(effectivePromptSystem, variables);
+
   const promptTemplate = config.promptTemplate || "";
   const userPrompt = replacePromptVariables(promptTemplate, variables);
 
@@ -274,7 +276,7 @@ export async function runAgent(
   const response = await callOpenAI({
     requestType: configType,
     modelName: config.modelName || options?.defaultModelName || "gpt-4o-mini",
-    promptSystem: effectivePromptSystem,
+    promptSystem: systemPromptWithVars,
     promptUser: fullUserPrompt,
     contextType: "conversation",
     contextId: context.externalConversationId || String(context.conversationId),
