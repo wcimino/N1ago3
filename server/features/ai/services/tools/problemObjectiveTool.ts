@@ -215,6 +215,10 @@ export function createProblemObjectiveTool(): ToolDefinition {
     parameters: {
       type: "object",
       properties: {
+        conversationContext: {
+          type: "string",
+          description: "Resumo ou contexto da conversa para busca semântica principal (obrigatório). A busca usa o contexto para encontrar problemas semanticamente relevantes."
+        },
         product: {
           type: "string",
           description: "Nome do produto (obrigatório). Ex: 'Cartão de Crédito', 'Conta Digital'"
@@ -223,16 +227,12 @@ export function createProblemObjectiveTool(): ToolDefinition {
           type: "string",
           description: "Nome do subproduto para filtrar (ex: 'Gold', 'Platinum')"
         },
-        conversationContext: {
-          type: "string",
-          description: "Resumo ou contexto da conversa para busca semântica principal. Quando fornecido, a busca usa o contexto para encontrar problemas semanticamente relevantes."
-        },
         keywords: {
           type: "string",
-          description: "Palavras-chave opcionais para filtrar/priorizar os resultados. Usado como boost quando conversationContext está presente."
+          description: "Palavras-chave opcionais para filtrar/priorizar os resultados. Usado como boost sobre os resultados semânticos."
         }
       },
-      required: ["product"]
+      required: ["conversationContext", "product"]
     },
     handler: async (args: { product: string; subproduct?: string; conversationContext?: string; keywords?: string }) => {
       const resolved = await productCatalogStorage.resolveProductId(args.product, args.subproduct);
