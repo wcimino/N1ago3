@@ -635,7 +635,7 @@ export async function syncNewUsers(maxUsers?: number): Promise<{
   let isComplete = false;
   
   let userBuffer: InsertZendeskSupportUser[] = [];
-  let lastPersistedCursor: string | null = startCursor;
+  let lastPersistedCursor: string | null = startCursor ?? null;
   let currentFetchUrl: string | null = null;
   
   async function flushBufferWithRetry(buffer: InsertZendeskSupportUser[], maxRetries = 3): Promise<{ created: number; updated: number; success: boolean }> {
@@ -791,6 +791,20 @@ export async function syncNewUsers(maxUsers?: number): Promise<{
     const durationMs = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     
+    if (userBuffer.length > 0) {
+      console.log(`[ZendeskSupportUsers] Attempting to flush ${userBuffer.length} buffered users before error exit...`);
+      const { created, updated, success } = await flushBufferWithRetry(userBuffer);
+      if (success) {
+        totalCreated += created;
+        totalUpdated += updated;
+        totalProcessed += userBuffer.length;
+        console.log(`[ZendeskSupportUsers] Successfully saved ${userBuffer.length} buffered users before exit.`);
+      } else {
+        console.error(`[ZendeskSupportUsers] Failed to save buffered users. Data preserved at cursor: ${lastPersistedCursor}`);
+        totalFailed += userBuffer.length;
+      }
+    }
+    
     await updateSyncLog(syncLog.id, {
       status: "failed",
       finishedAt: new Date(),
@@ -800,7 +814,7 @@ export async function syncNewUsers(maxUsers?: number): Promise<{
       recordsCreated: totalCreated,
       recordsUpdated: totalUpdated,
       recordsFailed: totalFailed,
-      metadata: { startCursor, nextCursor, ...(maxUsers ? { maxUsers } : {}) },
+      metadata: { startCursor, nextCursor: lastPersistedCursor, ...(maxUsers ? { maxUsers } : {}) },
     });
     
     console.error(`[ZendeskSupportUsers] Add-new sync failed:`, error);
@@ -811,7 +825,7 @@ export async function syncNewUsers(maxUsers?: number): Promise<{
     return {
       success: false,
       message: `Erro na sincronização: ${errorMessage}. Cursor salvo, você pode tentar novamente.`,
-      nextCursor,
+      nextCursor: lastPersistedCursor,
     };
   }
 }
