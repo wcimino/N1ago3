@@ -7,18 +7,22 @@ export const classificationStorage = {
     product: string | null;
     productStandard: string | null;
     subproduct: string | null;
-    subject: string | null;
-    intent: string | null;
-    confidence: number | null;
+    productConfidence: number | null;
+    productConfidenceReason: string | null;
+    customerRequestType: string | null;
+    customerRequestTypeConfidence: number | null;
+    customerRequestTypeReason: string | null;
   } | null> {
     const result = await db
       .select({
         product: conversationsSummary.product,
         productStandard: conversationsSummary.productStandard,
         subproduct: conversationsSummary.subproduct,
-        subject: conversationsSummary.subject,
-        intent: conversationsSummary.intent,
-        confidence: conversationsSummary.confidence,
+        productConfidence: conversationsSummary.productConfidence,
+        productConfidenceReason: conversationsSummary.productConfidenceReason,
+        customerRequestType: conversationsSummary.customerRequestType,
+        customerRequestTypeConfidence: conversationsSummary.customerRequestTypeConfidence,
+        customerRequestTypeReason: conversationsSummary.customerRequestTypeReason,
       })
       .from(conversationsSummary)
       .where(eq(conversationsSummary.conversationId, conversationId))
@@ -32,18 +36,22 @@ export const classificationStorage = {
     data: { 
       product: string | null; 
       subproduct?: string | null;
-      subject?: string | null;
-      intent: string | null; 
-      confidence: number | null 
+      productConfidence?: number | null;
+      productConfidenceReason?: string | null;
+      customerRequestType?: string | null;
+      customerRequestTypeConfidence?: number | null;
+      customerRequestTypeReason?: string | null;
     }
   ): Promise<void> {
     await db.update(conversationsSummary)
       .set({
         product: data.product,
         subproduct: data.subproduct ?? null,
-        subject: data.subject ?? null,
-        intent: data.intent,
-        confidence: data.confidence,
+        productConfidence: data.productConfidence ?? null,
+        productConfidenceReason: data.productConfidenceReason ?? null,
+        customerRequestType: data.customerRequestType ?? null,
+        customerRequestTypeConfidence: data.customerRequestTypeConfidence ?? null,
+        customerRequestTypeReason: data.customerRequestTypeReason ?? null,
         classifiedAt: new Date(),
         updatedAt: new Date(),
       })
@@ -97,7 +105,7 @@ export const classificationStorage = {
     };
   },
 
-  async getUniqueProductsAndIntents(): Promise<{ products: string[]; productStandards: string[]; intents: string[]; objectiveProblems: string[] }> {
+  async getUniqueProductsAndRequestTypes(): Promise<{ products: string[]; productStandards: string[]; customerRequestTypes: string[]; objectiveProblems: string[] }> {
     const productsResult = await db
       .selectDistinct({ product: conversationsSummary.product })
       .from(conversationsSummary)
@@ -108,10 +116,10 @@ export const classificationStorage = {
       .from(conversationsSummary)
       .where(isNotNull(conversationsSummary.productStandard));
     
-    const intentsResult = await db
-      .selectDistinct({ intent: conversationsSummary.intent })
+    const customerRequestTypesResult = await db
+      .selectDistinct({ customerRequestType: conversationsSummary.customerRequestType })
       .from(conversationsSummary)
-      .where(isNotNull(conversationsSummary.intent));
+      .where(isNotNull(conversationsSummary.customerRequestType));
 
     const objectiveProblemsResult = await db.execute(sql`
       SELECT DISTINCT jsonb_array_elements(objective_problems::jsonb)->>'name' as problem_name
@@ -125,7 +133,7 @@ export const classificationStorage = {
     return {
       products: productsResult.map(r => r.product).filter((p): p is string => p !== null).sort(),
       productStandards: productStandardsResult.map(r => r.productStandard).filter((ps): ps is string => ps !== null).sort(),
-      intents: intentsResult.map(r => r.intent).filter((i): i is string => i !== null).sort(),
+      customerRequestTypes: customerRequestTypesResult.map(r => r.customerRequestType).filter((i): i is string => i !== null).sort(),
       objectiveProblems: (objectiveProblemsResult.rows as any[]).map(r => r.problem_name).filter((p): p is string => p !== null),
     };
   },

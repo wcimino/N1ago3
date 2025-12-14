@@ -6,14 +6,14 @@ const router = Router();
 
 router.get("/api/export/summaries", requireAuthorizedUser, async (req, res) => {
   try {
-    const { dateFrom, dateTo, product, productStandard, intent } = req.query;
+    const { dateFrom, dateTo, product, productStandard, customerRequestType } = req.query;
 
     const filters: {
       dateFrom?: Date;
       dateTo?: Date;
       product?: string;
       productStandard?: string;
-      intent?: string;
+      customerRequestType?: string;
     } = {};
 
     if (dateFrom && typeof dateFrom === "string") {
@@ -30,8 +30,8 @@ router.get("/api/export/summaries", requireAuthorizedUser, async (req, res) => {
     if (productStandard && typeof productStandard === "string") {
       filters.productStandard = productStandard;
     }
-    if (intent && typeof intent === "string") {
-      filters.intent = intent;
+    if (customerRequestType && typeof customerRequestType === "string") {
+      filters.customerRequestType = customerRequestType;
     }
 
     const summaries = await storage.getSummariesForExport(filters);
@@ -45,7 +45,7 @@ router.get("/api/export/summaries", requireAuthorizedUser, async (req, res) => {
 
 router.get("/api/export/filters", requireAuthorizedUser, async (req, res) => {
   try {
-    const result = await storage.getUniqueProductsAndIntents();
+    const result = await storage.getUniqueProductsAndRequestTypes();
     res.json(result);
   } catch (error: any) {
     console.error("[Export Route] Error fetching filters:", error);

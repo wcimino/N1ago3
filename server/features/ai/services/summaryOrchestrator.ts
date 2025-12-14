@@ -25,7 +25,6 @@ export interface StructuredSummary {
   currentStatus?: string;
   importantInfo?: string;
   customerEmotionLevel?: number;
-  customerRequestType?: string;
   objectiveProblems?: ObjectiveProblemResult[];
   articlesAndObjectiveProblems?: ArticleAndProblemResult[];
 }
@@ -73,16 +72,12 @@ function parseStructuredSummary(responseContent: string): StructuredSummary | nu
       if (articlesAndObjectiveProblems.length === 0) articlesAndObjectiveProblems = undefined;
     }
 
-    const customerRequestType = parsed.customerRequestType || parsed.tipoSolicitacaoCliente || parsed.tipo_solicitacao_cliente ||
-      parsed.triage?.anamnese?.customerRequestType || undefined;
-
     return {
       clientRequest: parsed.clientRequest || parsed.solicitacaoCliente || parsed.solicitacao_cliente || undefined,
       agentActions: parsed.agentActions || parsed.acoesAtendente || parsed.acoes_atendente || undefined,
       currentStatus: parsed.currentStatus || parsed.statusAtual || parsed.status_atual || undefined,
       importantInfo: parsed.importantInfo || parsed.informacoesImportantes || parsed.informacoes_importantes || undefined,
       customerEmotionLevel: validEmotionLevel,
-      customerRequestType,
       objectiveProblems,
       articlesAndObjectiveProblems,
     };
@@ -160,7 +155,6 @@ export async function generateConversationSummary(event: EventStandard): Promise
       currentStatus: structured?.currentStatus,
       importantInfo: structured?.importantInfo,
       customerEmotionLevel: structured?.customerEmotionLevel,
-      customerRequestType: structured?.customerRequestType,
       objectiveProblems: structured?.objectiveProblems,
       articlesAndObjectiveProblems: structured?.articlesAndObjectiveProblems,
       lastEventId: event.id,

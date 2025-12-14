@@ -9,6 +9,7 @@ import { knowledgeBaseStorage } from "../features/ai/storage/knowledgeBaseStorag
 import { knowledgeSuggestionsStorage } from "../features/ai/storage/knowledgeSuggestionsStorage.js";
 import { configStorage } from "../features/ai/storage/configStorage.js";
 import { classificationStorage } from "../features/ai/storage/classificationStorage.js";
+import { summaryStorage } from "../features/ai/storage/summaryStorage.js";
 import { webhookStorage } from "../features/export/storage/webhookStorage.js";
 
 export const storage = {
@@ -19,6 +20,7 @@ export const storage = {
   ...eventStorage,
   ...configStorage,
   ...classificationStorage,
+  ...summaryStorage,
   ...usersStandardStorage,
   ...knowledgeBaseStorage,
   ...knowledgeSuggestionsStorage,

@@ -1,12 +1,12 @@
-import { Sparkles, User, Headphones, Clock, Info, Cross, AlertTriangle, BookOpen } from "lucide-react";
+import { Sparkles, User, Headphones, Clock, Info as InfoIcon, Cross, AlertTriangle, BookOpen } from "lucide-react";
+import { useState } from "react";
 import type { Triage, ObjectiveProblemIdentified, ArticleAndProblemResult } from "../types/conversations";
 
 interface SummaryData {
   product?: string | null;
   subproduct?: string | null;
-  subject?: string | null;
-  intent?: string | null;
-  confidence?: number | null;
+  product_confidence?: number | null;
+  product_confidence_reason?: string | null;
   text?: string | null;
   client_request?: string | null;
   agent_actions?: string | null;
@@ -14,6 +14,8 @@ interface SummaryData {
   important_info?: string | null;
   customer_emotion_level?: number | null;
   customer_request_type?: string | null;
+  customer_request_type_confidence?: number | null;
+  customer_request_type_reason?: string | null;
   objective_problems?: ObjectiveProblemIdentified[] | null;
   articles_and_objective_problems?: ArticleAndProblemResult[] | null;
   triage?: Triage | null;
@@ -48,6 +50,90 @@ function SummaryCardItem({ icon, title, content, bgColor, borderColor, iconColor
         <h4 className="font-medium text-gray-800 text-sm">{title}</h4>
       </div>
       <p className="text-sm text-gray-700 leading-relaxed">{content}</p>
+    </div>
+  );
+}
+
+interface ConfidenceTooltipProps {
+  confidence?: number | null;
+  reason?: string | null;
+}
+
+function ConfidenceTooltip({ confidence, reason }: ConfidenceTooltipProps) {
+  const [showTooltip, setShowTooltip] = useState(false);
+  
+  if (confidence === null || confidence === undefined) return null;
+  
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span className="text-sm text-gray-500">({confidence}%)</span>
+      {reason && (
+        <span className="relative">
+          <button
+            onClick={() => setShowTooltip(!showTooltip)}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+            title="Ver explicação"
+          >
+            <InfoIcon className="w-4 h-4" />
+          </button>
+          {showTooltip && (
+            <div className="absolute z-10 left-0 top-6 w-64 p-2 bg-gray-800 text-white text-xs rounded shadow-lg">
+              {reason}
+              <button 
+                onClick={() => setShowTooltip(false)}
+                className="absolute top-1 right-1 text-gray-400 hover:text-white"
+              >
+                ×
+              </button>
+            </div>
+          )}
+        </span>
+      )}
+    </span>
+  );
+}
+
+interface ProductRowProps {
+  product?: string | null;
+  subproduct?: string | null;
+  confidence?: number | null;
+  confidenceReason?: string | null;
+}
+
+function ProductRow({ product, subproduct, confidence, confidenceReason }: ProductRowProps) {
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="text-sm text-gray-500 min-w-[110px]">Produto:</span>
+      <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-sm font-medium">
+        {product || "(vazio)"} {">"} {subproduct || "(vazio)"}
+      </span>
+      <ConfidenceTooltip confidence={confidence} reason={confidenceReason} />
+    </div>
+  );
+}
+
+interface RequestTypeRowProps {
+  requestType?: string | null;
+  confidence?: number | null;
+  confidenceReason?: string | null;
+}
+
+function RequestTypeRow({ requestType, confidence, confidenceReason }: RequestTypeRowProps) {
+  const getRequestTypeColor = (type: string | null | undefined) => {
+    if (!type) return 'bg-gray-100 text-gray-500';
+    const lower = type.toLowerCase();
+    if (lower.includes('suporte')) return 'bg-orange-100 text-orange-700';
+    if (lower.includes('contratar')) return 'bg-green-100 text-green-700';
+    return 'bg-blue-100 text-blue-700';
+  };
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="text-sm text-gray-500 min-w-[110px]">Tipo de conversa:</span>
+      <span className={`px-2 py-0.5 rounded text-sm font-medium ${getRequestTypeColor(requestType)}`}>
+        {requestType || "(vazio)"}
+      </span>
+      <ConfidenceTooltip confidence={confidence} reason={confidenceReason} />
     </div>
   );
 }
@@ -300,46 +386,21 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
             </div>
             
             <div className="space-y-2 mb-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 min-w-[70px]">Produto:</span>
-                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-sm font-medium">
-                  {summary.product || "(vazio)"} {">"} {summary.subproduct || "(vazio)"}
-                </span>
-              </div>
+              <ProductRow 
+                product={summary.product}
+                subproduct={summary.subproduct}
+                confidence={summary.product_confidence}
+                confidenceReason={summary.product_confidence_reason}
+              />
+              
+              <RequestTypeRow
+                requestType={summary.customer_request_type}
+                confidence={summary.customer_request_type_confidence}
+                confidenceReason={summary.customer_request_type_reason}
+              />
               
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 min-w-[70px]">Intenção:</span>
-                <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-sm font-medium">
-                  {summary.subject || "(vazio)"} {">"} {summary.intent || "(vazio)"}
-                </span>
-                {summary.confidence !== null && summary.confidence !== undefined && (
-                  <span className="text-sm text-gray-500">
-                    {summary.confidence}%
-                  </span>
-                )}
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 min-w-[70px]">Tipo de conversa:</span>
-                {summary.customer_request_type ? (
-                  <span className={`px-2 py-0.5 rounded text-sm font-medium ${
-                    summary.customer_request_type.toLowerCase().includes('suporte') 
-                      ? 'bg-orange-100 text-orange-700'
-                      : summary.customer_request_type.toLowerCase().includes('contratar')
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-blue-100 text-blue-700'
-                  }`}>
-                    {summary.customer_request_type}
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-sm font-medium">
-                    (vazio)
-                  </span>
-                )}
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 min-w-[70px]">Sentimento:</span>
+                <span className="text-sm text-gray-500 min-w-[110px]">Sentimento:</span>
                 {summary.customer_emotion_level && emotionConfig[summary.customer_emotion_level] ? (
                   <span className={`px-2 py-0.5 rounded text-sm font-medium ${emotionConfig[summary.customer_emotion_level].color}`}>
                     {emotionConfig[summary.customer_emotion_level].emoji} {emotionConfig[summary.customer_emotion_level].label}
@@ -388,7 +449,7 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
               
               {summary.important_info && (
                 <SummaryCardItem
-                  icon={<Info className="w-4 h-4" />}
+                  icon={<InfoIcon className="w-4 h-4" />}
                   title="Informações Importantes"
                   content={summary.important_info}
                   bgColor="bg-purple-50"

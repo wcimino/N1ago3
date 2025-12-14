@@ -6,9 +6,11 @@ import type { ContentPayload } from "./promptUtils.js";
 export interface ClassificationResult {
   product: string | null;
   subproduct: string | null;
-  subject: string | null;
-  intent: string | null;
-  confidence: number | null;
+  productConfidence: number | null;
+  productConfidenceReason: string | null;
+  customerRequestType: string | null;
+  customerRequestTypeConfidence: number | null;
+  customerRequestTypeReason: string | null;
   success: boolean;
   logId: number;
   error?: string;
@@ -23,16 +25,22 @@ function parseClassificationResult(responseContent: string): ClassificationResul
     
     const parsed = JSON.parse(jsonMatch[0]);
     
-    const confidenceValue = typeof parsed.confidence === 'number' 
-      ? Math.round(Math.min(100, Math.max(0, parsed.confidence))) 
+    const productConfidenceValue = typeof parsed.productConfidence === 'number' 
+      ? Math.round(Math.min(100, Math.max(0, parsed.productConfidence))) 
+      : null;
+
+    const customerRequestTypeConfidenceValue = typeof parsed.customerRequestTypeConfidence === 'number' 
+      ? Math.round(Math.min(100, Math.max(0, parsed.customerRequestTypeConfidence))) 
       : null;
     
     return {
       product: parsed.product || null,
       subproduct: parsed.subproduct || null,
-      subject: parsed.subject || null,
-      intent: parsed.intent || null,
-      confidence: confidenceValue,
+      productConfidence: productConfidenceValue,
+      productConfidenceReason: parsed.productConfidenceReason || null,
+      customerRequestType: parsed.customerRequestType || null,
+      customerRequestTypeConfidence: customerRequestTypeConfidenceValue,
+      customerRequestTypeReason: parsed.customerRequestTypeReason || null,
       success: true,
       logId: 0,
     };
@@ -129,12 +137,14 @@ export async function classifyConversationProduct(event: EventStandard): Promise
       await storage.updateConversationClassification(event.conversationId, {
         product: parsed.product,
         subproduct: parsed.subproduct,
-        subject: parsed.subject,
-        intent: parsed.intent,
-        confidence: parsed.confidence,
+        productConfidence: parsed.productConfidence,
+        productConfidenceReason: parsed.productConfidenceReason,
+        customerRequestType: parsed.customerRequestType,
+        customerRequestTypeConfidence: parsed.customerRequestTypeConfidence,
+        customerRequestTypeReason: parsed.customerRequestTypeReason,
       });
 
-      console.log(`[Classification Orchestrator] Classification saved for conversation ${event.conversationId}: ${parsed.product}/${parsed.subproduct}/${parsed.subject}/${parsed.intent} (${parsed.confidence}%), logId: ${result.logId}`);
+      console.log(`[Classification Orchestrator] Classification saved for conversation ${event.conversationId}: ${parsed.product}/${parsed.subproduct} (${parsed.productConfidence}%), requestType: ${parsed.customerRequestType} (${parsed.customerRequestTypeConfidence}%), logId: ${result.logId}`);
     }
   } catch (error: any) {
     console.error(`[Classification Orchestrator] Error in classifyConversationProduct for conversation ${event.conversationId}:`, error);

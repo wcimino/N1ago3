@@ -26,7 +26,7 @@ router.get("/api/conversations/stats", isAuthenticated, requireAuthorizedUser, a
 });
 
 router.get("/api/conversations/filters", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  const filters = await storage.getUniqueProductsAndIntents();
+  const filters = await storage.getUniqueProductsAndRequestTypes();
   res.json(filters);
 });
 
@@ -159,9 +159,8 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
           updated_at: summary.updatedAt?.toISOString(),
           product: summary.product,
           subproduct: summary.subproduct,
-          subject: summary.subject,
-          intent: summary.intent,
-          confidence: summary.confidence,
+          product_confidence: summary.productConfidence,
+          product_confidence_reason: summary.productConfidenceReason,
           classified_at: summary.classifiedAt?.toISOString(),
           client_request: summary.clientRequest,
           agent_actions: summary.agentActions,
@@ -169,6 +168,8 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
           important_info: summary.importantInfo,
           customer_emotion_level: summary.customerEmotionLevel,
           customer_request_type: summary.customerRequestType,
+          customer_request_type_confidence: summary.customerRequestTypeConfidence,
+          customer_request_type_reason: summary.customerRequestTypeReason,
           objective_problems: summary.objectiveProblems || null,
           articles_and_objective_problems: summary.articlesAndObjectiveProblems || null,
           triage: extractTriageFromSummary(summary.summary),
@@ -217,11 +218,13 @@ router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedU
     updated_at: summary.updatedAt?.toISOString(),
     product: summary.product,
     subproduct: summary.subproduct,
-    subject: summary.subject,
+    product_confidence: summary.productConfidence,
+    product_confidence_reason: summary.productConfidenceReason,
     objective_problems: summary.objectiveProblems || null,
     articles_and_objective_problems: summary.articlesAndObjectiveProblems || null,
-    intent: summary.intent,
-    confidence: summary.confidence,
+    customer_request_type: summary.customerRequestType,
+    customer_request_type_confidence: summary.customerRequestTypeConfidence,
+    customer_request_type_reason: summary.customerRequestTypeReason,
     client_request: summary.clientRequest,
     agent_actions: summary.agentActions,
     current_status: summary.currentStatus,

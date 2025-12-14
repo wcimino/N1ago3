@@ -26,14 +26,10 @@ export const summaryStorage = {
       currentStatus: data.currentStatus,
       importantInfo: data.importantInfo,
       customerEmotionLevel: data.customerEmotionLevel,
-      customerRequestType: data.customerRequestType,
       objectiveProblems: data.objectiveProblems,
       lastEventId: data.lastEventId,
       externalConversationId: data.externalConversationId,
       product: data.product,
-      subject: data.subject,
-      intent: data.intent,
-      confidence: data.confidence,
       classifiedAt: data.classifiedAt,
       generatedAt: new Date(),
       updatedAt: new Date(),
@@ -91,13 +87,13 @@ export const summaryStorage = {
     dateTo?: Date;
     product?: string;
     productStandard?: string;
-    intent?: string;
+    customerRequestType?: string;
   }): Promise<Array<{
     id: number;
     generatedAt: Date;
     product: string | null;
     productStandard: string | null;
-    intent: string | null;
+    customerRequestType: string | null;
     summary: string;
     clientRequest: string | null;
     agentActions: string | null;
@@ -118,8 +114,8 @@ export const summaryStorage = {
     if (filters.productStandard) {
       conditions.push(eq(conversationsSummary.productStandard, filters.productStandard));
     }
-    if (filters.intent) {
-      conditions.push(eq(conversationsSummary.intent, filters.intent));
+    if (filters.customerRequestType) {
+      conditions.push(eq(conversationsSummary.customerRequestType, filters.customerRequestType));
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -130,7 +126,7 @@ export const summaryStorage = {
         generatedAt: conversationsSummary.generatedAt,
         product: conversationsSummary.product,
         productStandard: conversationsSummary.productStandard,
-        intent: conversationsSummary.intent,
+        customerRequestType: conversationsSummary.customerRequestType,
         summary: conversationsSummary.summary,
         clientRequest: conversationsSummary.clientRequest,
         agentActions: conversationsSummary.agentActions,
