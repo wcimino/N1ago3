@@ -177,7 +177,7 @@ function buildCreateSuggestionTool(): ToolDefinition {
   };
 }
 
-function buildUserPrompt(payload: AgentLearningPayload, promptSystem: string, responseFormat: string | null): string {
+function buildUserPrompt(payload: AgentLearningPayload, promptTemplate: string, responseFormat: string | null): string {
   const messagesContext = formatMessagesContext(payload.messages);
   
   const variables = {
@@ -188,7 +188,7 @@ function buildUserPrompt(payload: AgentLearningPayload, promptSystem: string, re
     handler: payload.conversationHandler,
   };
   
-  const promptWithVars = replacePromptVariables(promptSystem, variables);
+  const promptWithVars = replacePromptVariables(promptTemplate, variables);
   
   let fullPrompt = promptWithVars;
   if (responseFormat) {
@@ -201,6 +201,7 @@ function buildUserPrompt(payload: AgentLearningPayload, promptSystem: string, re
 export async function extractKnowledgeWithAgent(
   payload: AgentLearningPayload,
   modelName: string,
+  promptTemplate: string | null,
   promptSystem: string | null,
   responseFormat: string | null,
   conversationId: number,
@@ -209,11 +210,12 @@ export async function extractKnowledgeWithAgent(
   useProductCatalogTool: boolean = false,
   useZendeskKnowledgeBaseTool: boolean = false
 ): Promise<AgentLearningResult> {
-  if (!promptSystem || !promptSystem.trim()) {
-    throw new Error("Learning agent system prompt is required. Please configure it in the database.");
+  if (!promptTemplate || !promptTemplate.trim()) {
+    throw new Error("Learning agent prompt template is required. Please configure it in the database.");
   }
 
-  const userPrompt = buildUserPrompt(payload, promptSystem, responseFormat);
+  const userPrompt = buildUserPrompt(payload, promptTemplate, responseFormat);
+  const effectivePromptSystem = promptSystem || "Você é um especialista em gestão de base de conhecimento para atendimento ao cliente.";
 
   const tools: ToolDefinition[] = [
     buildSearchKnowledgeBaseTool(),
@@ -246,7 +248,7 @@ export async function extractKnowledgeWithAgent(
   const result = await callOpenAI({
     requestType: "learning_agent",
     modelName,
-    promptSystem: "Você é um especialista em gestão de base de conhecimento para atendimento ao cliente.",
+    promptSystem: effectivePromptSystem,
     promptUser: userPrompt,
     tools,
     maxTokens: 2048,

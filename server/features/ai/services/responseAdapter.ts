@@ -160,6 +160,7 @@ ${a.observations ? `- **Observações:** ${a.observations}` : ''}`;
 
 export async function generateResponse(
   payload: ResponsePayload,
+  promptTemplate: string | null,
   promptSystem: string | null,
   responseFormat: string | null,
   modelName: string = "gpt-4o-mini",
@@ -241,19 +242,20 @@ export async function generateResponse(
     mensagens: messagesContext,
   };
 
-  let basePrompt = promptSystem || DEFAULT_RESPONSE_PROMPT;
+  let basePrompt = promptTemplate || DEFAULT_RESPONSE_PROMPT;
   if (useKnowledgeBaseTool || useZendeskKnowledgeBaseTool) {
     basePrompt += KB_SUFFIX;
   }
   
   const format = responseFormat || DEFAULT_RESPONSE_FORMAT;
+  const effectivePromptSystem = promptSystem || "Você é um assistente de atendimento especializado.";
   const promptWithVars = replacePromptVariables(basePrompt, variables);
   const fullPrompt = `${promptWithVars}\n\n## Formato da Resposta\n${format}`;
 
   const result = await callOpenAI({
     requestType: "response",
     modelName,
-    promptSystem: "Você é um assistente de atendimento especializado.",
+    promptSystem: effectivePromptSystem,
     promptUser: fullPrompt,
     maxTokens: 1024,
     contextType: "conversation",
@@ -285,6 +287,7 @@ export async function generateResponse(
 
 export async function generateAndSaveResponse(
   payload: ResponsePayload,
+  promptTemplate: string | null,
   promptSystem: string | null,
   responseFormat: string | null,
   modelName: string,
@@ -298,6 +301,7 @@ export async function generateAndSaveResponse(
 ): Promise<ResponseResult> {
   const result = await generateResponse(
     payload,
+    promptTemplate,
     promptSystem,
     responseFormat,
     modelName,

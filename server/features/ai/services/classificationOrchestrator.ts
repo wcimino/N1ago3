@@ -81,11 +81,11 @@ export async function classifyConversationProduct(event: EventStandard): Promise
       productCatalogJson,
     };
 
-    let effectivePromptSystem = config.promptSystem;
+    let effectivePromptSystem = config.promptSystem || "";
     if (config.useGeneralSettings) {
       const generalSettings = await generalSettingsStorage.getConcatenatedContent();
       if (generalSettings) {
-        effectivePromptSystem = generalSettings + "\n\n" + (config.promptSystem || "");
+        effectivePromptSystem = generalSettings + "\n\n" + effectivePromptSystem;
       }
     }
 
@@ -93,6 +93,7 @@ export async function classifyConversationProduct(event: EventStandard): Promise
 
     const result = await classifyAndSave(
       payload,
+      config.promptTemplate,
       effectivePromptSystem,
       config.responseFormat,
       config.modelName,

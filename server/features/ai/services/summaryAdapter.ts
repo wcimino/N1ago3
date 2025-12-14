@@ -170,6 +170,7 @@ function parseStructuredSummary(responseContent: string): StructuredSummary | nu
 
 export async function generateSummary(
   payload: SummaryPayload,
+  promptTemplate: string | null,
   promptSystem: string | null,
   responseFormat: string | null,
   modelName: string = "gpt-4o-mini",
@@ -188,8 +189,9 @@ export async function generateSummary(
     mensagens: messagesContext,
   };
 
-  const basePrompt = promptSystem || DEFAULT_SUMMARY_PROMPT;
+  const basePrompt = promptTemplate || DEFAULT_SUMMARY_PROMPT;
   const format = responseFormat || DEFAULT_SUMMARY_RESPONSE_FORMAT;
+  const effectivePromptSystem = promptSystem || "Você é um assistente especializado em análise de conversas de atendimento.";
   
   const promptWithVars = replacePromptVariables(basePrompt, variables);
   const fullPrompt = `${promptWithVars}\n\n## Formato da Resposta\n${format}`;
@@ -197,7 +199,7 @@ export async function generateSummary(
   const result = await callOpenAI({
     requestType: "summary",
     modelName,
-    promptSystem: "Você é um assistente especializado em análise de conversas de atendimento.",
+    promptSystem: effectivePromptSystem,
     promptUser: fullPrompt,
     maxTokens: 1024,
     contextType: "conversation",
@@ -226,6 +228,7 @@ export async function generateSummary(
 
 export async function generateAndSaveSummary(
   payload: SummaryPayload,
+  promptTemplate: string | null,
   promptSystem: string | null,
   responseFormat: string | null,
   modelName: string,
@@ -236,6 +239,7 @@ export async function generateAndSaveSummary(
 ): Promise<SummaryResult> {
   const result = await generateSummary(
     payload,
+    promptTemplate,
     promptSystem,
     responseFormat,
     modelName,

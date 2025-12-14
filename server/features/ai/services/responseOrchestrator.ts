@@ -88,11 +88,11 @@ export async function generateConversationResponse(event: EventStandard): Promis
     const useProductCatalogTool = config.useProductCatalogTool ?? false;
     const useZendeskKnowledgeBaseTool = config.useZendeskKnowledgeBaseTool ?? false;
 
-    let effectivePromptSystem = config.promptSystem;
+    let effectivePromptSystem = config.promptSystem || "";
     if (config.useGeneralSettings) {
       const generalSettings = await generalSettingsStorage.getConcatenatedContent();
       if (generalSettings) {
-        effectivePromptSystem = generalSettings + "\n\n" + (config.promptSystem || "");
+        effectivePromptSystem = generalSettings + "\n\n" + effectivePromptSystem;
       }
     }
 
@@ -100,6 +100,7 @@ export async function generateConversationResponse(event: EventStandard): Promis
 
     const result = await generateAndSaveResponse(
       payload,
+      config.promptTemplate,
       effectivePromptSystem,
       config.responseFormat,
       config.modelName,

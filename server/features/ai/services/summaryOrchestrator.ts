@@ -75,11 +75,11 @@ export async function generateConversationSummary(event: EventStandard): Promise
       }
     };
 
-    let effectivePromptSystem = config.promptSystem;
+    let effectivePromptSystem = config.promptSystem || "";
     if (config.useGeneralSettings) {
       const generalSettings = await generalSettingsStorage.getConcatenatedContent();
       if (generalSettings) {
-        effectivePromptSystem = generalSettings + "\n\n" + (config.promptSystem || "");
+        effectivePromptSystem = generalSettings + "\n\n" + effectivePromptSystem;
       }
     }
 
@@ -96,6 +96,7 @@ export async function generateConversationSummary(event: EventStandard): Promise
 
     const result = await generateAndSaveSummary(
       payload,
+      config.promptTemplate,
       effectivePromptSystem,
       config.responseFormat,
       config.modelName,

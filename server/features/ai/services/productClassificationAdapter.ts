@@ -28,6 +28,7 @@ export interface ClassificationResult {
 
 export async function classifyConversation(
   payload: ClassificationPayload,
+  promptTemplate: string | null,
   promptSystem: string | null,
   responseFormat: string | null,
   modelName: string = "gpt-4o-mini",
@@ -38,7 +39,7 @@ export async function classifyConversation(
   useSubjectIntentTool: boolean = false,
   useCombinedKnowledgeSearchTool: boolean = false
 ): Promise<ClassificationResult> {
-  if (!promptSystem || !promptSystem.trim()) {
+  if (!promptTemplate || !promptTemplate.trim()) {
     console.error("[Classification Adapter] Erro: Prompt de classificação não configurado no banco de dados");
     return {
       product: null,
@@ -75,15 +76,16 @@ export async function classifyConversation(
     catalogoProdutosSubprodutos: payload.productCatalogJson,
   };
 
-  const promptWithVars = replacePromptVariables(promptSystem, variables);
+  const promptWithVars = replacePromptVariables(promptTemplate, variables);
   const fullPrompt = `${promptWithVars}\n\n## Formato da Resposta\n${responseFormat}`;
+  const effectivePromptSystem = promptSystem || "Você é um classificador especializado. Responda sempre em JSON válido.";
 
   const effectiveUseProductCatalogTool = payload.productCatalogJson ? false : useProductCatalogTool;
 
   const result = await callOpenAI({
     requestType: "classification",
     modelName,
-    promptSystem: "Você é um classificador especializado. Responda sempre em JSON válido.",
+    promptSystem: effectivePromptSystem,
     promptUser: fullPrompt,
     maxTokens: 512,
     contextType: "conversation",
@@ -151,6 +153,7 @@ export async function classifyConversation(
 
 export async function classifyAndSave(
   payload: ClassificationPayload,
+  promptTemplate: string | null,
   promptSystem: string | null,
   responseFormat: string | null,
   modelName: string,
@@ -163,6 +166,7 @@ export async function classifyAndSave(
 ): Promise<ClassificationResult> {
   const result = await classifyConversation(
     payload,
+    promptTemplate,
     promptSystem,
     responseFormat,
     modelName,

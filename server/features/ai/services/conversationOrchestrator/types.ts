@@ -59,6 +59,8 @@ export interface DemandFinderAgentResult extends AgentResult {
   }>;
   needsMoreInfo?: boolean;
   followUpQuestion?: string;
+  suggestedAnswerToCustomer?: string;
+  suggestionId?: number;
 }
 
 export interface SolutionProviderAgentResult extends AgentResult {
@@ -68,6 +70,7 @@ export interface SolutionProviderAgentResult extends AgentResult {
   needsEscalation: boolean;
   escalationReason?: string;
   suggestedResponse?: string;
+  suggestionId?: number;
 }
 
 export interface OrchestratorContext {
