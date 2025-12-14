@@ -1,18 +1,44 @@
 import { storage } from "../../../storage/index.js";
-import { classifyAndSave, type ClassificationPayload } from "./productClassificationAdapter.js";
-import { generalSettingsStorage } from "../storage/generalSettingsStorage.js";
-import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
+import { runAgent, type AgentContext } from "./agentFramework.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 import type { ContentPayload } from "./promptUtils.js";
 
-function formatProductCatalogAsJson(): Promise<string> {
-  return productCatalogStorage.getAll().then(products => {
-    const catalogList = products.map(p => ({
-      produto: p.produto,
-      subproduto: p.subproduto || null
-    }));
-    return JSON.stringify(catalogList, null, 2);
-  });
+export interface ClassificationResult {
+  product: string | null;
+  subproduct: string | null;
+  subject: string | null;
+  intent: string | null;
+  confidence: number | null;
+  success: boolean;
+  logId: number;
+  error?: string;
+}
+
+function parseClassificationResult(responseContent: string): ClassificationResult | null {
+  try {
+    const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return null;
+    }
+    
+    const parsed = JSON.parse(jsonMatch[0]);
+    
+    const confidenceValue = typeof parsed.confidence === 'number' 
+      ? Math.round(Math.min(100, Math.max(0, parsed.confidence))) 
+      : null;
+    
+    return {
+      product: parsed.product || null,
+      subproduct: parsed.subproduct || null,
+      subject: parsed.subject || null,
+      intent: parsed.intent || null,
+      confidence: confidenceValue,
+      success: true,
+      logId: 0,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function shouldClassify(event: EventStandard): Promise<boolean> {
@@ -53,23 +79,20 @@ export async function classifyConversationProduct(event: EventStandard): Promise
     return;
   }
 
-  const config = await storage.getOpenaiApiConfig("classification");
-  if (!config) {
-    console.log("[Classification Orchestrator] Cannot classify: no config found");
-    return;
-  }
-
   try {
-    const [last20Messages, existingSummary, productCatalogJson] = await Promise.all([
+    const [last20Messages, existingSummary] = await Promise.all([
       storage.getLast20MessagesForConversation(event.conversationId),
       storage.getConversationSummary(event.conversationId),
-      formatProductCatalogAsJson()
     ]);
 
     const reversedMessages = [...last20Messages].reverse();
 
-    const payload: ClassificationPayload = {
-      last20Messages: reversedMessages.map(m => ({
+    const context: AgentContext = {
+      conversationId: event.conversationId,
+      externalConversationId: event.externalConversationId,
+      lastEventId: event.id,
+      summary: existingSummary?.summary || null,
+      messages: reversedMessages.map(m => ({
         authorType: m.authorType,
         authorName: m.authorName,
         contentText: m.contentText,
@@ -77,38 +100,41 @@ export async function classifyConversationProduct(event: EventStandard): Promise
         eventSubtype: m.eventSubtype,
         contentPayload: m.contentPayload as ContentPayload | null,
       })),
-      currentSummary: existingSummary?.summary || null,
-      productCatalogJson,
     };
 
-    let effectivePromptSystem = config.promptSystem || "";
-    if (config.useGeneralSettings) {
-      const generalSettings = await generalSettingsStorage.getConcatenatedContent();
-      if (generalSettings) {
-        effectivePromptSystem = generalSettings + "\n\n" + effectivePromptSystem;
-      }
+    console.log(`[Classification Orchestrator] Classifying conversation ${event.conversationId} with ${reversedMessages.length} messages${existingSummary ? ' and existing summary' : ''}`);
+
+    const result = await runAgent("classification", context, {
+      maxIterations: 5,
+    });
+
+    if (!result.success) {
+      console.error(`[Classification Orchestrator] Failed to classify conversation ${event.conversationId}: ${result.error}`);
+      return;
     }
 
-    console.log(`[Classification Orchestrator] Classifying conversation ${event.conversationId} with ${reversedMessages.length} messages${existingSummary ? ' and existing summary' : ''}, useGeneralSettings=${config.useGeneralSettings}`);
+    if (!result.responseContent) {
+      console.error(`[Classification Orchestrator] Empty response for conversation ${event.conversationId}`);
+      return;
+    }
 
-    const result = await classifyAndSave(
-      payload,
-      config.promptTemplate,
-      effectivePromptSystem,
-      config.responseFormat,
-      config.modelName,
-      event.conversationId,
-      event.externalConversationId,
-      config.useKnowledgeBaseTool ?? false,
-      config.useProductCatalogTool ?? false,
-      config.useSubjectIntentTool ?? false,
-      false
-    );
+    const parsed = parseClassificationResult(result.responseContent);
 
-    if (result.success) {
-      console.log(`[Classification Orchestrator] Classification saved for conversation ${event.conversationId}: ${result.product}/${result.subproduct}/${result.subject}/${result.intent}`);
-    } else {
-      console.error(`[Classification Orchestrator] Failed to classify conversation ${event.conversationId}: ${result.error}`);
+    if (!parsed) {
+      console.error(`[Classification Orchestrator] Failed to parse classification response for conversation ${event.conversationId}`);
+      return;
+    }
+
+    if (parsed.product) {
+      await storage.updateConversationClassification(event.conversationId, {
+        product: parsed.product,
+        subproduct: parsed.subproduct,
+        subject: parsed.subject,
+        intent: parsed.intent,
+        confidence: parsed.confidence,
+      });
+
+      console.log(`[Classification Orchestrator] Classification saved for conversation ${event.conversationId}: ${parsed.product}/${parsed.subproduct}/${parsed.subject}/${parsed.intent} (${parsed.confidence}%), logId: ${result.logId}`);
     }
   } catch (error: any) {
     console.error(`[Classification Orchestrator] Error in classifyConversationProduct for conversation ${event.conversationId}:`, error);

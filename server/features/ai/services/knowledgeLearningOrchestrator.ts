@@ -1,7 +1,6 @@
 import { storage } from "../../../storage/index.js";
 import { extractKnowledgeWithAgent, type AgentLearningPayload } from "./knowledgeLearningAgentAdapter.js";
 import { learningAttemptsStorage } from "../storage/learningAttemptsStorage.js";
-import { generalSettingsStorage } from "../storage/generalSettingsStorage.js";
 import type { EventStandard, LearningAttemptResult } from "../../../../shared/schema.js";
 import type { ContentPayload } from "./promptUtils.js";
 
@@ -106,31 +105,19 @@ export async function extractConversationKnowledge(event: EventStandard): Promis
       conversationHandler: null,
     };
 
-    const useKnowledgeBaseTool = config.useKnowledgeBaseTool ?? false;
-    const useProductCatalogTool = config.useProductCatalogTool ?? false;
-    const useZendeskKnowledgeBaseTool = config.useZendeskKnowledgeBaseTool ?? false;
-
-    let effectivePromptSystem = config.promptSystem || "";
-    if (config.useGeneralSettings) {
-      const generalSettings = await generalSettingsStorage.getConcatenatedContent();
-      if (generalSettings) {
-        effectivePromptSystem = generalSettings + "\n\n" + effectivePromptSystem;
-      }
-    }
-
-    console.log(`[Learning Orchestrator] Extracting knowledge with agent from conversation ${event.conversationId} with ${reversedMessages.length} messages, useKB=${useKnowledgeBaseTool}, useCatalog=${useProductCatalogTool}, useZendeskKB=${useZendeskKnowledgeBaseTool}, useGeneralSettings=${config.useGeneralSettings}`);
+    console.log(`[Learning Orchestrator] Extracting knowledge from conversation ${event.conversationId} with ${reversedMessages.length} messages`);
 
     const result = await extractKnowledgeWithAgent(
       payload,
       config.modelName,
       config.promptTemplate,
-      effectivePromptSystem,
+      config.promptSystem,
       config.responseFormat,
       event.conversationId,
       event.externalConversationId,
-      useKnowledgeBaseTool,
-      useProductCatalogTool,
-      useZendeskKnowledgeBaseTool
+      config.useKnowledgeBaseTool ?? false,
+      config.useProductCatalogTool ?? false,
+      config.useZendeskKnowledgeBaseTool ?? false
     );
 
     if (result.success) {

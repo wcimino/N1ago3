@@ -1,8 +1,96 @@
 import { storage } from "../../../storage/index.js";
-import { generateAndSaveSummary, type SummaryPayload } from "./summaryAdapter.js";
-import { generalSettingsStorage } from "../storage/generalSettingsStorage.js";
+import { runAgent, type AgentContext } from "./agentFramework.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 import type { ContentPayload } from "./promptUtils.js";
+
+export interface ObjectiveProblemResult {
+  id: number;
+  name: string;
+  matchScore?: number;
+}
+
+export interface ArticleAndProblemResult {
+  source: "article" | "problem";
+  id: number;
+  name: string | null;
+  description: string;
+  resolution?: string;
+  matchScore?: number;
+  matchReason?: string;
+  products?: string[];
+}
+
+export interface StructuredSummary {
+  clientRequest?: string;
+  agentActions?: string;
+  currentStatus?: string;
+  importantInfo?: string;
+  customerEmotionLevel?: number;
+  customerRequestType?: string;
+  objectiveProblems?: ObjectiveProblemResult[];
+  articlesAndObjectiveProblems?: ArticleAndProblemResult[];
+}
+
+function parseStructuredSummary(responseContent: string): StructuredSummary | null {
+  try {
+    const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+    
+    const parsed = JSON.parse(jsonMatch[0]);
+    
+    const emotionLevel = parsed.customerEmotionLevel || parsed.customer_emotion_level || parsed.nivelEmocaoCliente || parsed.nivel_emocao_cliente;
+    const validEmotionLevel = typeof emotionLevel === 'number' && emotionLevel >= 1 && emotionLevel <= 5 
+      ? emotionLevel 
+      : undefined;
+    
+    let objectiveProblems: ObjectiveProblemResult[] | undefined;
+    const rawProblems = parsed.objectiveProblems || parsed.problemasObjetivos || parsed.problemas_objetivos;
+    if (Array.isArray(rawProblems) && rawProblems.length > 0) {
+      objectiveProblems = rawProblems
+        .filter((p: any) => p && typeof p.id === 'number' && typeof p.name === 'string')
+        .map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          matchScore: typeof p.matchScore === 'number' ? p.matchScore : undefined,
+        }));
+      if (objectiveProblems.length === 0) objectiveProblems = undefined;
+    }
+
+    let articlesAndObjectiveProblems: ArticleAndProblemResult[] | undefined;
+    const rawArticlesAndProblems = parsed.articlesAndObjectiveProblems || parsed.artigosEProblemas || parsed.artigos_e_problemas;
+    if (Array.isArray(rawArticlesAndProblems) && rawArticlesAndProblems.length > 0) {
+      articlesAndObjectiveProblems = rawArticlesAndProblems
+        .filter((item: any) => item && typeof item.id === 'number' && (item.source === 'article' || item.source === 'problem'))
+        .map((item: any) => ({
+          source: item.source as "article" | "problem",
+          id: item.id,
+          name: item.name || null,
+          description: item.description || '',
+          resolution: item.resolution,
+          matchScore: typeof item.matchScore === 'number' ? item.matchScore : undefined,
+          matchReason: item.matchReason,
+          products: Array.isArray(item.products) ? item.products : undefined,
+        }));
+      if (articlesAndObjectiveProblems.length === 0) articlesAndObjectiveProblems = undefined;
+    }
+
+    const customerRequestType = parsed.customerRequestType || parsed.tipoSolicitacaoCliente || parsed.tipo_solicitacao_cliente ||
+      parsed.triage?.anamnese?.customerRequestType || undefined;
+
+    return {
+      clientRequest: parsed.clientRequest || parsed.solicitacaoCliente || parsed.solicitacao_cliente || undefined,
+      agentActions: parsed.agentActions || parsed.acoesAtendente || parsed.acoes_atendente || undefined,
+      currentStatus: parsed.currentStatus || parsed.statusAtual || parsed.status_atual || undefined,
+      importantInfo: parsed.importantInfo || parsed.informacoesImportantes || parsed.informacoes_importantes || undefined,
+      customerEmotionLevel: validEmotionLevel,
+      customerRequestType,
+      objectiveProblems,
+      articlesAndObjectiveProblems,
+    };
+  } catch {
+    return null;
+  }
+}
 
 export async function shouldGenerateSummary(event: EventStandard): Promise<boolean> {
   const config = await storage.getOpenaiApiConfig("summary");
@@ -42,22 +130,18 @@ export async function generateConversationSummary(event: EventStandard): Promise
     return;
   }
 
-  const config = await storage.getOpenaiApiConfig("summary");
-  if (!config) {
-    console.log("[Summary Orchestrator] Cannot generate summary: no config found");
-    return;
-  }
-
   try {
     const existingSummary = await storage.getConversationSummary(event.conversationId);
-
     const last20Messages = await storage.getLast20MessagesForConversation(event.conversationId);
-
     const reversedMessages = [...last20Messages].reverse();
 
-    const payload: SummaryPayload = {
-      currentSummary: existingSummary?.summary || null,
-      last20Messages: reversedMessages.map(m => ({
+    const context: AgentContext = {
+      conversationId: event.conversationId,
+      externalConversationId: event.externalConversationId,
+      lastEventId: event.id,
+      summary: existingSummary?.summary || null,
+      previousSummary: existingSummary?.summary || null,
+      messages: reversedMessages.map(m => ({
         authorType: m.authorType,
         authorName: m.authorName,
         contentText: m.contentText,
@@ -72,45 +156,41 @@ export async function generateConversationSummary(event: EventStandard): Promise
         occurredAt: event.occurredAt,
         eventSubtype: event.eventSubtype,
         contentPayload: event.contentPayload as ContentPayload | null,
-      }
+      },
     };
 
-    let effectivePromptSystem = config.promptSystem || "";
-    if (config.useGeneralSettings) {
-      const generalSettings = await generalSettingsStorage.getConcatenatedContent();
-      if (generalSettings) {
-        effectivePromptSystem = generalSettings + "\n\n" + effectivePromptSystem;
-      }
-    }
+    console.log(`[Summary Orchestrator] Generating summary for conversation ${event.conversationId} with ${reversedMessages.length} messages`);
 
-    const toolFlags = {
-      useKnowledgeBaseTool: config.useKnowledgeBaseTool ?? false,
-      useProductCatalogTool: config.useProductCatalogTool ?? false,
-      useSubjectIntentTool: config.useSubjectIntentTool ?? false,
-      useZendeskKnowledgeBaseTool: config.useZendeskKnowledgeBaseTool ?? false,
-      useObjectiveProblemTool: config.useObjectiveProblemTool ?? false,
-      useCombinedKnowledgeSearchTool: config.useCombinedKnowledgeSearchTool ?? false,
-    };
+    const result = await runAgent("summary", context);
 
-    console.log(`[Summary Orchestrator] Generating summary for conversation ${event.conversationId} with ${reversedMessages.length} messages, useGeneralSettings=${config.useGeneralSettings}, useObjectiveProblemTool=${toolFlags.useObjectiveProblemTool}`);
-
-    const result = await generateAndSaveSummary(
-      payload,
-      config.promptTemplate,
-      effectivePromptSystem,
-      config.responseFormat,
-      config.modelName,
-      event.conversationId,
-      event.externalConversationId,
-      event.id,
-      toolFlags
-    );
-
-    if (result.success) {
-      console.log(`[Summary Orchestrator] Summary generated and saved for conversation ${event.conversationId}`);
-    } else {
+    if (!result.success) {
       console.error(`[Summary Orchestrator] Failed to generate summary for conversation ${event.conversationId}: ${result.error}`);
+      return;
     }
+
+    if (!result.responseContent) {
+      console.error(`[Summary Orchestrator] Empty response for conversation ${event.conversationId}`);
+      return;
+    }
+
+    const structured = parseStructuredSummary(result.responseContent);
+
+    await storage.upsertConversationSummary({
+      conversationId: event.conversationId,
+      externalConversationId: event.externalConversationId || undefined,
+      summary: result.responseContent,
+      clientRequest: structured?.clientRequest,
+      agentActions: structured?.agentActions,
+      currentStatus: structured?.currentStatus,
+      importantInfo: structured?.importantInfo,
+      customerEmotionLevel: structured?.customerEmotionLevel,
+      customerRequestType: structured?.customerRequestType,
+      objectiveProblems: structured?.objectiveProblems,
+      articlesAndObjectiveProblems: structured?.articlesAndObjectiveProblems,
+      lastEventId: event.id,
+    });
+
+    console.log(`[Summary Orchestrator] Summary saved for conversation ${event.conversationId}, logId: ${result.logId}`);
   } catch (error: any) {
     console.error(`[Summary Orchestrator] Error in generateConversationSummary for conversation ${event.conversationId}:`, error);
   }

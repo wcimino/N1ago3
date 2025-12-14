@@ -1,6 +1,6 @@
 import { storage } from "../../../storage/index.js";
-import { generateAndSaveResponse, type ResponsePayload } from "./responseAdapter.js";
-import { generalSettingsStorage } from "../storage/generalSettingsStorage.js";
+import { runAgentAndSaveSuggestion, type AgentContext } from "./agentFramework.js";
+import { AutoPilotService } from "../../autoPilot/services/autoPilotService.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 import type { ContentPayload } from "./promptUtils.js";
 
@@ -42,17 +42,9 @@ export async function generateConversationResponse(event: EventStandard): Promis
     return;
   }
 
-  const config = await storage.getOpenaiApiConfig("response");
-  if (!config) {
-    console.log("[Response Orchestrator] Cannot generate response: no config found");
-    return;
-  }
-
   try {
     const existingSummary = await storage.getConversationSummary(event.conversationId);
-
     const last20Messages = await storage.getLast20MessagesForConversation(event.conversationId);
-
     const reversedMessages = [...last20Messages].reverse();
 
     const classification = (existingSummary?.product || existingSummary?.subproduct || existingSummary?.subject || existingSummary?.intent) ? {
@@ -63,10 +55,13 @@ export async function generateConversationResponse(event: EventStandard): Promis
       confidence: existingSummary.confidence,
     } : null;
 
-    const payload: ResponsePayload = {
-      currentSummary: existingSummary?.summary || null,
+    const context: AgentContext = {
+      conversationId: event.conversationId,
+      externalConversationId: event.externalConversationId,
+      lastEventId: event.id,
+      summary: existingSummary?.summary || null,
       classification,
-      last20Messages: reversedMessages.map(m => ({
+      messages: reversedMessages.map(m => ({
         authorType: m.authorType,
         authorName: m.authorName,
         contentText: m.contentText,
@@ -81,41 +76,38 @@ export async function generateConversationResponse(event: EventStandard): Promis
         occurredAt: event.occurredAt,
         eventSubtype: event.eventSubtype,
         contentPayload: event.contentPayload as ContentPayload | null,
-      }
+      },
     };
 
-    const useKnowledgeBaseTool = config.useKnowledgeBaseTool ?? false;
-    const useProductCatalogTool = config.useProductCatalogTool ?? false;
-    const useZendeskKnowledgeBaseTool = config.useZendeskKnowledgeBaseTool ?? false;
+    console.log(`[Response Orchestrator] Generating response for conversation ${event.conversationId} with ${reversedMessages.length} messages`);
 
-    let effectivePromptSystem = config.promptSystem || "";
-    if (config.useGeneralSettings) {
-      const generalSettings = await generalSettingsStorage.getConcatenatedContent();
-      if (generalSettings) {
-        effectivePromptSystem = generalSettings + "\n\n" + effectivePromptSystem;
-      }
-    }
+    const result = await runAgentAndSaveSuggestion("response", context, {
+      maxIterations: 3,
+      inResponseTo: String(event.id),
+    });
 
-    console.log(`[Response Orchestrator] Generating response for conversation ${event.conversationId} with ${reversedMessages.length} messages, useKB=${useKnowledgeBaseTool}, useCatalog=${useProductCatalogTool}, useZendeskKB=${useZendeskKnowledgeBaseTool}, useGeneralSettings=${config.useGeneralSettings}`);
+    if (result.success && result.suggestionId) {
+      await storage.saveStandardEvent({
+        eventType: "response_suggestion",
+        source: "n1ago",
+        conversationId: event.conversationId,
+        externalConversationId: event.externalConversationId || undefined,
+        authorType: "system",
+        authorName: "N1 Ago",
+        contentText: result.parsedContent?.suggestedAnswerToCustomer || result.responseContent || "",
+        occurredAt: new Date(),
+        metadata: {
+          openaiLogId: result.logId,
+          triggerEventId: event.id,
+          suggestionId: result.suggestionId,
+        },
+      });
 
-    const result = await generateAndSaveResponse(
-      payload,
-      config.promptTemplate,
-      effectivePromptSystem,
-      config.responseFormat,
-      config.modelName,
-      event.conversationId,
-      event.externalConversationId,
-      event.id,
-      useKnowledgeBaseTool,
-      useProductCatalogTool,
-      useZendeskKnowledgeBaseTool,
-      String(event.id)
-    );
+      console.log(`[Response Orchestrator] Response saved for conversation ${event.conversationId}, suggestionId: ${result.suggestionId}, logId: ${result.logId}`);
 
-    if (result.success) {
-      console.log(`[Response Orchestrator] Response generated successfully for conversation ${event.conversationId}, usedKB=${result.usedKnowledgeBase}, articles=${result.articlesFound}, logId: ${result.logId}`);
-    } else {
+      const autoPilotResult = await AutoPilotService.processSuggestion(result.suggestionId);
+      console.log(`[Response Orchestrator] AutoPilot result: action=${autoPilotResult.action}, reason=${autoPilotResult.reason}`);
+    } else if (!result.success) {
       console.error(`[Response Orchestrator] Failed to generate response: ${result.error}`);
     }
   } catch (error: any) {
