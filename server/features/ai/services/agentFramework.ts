@@ -234,8 +234,8 @@ async function buildPromptVariables(context: AgentContext): Promise<PromptVariab
           const formattedResults = searchResult.results.slice(0, 5).map(r => ({
             tipo: r.source === "article" ? "artigo" : "problema",
             id: r.id,
-            nome: r.name || r.description,
-            descricao: r.description,
+            nome: r.question || r.answer,
+            descricao: r.answer,
             score: r.matchScore || 0
           }));
           artigosProblemasListaTop5 = JSON.stringify(formattedResults, null, 2);
@@ -253,23 +253,29 @@ async function buildPromptVariables(context: AgentContext): Promise<PromptVariab
       context.classification.subproduct ?? undefined
     );
     if (resolved) {
-      produtoESubprodutoMatch = resolved.subproduto 
+      const productName = resolved.subproduto 
         ? `${resolved.produto} - ${resolved.subproduto}`
         : resolved.produto;
+      const productScore = context.classification.productConfidence;
+      produtoESubprodutoMatch = productScore != null 
+        ? `${productName} (score: ${productScore}%)`
+        : productName;
     }
   }
 
   let tipoDeDemandaMatch: string | null = null;
-  if (context.customerRequestType) {
-    tipoDeDemandaMatch = context.customerRequestType;
-  } else if (context.classification?.customerRequestType) {
-    tipoDeDemandaMatch = context.classification.customerRequestType;
+  const demandType = context.customerRequestType || context.classification?.customerRequestType;
+  if (demandType) {
+    const demandScore = context.classification?.customerRequestTypeConfidence;
+    tipoDeDemandaMatch = demandScore != null 
+      ? `${demandType} (score: ${demandScore}%)`
+      : demandType;
   }
 
   let artigoOuProblemaPrincipalMatch: string | null = null;
   if (context.searchResults && context.searchResults.length > 0) {
     const topResult = context.searchResults[0];
-    artigoOuProblemaPrincipalMatch = `[${topResult.source}] ${topResult.name}${topResult.matchScore ? ` (score: ${topResult.matchScore})` : ''}`;
+    artigoOuProblemaPrincipalMatch = `[${topResult.source}] ${topResult.name}${topResult.matchScore != null ? ` (score: ${topResult.matchScore})` : ''}`;
   }
 
   return {
