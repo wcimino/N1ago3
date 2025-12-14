@@ -43,8 +43,7 @@ export interface SummaryAgentResult extends AgentResult {
 
 export interface ClassificationAgentResult extends AgentResult {
   product?: string;
-  subject?: string;
-  intent?: string;
+  customerRequestType?: string;
 }
 
 export interface DemandFinderAgentResult extends AgentResult {
@@ -81,8 +80,7 @@ export interface OrchestratorContext {
   classification?: {
     product?: string;
     subproduct?: string;
-    subject?: string;
-    intent?: string;
+    customerRequestType?: string;
   };
   demand?: string;
   searchResults?: DemandFinderAgentResult["searchResults"];

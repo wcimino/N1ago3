@@ -116,18 +116,14 @@ export function formatLastMessage(message: {
 export function formatClassification(classification: {
   product: string | null;
   subproduct: string | null;
-  subject: string | null;
-  intent: string | null;
-  confidence: number | null;
+  customerRequestType?: string | null;
 } | null): string {
   if (!classification) {
     return 'Classificação não disponível';
   }
   return `Produto: ${classification.product || 'Não identificado'}
 Subproduto: ${classification.subproduct || 'Não identificado'}
-Assunto: ${classification.subject || 'Não identificado'}
-Intenção: ${classification.intent || 'Não identificada'}
-Confiança: ${classification.confidence !== null ? `${classification.confidence}%` : 'N/A'}`;
+Tipo de Solicitação: ${classification.customerRequestType || 'Não identificado'}`;
 }
 
 export function formatProductsAndSubproducts(classification: {

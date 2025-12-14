@@ -75,8 +75,7 @@ export class ConversationOrchestrator {
         context.summary = existingSummary.summary;
         context.classification = {
           product: existingSummary.product || undefined,
-          subject: existingSummary.subject || undefined,
-          intent: existingSummary.intent || undefined,
+          customerRequestType: existingSummary.customerRequestType || undefined,
         };
         console.log(`[ConversationOrchestrator] Step 1: Using existing summary`);
       }
@@ -92,10 +91,9 @@ export class ConversationOrchestrator {
     if (classificationResult.success) {
       context.classification = {
         product: classificationResult.product || context.classification?.product,
-        subject: classificationResult.subject || context.classification?.subject,
-        intent: classificationResult.intent || context.classification?.intent,
+        customerRequestType: classificationResult.customerRequestType || context.classification?.customerRequestType,
       };
-      console.log(`[ConversationOrchestrator] Step 2: Classification successful - ${context.classification.product}/${context.classification.subject}/${context.classification.intent}`);
+      console.log(`[ConversationOrchestrator] Step 2: Classification successful - ${context.classification.product}/${context.classification.customerRequestType}`);
     } else {
       console.log(`[ConversationOrchestrator] Step 2: Classification failed or skipped, keeping existing`);
     }

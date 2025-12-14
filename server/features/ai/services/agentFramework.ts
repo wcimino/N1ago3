@@ -17,10 +17,10 @@ import memoize from "memoizee";
 
 const getCachedProductCatalog = memoize(
   async () => {
-    const catalog = await productCatalogStorage.getAllProducts();
+    const catalog = await productCatalogStorage.getAll();
     return JSON.stringify(catalog.map(p => ({
-      name: p.name,
-      subproducts: p.subproducts,
+      produto: p.produto,
+      subproduto: p.subproduto,
     })));
   },
   { maxAge: 5 * 60 * 1000, promise: true }
@@ -35,9 +35,7 @@ export interface AgentContext {
   classification?: {
     product?: string | null;
     subproduct?: string | null;
-    subject?: string | null;
-    intent?: string | null;
-    confidence?: number | null;
+    customerRequestType?: string | null;
   } | null;
   handler?: string | null;
   customerRequestType?: string | null;
@@ -114,9 +112,7 @@ export async function buildAgentContextFromEvent(
     ? {
         product: existingSummary.product,
         subproduct: existingSummary.subproduct,
-        subject: existingSummary.subject,
-        intent: existingSummary.intent,
-        confidence: existingSummary.confidence,
+        customerRequestType: existingSummary.customerRequestType,
       }
     : null;
 
@@ -170,9 +166,7 @@ async function buildPromptVariables(context: AgentContext): Promise<PromptVariab
     ? formatClassification({
         product: context.classification.product ?? null,
         subproduct: context.classification.subproduct ?? null,
-        subject: context.classification.subject ?? null,
-        intent: context.classification.intent ?? null,
-        confidence: context.classification.confidence ?? null,
+        customerRequestType: context.classification.customerRequestType ?? null,
       })
     : 'Classificação não disponível';
     
@@ -328,8 +322,8 @@ export async function saveSuggestedResponse(
   try {
     const savedSuggestion = await storage.saveSuggestedResponse(conversationId, {
       suggestedResponse,
-      lastEventId: options.lastEventId,
-      openaiLogId: options.openaiLogId,
+      lastEventId: options.lastEventId ?? 0,
+      openaiLogId: options.openaiLogId ?? 0,
       externalConversationId: options.externalConversationId ?? null,
       inResponseTo: options.inResponseTo ?? null,
       articlesUsed: options.articlesUsed,
