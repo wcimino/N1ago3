@@ -1,30 +1,44 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "../../lib/queryClient";
 
-interface CrudMutationsConfig<TData, TCreateData = TData, TUpdateData = Partial<TData>> {
+export interface CrudMutationsConfig<TCreateData = unknown, TUpdateData = unknown> {
   baseUrl: string;
   queryKeys: string[];
+  transformCreateData?: (data: TCreateData) => unknown;
+  transformUpdateData?: (data: TUpdateData) => unknown;
   onCreateSuccess?: () => void;
   onUpdateSuccess?: () => void;
-  onDeleteSuccess?: () => void;
+  onDeleteSuccess?: (deletedId: number) => void;
   onError?: (error: Error) => void;
 }
 
-interface CrudMutationsReturn<TCreateData, TUpdateData> {
-  createMutation: ReturnType<typeof useMutation<Response, Error, TCreateData>>;
-  updateMutation: ReturnType<typeof useMutation<Response, Error, { id: number } & TUpdateData>>;
-  deleteMutation: ReturnType<typeof useMutation<Response, Error, number>>;
+export interface CrudMutationsReturn<TCreateData, TUpdateData> {
+  createMutation: ReturnType<typeof useMutation<unknown, Error, TCreateData>>;
+  updateMutation: ReturnType<typeof useMutation<unknown, Error, { id: number; data: TUpdateData }>>;
+  deleteMutation: ReturnType<typeof useMutation<unknown, Error, number>>;
   isCreating: boolean;
   isUpdating: boolean;
   isDeleting: boolean;
   isMutating: boolean;
+  handleCreate: (data: TCreateData) => void;
+  handleUpdate: (id: number, data: TUpdateData) => void;
+  handleDelete: (id: number, confirmMessage?: string) => void;
 }
 
-export function useCrudMutations<TData, TCreateData = TData, TUpdateData = Partial<TData>>(
-  config: CrudMutationsConfig<TData, TCreateData, TUpdateData>
+export function useCrudMutations<TCreateData = unknown, TUpdateData = unknown>(
+  config: CrudMutationsConfig<TCreateData, TUpdateData>
 ): CrudMutationsReturn<TCreateData, TUpdateData> {
   const queryClient = useQueryClient();
-  const { baseUrl, queryKeys, onCreateSuccess, onUpdateSuccess, onDeleteSuccess, onError } = config;
+  const { 
+    baseUrl, 
+    queryKeys, 
+    transformCreateData,
+    transformUpdateData,
+    onCreateSuccess, 
+    onUpdateSuccess, 
+    onDeleteSuccess, 
+    onError 
+  } = config;
 
   const invalidateQueries = () => {
     queryKeys.forEach(key => {
@@ -34,7 +48,9 @@ export function useCrudMutations<TData, TCreateData = TData, TUpdateData = Parti
 
   const createMutation = useMutation({
     mutationFn: async (data: TCreateData) => {
-      return apiRequest("POST", baseUrl, data);
+      const payload = transformCreateData ? transformCreateData(data) : data;
+      const res = await apiRequest("POST", baseUrl, payload);
+      return res.json();
     },
     onSuccess: () => {
       invalidateQueries();
@@ -46,8 +62,10 @@ export function useCrudMutations<TData, TCreateData = TData, TUpdateData = Parti
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, ...data }: { id: number } & TUpdateData) => {
-      return apiRequest("PUT", `${baseUrl}/${id}`, data);
+    mutationFn: async ({ id, data }: { id: number; data: TUpdateData }) => {
+      const payload = transformUpdateData ? transformUpdateData(data) : data;
+      const res = await apiRequest("PUT", `${baseUrl}/${id}`, payload);
+      return res.json();
     },
     onSuccess: () => {
       invalidateQueries();
@@ -60,16 +78,31 @@ export function useCrudMutations<TData, TCreateData = TData, TUpdateData = Parti
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest("DELETE", `${baseUrl}/${id}`);
+      await apiRequest("DELETE", `${baseUrl}/${id}`);
+      return id;
     },
-    onSuccess: () => {
+    onSuccess: (deletedId: number) => {
       invalidateQueries();
-      onDeleteSuccess?.();
+      onDeleteSuccess?.(deletedId);
     },
     onError: (error: Error) => {
       onError?.(error);
     },
   });
+
+  const handleCreate = (data: TCreateData) => {
+    createMutation.mutate(data);
+  };
+
+  const handleUpdate = (id: number, data: TUpdateData) => {
+    updateMutation.mutate({ id, data });
+  };
+
+  const handleDelete = (id: number, confirmMessage = "Tem certeza que deseja excluir?") => {
+    if (confirm(confirmMessage)) {
+      deleteMutation.mutate(id);
+    }
+  };
 
   return {
     createMutation,
@@ -79,5 +112,8 @@ export function useCrudMutations<TData, TCreateData = TData, TUpdateData = Parti
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
     isMutating: createMutation.isPending || updateMutation.isPending || deleteMutation.isPending,
+    handleCreate,
+    handleUpdate,
+    handleDelete,
   };
 }
