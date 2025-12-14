@@ -2,6 +2,9 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, X, Check, AlertCircle, ChevronRight, ChevronDown, Minus, Loader2 } from "lucide-react";
 import { FilterBar } from "../../../shared/components/ui/FilterBar";
+import { FormField } from "../../../shared/components/crud";
+import { useCrudMutations } from "../../../shared/hooks";
+import { apiRequest } from "../../../lib/queryClient";
 
 interface ObjectiveProblemStats {
   totalProblems: number;
@@ -57,6 +60,16 @@ interface ProductHierarchy {
   children: ProductHierarchy[];
 }
 
+const transformFormData = (data: FormData) => ({
+  name: data.name,
+  description: data.description,
+  synonyms: data.synonyms.split("\n").map(s => s.trim()).filter(Boolean),
+  examples: data.examples.split("\n").map(s => s.trim()).filter(Boolean),
+  presentedBy: data.presentedBy,
+  isActive: data.isActive,
+  productIds: data.productIds,
+});
+
 export function ObjectiveProblemsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -70,11 +83,8 @@ export function ObjectiveProblemsPage() {
   const togglePath = (path: string) => {
     setExpandedPaths(prev => {
       const next = new Set(prev);
-      if (next.has(path)) {
-        next.delete(path);
-      } else {
-        next.add(path);
-      }
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
       return next;
     });
   };
@@ -82,53 +92,45 @@ export function ObjectiveProblemsPage() {
   const toggleExpanded = (productName: string) => {
     setExpandedProducts(prev => {
       const next = new Set(prev);
-      if (next.has(productName)) {
-        next.delete(productName);
-      } else {
-        next.add(productName);
-      }
+      if (next.has(productName)) next.delete(productName);
+      else next.add(productName);
       return next;
     });
   };
 
   const { data: problems = [], isLoading } = useQuery<ObjectiveProblem[]>({
     queryKey: ["/api/knowledge/objective-problems"],
-    queryFn: async () => {
-      const res = await fetch("/api/knowledge/objective-problems");
-      if (!res.ok) throw new Error("Failed to fetch problems");
-      return res.json();
-    },
   });
 
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ["/api/knowledge/objective-problems/products"],
-    queryFn: async () => {
-      const res = await fetch("/api/knowledge/objective-problems/products");
-      if (!res.ok) throw new Error("Failed to fetch products");
-      return res.json();
-    },
   });
 
   const { data: stats, refetch: refetchStats } = useQuery<ObjectiveProblemStats>({
     queryKey: ["/api/knowledge/objective-problems/stats"],
-    queryFn: async () => {
-      const res = await fetch("/api/knowledge/objective-problems/stats");
-      if (!res.ok) throw new Error("Failed to fetch stats");
-      return res.json();
-    },
   });
 
   const generateEmbeddingsMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch("/api/knowledge/objective-problems/embeddings/generate-all", {
-        method: "POST",
-      });
-      if (!res.ok) throw new Error("Failed to generate embeddings");
+      const res = await apiRequest("POST", "/api/knowledge/objective-problems/embeddings/generate-all");
       return res.json();
     },
-    onSuccess: () => {
-      refetchStats();
-    },
+    onSuccess: () => refetchStats(),
+  });
+
+  const resetForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setFormData(emptyForm);
+  };
+
+  const { handleCreate, handleUpdate, handleDelete, isMutating, isDeleting } = useCrudMutations<FormData, FormData>({
+    baseUrl: "/api/knowledge/objective-problems",
+    queryKeys: ["/api/knowledge/objective-problems", "/api/knowledge/objective-problems/stats"],
+    transformCreateData: transformFormData,
+    transformUpdateData: transformFormData,
+    onCreateSuccess: resetForm,
+    onUpdateSuccess: resetForm,
   });
 
   const filteredProblems = useMemo(() => {
@@ -199,7 +201,6 @@ export function ObjectiveProblemsPage() {
     });
     
     const result: ProductHierarchy[] = [];
-    
     mainProducts.forEach(name => {
       const node = productMap.get(name);
       if (node && (node.problems.length > 0 || node.children.length > 0)) {
@@ -218,71 +219,6 @@ export function ObjectiveProblemsPage() {
     return [...new Set(products.map(p => p.produto))];
   }, [products]);
 
-  const createMutation = useMutation({
-    mutationFn: async (data: FormData) => {
-      const payload = {
-        name: data.name,
-        description: data.description,
-        synonyms: data.synonyms.split("\n").map(s => s.trim()).filter(Boolean),
-        examples: data.examples.split("\n").map(s => s.trim()).filter(Boolean),
-        presentedBy: data.presentedBy,
-        isActive: data.isActive,
-        productIds: data.productIds,
-      };
-      const res = await fetch("/api/knowledge/objective-problems", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error("Failed to create problem");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/objective-problems"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/objective-problems/stats"] });
-      handleCancel();
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: FormData }) => {
-      const payload = {
-        name: data.name,
-        description: data.description,
-        synonyms: data.synonyms.split("\n").map(s => s.trim()).filter(Boolean),
-        examples: data.examples.split("\n").map(s => s.trim()).filter(Boolean),
-        presentedBy: data.presentedBy,
-        isActive: data.isActive,
-        productIds: data.productIds,
-      };
-      const res = await fetch(`/api/knowledge/objective-problems/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error("Failed to update problem");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/objective-problems"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/objective-problems/stats"] });
-      handleCancel();
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await fetch(`/api/knowledge/objective-problems/${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete problem");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/objective-problems"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/objective-problems/stats"] });
-    },
-  });
-
   const handleEdit = (problem: ObjectiveProblem) => {
     setEditingId(problem.id);
     setFormData({
@@ -297,18 +233,12 @@ export function ObjectiveProblemsPage() {
     setShowForm(true);
   };
 
-  const handleCancel = () => {
-    setShowForm(false);
-    setEditingId(null);
-    setFormData(emptyForm);
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingId) {
-      updateMutation.mutate({ id: editingId, data: formData });
+      handleUpdate(editingId, formData);
     } else {
-      createMutation.mutate(formData);
+      handleCreate(formData);
     }
   };
 
@@ -323,9 +253,7 @@ export function ObjectiveProblemsPage() {
 
   const groupedProducts = products.reduce((acc, product) => {
     const mainProduct = product.produto;
-    if (!acc[mainProduct]) {
-      acc[mainProduct] = [];
-    }
+    if (!acc[mainProduct]) acc[mainProduct] = [];
     acc[mainProduct].push(product);
     return acc;
   }, {} as Record<string, Product[]>);
@@ -335,6 +263,72 @@ export function ObjectiveProblemsPage() {
     setSelectedProduct("");
   };
 
+  const renderProblemItem = (problem: ObjectiveProblem) => (
+    <div
+      key={problem.id}
+      className={`flex items-center gap-3 px-3 py-2 rounded-lg border ${
+        problem.isActive ? "bg-white border-gray-200" : "bg-gray-50 border-gray-200"
+      }`}
+    >
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-gray-900 truncate">{problem.name}</span>
+          {!problem.isActive && (
+            <span className="px-1.5 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">Inativo</span>
+          )}
+        </div>
+        <p className="text-sm text-gray-500 truncate">{problem.description}</p>
+      </div>
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <button
+          onClick={() => handleEdit(problem)}
+          className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded"
+          title="Editar"
+        >
+          <Pencil className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => handleDelete(problem.id, "Tem certeza que deseja excluir este problema?")}
+          disabled={isDeleting}
+          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
+          title="Excluir"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderProductNode = (node: ProductHierarchy, path: string, depth: number = 0) => {
+    const isExpanded = expandedPaths.has(path);
+    const hasChildren = node.children.length > 0 || node.problems.length > 0;
+    const totalProblems = node.problems.length + node.children.reduce((sum, c) => sum + c.problems.length, 0);
+
+    return (
+      <div key={path} className={depth > 0 ? "ml-4" : ""}>
+        <div
+          className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
+          onClick={() => hasChildren && togglePath(path)}
+        >
+          {hasChildren ? (
+            isExpanded ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />
+          ) : (
+            <Minus className="w-4 h-4 text-gray-300" />
+          )}
+          <span className="font-medium text-gray-700">{node.name}</span>
+          <span className="text-xs text-gray-400">({totalProblems})</span>
+        </div>
+        
+        {isExpanded && (
+          <div className="mt-2 space-y-2 ml-4">
+            {node.problems.map(renderProblemItem)}
+            {node.children.map(child => renderProductNode(child, `${path}|${child.name}`, depth + 1))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (showForm) {
     return (
       <div className="space-y-4">
@@ -342,63 +336,50 @@ export function ObjectiveProblemsPage() {
           <h3 className="text-lg font-medium">
             {editingId ? "Editar Problema" : "Novo Problema"}
           </h3>
-          <button onClick={handleCancel} className="p-2 text-gray-500 hover:text-gray-700">
+          <button onClick={resetForm} className="p-2 text-gray-500 hover:text-gray-700">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-6">
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="Ex: Transação recusada"
-                required
-              />
-            </div>
+            <FormField
+              type="text"
+              label="Nome"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Ex: Transacao recusada"
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                rows={2}
-                placeholder="Descrição detalhada do problema"
-                required
-              />
-            </div>
+            <FormField
+              type="textarea"
+              label="Descricao"
+              required
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              rows={2}
+              placeholder="Descricao detalhada do problema"
+            />
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Sinônimos (um por linha)
-                </label>
-                <textarea
-                  value={formData.synonyms}
-                  onChange={(e) => setFormData({ ...formData, synonyms: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  rows={4}
-                  placeholder="Pagamento negado&#10;Recusa de cartão"
-                />
-              </div>
+              <FormField
+                type="textarea"
+                label="Sinonimos (um por linha)"
+                value={formData.synonyms}
+                onChange={(e) => setFormData({ ...formData, synonyms: e.target.value })}
+                rows={4}
+                placeholder="Pagamento negado&#10;Recusa de cartao"
+              />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Exemplos de frases (um por linha)
-                </label>
-                <textarea
-                  value={formData.examples}
-                  onChange={(e) => setFormData({ ...formData, examples: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  rows={4}
-                  placeholder="Meu cartão não passou&#10;Não consegui pagar"
-                />
-              </div>
+              <FormField
+                type="textarea"
+                label="Exemplos de frases (um por linha)"
+                value={formData.examples}
+                onChange={(e) => setFormData({ ...formData, examples: e.target.value })}
+                rows={4}
+                placeholder="Meu cartao nao passou&#10;Nao consegui pagar"
+              />
             </div>
           </div>
 
@@ -409,7 +390,7 @@ export function ObjectiveProblemsPage() {
               </label>
               <div className="border border-gray-300 rounded-lg max-h-48 overflow-y-auto">
                 {products.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-2">Nenhum produto disponível</p>
+                  <p className="text-sm text-gray-500 text-center py-2">Nenhum produto disponivel</p>
                 ) : (
                   <div className="divide-y divide-gray-100">
                     {Object.entries(groupedProducts).map(([mainProduct, subProducts]) => {
@@ -427,15 +408,9 @@ export function ObjectiveProblemsPage() {
                                 onClick={() => toggleExpanded(mainProduct)}
                                 className="p-0.5"
                               >
-                                {isExpanded ? (
-                                  <ChevronDown className="w-4 h-4 text-gray-400" />
-                                ) : (
-                                  <ChevronRight className="w-4 h-4 text-gray-400" />
-                                )}
+                                {isExpanded ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
                               </button>
-                            ) : (
-                              <div className="w-5" />
-                            )}
+                            ) : <div className="w-5" />}
                             
                             {generalProduct && (
                               <input
@@ -447,36 +422,23 @@ export function ObjectiveProblemsPage() {
                             )}
                             
                             <span className="font-medium text-gray-900 text-sm">{mainProduct}</span>
-                            
-                            {specificProducts.length > 0 && (
-                              <span className="text-xs text-gray-400">
-                                {specificProducts.length}
-                              </span>
-                            )}
-                            
+                            {specificProducts.length > 0 && <span className="text-xs text-gray-400">{specificProducts.length}</span>}
                             {selectedCount > 0 && (
-                              <span className="ml-auto text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
-                                {selectedCount}
-                              </span>
+                              <span className="ml-auto text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">{selectedCount}</span>
                             )}
                           </div>
                           
                           {isExpanded && specificProducts.length > 0 && (
                             <div className="bg-gray-50 border-t border-gray-100">
                               {specificProducts.map((product) => (
-                                <label
-                                  key={product.id}
-                                  className="flex items-center gap-2 px-3 py-1.5 pl-10 hover:bg-gray-100 cursor-pointer"
-                                >
+                                <label key={product.id} className="flex items-center gap-2 px-3 py-1.5 pl-10 hover:bg-gray-100 cursor-pointer">
                                   <input
                                     type="checkbox"
                                     checked={formData.productIds.includes(product.id)}
                                     onChange={() => toggleProduct(product.id)}
                                     className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
                                   />
-                                  <span className="text-sm text-gray-700">
-                                    {product.subproduto}
-                                  </span>
+                                  <span className="text-sm text-gray-700">{product.subproduto}</span>
                                 </label>
                               ))}
                             </div>
@@ -494,42 +456,39 @@ export function ObjectiveProblemsPage() {
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Apresentado por</label>
-              <select
-                value={formData.presentedBy}
-                onChange={(e) => setFormData({ ...formData, presentedBy: e.target.value as FormData["presentedBy"] })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="customer">Cliente</option>
-                <option value="system">Sistema</option>
-                <option value="both">Ambos</option>
-              </select>
-            </div>
+            <FormField
+              type="select"
+              label="Apresentado por"
+              value={formData.presentedBy}
+              onChange={(e) => setFormData({ ...formData, presentedBy: e.target.value as FormData["presentedBy"] })}
+              options={[
+                { value: "customer", label: "Cliente" },
+                { value: "system", label: "Sistema" },
+                { value: "both", label: "Ambos" },
+              ]}
+            />
 
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="isActive"
-                checked={formData.isActive}
-                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-              />
-              <label htmlFor="isActive" className="text-sm font-medium text-gray-700">Ativo</label>
-            </div>
+            <FormField
+              type="checkbox"
+              label="Ativo"
+              id="isActive"
+              checked={formData.isActive}
+              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+            />
 
             <div className="flex gap-2 pt-2">
               <button
                 type="submit"
-                disabled={createMutation.isPending || updateMutation.isPending}
+                disabled={isMutating}
                 className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
               >
+                {isMutating && <Loader2 className="w-4 h-4 animate-spin" />}
                 <Check className="w-4 h-4" />
                 {editingId ? "Atualizar" : "Criar"}
               </button>
               <button
                 type="button"
-                onClick={handleCancel}
+                onClick={resetForm}
                 className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 Cancelar
@@ -546,7 +505,7 @@ export function ObjectiveProblemsPage() {
       <FilterBar
         filters={[
           { type: "search", value: searchTerm, onChange: setSearchTerm, placeholder: "Buscar..." },
-          { type: "select", value: selectedProduct, onChange: setSelectedProduct, placeholder: "Produto", options: distinctProducts },
+          { type: "select", value: selectedProduct, onChange: setSelectedProduct, placeholder: "Produto", options: distinctProducts.map(p => ({ value: p, label: p })) },
         ]}
         onClear={clearFilters}
       />
@@ -563,11 +522,9 @@ export function ObjectiveProblemsPage() {
             onClick={() => generateEmbeddingsMutation.mutate()}
             disabled={generateEmbeddingsMutation.isPending || stats.withoutEmbedding === 0}
             className="text-sm text-gray-600 hover:text-purple-700 disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-1"
-            title={stats.withoutEmbedding > 0 ? "Clique para gerar embeddings faltantes" : "Todos os embeddings estão gerados"}
+            title={stats.withoutEmbedding > 0 ? "Clique para gerar embeddings faltantes" : "Todos os embeddings estao gerados"}
           >
-            {generateEmbeddingsMutation.isPending ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : null}
+            {generateEmbeddingsMutation.isPending && <Loader2 className="w-3 h-3 animate-spin" />}
             <span className="font-semibold text-blue-600">{stats.withEmbedding}</span> Embeddings
             {stats.withoutEmbedding > 0 && (
               <span className="text-xs text-orange-500 ml-1">({stats.withoutEmbedding} pendente{stats.withoutEmbedding !== 1 ? "s" : ""})</span>
@@ -591,188 +548,18 @@ export function ObjectiveProblemsPage() {
         </div>
 
         {isLoading ? (
-          <div className="text-center py-8 text-gray-500">Carregando problemas...</div>
+          <div className="text-center py-8 text-gray-500">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
+            Carregando problemas...
+          </div>
         ) : filteredProblems.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <AlertCircle className="w-12 h-12 mx-auto mb-2 text-gray-300" />
             <p>Nenhum problema {searchTerm || selectedProduct ? "encontrado" : "cadastrado"}</p>
-            {!searchTerm && !selectedProduct && (
-              <p className="text-sm">Clique em "Novo Problema" para adicionar</p>
-            )}
           </div>
         ) : (
-          <div className="space-y-1">
-            {hierarchy.map((node) => {
-              const isExpanded = expandedPaths.has(node.name);
-              const hasContent = node.problems.length > 0 || node.children.length > 0;
-              const totalProblems = node.problems.length + node.children.reduce((sum, c) => sum + c.problems.length, 0);
-              
-              return (
-                <div key={node.name}>
-                  <div 
-                    className="flex items-start gap-2 py-2 px-2 sm:px-3 rounded-lg hover:bg-gray-50 cursor-pointer"
-                    onClick={() => togglePath(node.name)}
-                  >
-                    {hasContent ? (
-                      <button className="mt-0.5 p-0.5 hover:bg-gray-200 rounded shrink-0">
-                        {isExpanded ? (
-                          <Minus className="w-4 h-4 text-gray-500" />
-                        ) : (
-                          <Plus className="w-4 h-4 text-gray-500" />
-                        )}
-                      </button>
-                    ) : (
-                      <div className="w-5 shrink-0" />
-                    )}
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        <span className="text-gray-900 text-base font-medium break-words">
-                          {node.name}
-                        </span>
-                        <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-purple-600">
-                          <span className="font-medium">{totalProblems}</span> problema{totalProblems !== 1 ? "s" : ""}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {isExpanded && (
-                    <div className="ml-5 sm:ml-7 space-y-1">
-                      {node.children.map((subNode) => {
-                        const subPath = `${node.name}|${subNode.name}`;
-                        const isSubExpanded = expandedPaths.has(subPath);
-                        const hasSubProblems = subNode.problems.length > 0;
-                        
-                        return (
-                          <div key={subPath}>
-                            <div 
-                              className="flex items-start gap-2 py-2 px-2 sm:px-3 rounded-lg hover:bg-gray-50 cursor-pointer"
-                              onClick={() => togglePath(subPath)}
-                            >
-                              {hasSubProblems ? (
-                                <button className="mt-0.5 p-0.5 hover:bg-gray-200 rounded shrink-0">
-                                  {isSubExpanded ? (
-                                    <Minus className="w-4 h-4 text-gray-500" />
-                                  ) : (
-                                    <Plus className="w-4 h-4 text-gray-500" />
-                                  )}
-                                </button>
-                              ) : (
-                                <div className="w-5 shrink-0" />
-                              )}
-                              
-                              <div className="flex-1 min-w-0">
-                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                                  <span className="text-gray-800 text-sm font-medium break-words">
-                                    {subNode.name}
-                                  </span>
-                                  <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-purple-600">
-                                    <span className="font-medium">{subNode.problems.length}</span> problema{subNode.problems.length !== 1 ? "s" : ""}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {isSubExpanded && subNode.problems.length > 0 && (
-                              <div className="ml-5 sm:ml-7 space-y-1">
-                                {subNode.problems.map((problem) => (
-                                  <div
-                                    key={problem.id}
-                                    className={`flex items-start gap-2 py-2 px-2 sm:px-3 rounded-lg hover:bg-gray-50 group ${!problem.isActive ? "opacity-60" : ""}`}
-                                  >
-                                    <div className="w-5 shrink-0" />
-                                    
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-sm text-gray-700 break-words">
-                                          {problem.name}
-                                        </span>
-                                        {!problem.isActive && (
-                                          <span className="px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-500">
-                                            Inativo
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                    
-                                    <div className="flex items-center gap-1 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                                      <button
-                                        onClick={(e) => { e.stopPropagation(); handleEdit(problem); }}
-                                        className="p-1.5 text-gray-400 hover:text-purple-500 hover:bg-purple-50 rounded"
-                                        title="Editar"
-                                      >
-                                        <Pencil className="w-4 h-4" />
-                                      </button>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (confirm(`Tem certeza que deseja excluir "${problem.name}"?`)) {
-                                            deleteMutation.mutate(problem.id);
-                                          }
-                                        }}
-                                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
-                                        title="Excluir"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                      
-                      {node.problems.map((problem) => (
-                        <div
-                          key={problem.id}
-                          className={`flex items-start gap-2 py-2 px-2 sm:px-3 rounded-lg hover:bg-gray-50 group ${!problem.isActive ? "opacity-60" : ""}`}
-                        >
-                          <div className="w-5 shrink-0" />
-                          
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-gray-700 break-words">
-                                {problem.name}
-                              </span>
-                              {!problem.isActive && (
-                                <span className="px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-500">
-                                  Inativo
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-1 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleEdit(problem); }}
-                              className="p-1.5 text-gray-400 hover:text-purple-500 hover:bg-purple-50 rounded"
-                              title="Editar"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (confirm(`Tem certeza que deseja excluir "${problem.name}"?`)) {
-                                  deleteMutation.mutate(problem.id);
-                                }
-                              }}
-                              className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
-                              title="Excluir"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          <div className="space-y-3">
+            {hierarchy.map(node => renderProductNode(node, node.name))}
           </div>
         )}
       </div>

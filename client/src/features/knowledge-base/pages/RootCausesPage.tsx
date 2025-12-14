@@ -1,7 +1,9 @@
 import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, X, Loader2, GitBranch, Check, AlertCircle, Puzzle, ChevronDown, ChevronUp, HelpCircle } from "lucide-react";
 import { FilterBar } from "../../../shared/components/ui/FilterBar";
+import { FormField } from "../../../shared/components/crud";
+import { useCrudMutations } from "../../../shared/hooks";
 
 interface ValidationQuestion {
   question: string;
@@ -63,7 +65,6 @@ export function RootCausesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedProblemId, setExpandedProblemId] = useState<number | null>(null);
   const [newQuestionByProblem, setNewQuestionByProblem] = useState<Record<number, string>>({});
-  const queryClient = useQueryClient();
 
   const { data: rootCauses = [], isLoading } = useQuery<KnowledgeBaseRootCause[]>({
     queryKey: ["/api/knowledge/root-causes", searchTerm],
@@ -78,72 +79,11 @@ export function RootCausesPage() {
 
   const { data: allProblems = [] } = useQuery<KnowledgeBaseObjectiveProblem[]>({
     queryKey: ["/api/knowledge/objective-problems"],
-    queryFn: async () => {
-      const res = await fetch("/api/knowledge/objective-problems");
-      if (!res.ok) throw new Error("Failed to fetch problems");
-      return res.json();
-    },
   });
 
   const { data: allSolutions = [] } = useQuery<KnowledgeBaseSolution[]>({
     queryKey: ["/api/knowledge/solutions"],
-    queryFn: async () => {
-      const res = await fetch("/api/knowledge/solutions");
-      if (!res.ok) throw new Error("Failed to fetch solutions");
-      return res.json();
-    },
   });
-
-  const createMutation = useMutation({
-    mutationFn: async (data: FormData) => {
-      const res = await fetch("/api/knowledge/root-causes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error("Failed to create root cause");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/root-causes"] });
-      resetForm();
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: FormData }) => {
-      const res = await fetch(`/api/knowledge/root-causes/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) throw new Error("Failed to update root cause");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/root-causes"] });
-      resetForm();
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await fetch(`/api/knowledge/root-causes/${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete root cause");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/root-causes"] });
-    },
-  });
-
-  const stats = useMemo(() => {
-    const total = rootCauses.length;
-    const active = rootCauses.filter(r => r.isActive).length;
-    const inactive = total - active;
-    return { total, active, inactive };
-  }, [rootCauses]);
 
   const resetForm = () => {
     setShowForm(false);
@@ -152,6 +92,20 @@ export function RootCausesPage() {
     setExpandedProblemId(null);
     setNewQuestionByProblem({});
   };
+
+  const { handleCreate, handleUpdate, handleDelete, isMutating, isDeleting } = useCrudMutations<FormData, FormData>({
+    baseUrl: "/api/knowledge/root-causes",
+    queryKeys: ["/api/knowledge/root-causes"],
+    onCreateSuccess: resetForm,
+    onUpdateSuccess: resetForm,
+  });
+
+  const stats = useMemo(() => {
+    const total = rootCauses.length;
+    const active = rootCauses.filter(r => r.isActive).length;
+    const inactive = total - active;
+    return { total, active, inactive };
+  }, [rootCauses]);
 
   const handleEdit = async (rootCause: KnowledgeBaseRootCause) => {
     try {
@@ -190,20 +144,14 @@ export function RootCausesPage() {
     setShowForm(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.description.trim()) return;
 
     if (editingId) {
-      updateMutation.mutate({ id: editingId, data: formData });
+      handleUpdate(editingId, formData);
     } else {
-      createMutation.mutate(formData);
-    }
-  };
-
-  const handleDelete = (id: number) => {
-    if (confirm("Tem certeza que deseja excluir esta causa-raiz?")) {
-      deleteMutation.mutate(id);
+      handleCreate(formData);
     }
   };
 
@@ -278,7 +226,6 @@ export function RootCausesPage() {
 
   const activeProblems = allProblems.filter(p => p.isActive);
   const activeSolutions = allSolutions.filter(s => s.isActive);
-
   const selectedProblemIds = new Set(formData.problems.map(p => p.problemId));
 
   if (isLoading) {
@@ -333,46 +280,32 @@ export function RootCausesPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nome *
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                placeholder="Nome da causa-raiz..."
-                required
-              />
-            </div>
+            <FormField
+              type="text"
+              label="Nome"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Nome da causa-raiz..."
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Descrição *
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                placeholder="Descrição detalhada da causa-raiz..."
-                rows={3}
-                required
-              />
-            </div>
+            <FormField
+              type="textarea"
+              label="Descricao"
+              required
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Descricao detalhada da causa-raiz..."
+              rows={3}
+            />
 
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="isActive"
-                checked={formData.isActive}
-                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                className="w-4 h-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
-              />
-              <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
-                Ativo
-              </label>
-            </div>
+            <FormField
+              type="checkbox"
+              label="Ativo"
+              id="isActive"
+              checked={formData.isActive}
+              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -515,10 +448,10 @@ export function RootCausesPage() {
               </button>
               <button
                 type="submit"
-                disabled={createMutation.isPending || updateMutation.isPending}
+                disabled={isMutating}
                 className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors"
               >
-                {(createMutation.isPending || updateMutation.isPending) ? (
+                {isMutating ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <Check className="w-4 h-4" />
@@ -565,8 +498,9 @@ export function RootCausesPage() {
                     <Pencil className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(rootCause.id)}
-                    className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                    onClick={() => handleDelete(rootCause.id, "Tem certeza que deseja excluir esta causa-raiz?")}
+                    disabled={isDeleting}
+                    className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
                     title="Excluir"
                   >
                     <Trash2 className="w-4 h-4" />
