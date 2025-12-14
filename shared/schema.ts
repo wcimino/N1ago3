@@ -958,7 +958,7 @@ export const externalDataSyncLogs = pgTable("external_data_sync_logs", {
 }, (table) => ({
   sourceTypeIdx: index("idx_external_data_sync_logs_source_type").on(table.sourceType),
   statusIdx: index("idx_external_data_sync_logs_status").on(table.status),
-  startedAtIdx: index("idx_external_data_sync_logs_started_at").on(table.startedAt),
+  startedAtIdx: index("idx_external_data_sync_logs_started_at").on(table.startedAt.desc()),
 }));
 
 export type ExternalDataSyncLog = typeof externalDataSyncLogs.$inferSelect;
