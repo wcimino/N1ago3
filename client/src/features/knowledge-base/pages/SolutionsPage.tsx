@@ -4,39 +4,8 @@ import { Plus, Pencil, Trash2, X, Loader2, Puzzle, ChevronDown, ChevronUp, Play,
 import { FilterBar } from "../../../shared/components/ui/FilterBar";
 import { useCrudFormState } from "../../../shared/hooks/useCrudFormState";
 import { SolutionForm, type SolutionFormData } from "../components/SolutionForm";
-
-interface ProductCatalog {
-  id: number;
-  produto: string;
-  subproduto: string | null;
-  fullName: string;
-}
-
-interface KnowledgeBaseSolution {
-  id: number;
-  name: string;
-  description: string | null;
-  productId: number | null;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface KnowledgeBaseAction {
-  id: number;
-  actionType: string;
-  description: string;
-  requiredInput: string | null;
-  messageTemplate: string | null;
-  ownerTeam: string | null;
-  sla: string | null;
-  isActive: boolean;
-  actionSequence: number;
-}
-
-interface SolutionWithActions extends KnowledgeBaseSolution {
-  actions: KnowledgeBaseAction[];
-}
+import type { ProductCatalogItem, KnowledgeBaseSolution, KnowledgeBaseAction, SolutionWithActions } from "../../../types";
+import { ACTION_TYPE_LABELS } from "@shared/constants/actionTypes";
 
 const emptyForm: SolutionFormData = {
   name: "",
@@ -44,16 +13,6 @@ const emptyForm: SolutionFormData = {
   productId: null,
   isActive: true,
   selectedActionIds: [],
-};
-
-const actionTypeLabels: Record<string, string> = {
-  "internal_action_human": "Ação interna manual",
-  "escalate": "Escalar",
-  "inform": "Informar",
-  "other": "Outro",
-  "ask-customer": "Perguntar ao cliente",
-  "resolve": "Resolver",
-  "transfer": "Transferir",
 };
 
 export function SolutionsPage() {
@@ -81,7 +40,7 @@ export function SolutionsPage() {
     },
   });
 
-  const { data: productCatalog = [] } = useQuery<ProductCatalog[]>({
+  const { data: productCatalog = [] } = useQuery<ProductCatalogItem[]>({
     queryKey: ["/api/product-catalog"],
     queryFn: async () => {
       const res = await fetch("/api/product-catalog");
@@ -333,7 +292,7 @@ export function SolutionsPage() {
     return allActions.filter(a => a.isActive && !usedIds.has(a.id));
   }, [allActions, expandedSolution]);
 
-  const getActionTypeLabel = (type: string) => actionTypeLabels[type] || type;
+  const getActionTypeLabel = (type: string) => ACTION_TYPE_LABELS[type] || type;
 
   if (isLoading) {
     return (

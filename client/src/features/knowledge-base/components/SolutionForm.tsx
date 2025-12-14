@@ -18,25 +18,8 @@ import {
 } from "@dnd-kit/sortable";
 import { SortableActionItem } from "./SortableActionItem";
 import { ActionSelectorModal } from "./ActionSelectorModal";
-
-interface ProductCatalog {
-  id: number;
-  produto: string;
-  subproduto: string | null;
-  fullName: string;
-}
-
-interface KnowledgeBaseAction {
-  id: number;
-  actionType: string;
-  description: string;
-  requiredInput: string | null;
-  messageTemplate: string | null;
-  ownerTeam: string | null;
-  sla: string | null;
-  isActive: boolean;
-  actionSequence: number;
-}
+import type { ProductCatalogItem, KnowledgeBaseAction, SolutionAction } from "../../../types";
+import { ACTION_TYPE_LABELS } from "@shared/constants/actionTypes";
 
 export interface SolutionFormData {
   name: string;
@@ -53,19 +36,9 @@ interface SolutionFormProps {
   onCancel: () => void;
   isSubmitting: boolean;
   isEditing: boolean;
-  productCatalog: ProductCatalog[];
+  productCatalog: ProductCatalogItem[];
   allActions: KnowledgeBaseAction[];
 }
-
-const actionTypeLabels: Record<string, string> = {
-  "internal_action_human": "Ação interna manual",
-  "escalate": "Escalar",
-  "inform": "Informar",
-  "other": "Outro",
-  "ask-customer": "Perguntar ao cliente",
-  "resolve": "Resolver",
-  "transfer": "Transferir",
-};
 
 export function SolutionForm({
   formData,
@@ -123,7 +96,7 @@ export function SolutionForm({
     return allActions.filter(a => a.isActive && !selectedIds.has(a.id));
   }, [allActions, formData.selectedActionIds]);
 
-  const getActionTypeLabel = (type: string) => actionTypeLabels[type] || type;
+  const getActionTypeLabel = (type: string) => ACTION_TYPE_LABELS[type] || type;
 
   const handleFormDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;

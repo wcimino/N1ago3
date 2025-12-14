@@ -1,0 +1,35 @@
+export const ACTION_TYPE_VALUES = {
+  INTERNAL_ACTION_HUMAN: "internal_action_human",
+  ESCALATE: "escalate",
+  INFORM: "inform",
+  OTHER: "other",
+  ASK_CUSTOMER: "ask-customer",
+  RESOLVE: "resolve",
+  TRANSFER: "transfer",
+} as const;
+
+export type ActionTypeValue = typeof ACTION_TYPE_VALUES[keyof typeof ACTION_TYPE_VALUES];
+
+export const ACTION_TYPE_LABELS: Record<string, string> = {
+  [ACTION_TYPE_VALUES.INTERNAL_ACTION_HUMAN]: "Ação interna manual",
+  [ACTION_TYPE_VALUES.ESCALATE]: "Escalar",
+  [ACTION_TYPE_VALUES.INFORM]: "Informar",
+  [ACTION_TYPE_VALUES.OTHER]: "Outro",
+  [ACTION_TYPE_VALUES.ASK_CUSTOMER]: "Perguntar ao cliente",
+  [ACTION_TYPE_VALUES.RESOLVE]: "Resolver",
+  [ACTION_TYPE_VALUES.TRANSFER]: "Transferir",
+};
+
+export const ACTION_TYPE_OPTIONS = [
+  { value: ACTION_TYPE_VALUES.INTERNAL_ACTION_HUMAN, label: ACTION_TYPE_LABELS[ACTION_TYPE_VALUES.INTERNAL_ACTION_HUMAN] },
+  { value: ACTION_TYPE_VALUES.ESCALATE, label: ACTION_TYPE_LABELS[ACTION_TYPE_VALUES.ESCALATE] },
+  { value: ACTION_TYPE_VALUES.INFORM, label: ACTION_TYPE_LABELS[ACTION_TYPE_VALUES.INFORM] },
+  { value: ACTION_TYPE_VALUES.OTHER, label: ACTION_TYPE_LABELS[ACTION_TYPE_VALUES.OTHER] },
+  { value: ACTION_TYPE_VALUES.ASK_CUSTOMER, label: ACTION_TYPE_LABELS[ACTION_TYPE_VALUES.ASK_CUSTOMER] },
+  { value: ACTION_TYPE_VALUES.RESOLVE, label: ACTION_TYPE_LABELS[ACTION_TYPE_VALUES.RESOLVE] },
+  { value: ACTION_TYPE_VALUES.TRANSFER, label: ACTION_TYPE_LABELS[ACTION_TYPE_VALUES.TRANSFER] },
+];
+
+export function getActionTypeLabel(actionType: string): string {
+  return ACTION_TYPE_LABELS[actionType] || actionType;
+}

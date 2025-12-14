@@ -3,27 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Play, Loader2 } from "lucide-react";
 import { CrudPageLayout, CrudListItem, FormField } from "../../../shared/components/crud";
 import { useCrudMutations } from "../../../shared/hooks";
+import type { KnowledgeBaseAction, ActionStats } from "../../../types";
+import { ACTION_TYPE_OPTIONS, getActionTypeLabel } from "@shared/constants/actionTypes";
 
-interface ActionStats {
-  total: number;
-  active: number;
-  inactive: number;
-}
-
-interface KnowledgeBaseAction {
-  id: number;
-  actionType: string;
-  description: string;
-  requiredInput: string | null;
-  messageTemplate: string | null;
-  ownerTeam: string | null;
-  sla: string | null;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface FormData {
+interface ActionFormData {
   actionType: string;
   description: string;
   requiredInput: string;
@@ -33,7 +16,7 @@ interface FormData {
   isActive: boolean;
 }
 
-const emptyForm: FormData = {
+const emptyForm: ActionFormData = {
   actionType: "",
   description: "",
   requiredInput: "",
@@ -43,17 +26,7 @@ const emptyForm: FormData = {
   isActive: true,
 };
 
-const actionTypeOptions = [
-  { value: "internal_action_human", label: "Acao interna manual" },
-  { value: "escalate", label: "Escalar" },
-  { value: "inform", label: "Informar" },
-  { value: "other", label: "Outro" },
-  { value: "ask-customer", label: "Perguntar ao cliente" },
-  { value: "resolve", label: "Resolver" },
-  { value: "transfer", label: "Transferir" },
-];
-
-const transformFormData = (data: FormData) => ({
+const transformFormData = (data: ActionFormData) => ({
   ...data,
   requiredInput: data.requiredInput || null,
   messageTemplate: data.messageTemplate || null,
@@ -64,7 +37,7 @@ const transformFormData = (data: FormData) => ({
 export function ActionsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState<FormData>(emptyForm);
+  const [formData, setFormData] = useState<ActionFormData>(emptyForm);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedActionType, setSelectedActionType] = useState("");
 
@@ -82,7 +55,7 @@ export function ActionsPage() {
     setFormData(emptyForm);
   };
 
-  const { handleCreate, handleUpdate, handleDelete, isMutating, isDeleting } = useCrudMutations<FormData, FormData>({
+  const { handleCreate, handleUpdate, handleDelete, isMutating, isDeleting } = useCrudMutations<ActionFormData, ActionFormData>({
     baseUrl: "/api/knowledge/actions",
     queryKeys: ["/api/knowledge/actions", "/api/knowledge/actions/stats"],
     transformCreateData: transformFormData,
@@ -133,10 +106,6 @@ export function ActionsPage() {
     }
   };
 
-  const getActionTypeLabel = (type: string) => {
-    return actionTypeOptions.find(o => o.value === type)?.label || type;
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -157,7 +126,7 @@ export function ActionsPage() {
         {
           type: "select",
           placeholder: "Tipo",
-          options: actionTypeOptions,
+          options: ACTION_TYPE_OPTIONS,
           value: selectedActionType,
           onChange: setSelectedActionType,
         },
@@ -190,7 +159,7 @@ export function ActionsPage() {
               required
               value={formData.actionType}
               onChange={(e) => setFormData({ ...formData, actionType: e.target.value })}
-              options={actionTypeOptions}
+              options={ACTION_TYPE_OPTIONS}
               emptyOption="Selecione..."
             />
             <FormField

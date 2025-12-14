@@ -1,17 +1,6 @@
 import { useState } from "react";
 import { X, Plus, Play } from "lucide-react";
-
-interface KnowledgeBaseAction {
-  id: number;
-  actionType: string;
-  description: string;
-  requiredInput: string | null;
-  messageTemplate: string | null;
-  ownerTeam: string | null;
-  sla: string | null;
-  isActive: boolean;
-  actionSequence: number;
-}
+import type { KnowledgeBaseAction } from "../../../types";
 
 interface ActionSelectorModalProps {
   availableActions: KnowledgeBaseAction[];

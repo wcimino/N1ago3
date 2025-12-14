@@ -10,33 +10,7 @@ import {
   transformObjectiveProblemFormData,
   type ObjectiveProblemFormData 
 } from "../components/ObjectiveProblemForm";
-
-interface ObjectiveProblemStats {
-  totalProblems: number;
-  activeProblems: number;
-  withEmbedding: number;
-  withoutEmbedding: number;
-}
-
-interface Product {
-  id: number;
-  produto: string;
-  subproduto: string | null;
-  fullName: string;
-}
-
-interface ObjectiveProblem {
-  id: number;
-  name: string;
-  description: string;
-  synonyms: string[];
-  examples: string[];
-  presentedBy: "customer" | "system" | "both";
-  isActive: boolean;
-  productIds: number[];
-  createdAt: string;
-  updatedAt: string;
-}
+import type { ProductCatalogItem, ObjectiveProblem, ObjectiveProblemStats } from "../../../types";
 
 interface ProductHierarchy {
   name: string;
@@ -76,7 +50,7 @@ export function ObjectiveProblemsPage() {
     queryKey: ["/api/knowledge/objective-problems"],
   });
 
-  const { data: products = [] } = useQuery<Product[]>({
+  const { data: products = [] } = useQuery<ProductCatalogItem[]>({
     queryKey: ["/api/knowledge/objective-problems/products"],
   });
 
