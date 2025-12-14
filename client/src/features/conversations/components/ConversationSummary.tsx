@@ -189,7 +189,7 @@ function TriageCard({ triage }: TriageCardProps) {
           <div>
             <span className="font-medium text-gray-600">Tipo de solicitação</span>
             <span className="text-gray-400 text-xs ml-1">(anamnese.customerRequestType)</span>
-            <p className="mt-0.5">
+            <p className="mt-0.5 flex items-center gap-2">
               <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                 triage.anamnese.customerRequestType.toLowerCase().includes('suporte') 
                   ? 'bg-orange-100 text-orange-700'
@@ -199,7 +199,17 @@ function TriageCard({ triage }: TriageCardProps) {
               }`}>
                 {triage.anamnese.customerRequestType}
               </span>
+              {triage.anamnese.customerRequestTypeConfidence && (
+                <span className="text-gray-500 text-xs">
+                  Confiança: <span className="font-medium">{triage.anamnese.customerRequestTypeConfidence}</span>
+                </span>
+              )}
             </p>
+            {triage.anamnese.customerRequestTypeReason && (
+              <p className="text-gray-500 text-xs mt-1 italic">
+                {triage.anamnese.customerRequestTypeReason}
+              </p>
+            )}
           </div>
         )}
         
