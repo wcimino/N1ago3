@@ -24,13 +24,13 @@ export function useCrudFormState<T>(config: CrudFormStateConfig<T>): CrudFormSta
   const [formData, setFormData] = useState<T>(emptyForm);
 
   const openCreateForm = useCallback(() => {
-    setFormData(emptyForm);
+    setFormData({ ...emptyForm });
     setEditingId(null);
     setShowForm(true);
   }, [emptyForm]);
 
   const openEditForm = useCallback((id: number, data: T) => {
-    setFormData(data);
+    setFormData({ ...data });
     setEditingId(id);
     setShowForm(true);
   }, []);
@@ -38,7 +38,7 @@ export function useCrudFormState<T>(config: CrudFormStateConfig<T>): CrudFormSta
   const resetForm = useCallback(() => {
     setShowForm(false);
     setEditingId(null);
-    setFormData(emptyForm);
+    setFormData({ ...emptyForm });
     onReset?.();
   }, [emptyForm, onReset]);
 

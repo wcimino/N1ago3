@@ -7,3 +7,6 @@ export { SuggestionCard } from "./SuggestionCard";
 export { SuggestionCardBase } from "./SuggestionCardBase";
 export { EnrichmentPanel } from "./EnrichmentPanel";
 export { EnrichmentLogsList } from "./EnrichmentLogsList";
+export { SolutionForm, type SolutionFormData } from "./SolutionForm";
+export { SortableActionItem } from "./SortableActionItem";
+export { ActionSelectorModal } from "./ActionSelectorModal";

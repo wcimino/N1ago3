@@ -1,25 +1,9 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, X, Check, Loader2, Puzzle, ChevronDown, ChevronUp, Play, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Loader2, Puzzle, ChevronDown, ChevronUp, Play, ArrowUp, ArrowDown } from "lucide-react";
 import { FilterBar } from "../../../shared/components/ui/FilterBar";
-import { FormField } from "../../../shared/components/crud";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { useCrudFormState } from "../../../shared/hooks/useCrudFormState";
+import { SolutionForm, type SolutionFormData } from "../components/SolutionForm";
 
 interface ProductCatalog {
   id: number;
@@ -54,19 +38,7 @@ interface SolutionWithActions extends KnowledgeBaseSolution {
   actions: KnowledgeBaseAction[];
 }
 
-interface SolutionFilters {
-  productIds: number[];
-}
-
-interface FormData {
-  name: string;
-  description: string;
-  productId: number | null;
-  isActive: boolean;
-  selectedActionIds: number[];
-}
-
-const emptyForm: FormData = {
+const emptyForm: SolutionFormData = {
   name: "",
   description: "",
   productId: null,
@@ -84,83 +56,14 @@ const actionTypeLabels: Record<string, string> = {
   "transfer": "Transferir",
 };
 
-interface SortableActionItemProps {
-  action: KnowledgeBaseAction;
-  index: number;
-  onRemove: (id: number) => void;
-  getActionTypeLabel: (type: string) => string;
-}
-
-function SortableActionItem({ action, index, onRemove, getActionTypeLabel }: SortableActionItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: action.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-3 py-2"
-    >
-      <button
-        type="button"
-        className="p-1 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing touch-none"
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical className="w-4 h-4" />
-      </button>
-      <span className="w-6 h-6 flex items-center justify-center text-xs font-medium bg-violet-100 text-violet-700 rounded-full flex-shrink-0">
-        {index + 1}
-      </span>
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 flex-shrink-0">
-        <Play className="w-3 h-3" />
-        {getActionTypeLabel(action.actionType)}
-      </span>
-      <span className="flex-1 text-sm text-gray-900 truncate">{action.description}</span>
-      <button
-        type="button"
-        onClick={() => onRemove(action.id)}
-        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors flex-shrink-0"
-        title="Remover ação"
-      >
-        <X className="w-4 h-4" />
-      </button>
-    </div>
-  );
-}
-
 export function SolutionsPage() {
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState<FormData>(emptyForm);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [expandedSolutionId, setExpandedSolutionId] = useState<number | null>(null);
   const [showActionSelector, setShowActionSelector] = useState(false);
-  const [editingOriginalActionIds, setEditingOriginalActionIds] = useState<number[]>([]);
-  const [showFormActionModal, setShowFormActionModal] = useState(false);
-  const [pendingActionIds, setPendingActionIds] = useState<number[]>([]);
-  const [formSelectedProduto, setFormSelectedProduto] = useState<string>("");
   const queryClient = useQueryClient();
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const formState = useCrudFormState<SolutionFormData>({ emptyForm });
 
   const invalidateAllSolutions = () => {
     queryClient.invalidateQueries({ queryKey: ["/api/knowledge/solutions"] });
@@ -207,16 +110,15 @@ export function SolutionsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: FormData) => {
-      const { selectedActionIds, ...solutionData } = data;
+    mutationFn: async (data: SolutionFormData) => {
       const res = await fetch("/api/knowledge/solutions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: solutionData.name,
-          description: solutionData.description || null,
-          productId: solutionData.productId,
-          isActive: solutionData.isActive,
+          name: data.name,
+          description: data.description || null,
+          productId: data.productId,
+          isActive: data.isActive,
         }),
       });
       if (!res.ok) throw new Error("Failed to create solution");
@@ -225,16 +127,15 @@ export function SolutionsPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: FormData }) => {
-      const { selectedActionIds, ...solutionData } = data;
+    mutationFn: async ({ id, data }: { id: number; data: SolutionFormData }) => {
       const res = await fetch(`/api/knowledge/solutions/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: solutionData.name,
-          description: solutionData.description || null,
-          productId: solutionData.productId,
-          isActive: solutionData.isActive,
+          name: data.name,
+          description: data.description || null,
+          productId: data.productId,
+          isActive: data.isActive,
         }),
       });
       if (!res.ok) throw new Error("Failed to update solution");
@@ -244,9 +145,7 @@ export function SolutionsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await fetch(`/api/knowledge/solutions/${id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`/api/knowledge/solutions/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete solution");
     },
     onSuccess: (_, deletedId) => {
@@ -276,9 +175,7 @@ export function SolutionsPage() {
 
   const removeActionMutation = useMutation({
     mutationFn: async ({ solutionId, actionId }: { solutionId: number; actionId: number }) => {
-      const res = await fetch(`/api/knowledge/solutions/${solutionId}/actions/${actionId}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`/api/knowledge/solutions/${solutionId}/actions/${actionId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to remove action");
       return res.json();
     },
@@ -309,14 +206,6 @@ export function SolutionsPage() {
     return { total, active, inactive };
   }, [solutions]);
 
-  const resetForm = () => {
-    setShowForm(false);
-    setEditingId(null);
-    setFormData(emptyForm);
-    setEditingOriginalActionIds([]);
-    setFormSelectedProduto("");
-  };
-
   const handleEdit = async (solution: KnowledgeBaseSolution) => {
     let actionIds: number[] = [];
     try {
@@ -329,23 +218,23 @@ export function SolutionsPage() {
       console.error("Failed to load solution actions", e);
     }
     
-    setEditingOriginalActionIds(actionIds);
-    setFormData({
+    formState.openEditForm(solution.id, {
       name: solution.name,
       description: solution.description || "",
       productId: solution.productId,
       isActive: solution.isActive,
       selectedActionIds: actionIds,
     });
-    const product = productCatalog.find(p => p.id === solution.productId);
-    setFormSelectedProduto(product?.produto || "");
-    setEditingId(solution.id);
-    setShowForm(true);
   };
 
-  const syncSolutionActions = async (solutionId: number, selectedActionIds: number[], originalActionIds: number[]) => {
-    const toRemove = originalActionIds.filter(id => !selectedActionIds.includes(id));
-    const toAdd = selectedActionIds.filter(id => !originalActionIds.includes(id));
+  const syncSolutionActions = async (solutionId: number, selectedActionIds: number[]) => {
+    const res = await fetch(`/api/knowledge/solutions/${solutionId}?withActions=true`);
+    if (!res.ok) throw new Error("Failed to fetch current actions");
+    const solutionWithActions: SolutionWithActions = await res.json();
+    const currentActionIds = solutionWithActions.actions.map(a => a.id);
+    
+    const toRemove = currentActionIds.filter(id => !selectedActionIds.includes(id));
+    const toAdd = selectedActionIds.filter(id => !currentActionIds.includes(id));
     
     for (const actionId of toRemove) {
       await fetch(`/api/knowledge/solutions/${solutionId}/actions/${actionId}`, { method: "DELETE" });
@@ -370,18 +259,18 @@ export function SolutionsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    if (!formState.formData.name.trim()) return;
     
     try {
-      if (editingId) {
-        await updateMutation.mutateAsync({ id: editingId, data: formData });
-        await syncSolutionActions(editingId, formData.selectedActionIds, editingOriginalActionIds);
-        queryClient.invalidateQueries({ queryKey: ["/api/knowledge/solutions", editingId, "withActions"] });
+      if (formState.editingId) {
+        await updateMutation.mutateAsync({ id: formState.editingId, data: formState.formData });
+        await syncSolutionActions(formState.editingId, formState.formData.selectedActionIds);
+        queryClient.invalidateQueries({ queryKey: ["/api/knowledge/solutions", formState.editingId, "withActions"] });
       } else {
-        const newSolution = await createMutation.mutateAsync(formData);
-        if (formData.selectedActionIds.length > 0) {
-          for (let i = 0; i < formData.selectedActionIds.length; i++) {
-            const actionId = formData.selectedActionIds[i];
+        const newSolution = await createMutation.mutateAsync(formState.formData);
+        if (formState.formData.selectedActionIds.length > 0) {
+          for (let i = 0; i < formState.formData.selectedActionIds.length; i++) {
+            const actionId = formState.formData.selectedActionIds[i];
             await fetch(`/api/knowledge/solutions/${newSolution.id}/actions`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -392,7 +281,7 @@ export function SolutionsPage() {
       }
       invalidateAllSolutions();
       queryClient.invalidateQueries({ queryKey: ["/api/knowledge/solutions/filters"] });
-      resetForm();
+      formState.resetForm();
     } catch (error) {
       console.error("Failed to save solution", error);
     }
@@ -444,77 +333,6 @@ export function SolutionsPage() {
     return allActions.filter(a => a.isActive && !usedIds.has(a.id));
   }, [allActions, expandedSolution]);
 
-  const uniqueProdutos = useMemo(() => {
-    const produtos = new Set<string>();
-    productCatalog.forEach((product) => produtos.add(product.produto));
-    return Array.from(produtos).sort((a, b) => a.localeCompare(b));
-  }, [productCatalog]);
-
-  const subproductsForSelectedProduto = useMemo(() => {
-    if (!formSelectedProduto) return [];
-    return productCatalog
-      .filter(p => p.produto === formSelectedProduto)
-      .sort((a, b) => {
-        if (!a.subproduto && !b.subproduto) return 0;
-        if (!a.subproduto) return -1;
-        if (!b.subproduto) return 1;
-        return a.subproduto.localeCompare(b.subproduto);
-      });
-  }, [productCatalog, formSelectedProduto]);
-
-  const formSelectedActions = useMemo(() => {
-    const actionMap = new Map(allActions.map(a => [a.id, a]));
-    return formData.selectedActionIds
-      .map(id => actionMap.get(id))
-      .filter((a): a is KnowledgeBaseAction => a !== undefined);
-  }, [allActions, formData.selectedActionIds]);
-
-  const formAvailableActions = useMemo(() => {
-    const selectedIds = new Set(formData.selectedActionIds);
-    return allActions.filter(a => a.isActive && !selectedIds.has(a.id));
-  }, [allActions, formData.selectedActionIds]);
-
-  const handleFormDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      const oldIndex = formData.selectedActionIds.indexOf(Number(active.id));
-      const newIndex = formData.selectedActionIds.indexOf(Number(over.id));
-      setFormData({
-        ...formData,
-        selectedActionIds: arrayMove(formData.selectedActionIds, oldIndex, newIndex),
-      });
-    }
-  };
-
-  const handleFormRemoveAction = (actionId: number) => {
-    setFormData({
-      ...formData,
-      selectedActionIds: formData.selectedActionIds.filter(id => id !== actionId),
-    });
-  };
-
-  const handleOpenActionModal = () => {
-    setPendingActionIds([]);
-    setShowFormActionModal(true);
-  };
-
-  const handleTogglePendingAction = (actionId: number) => {
-    if (pendingActionIds.includes(actionId)) {
-      setPendingActionIds(pendingActionIds.filter(id => id !== actionId));
-    } else {
-      setPendingActionIds([...pendingActionIds, actionId]);
-    }
-  };
-
-  const handleConfirmAddActions = () => {
-    setFormData({
-      ...formData,
-      selectedActionIds: [...formData.selectedActionIds, ...pendingActionIds],
-    });
-    setShowFormActionModal(false);
-    setPendingActionIds([]);
-  };
-
   const getActionTypeLabel = (type: string) => actionTypeLabels[type] || type;
 
   if (isLoading) {
@@ -548,11 +366,7 @@ export function SolutionsPage() {
           />
         </div>
         <button
-          onClick={() => {
-            setFormData(emptyForm);
-            setEditingId(null);
-            setShowForm(true);
-          }}
+          onClick={formState.openCreateForm}
           className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
@@ -566,247 +380,17 @@ export function SolutionsPage() {
         <span className="text-gray-400">{stats.inactive} Inativas</span>
       </div>
 
-      {showForm && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">
-              {editingId ? "Editar Solução" : "Nova Solução"}
-            </h3>
-            <button onClick={resetForm} className="text-gray-500 hover:text-gray-700">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Produto
-                </label>
-                <select
-                  value={formSelectedProduto}
-                  onChange={(e) => {
-                    setFormSelectedProduto(e.target.value);
-                    setFormData({ ...formData, productId: null });
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 bg-white"
-                >
-                  <option value="">Selecione um produto...</option>
-                  {uniqueProdutos.map((produto) => (
-                    <option key={produto} value={produto}>{produto}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Subproduto
-                </label>
-                <select
-                  value={formData.productId === null ? "" : String(formData.productId)}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    productId: e.target.value ? parseInt(e.target.value) : null 
-                  })}
-                  disabled={!formSelectedProduto}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
-                  <option value="">Selecione...</option>
-                  {subproductsForSelectedProduto.map((product) => (
-                    <option key={product.id} value={product.id}>
-                      {product.subproduto || "(Geral)"}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                type="text"
-                label="Nome"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Nome da solução..."
-              />
-
-              <FormField
-                type="checkbox"
-                label="Ativo"
-                id="isActive"
-                checked={formData.isActive}
-                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                className="flex items-center"
-              />
-            </div>
-
-            <FormField
-              type="textarea"
-              label="Descrição"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={3}
-              placeholder="Descreva a solução..."
-            />
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Ações
-                </label>
-                <button
-                  type="button"
-                  onClick={handleOpenActionModal}
-                  disabled={formAvailableActions.length === 0}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Plus className="w-3 h-3" />
-                  Adicionar Ação
-                </button>
-              </div>
-
-              <div className="border border-gray-300 rounded-lg p-3 min-h-[80px] bg-gray-50">
-                {formSelectedActions.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">
-                    Nenhuma ação selecionada. Clique em "Adicionar Ação" para incluir ações.
-                  </p>
-                ) : (
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleFormDragEnd}
-                  >
-                    <SortableContext
-                      items={formData.selectedActionIds}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <div className="space-y-2">
-                        {formSelectedActions.map((action, index) => (
-                          <SortableActionItem
-                            key={action.id}
-                            action={action}
-                            index={index}
-                            onRemove={handleFormRemoveAction}
-                            getActionTypeLabel={getActionTypeLabel}
-                          />
-                        ))}
-                      </div>
-                    </SortableContext>
-                  </DndContext>
-                )}
-              </div>
-              {formData.selectedActionIds.length > 0 && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Arraste para reordenar. {formData.selectedActionIds.length} {formData.selectedActionIds.length === 1 ? "ação selecionada" : "ações selecionadas"}
-                </p>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={createMutation.isPending || updateMutation.isPending || !formData.name.trim()}
-                className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50"
-              >
-                {(createMutation.isPending || updateMutation.isPending) && (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                )}
-                <Check className="w-4 h-4" />
-                {editingId ? "Salvar" : "Criar"}
-              </button>
-            </div>
-          </form>
-
-          {showFormActionModal && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[80vh] flex flex-col">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-                  <h4 className="text-lg font-semibold text-gray-900">Selecionar Ações</h4>
-                  <button
-                    onClick={() => setShowFormActionModal(false)}
-                    className="p-1 text-gray-400 hover:text-gray-600 rounded"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-4">
-                  {formAvailableActions.length === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-8">
-                      Todas as ações já foram adicionadas.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {formAvailableActions.map((action) => {
-                        const isChecked = pendingActionIds.includes(action.id);
-                        return (
-                          <label
-                            key={action.id}
-                            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                              isChecked
-                                ? "bg-violet-100 border border-violet-300"
-                                : "bg-gray-50 border border-gray-200 hover:border-violet-200"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => handleTogglePendingAction(action.id)}
-                              className="w-4 h-4 text-violet-600 border-gray-300 rounded focus:ring-violet-500"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <Play className="w-3 h-3 text-violet-600 flex-shrink-0" />
-                                <span className="text-xs text-gray-500 flex-shrink-0">
-                                  [{getActionTypeLabel(action.actionType)}]
-                                </span>
-                                <span className="text-sm text-gray-900 truncate">
-                                  {action.description}
-                                </span>
-                              </div>
-                            </div>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
-                  <span className="text-sm text-gray-500">
-                    {pendingActionIds.length} {pendingActionIds.length === 1 ? "ação selecionada" : "ações selecionadas"}
-                  </span>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowFormActionModal(false)}
-                      className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleConfirmAddActions}
-                      disabled={pendingActionIds.length === 0}
-                      className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Adicionar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+      {formState.showForm && (
+        <SolutionForm
+          formData={formState.formData}
+          setFormData={formState.setFormData}
+          onSubmit={handleSubmit}
+          onCancel={formState.resetForm}
+          isSubmitting={createMutation.isPending || updateMutation.isPending}
+          isEditing={formState.isEditing}
+          productCatalog={productCatalog}
+          allActions={allActions}
+        />
       )}
 
       <div className="space-y-2">
