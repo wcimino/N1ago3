@@ -94,6 +94,21 @@ async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function formatDuration(ms: number): string {
+  if (ms <= 0) return "calculating...";
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes % 60}m`;
+  } else if (minutes > 0) {
+    return `${minutes}m ${seconds % 60}s`;
+  } else {
+    return `${seconds}s`;
+  }
+}
+
 async function fetchWithRetry<T>(
   url: string, 
   options: RequestInit,
@@ -499,6 +514,9 @@ export async function getSyncStatus(): Promise<{
     failed: number;
     currentPage: number;
     estimatedTotal: number;
+    usersPerMinute: number;
+    estimatedTimeRemainingMs: number;
+    estimatedTimeRemaining: string;
   } | null;
   lastSync: {
     id: number;
@@ -526,7 +544,10 @@ export async function getSyncStatus(): Promise<{
     isSyncing,
     currentSyncId,
     cancelRequested,
-    progress: isSyncing ? currentProgress : null,
+    progress: isSyncing ? {
+      ...currentProgress,
+      estimatedTimeRemaining: formatDuration(currentProgress.estimatedTimeRemainingMs),
+    } : null,
     lastSync: lastSyncLog ? {
       id: lastSyncLog.id,
       status: lastSyncLog.status,
@@ -613,21 +634,41 @@ export async function syncNewUsers(maxUsers?: number): Promise<{
   let nextCursor: string | null = null;
   let isComplete = false;
   
+  let userBuffer: InsertZendeskSupportUser[] = [];
+  let lastPersistedCursor: string | null = startCursor;
+  let currentFetchUrl: string | null = null;
+  
+  async function flushBufferWithRetry(buffer: InsertZendeskSupportUser[], maxRetries = 3): Promise<{ created: number; updated: number; success: boolean }> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const result = await upsertZendeskUsersBatch(buffer);
+        return { ...result, success: true };
+      } catch (err) {
+        console.error(`[ZendeskSupportUsers] Error upserting batch (attempt ${attempt}/${maxRetries}):`, err);
+        if (attempt < maxRetries) {
+          await sleep(1000 * attempt);
+        }
+      }
+    }
+    return { created: 0, updated: 0, success: false };
+  }
+  
   try {
     console.log(`[ZendeskSupportUsers] Starting add-new sync...${startCursor ? ` (resuming from cursor)` : ' (from beginning)'}${maxUsers ? ` (limit: ${maxUsers})` : ''}`);
     
     let url: string | null = startCursor || `${getBaseUrl()}/api/v2/users.json?per_page=${BATCH_SIZE}`;
     let pageCount = 0;
+    let estimatedTotal = maxUsers || 0;
+    let lastCheckpointPage = 0;
     
     while (url && (!maxUsers || totalProcessed < maxUsers) && !cancelRequested) {
       pageCount++;
-      console.log(`[ZendeskSupportUsers] Fetching page ${pageCount}...`);
-      currentProgress.currentPage = pageCount;
+      currentFetchUrl = url;
       
       const data = await fetchUsersPage(url);
       
-      if (currentProgress.estimatedTotal === 0 && data.count) {
-        currentProgress.estimatedTotal = maxUsers ? Math.min(maxUsers, data.count) : data.count;
+      if (estimatedTotal === 0 && data.count) {
+        estimatedTotal = maxUsers ? Math.min(maxUsers, data.count) : data.count;
       }
       
       if (data.users.length === 0) {
@@ -639,29 +680,44 @@ export async function syncNewUsers(maxUsers?: number): Promise<{
       if (maxUsers && totalProcessed + usersToProcess.length > maxUsers) {
         usersToProcess = usersToProcess.slice(0, maxUsers - totalProcessed);
       }
-      const usersToUpsert = usersToProcess.map(mapApiUserToDbUser);
       
-      try {
-        const { created, updated } = await upsertZendeskUsersBatch(usersToUpsert);
-        totalCreated += created;
-        totalUpdated += updated;
-        totalProcessed += usersToUpsert.length;
-      } catch (err) {
-        console.error(`[ZendeskSupportUsers] Error upserting batch:`, err);
-        totalFailed += usersToUpsert.length;
+      userBuffer.push(...usersToProcess.map(mapApiUserToDbUser));
+      
+      if (userBuffer.length >= DB_BATCH_SIZE || !data.next_page) {
+        const { created, updated, success } = await flushBufferWithRetry(userBuffer);
+        
+        if (success) {
+          totalCreated += created;
+          totalUpdated += updated;
+          totalProcessed += userBuffer.length;
+          userBuffer = [];
+          
+          lastPersistedCursor = data.next_page;
+          nextCursor = data.next_page;
+          
+          const pctComplete = estimatedTotal > 0 ? Math.round((totalProcessed / estimatedTotal) * 100) : 0;
+          console.log(`[ZendeskSupportUsers] Page ${pageCount}: ${totalProcessed}/${estimatedTotal} (${pctComplete}%) - ${currentProgress.usersPerMinute} users/min - ETA: ${formatDuration(currentProgress.estimatedTimeRemainingMs)}`);
+        } else {
+          console.error(`[ZendeskSupportUsers] Failed to persist batch after retries. Stopping sync to prevent data loss.`);
+          totalFailed += userBuffer.length;
+          nextCursor = lastPersistedCursor;
+          break;
+        }
       }
       
-      currentProgress = { ...currentProgress, processed: totalProcessed, created: totalCreated, updated: totalUpdated, failed: totalFailed };
+      updateProgressMetrics(totalProcessed, totalCreated, totalUpdated, totalFailed, pageCount, estimatedTotal);
       
-      nextCursor = data.next_page;
-      
-      await updateSyncLog(syncLog.id, {
-        recordsProcessed: totalProcessed,
-        recordsCreated: totalCreated,
-        recordsUpdated: totalUpdated,
-        recordsFailed: totalFailed,
-        metadata: { startCursor, nextCursor, ...(maxUsers ? { maxUsers } : {}) },
-      });
+      if (pageCount - lastCheckpointPage >= CHECKPOINT_INTERVAL) {
+        await updateSyncLog(syncLog.id, {
+          recordsProcessed: totalProcessed,
+          recordsCreated: totalCreated,
+          recordsUpdated: totalUpdated,
+          recordsFailed: totalFailed,
+          metadata: { startCursor, nextCursor: lastPersistedCursor, ...(maxUsers ? { maxUsers } : {}) },
+        });
+        lastCheckpointPage = pageCount;
+        console.log(`[ZendeskSupportUsers] Checkpoint saved at page ${pageCount}, cursor: ${lastPersistedCursor?.slice(0, 50)}...`);
+      }
       
       url = data.next_page;
       
@@ -670,7 +726,21 @@ export async function syncNewUsers(maxUsers?: number): Promise<{
       }
       
       if (url && !cancelRequested) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await sleep(100);
+      }
+    }
+    
+    if (userBuffer.length > 0) {
+      const { created, updated, success } = await flushBufferWithRetry(userBuffer);
+      if (success) {
+        totalCreated += created;
+        totalUpdated += updated;
+        totalProcessed += userBuffer.length;
+        userBuffer = [];
+      } else {
+        console.error(`[ZendeskSupportUsers] Failed to persist final batch after retries.`);
+        totalFailed += userBuffer.length;
+        nextCursor = lastPersistedCursor;
       }
     }
     
