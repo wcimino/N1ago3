@@ -55,33 +55,75 @@ export const productCatalogStorage = {
 
   async resolveProductId(product: string, subproduct?: string): Promise<{ id: number; produto: string; subproduto: string | null } | null> {
     const products = await this.getAll();
-    const productLower = product.toLowerCase();
-    const subproductLower = subproduct?.toLowerCase();
+    const productLower = product.toLowerCase().trim();
+    const subproductLower = subproduct?.toLowerCase().trim();
 
-    const matched = products.find(p => {
+    const scored = products.map(p => {
       const produtoLower = p.produto.toLowerCase();
       const fullNameLower = p.fullName.toLowerCase();
-      const produtoMatch = productLower.includes(produtoLower) || 
-                           produtoLower.includes(productLower) ||
-                           productLower.includes(fullNameLower) ||
-                           fullNameLower.includes(productLower);
+      const subprodutoLower = p.subproduto?.toLowerCase();
       
-      if (!produtoMatch) return false;
-      
-      if (subproductLower && p.subproduto) {
-        const subprodutoLower = p.subproduto.toLowerCase();
-        return subproductLower.includes(subprodutoLower) || subprodutoLower.includes(subproductLower);
+      let score = 0;
+      let isMatch = false;
+
+      // When subproduct is provided in the search, prioritize subproduct matches
+      if (subproductLower) {
+        if (p.subproduto) {
+          const subMatch = subproductLower === subprodutoLower || 
+                           subproductLower.includes(subprodutoLower) || 
+                           subprodutoLower.includes(subproductLower);
+          const prodMatch = productLower === produtoLower || 
+                            productLower.includes(produtoLower) || 
+                            produtoLower.includes(productLower);
+          
+          if (subMatch && prodMatch) {
+            isMatch = true;
+            if (subproductLower === subprodutoLower && productLower === produtoLower) {
+              score = 100; // Exact match on both product and subproduct
+            } else if (subproductLower === subprodutoLower) {
+              score = 90;
+            } else {
+              score = 70;
+            }
+          }
+        }
+        // When subproduct is provided, parent products without subproduct get very low score
+        // to ensure subproduct matches always win
+      } else {
+        // No subproduct in search - prioritize parent products
+        if (fullNameLower === productLower) {
+          isMatch = true;
+          score = 100;
+        } else if (produtoLower === productLower && !p.subproduto) {
+          // Exact match on product name AND no subproduct = parent product
+          isMatch = true;
+          score = 95;
+        } else if (produtoLower === productLower && p.subproduto) {
+          // Exact match on product but HAS subproduct = lower priority
+          isMatch = true;
+          score = 50;
+        } else if (productLower.includes(produtoLower) || produtoLower.includes(productLower)) {
+          isMatch = true;
+          score = p.subproduto ? 30 : 60;
+        } else if (fullNameLower.includes(productLower) || productLower.includes(fullNameLower)) {
+          isMatch = true;
+          score = 40;
+        }
       }
-      
-      return true;
+
+      return { ...p, score, isMatch };
     });
 
-    if (!matched) return null;
+    const matches = scored.filter(p => p.isMatch);
+    if (matches.length === 0) return null;
+
+    matches.sort((a, b) => b.score - a.score);
+    const best = matches[0];
     
     return {
-      id: matched.id,
-      produto: matched.produto,
-      subproduto: matched.subproduto
+      id: best.id,
+      produto: best.produto,
+      subproduto: best.subproduto
     };
   },
 };
