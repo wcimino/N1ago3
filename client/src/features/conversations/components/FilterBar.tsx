@@ -21,6 +21,7 @@ interface FilterBarProps {
   productStandards: string[];
   intents: string[];
   objectiveProblems: string[];
+  customerRequestTypes: string[];
   productStandardFilter: string;
   intentFilter: string;
   emotionLevelFilter: string;
@@ -28,6 +29,7 @@ interface FilterBarProps {
   userAuthenticatedFilter: string;
   handledByN1agoFilter: string;
   objectiveProblemFilter: string;
+  customerRequestTypeFilter: string;
   onProductStandardChange: (value: string) => void;
   onIntentChange: (value: string) => void;
   onEmotionLevelChange: (value: string) => void;
@@ -35,6 +37,7 @@ interface FilterBarProps {
   onUserAuthenticatedChange: (value: string) => void;
   onHandledByN1agoChange: (value: string) => void;
   onObjectiveProblemChange: (value: string) => void;
+  onCustomerRequestTypeChange: (value: string) => void;
   onClear: () => void;
 }
 
@@ -42,6 +45,7 @@ export function FilterBar({
   productStandards,
   intents,
   objectiveProblems,
+  customerRequestTypes,
   productStandardFilter,
   intentFilter,
   emotionLevelFilter,
@@ -49,6 +53,7 @@ export function FilterBar({
   userAuthenticatedFilter,
   handledByN1agoFilter,
   objectiveProblemFilter,
+  customerRequestTypeFilter,
   onProductStandardChange,
   onIntentChange,
   onEmotionLevelChange,
@@ -56,6 +61,7 @@ export function FilterBar({
   onUserAuthenticatedChange,
   onHandledByN1agoChange,
   onObjectiveProblemChange,
+  onCustomerRequestTypeChange,
   onClear,
 }: FilterBarProps) {
   return (
@@ -63,6 +69,7 @@ export function FilterBar({
       filters={[
         { type: "search", value: clientFilter, onChange: onClientChange, placeholder: "Buscar..." },
         { type: "select", value: productStandardFilter, onChange: onProductStandardChange, placeholder: "Produtos", options: productStandards },
+        { type: "select", value: customerRequestTypeFilter, onChange: onCustomerRequestTypeChange, placeholder: "Tipo Solicitacao", options: customerRequestTypes },
         { type: "select", value: intentFilter, onChange: onIntentChange, placeholder: "Intencoes", options: intents },
         { type: "select", value: objectiveProblemFilter, onChange: onObjectiveProblemChange, placeholder: "Problema", options: objectiveProblems },
         { type: "select", value: emotionLevelFilter, onChange: onEmotionLevelChange, placeholder: "Emocao", options: EMOTION_OPTIONS },

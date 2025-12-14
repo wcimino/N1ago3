@@ -83,8 +83,9 @@ router.get("/api/conversations/list", isAuthenticated, requireAuthorizedUser, as
   const userAuthenticated = req.query.userAuthenticated as string | undefined;
   const handledByN1ago = req.query.handledByN1ago as string | undefined;
   const objectiveProblem = req.query.objectiveProblem as string | undefined;
+  const customerRequestType = req.query.customerRequestType as string | undefined;
 
-  const { conversations, total } = await storage.getConversationsList(limit, offset, productStandard, handler, emotionLevel, client, userAuthenticated, handledByN1ago, objectiveProblem, productId);
+  const { conversations, total } = await storage.getConversationsList(limit, offset, productStandard, handler, emotionLevel, client, userAuthenticated, handledByN1ago, objectiveProblem, productId, customerRequestType);
 
   const enrichedConversations = conversations.map((conv: any) => ({
     id: conv.id,

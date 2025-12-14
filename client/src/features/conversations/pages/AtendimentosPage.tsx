@@ -14,6 +14,7 @@ interface FiltersResponse {
   productStandards: string[];
   intents: string[];
   objectiveProblems: string[];
+  customerRequestTypes: string[];
 }
 
 const HANDLER_TABS = [
@@ -44,6 +45,7 @@ export function AtendimentosPage() {
   const [userAuthenticatedFilter, setUserAuthenticatedFilter] = useState<string>("");
   const [handledByN1agoFilter, setHandledByN1agoFilter] = useState<string>("");
   const [objectiveProblemFilter, setObjectiveProblemFilter] = useState<string>("");
+  const [customerRequestTypeFilter, setCustomerRequestTypeFilter] = useState<string>("");
   const [handlerFilter, setHandlerFilter] = useState<string>("all");
   const [clientFilterInput, setClientFilterInput] = useState<string>("");
   const [clientFilterDebounced, setClientFilterDebounced] = useState<string>("");
@@ -86,9 +88,10 @@ export function AtendimentosPage() {
     if (userAuthenticatedFilter) params.set("userAuthenticated", userAuthenticatedFilter);
     if (handledByN1agoFilter) params.set("handledByN1ago", handledByN1agoFilter);
     if (objectiveProblemFilter) params.set("objectiveProblem", objectiveProblemFilter);
+    if (customerRequestTypeFilter) params.set("customerRequestType", customerRequestTypeFilter);
     const queryString = params.toString();
     return queryString ? `/api/conversations/list?${queryString}` : "/api/conversations/list";
-  }, [productStandardFilter, intentFilter, handlerFilter, emotionLevelFilter, clientFilterDebounced, userAuthenticatedFilter, handledByN1agoFilter, objectiveProblemFilter]);
+  }, [productStandardFilter, intentFilter, handlerFilter, emotionLevelFilter, clientFilterDebounced, userAuthenticatedFilter, handledByN1agoFilter, objectiveProblemFilter, customerRequestTypeFilter]);
 
   const {
     data: conversations,
@@ -103,13 +106,13 @@ export function AtendimentosPage() {
     showingFrom,
     showingTo,
   } = usePaginatedQuery<ConversationListItem>({
-    queryKey: `conversations-list-${productStandardFilter}-${intentFilter}-${handlerFilter}-${emotionLevelFilter}-${clientFilterDebounced}-${userAuthenticatedFilter}-${handledByN1agoFilter}-${objectiveProblemFilter}`,
+    queryKey: `conversations-list-${productStandardFilter}-${intentFilter}-${handlerFilter}-${emotionLevelFilter}-${clientFilterDebounced}-${userAuthenticatedFilter}-${handledByN1agoFilter}-${objectiveProblemFilter}-${customerRequestTypeFilter}`,
     endpoint,
     limit: 20,
     dataKey: "conversations",
   });
 
-  const hasFilters = productStandardFilter || intentFilter || emotionLevelFilter || clientFilterInput || userAuthenticatedFilter || handledByN1agoFilter || objectiveProblemFilter;
+  const hasFilters = productStandardFilter || intentFilter || emotionLevelFilter || clientFilterInput || userAuthenticatedFilter || handledByN1agoFilter || objectiveProblemFilter || customerRequestTypeFilter;
 
   const clearFilters = () => {
     setProductStandardFilter("");
@@ -119,6 +122,7 @@ export function AtendimentosPage() {
     setUserAuthenticatedFilter("");
     setHandledByN1agoFilter("");
     setObjectiveProblemFilter("");
+    setCustomerRequestTypeFilter("");
   };
 
   const handleConfigTabChange = (tabId: string) => {
@@ -174,6 +178,7 @@ export function AtendimentosPage() {
             productStandards={filters?.productStandards || []}
             intents={filters?.intents || []}
             objectiveProblems={filters?.objectiveProblems || []}
+            customerRequestTypes={filters?.customerRequestTypes || []}
             productStandardFilter={productStandardFilter}
             intentFilter={intentFilter}
             emotionLevelFilter={emotionLevelFilter}
@@ -181,6 +186,7 @@ export function AtendimentosPage() {
             userAuthenticatedFilter={userAuthenticatedFilter}
             handledByN1agoFilter={handledByN1agoFilter}
             objectiveProblemFilter={objectiveProblemFilter}
+            customerRequestTypeFilter={customerRequestTypeFilter}
             onProductStandardChange={setProductStandardFilter}
             onIntentChange={setIntentFilter}
             onEmotionLevelChange={setEmotionLevelFilter}
@@ -188,6 +194,7 @@ export function AtendimentosPage() {
             onUserAuthenticatedChange={setUserAuthenticatedFilter}
             onHandledByN1agoChange={setHandledByN1agoFilter}
             onObjectiveProblemChange={setObjectiveProblemFilter}
+            onCustomerRequestTypeChange={setCustomerRequestTypeFilter}
             onClear={clearFilters}
           />
 

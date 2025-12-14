@@ -207,7 +207,7 @@ export const conversationStats = {
     };
   },
 
-  async getConversationsList(limit = 50, offset = 0, productStandardFilter?: string, handlerFilter?: string, emotionLevelFilter?: number, clientFilter?: string, userAuthenticatedFilter?: string, handledByN1agoFilter?: string, objectiveProblemFilter?: string, productIdFilter?: number) {
+  async getConversationsList(limit = 50, offset = 0, productStandardFilter?: string, handlerFilter?: string, emotionLevelFilter?: number, clientFilter?: string, userAuthenticatedFilter?: string, handledByN1agoFilter?: string, objectiveProblemFilter?: string, productIdFilter?: number, customerRequestTypeFilter?: string) {
     const productCondition = productIdFilter 
       ? sql`AND cs.product_id = ${productIdFilter}` 
       : productStandardFilter 
@@ -242,6 +242,10 @@ export const conversationStats = {
         SELECT 1 FROM jsonb_array_elements(cs.objective_problems::jsonb) AS elem
         WHERE elem->>'name' = ${objectiveProblemFilter}
       )` : sql``;
+
+    const customerRequestTypeCondition = customerRequestTypeFilter 
+      ? sql`AND cs.customer_request_type = ${customerRequestTypeFilter}` 
+      : sql``;
 
     const clientSearchPattern = clientFilter ? `%${clientFilter}%` : null;
     const clientCondition = clientFilter ? sql`AND (
@@ -303,6 +307,7 @@ export const conversationStats = {
         ${userAuthenticatedCondition}
         ${handledByN1agoCondition}
         ${objectiveProblemCondition}
+        ${customerRequestTypeCondition}
       ORDER BY c.created_at DESC, c.id DESC
       LIMIT ${limit} OFFSET ${offset}
     `);
@@ -320,6 +325,7 @@ export const conversationStats = {
         ${userAuthenticatedCondition}
         ${handledByN1agoCondition}
         ${objectiveProblemCondition}
+        ${customerRequestTypeCondition}
     `);
 
     return { 
