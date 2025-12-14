@@ -64,6 +64,28 @@ The React frontend offers a real-time dashboard for events and conversations, ad
 
 Centralized OpenAI services in `shared/services/openai/` provide wrappers for `chat()`, `chatWithTools()`, and `embedding()` methods, with automatic logging of all OpenAI calls to `openai_api_logs` and support for `correlationId` for tracing.
 
+**AI Agent Framework Patterns:**
+
+The agent architecture is centralized in `server/features/ai/services/agentFramework.ts`:
+
+*   **`runAgent(configType, context, options)`**: Unified entry point for conversation-based agents. Handles config loading, prompt templating, tool wiring, and OpenAI calls.
+*   **`buildAgentContextFromEvent(event, options)`**: Helper to build `AgentContext` from an event, automatically fetching messages, summary, and classification.
+*   **`runAgentAndSaveSuggestion()`**: Extension of `runAgent` that also saves suggested responses.
+*   **Catálogo de Produtos com Cache**: Product catalog is cached for 5 minutes using memoizee to reduce database queries.
+
+When to use each pattern:
+
+| Padrão | Quando usar | Exemplos |
+|--------|-------------|----------|
+| `runAgent()` + `buildAgentContextFromEvent()` | Agentes **event-triggered** que processam conversas buscando dados frescos do banco | summary, response, classification |
+| `runAgent()` com context manual | Agentes dentro de **pipelines** que recebem dados frescos via contexto do orchestrator | demandFinder, solutionProvider (ConversationOrchestrator) |
+| Implementação customizada | Agentes que processam **outros domínios** (não conversas) com prompts/variáveis específicas | enrichment (processa intents/articles) |
+
+Key files:
+- `server/features/ai/services/agentFramework.ts` - Framework unificado
+- `server/features/ai/services/aiTools.ts` - Interface `ToolFlags` e fábricas de tools
+- `server/features/ai/services/openaiApiService.ts` - Serviço base de chamadas OpenAI
+
 **External Sources & Knowledge Base Architecture:**
 
 *   **External Sources:** Replicas of external data (e.g., Zendesk articles) are synced manually.

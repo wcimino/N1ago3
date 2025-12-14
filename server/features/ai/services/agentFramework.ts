@@ -13,6 +13,18 @@ import {
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 import type { OpenaiApiConfig, EventStandard } from "../../../../shared/schema.js";
 import type { ToolFlags } from "./aiTools.js";
+import memoize from "memoizee";
+
+const getCachedProductCatalog = memoize(
+  async () => {
+    const catalog = await productCatalogStorage.getAllProducts();
+    return JSON.stringify(catalog.map(p => ({
+      name: p.name,
+      subproducts: p.subproducts,
+    })));
+  },
+  { maxAge: 5 * 60 * 1000, promise: true }
+);
 
 export interface AgentContext {
   conversationId: number;
@@ -29,6 +41,14 @@ export interface AgentContext {
   } | null;
   handler?: string | null;
   customerRequestType?: string | null;
+  demand?: string | null;
+  searchResults?: Array<{
+    source: string;
+    id: number;
+    name: string;
+    description: string;
+    matchScore?: number;
+  }>;
   messages?: Array<{
     authorType: string;
     authorName: string | null;
@@ -158,11 +178,7 @@ async function buildPromptVariables(context: AgentContext): Promise<PromptVariab
 
   let catalogoJson = '[]';
   try {
-    const catalog = await productCatalogStorage.getAllProducts();
-    catalogoJson = JSON.stringify(catalog.map(p => ({
-      name: p.name,
-      subproducts: p.subproducts,
-    })));
+    catalogoJson = await getCachedProductCatalog();
   } catch {
     catalogoJson = '[]';
   }

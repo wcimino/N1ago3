@@ -6,7 +6,7 @@ const CONFIG_KEY = "solution_provider";
 
 export class SolutionProviderAgent {
   static async process(context: OrchestratorContext): Promise<SolutionProviderAgentResult> {
-    const { event, conversationId, summary, classification, demand, searchResults: contextSearchResults } = context;
+    const { event, conversationId, summary, classification, demand, searchResults } = context;
 
     try {
       const last20Messages = await storage.getLast20MessagesForConversation(conversationId);
@@ -22,6 +22,8 @@ export class SolutionProviderAgent {
           subject: classification.subject,
           intent: classification.intent,
         } : null,
+        demand,
+        searchResults,
         messages: reversedMessages.map(m => ({
           authorType: m.authorType,
           authorName: m.authorName,

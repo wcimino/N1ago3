@@ -1,8 +1,7 @@
 import { storage } from "../../../storage/index.js";
-import { runAgentAndSaveSuggestion, type AgentContext } from "./agentFramework.js";
+import { runAgentAndSaveSuggestion, buildAgentContextFromEvent } from "./agentFramework.js";
 import { AutoPilotService } from "../../autoPilot/services/autoPilotService.js";
 import type { EventStandard } from "../../../../shared/schema.js";
-import type { ContentPayload } from "./promptUtils.js";
 
 export async function shouldGenerateResponse(event: EventStandard): Promise<boolean> {
   const config = await storage.getOpenaiApiConfig("response");
@@ -43,43 +42,12 @@ export async function generateConversationResponse(event: EventStandard): Promis
   }
 
   try {
-    const existingSummary = await storage.getConversationSummary(event.conversationId);
-    const last20Messages = await storage.getLast20MessagesForConversation(event.conversationId);
-    const reversedMessages = [...last20Messages].reverse();
+    const context = await buildAgentContextFromEvent(event, {
+      includeSummary: true,
+      includeClassification: true,
+    });
 
-    const classification = (existingSummary?.product || existingSummary?.subproduct || existingSummary?.subject || existingSummary?.intent) ? {
-      product: existingSummary.product,
-      subproduct: existingSummary.subproduct,
-      subject: existingSummary.subject,
-      intent: existingSummary.intent,
-      confidence: existingSummary.confidence,
-    } : null;
-
-    const context: AgentContext = {
-      conversationId: event.conversationId,
-      externalConversationId: event.externalConversationId,
-      lastEventId: event.id,
-      summary: existingSummary?.summary || null,
-      classification,
-      messages: reversedMessages.map(m => ({
-        authorType: m.authorType,
-        authorName: m.authorName,
-        contentText: m.contentText,
-        occurredAt: m.occurredAt,
-        eventSubtype: m.eventSubtype,
-        contentPayload: m.contentPayload as ContentPayload | null,
-      })),
-      lastMessage: {
-        authorType: event.authorType,
-        authorName: event.authorName,
-        contentText: event.contentText,
-        occurredAt: event.occurredAt,
-        eventSubtype: event.eventSubtype,
-        contentPayload: event.contentPayload as ContentPayload | null,
-      },
-    };
-
-    console.log(`[Response Orchestrator] Generating response for conversation ${event.conversationId} with ${reversedMessages.length} messages`);
+    console.log(`[Response Orchestrator] Generating response for conversation ${event.conversationId} with ${context.messages?.length || 0} messages`);
 
     const result = await runAgentAndSaveSuggestion("response", context, {
       maxIterations: 3,

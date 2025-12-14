@@ -1,7 +1,6 @@
 import { storage } from "../../../storage/index.js";
-import { runAgent, type AgentContext } from "./agentFramework.js";
+import { runAgent, buildAgentContextFromEvent } from "./agentFramework.js";
 import type { EventStandard } from "../../../../shared/schema.js";
-import type { ContentPayload } from "./promptUtils.js";
 
 export interface ObjectiveProblemResult {
   id: number;
@@ -131,35 +130,12 @@ export async function generateConversationSummary(event: EventStandard): Promise
   }
 
   try {
-    const existingSummary = await storage.getConversationSummary(event.conversationId);
-    const last20Messages = await storage.getLast20MessagesForConversation(event.conversationId);
-    const reversedMessages = [...last20Messages].reverse();
+    const context = await buildAgentContextFromEvent(event, {
+      includeSummary: true,
+      includeClassification: false,
+    });
 
-    const context: AgentContext = {
-      conversationId: event.conversationId,
-      externalConversationId: event.externalConversationId,
-      lastEventId: event.id,
-      summary: existingSummary?.summary || null,
-      previousSummary: existingSummary?.summary || null,
-      messages: reversedMessages.map(m => ({
-        authorType: m.authorType,
-        authorName: m.authorName,
-        contentText: m.contentText,
-        occurredAt: m.occurredAt,
-        eventSubtype: m.eventSubtype,
-        contentPayload: m.contentPayload as ContentPayload | null,
-      })),
-      lastMessage: {
-        authorType: event.authorType,
-        authorName: event.authorName,
-        contentText: event.contentText,
-        occurredAt: event.occurredAt,
-        eventSubtype: event.eventSubtype,
-        contentPayload: event.contentPayload as ContentPayload | null,
-      },
-    };
-
-    console.log(`[Summary Orchestrator] Generating summary for conversation ${event.conversationId} with ${reversedMessages.length} messages`);
+    console.log(`[Summary Orchestrator] Generating summary for conversation ${event.conversationId} with ${context.messages?.length || 0} messages`);
 
     const result = await runAgent("summary", context);
 
