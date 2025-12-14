@@ -34,14 +34,13 @@ router.get("/api/conversations/grouped", isAuthenticated, requireAuthorizedUser,
   const limit = parseInt(req.query.limit as string) || 50;
   const offset = parseInt(req.query.offset as string) || 0;
   const productStandard = req.query.productStandard as string | undefined;
-  const intent = req.query.intent as string | undefined;
   const handler = req.query.handler as string | undefined;
   const emotionLevel = req.query.emotionLevel ? parseInt(req.query.emotionLevel as string) : undefined;
   const client = req.query.client as string | undefined;
   const userAuthenticated = req.query.userAuthenticated as string | undefined;
   const handledByN1ago = req.query.handledByN1ago as string | undefined;
 
-  const { userGroups, total } = await storage.getConversationsGroupedByUser(limit, offset, productStandard, intent, handler, emotionLevel, client, userAuthenticated, handledByN1ago);
+  const { userGroups, total } = await storage.getConversationsGroupedByUser(limit, offset, productStandard, handler, emotionLevel, client, userAuthenticated, handledByN1ago);
 
   const enrichedGroups = await Promise.all(
     userGroups.map(async (group: any) => {
@@ -54,8 +53,6 @@ router.get("/api/conversations/grouped", isAuthenticated, requireAuthorizedUser,
         conversations: group.conversations,
         last_product_standard: group.last_product_standard || null,
         last_subproduct_standard: group.last_subproduct_standard || null,
-        last_subject: group.last_subject || null,
-        last_intent: group.last_intent || null,
         last_customer_emotion_level: group.last_customer_emotion_level || null,
         user_info: user ? {
           id: user.id,
@@ -80,7 +77,6 @@ router.get("/api/conversations/list", isAuthenticated, requireAuthorizedUser, as
   const offset = parseInt(req.query.offset as string) || 0;
   const productStandard = req.query.productStandard as string | undefined;
   const productId = req.query.productId ? parseInt(req.query.productId as string) : undefined;
-  const intent = req.query.intent as string | undefined;
   const handler = req.query.handler as string | undefined;
   const emotionLevel = req.query.emotionLevel ? parseInt(req.query.emotionLevel as string) : undefined;
   const client = req.query.client as string | undefined;
@@ -88,7 +84,7 @@ router.get("/api/conversations/list", isAuthenticated, requireAuthorizedUser, as
   const handledByN1ago = req.query.handledByN1ago as string | undefined;
   const objectiveProblem = req.query.objectiveProblem as string | undefined;
 
-  const { conversations, total } = await storage.getConversationsList(limit, offset, productStandard, intent, handler, emotionLevel, client, userAuthenticated, handledByN1ago, objectiveProblem, productId);
+  const { conversations, total } = await storage.getConversationsList(limit, offset, productStandard, handler, emotionLevel, client, userAuthenticated, handledByN1ago, objectiveProblem, productId);
 
   const enrichedConversations = conversations.map((conv: any) => ({
     id: conv.id,
@@ -104,8 +100,6 @@ router.get("/api/conversations/list", isAuthenticated, requireAuthorizedUser, as
     message_count: Number(conv.message_count),
     product_standard: conv.product_standard || null,
     subproduct_standard: conv.subproduct_standard || null,
-    subject: conv.subject || null,
-    intent: conv.intent || null,
     customer_emotion_level: conv.customer_emotion_level || null,
     objective_problems: conv.objective_problems || [],
     user_info: conv.user_db_id ? {

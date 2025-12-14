@@ -20,9 +20,8 @@ export const conversationStats = {
     };
   },
 
-  async getConversationsGroupedByUser(limit = 50, offset = 0, productStandardFilter?: string, intentFilter?: string, handlerFilter?: string, emotionLevelFilter?: number, clientFilter?: string, userAuthenticatedFilter?: string, handledByN1agoFilter?: string) {
+  async getConversationsGroupedByUser(limit = 50, offset = 0, productStandardFilter?: string, handlerFilter?: string, emotionLevelFilter?: number, clientFilter?: string, userAuthenticatedFilter?: string, handledByN1agoFilter?: string) {
     const productCondition = productStandardFilter ? sql`AND lc_filter.last_product_standard = ${productStandardFilter}` : sql``;
-    const intentCondition = intentFilter ? sql`AND lc_filter.last_intent = ${intentFilter}` : sql``;
     const emotionCondition = emotionLevelFilter ? sql`AND lc_filter.last_customer_emotion_level = ${emotionLevelFilter}` : sql``;
     
     let handlerCondition = sql``;
@@ -84,7 +83,6 @@ export const conversationStats = {
         SELECT DISTINCT ON (c.user_id)
           c.user_id,
           COALESCE(cs.product_standard, cs.product) as last_product_standard,
-          cs.intent as last_intent,
           c.current_handler_name,
           cs.customer_emotion_level as last_customer_emotion_level,
           u.profile->>'givenName' as profile_given_name,
@@ -102,7 +100,7 @@ export const conversationStats = {
       ),
       filtered_users AS (
         SELECT user_id FROM last_conv_filter lc_filter
-        WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition} ${emotionCondition} ${clientCondition} ${userAuthenticatedCondition} ${handledByN1agoCondition}
+        WHERE 1=1 ${productCondition} ${handlerCondition} ${emotionCondition} ${clientCondition} ${userAuthenticatedCondition} ${handledByN1agoCondition}
       ),
       user_stats AS (
         SELECT 
@@ -121,7 +119,6 @@ export const conversationStats = {
               'created_at', TO_CHAR(c.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
               'updated_at', TO_CHAR(COALESCE(lm.last_message_at, c.created_at), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
               'product_standard', COALESCE(cs.product_standard, cs.product),
-              'intent', cs.intent,
               'current_handler', c.current_handler,
               'current_handler_name', c.current_handler_name,
               'message_count', COALESCE(mc.message_count, 0)
@@ -142,8 +139,6 @@ export const conversationStats = {
           c.user_id,
           COALESCE(cs.product_standard, cs.product) as last_product_standard,
           cs.subproduct as last_subproduct_standard,
-          cs.subject as last_subject,
-          cs.intent as last_intent,
           cs.customer_emotion_level as last_customer_emotion_level
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
@@ -160,8 +155,6 @@ export const conversationStats = {
         us.conversations,
         lc.last_product_standard,
         lc.last_subproduct_standard,
-        lc.last_subject,
-        lc.last_intent,
         lc.last_customer_emotion_level
       FROM user_stats us
       LEFT JOIN last_conv lc ON lc.user_id = us.user_id
@@ -189,7 +182,6 @@ export const conversationStats = {
         SELECT DISTINCT ON (c.user_id)
           c.user_id,
           COALESCE(cs.product_standard, cs.product) as last_product_standard,
-          cs.intent as last_intent,
           c.current_handler_name,
           cs.customer_emotion_level as last_customer_emotion_level,
           u.profile->>'givenName' as profile_given_name,
@@ -206,7 +198,7 @@ export const conversationStats = {
         ORDER BY c.user_id, COALESCE(lm.last_message_at, c.created_at) DESC
       )
       SELECT COUNT(*) as count FROM last_conv_filter lc_filter
-      WHERE 1=1 ${productCondition} ${intentCondition} ${handlerCondition} ${emotionCondition} ${clientCondition} ${userAuthenticatedCondition} ${handledByN1agoCondition}
+      WHERE 1=1 ${productCondition} ${handlerCondition} ${emotionCondition} ${clientCondition} ${userAuthenticatedCondition} ${handledByN1agoCondition}
     `);
 
     return { 
@@ -215,13 +207,12 @@ export const conversationStats = {
     };
   },
 
-  async getConversationsList(limit = 50, offset = 0, productStandardFilter?: string, intentFilter?: string, handlerFilter?: string, emotionLevelFilter?: number, clientFilter?: string, userAuthenticatedFilter?: string, handledByN1agoFilter?: string, objectiveProblemFilter?: string, productIdFilter?: number) {
+  async getConversationsList(limit = 50, offset = 0, productStandardFilter?: string, handlerFilter?: string, emotionLevelFilter?: number, clientFilter?: string, userAuthenticatedFilter?: string, handledByN1agoFilter?: string, objectiveProblemFilter?: string, productIdFilter?: number) {
     const productCondition = productIdFilter 
       ? sql`AND cs.product_id = ${productIdFilter}` 
       : productStandardFilter 
         ? sql`AND COALESCE(cs.product_standard, cs.product) = ${productStandardFilter}` 
         : sql``;
-    const intentCondition = intentFilter ? sql`AND cs.intent = ${intentFilter}` : sql``;
     const emotionCondition = emotionLevelFilter ? sql`AND cs.customer_emotion_level = ${emotionLevelFilter}` : sql``;
     
     let handlerCondition = sql``;
@@ -292,8 +283,6 @@ export const conversationStats = {
         COALESCE(mc.message_count, 0) as message_count,
         COALESCE(cs.product_standard, cs.product) as product_standard,
         cs.subproduct as subproduct_standard,
-        cs.subject,
-        cs.intent,
         cs.customer_emotion_level,
         cs.objective_problems,
         u.id as user_db_id,
@@ -307,7 +296,6 @@ export const conversationStats = {
       LEFT JOIN users u ON c.user_id = u.sunshine_id
       WHERE c.user_id IS NOT NULL
         ${productCondition}
-        ${intentCondition}
         ${handlerCondition}
         ${emotionCondition}
         ${clientCondition}
@@ -325,7 +313,6 @@ export const conversationStats = {
       LEFT JOIN users u ON c.user_id = u.sunshine_id
       WHERE c.user_id IS NOT NULL
         ${productCondition}
-        ${intentCondition}
         ${handlerCondition}
         ${emotionCondition}
         ${clientCondition}
