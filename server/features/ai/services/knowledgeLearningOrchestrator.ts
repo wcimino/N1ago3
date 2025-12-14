@@ -1,6 +1,7 @@
 import { storage } from "../../../storage/index.js";
-import { extractKnowledgeWithAgent, type AgentLearningPayload } from "./knowledgeLearningAgentAdapter.js";
+import { runAgent } from "./agentFramework.js";
 import { learningAttemptsStorage } from "../storage/learningAttemptsStorage.js";
+import { knowledgeSuggestionsStorage } from "../storage/knowledgeSuggestionsStorage.js";
 import type { EventStandard, LearningAttemptResult } from "../../../../shared/schema.js";
 import type { ContentPayload } from "./promptUtils.js";
 
@@ -60,6 +61,50 @@ async function recordAttempt(
   }
 }
 
+async function saveSuggestionFromToolResult(
+  toolResult: any,
+  conversationId: number,
+  externalConversationId: string | null,
+  handler: string | null
+): Promise<{ suggestionId?: number; suggestionType: "create" | "update" | "skip"; targetArticleId?: number } | null> {
+  if (!toolResult || !toolResult.action) {
+    return null;
+  }
+
+  if (toolResult.action === "skip") {
+    console.log(`[Learning Orchestrator] Skipping conversation ${conversationId}: ${toolResult.skipReason}`);
+    return {
+      suggestionType: "skip",
+    };
+  }
+
+  const suggestion = await knowledgeSuggestionsStorage.createSuggestion({
+    conversationId,
+    externalConversationId,
+    suggestionType: toolResult.action,
+    name: toolResult.name,
+    productStandard: toolResult.productStandard,
+    subproductStandard: toolResult.subproductStandard,
+    description: toolResult.description,
+    resolution: toolResult.resolution,
+    observations: toolResult.observations,
+    confidenceScore: toolResult.confidenceScore,
+    similarArticleId: toolResult.targetArticleId,
+    updateReason: toolResult.updateReason,
+    status: "pending",
+    conversationHandler: handler,
+    rawExtraction: toolResult
+  });
+
+  console.log(`[Learning Orchestrator] Suggestion saved: id=${suggestion.id}, type=${toolResult.action}, targetArticle=${toolResult.targetArticleId || 'N/A'}`);
+
+  return {
+    suggestionId: suggestion.id,
+    suggestionType: toolResult.action,
+    targetArticleId: toolResult.targetArticleId,
+  };
+}
+
 export async function extractConversationKnowledge(event: EventStandard): Promise<void> {
   if (!event.conversationId) {
     console.log("[Learning Orchestrator] Cannot extract knowledge: no conversationId");
@@ -92,7 +137,12 @@ export async function extractConversationKnowledge(event: EventStandard): Promis
 
     const reversedMessages = [...last20Messages].reverse();
 
-    const payload: AgentLearningPayload = {
+    console.log(`[Learning Orchestrator] Extracting knowledge from conversation ${event.conversationId} with ${reversedMessages.length} messages`);
+
+    const result = await runAgent("learning", {
+      conversationId: event.conversationId,
+      externalConversationId: event.externalConversationId,
+      summary: existingSummary?.summary || null,
       messages: reversedMessages.map(m => ({
         authorType: m.authorType,
         authorName: m.authorName,
@@ -101,56 +151,61 @@ export async function extractConversationKnowledge(event: EventStandard): Promis
         eventSubtype: m.eventSubtype,
         contentPayload: m.contentPayload as ContentPayload | null,
       })),
-      currentSummary: existingSummary?.summary || null,
-      conversationHandler: null,
-    };
+    }, {
+      maxIterations: 5,
+    });
 
-    console.log(`[Learning Orchestrator] Extracting knowledge from conversation ${event.conversationId} with ${reversedMessages.length} messages`);
+    if (result.success && result.toolResult) {
+      const suggestionResult = await saveSuggestionFromToolResult(
+        result.toolResult,
+        event.conversationId,
+        event.externalConversationId,
+        null
+      );
 
-    const result = await extractKnowledgeWithAgent(
-      payload,
-      config.modelName,
-      config.promptTemplate,
-      config.promptSystem,
-      config.responseFormat,
-      event.conversationId,
-      event.externalConversationId,
-      config.useKnowledgeBaseTool ?? false,
-      config.useProductCatalogTool ?? false,
-      config.useZendeskKnowledgeBaseTool ?? false
-    );
-
-    if (result.success) {
-      if (result.suggestionType === "skip") {
-        console.log(`[Learning Orchestrator] Agent decided to skip conversation ${event.conversationId}`);
-        await recordAttempt(
-          event.conversationId,
-          event.externalConversationId,
-          "skipped_by_agent",
-          "Agente avaliou e decidiu não extrair conhecimento",
-          undefined,
-          messageCount,
-          result.logId
-        );
-      } else {
-        console.log(`[Learning Orchestrator] Knowledge extracted: type=${result.suggestionType}, suggestionId=${result.suggestionId}${result.targetArticleId ? `, targetArticle=${result.targetArticleId}` : ''}`);
-        await recordAttempt(
-          event.conversationId,
-          event.externalConversationId,
-          "suggestion_created",
-          `Sugestão de ${result.suggestionType} criada`,
-          result.suggestionId,
-          messageCount,
-          result.logId
-        );
+      if (suggestionResult) {
+        if (suggestionResult.suggestionType === "skip") {
+          console.log(`[Learning Orchestrator] Agent decided to skip conversation ${event.conversationId}`);
+          await recordAttempt(
+            event.conversationId,
+            event.externalConversationId,
+            "skipped_by_agent",
+            "Agente avaliou e decidiu não extrair conhecimento",
+            undefined,
+            messageCount,
+            result.logId
+          );
+        } else {
+          console.log(`[Learning Orchestrator] Knowledge extracted: type=${suggestionResult.suggestionType}, suggestionId=${suggestionResult.suggestionId}${suggestionResult.targetArticleId ? `, targetArticle=${suggestionResult.targetArticleId}` : ''}`);
+          await recordAttempt(
+            event.conversationId,
+            event.externalConversationId,
+            "suggestion_created",
+            `Sugestão de ${suggestionResult.suggestionType} criada`,
+            suggestionResult.suggestionId,
+            messageCount,
+            result.logId
+          );
+        }
       }
-    } else {
+    } else if (!result.success) {
       console.error(`[Learning Orchestrator] Failed to extract knowledge for conversation ${event.conversationId}: ${result.error}`);
       await recordAttempt(
         event.conversationId,
         event.externalConversationId,
         "processing_error",
         result.error || "Erro desconhecido",
+        undefined,
+        messageCount,
+        result.logId
+      );
+    } else {
+      console.log(`[Learning Orchestrator] Agent did not produce a suggestion for conversation ${event.conversationId}`);
+      await recordAttempt(
+        event.conversationId,
+        event.externalConversationId,
+        "processing_error",
+        "Agent did not produce a suggestion",
         undefined,
         messageCount,
         result.logId
