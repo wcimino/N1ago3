@@ -1,8 +1,7 @@
 import { knowledgeBaseStorage } from "../storage/knowledgeBaseStorage.js";
 import { KnowledgeBaseStatisticsStorage } from "../storage/knowledgeBaseStatisticsStorage.js";
-import { generateEmbedding as generateKBEmbedding } from "./knowledgeBaseEmbeddingService.js";
-
-const RELEVANCE_THRESHOLD = 0.05;
+import { generateEmbedding } from "../../../shared/embeddings/index.js";
+import type { KnowledgeBaseArticle } from "../../../../shared/schema.js";
 
 export interface KBSearchParams {
   productId?: number;
@@ -25,6 +24,7 @@ export interface KBArticleResult {
   resolution: string;
   observations: string | null;
   relevanceScore: number;
+  matchReason?: string;
 }
 
 export interface KBSearchResult {
@@ -32,8 +32,90 @@ export interface KBSearchResult {
   productId: number | null;
 }
 
-function buildEnrichedQueryText(keywords: string): string {
-  return `Descrição: ${keywords}\n\nResolução: ${keywords}`;
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function calculateMatchScore(
+  article: KnowledgeBaseArticle,
+  searchTerms: string[]
+): { score: number; reason: string } {
+  let maxScore = 0;
+  let bestReason = "";
+
+  for (const term of searchTerms) {
+    const normalizedTerm = normalizeText(term);
+    
+    // Check name (highest priority)
+    if (article.name) {
+      const normalizedName = normalizeText(article.name);
+      if (normalizedName === normalizedTerm) {
+        if (100 > maxScore) {
+          maxScore = 100;
+          bestReason = `Nome exato: '${article.name}'`;
+        }
+      } else if (normalizedName.includes(normalizedTerm)) {
+        if (80 > maxScore) {
+          maxScore = 80;
+          bestReason = `Nome contém: '${term}'`;
+        }
+      }
+    }
+
+    // Check description
+    const normalizedDescription = normalizeText(article.description);
+    if (normalizedDescription.includes(normalizedTerm)) {
+      if (70 > maxScore) {
+        maxScore = 70;
+        bestReason = `Descrição contém: '${term}'`;
+      }
+    }
+
+    // Check resolution
+    const normalizedResolution = normalizeText(article.resolution);
+    if (normalizedResolution.includes(normalizedTerm)) {
+      if (60 > maxScore) {
+        maxScore = 60;
+        bestReason = `Resolução contém: '${term}'`;
+      }
+    }
+
+    // Check observations
+    if (article.observations) {
+      const normalizedObs = normalizeText(article.observations);
+      if (normalizedObs.includes(normalizedTerm)) {
+        if (50 > maxScore) {
+          maxScore = 50;
+          bestReason = `Observações contém: '${term}'`;
+        }
+      }
+    }
+
+    // Check product/subproduct
+    const normalizedProduct = normalizeText(article.productStandard);
+    if (normalizedProduct.includes(normalizedTerm)) {
+      if (40 > maxScore) {
+        maxScore = 40;
+        bestReason = `Produto contém: '${term}'`;
+      }
+    }
+
+    if (article.subproductStandard) {
+      const normalizedSubproduct = normalizeText(article.subproductStandard);
+      if (normalizedSubproduct.includes(normalizedTerm)) {
+        if (40 > maxScore) {
+          maxScore = 40;
+          bestReason = `Subproduto contém: '${term}'`;
+        }
+      }
+    }
+  }
+
+  return { score: maxScore, reason: bestReason };
 }
 
 export async function runKnowledgeBaseSearch(
@@ -50,29 +132,17 @@ export async function runKnowledgeBaseSearch(
     ? params.keywords.join(" ") 
     : params.keywords || "";
 
-  interface ArticleWithRelevance {
-    id: number;
-    name: string | null;
-    productStandard: string;
-    subproductStandard: string | null;
-    intentId: number | null;
-    description: string;
-    resolution: string;
-    observations: string | null;
-    relevanceScore: number;
-  }
-
-  let articles: ArticleWithRelevance[] = [];
+  let articles: KBArticleResult[] = [];
 
   if (keywordsStr && keywordsStr.trim().length > 0) {
     const hasEmbeddings = await knowledgeBaseStorage.hasEmbeddings();
     
     if (hasEmbeddings) {
       try {
-        const queryText = buildEnrichedQueryText(keywordsStr);
+        // Use keywords directly with contextType: "query" (aligned with problem search)
         console.log(`[KB Search] Semantic search: productId=${productId || 'none'}, keywords="${keywordsStr.substring(0, 50)}..."`);
         
-        const { embedding: queryEmbedding } = await generateKBEmbedding(queryText);
+        const { embedding: queryEmbedding } = await generateEmbedding(keywordsStr, { contextType: "query" });
         const semanticResults = await knowledgeBaseStorage.searchBySimilarity(
           queryEmbedding,
           { productId, limit }
@@ -87,53 +157,18 @@ export async function runKnowledgeBaseSearch(
           description: a.description,
           resolution: a.resolution,
           observations: a.observations,
-          relevanceScore: a.similarity
+          relevanceScore: a.similarity,
+          matchReason: `Similaridade semântica: ${Math.round(a.similarity * 100)}%`
         }));
         
         console.log(`[KB Search] Semantic search found ${articles.length} articles`);
       } catch (error) {
-        console.error("[KB Search] Semantic search failed, falling back to full-text:", error);
-        const searchResults = await knowledgeBaseStorage.searchArticlesWithRelevance(keywordsStr, {
-          productId,
-          limit: limit * 2
-        });
-        articles = searchResults
-          .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
-          .slice(0, limit)
-          .map(a => ({
-            id: a.id,
-            name: a.name,
-            productStandard: a.productStandard,
-            subproductStandard: a.subproductStandard,
-            intentId: a.intentId,
-            description: a.description,
-            resolution: a.resolution,
-            observations: a.observations,
-            relevanceScore: a.relevanceScore
-          }));
-        console.log(`[KB Search] FTS fallback found ${articles.length} articles`);
+        console.error("[KB Search] Semantic search failed, falling back to text search:", error);
+        articles = await runTextBasedSearch(keywordsStr, productId, limit);
       }
     } else {
-      console.log(`[KB Search] No embeddings, using FTS: productId=${productId || 'none'}, keywords="${keywordsStr.substring(0, 50)}..."`);
-      const searchResults = await knowledgeBaseStorage.searchArticlesWithRelevance(keywordsStr, {
-        productId,
-        limit: limit * 2
-      });
-      articles = searchResults
-        .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
-        .slice(0, limit)
-        .map(a => ({
-          id: a.id,
-          name: a.name,
-          productStandard: a.productStandard,
-          subproductStandard: a.subproductStandard,
-          intentId: a.intentId,
-          description: a.description,
-          resolution: a.resolution,
-          observations: a.observations,
-          relevanceScore: a.relevanceScore
-        }));
-      console.log(`[KB Search] FTS found ${articles.length} articles`);
+      console.log(`[KB Search] No embeddings available, using text search: productId=${productId || 'none'}, keywords="${keywordsStr.substring(0, 50)}..."`);
+      articles = await runTextBasedSearch(keywordsStr, productId, limit);
     }
   } else if (productId) {
     console.log(`[KB Search] No keywords, filtering by productId: ${productId}`);
@@ -150,7 +185,8 @@ export async function runKnowledgeBaseSearch(
       description: a.description,
       resolution: a.resolution,
       observations: a.observations,
-      relevanceScore: 0
+      relevanceScore: 0,
+      matchReason: "Listagem por produto"
     }));
     console.log(`[KB Search] Product filter found ${articles.length} articles`);
   }
@@ -175,4 +211,54 @@ export async function runKnowledgeBaseSearch(
     articles,
     productId: productId || null
   };
+}
+
+async function runTextBasedSearch(
+  keywordsStr: string,
+  productId: number | undefined,
+  limit: number
+): Promise<KBArticleResult[]> {
+  const searchTerms = keywordsStr
+    .split(/\s+/)
+    .filter(t => t.length >= 2);
+
+  if (searchTerms.length === 0) {
+    console.log(`[KB Search] Text search: no valid search terms`);
+    return [];
+  }
+
+  // Use FTS to search across full corpus first (more candidates for better coverage)
+  const ftsResults = await knowledgeBaseStorage.searchArticlesWithRelevance(keywordsStr, {
+    productId,
+    limit: limit * 5 // Get more candidates to re-score
+  });
+
+  // Apply calculateMatchScore on top of FTS results for better scoring
+  const scoredArticles = ftsResults.map(article => {
+    const { score, reason } = calculateMatchScore(article, searchTerms);
+    // Combine FTS relevance with our scoring (higher of the two)
+    const combinedScore = Math.max(score / 100, article.relevanceScore);
+    return {
+      id: article.id,
+      name: article.name,
+      productStandard: article.productStandard,
+      subproductStandard: article.subproductStandard,
+      intentId: article.intentId,
+      description: article.description,
+      resolution: article.resolution,
+      observations: article.observations,
+      relevanceScore: combinedScore,
+      matchReason: score > 0 ? reason : `FTS score: ${article.relevanceScore.toFixed(2)}`
+    };
+  });
+
+  // Filter articles with score > 0 and sort by score (aligned with problem search)
+  const filteredArticles = scoredArticles
+    .filter(a => a.relevanceScore > 0)
+    .sort((a, b) => b.relevanceScore - a.relevanceScore)
+    .slice(0, limit);
+
+  console.log(`[KB Search] Text search found ${filteredArticles.length} articles (from ${ftsResults.length} FTS candidates)`);
+  
+  return filteredArticles;
 }
