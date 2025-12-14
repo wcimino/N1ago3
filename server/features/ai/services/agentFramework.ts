@@ -183,6 +183,13 @@ async function buildPromptVariables(context: AgentContext): Promise<PromptVariab
     catalogoJson = '[]';
   }
 
+  let searchResultsFormatted: string | null = null;
+  if (context.searchResults && context.searchResults.length > 0) {
+    searchResultsFormatted = context.searchResults
+      .map(r => `- [${r.source}] ${r.name}: ${r.description}${r.matchScore ? ` (score: ${r.matchScore})` : ''}`)
+      .join('\n');
+  }
+
   return {
     resumo: context.summary,
     resumoAtual: context.previousSummary ?? context.summary,
@@ -194,6 +201,8 @@ async function buildPromptVariables(context: AgentContext): Promise<PromptVariab
     handler: context.handler,
     catalogoProdutosSubprodutos: catalogoJson,
     tipoSolicitacao: context.customerRequestType,
+    demandaIdentificada: context.demand,
+    resultadosBusca: searchResultsFormatted,
   };
 }
 

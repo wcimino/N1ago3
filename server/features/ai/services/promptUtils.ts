@@ -9,6 +9,8 @@ export interface PromptVariables {
   resumoAtual?: string | null;
   catalogoProdutosSubprodutos?: string | null;
   tipoSolicitacao?: string | null;
+  demandaIdentificada?: string | null;
+  resultadosBusca?: string | null;
 }
 
 export function replacePromptVariables(
@@ -27,6 +29,8 @@ export function replacePromptVariables(
   result = result.replace(/\{\{MENSAGENS\}\}/g, variables.mensagens || variables.ultimas20Mensagens || 'Nenhuma mensagem disponível.');
   result = result.replace(/\{\{CATALOGO_PRODUTOS_SUBPRODUTOS\}\}/g, variables.catalogoProdutosSubprodutos || '[]');
   result = result.replace(/\{\{TIPO_SOLICITACAO\}\}/g, variables.tipoSolicitacao || 'Não identificado');
+  result = result.replace(/\{\{DEMANDA_IDENTIFICADA\}\}/g, variables.demandaIdentificada || 'Nenhuma demanda identificada.');
+  result = result.replace(/\{\{RESULTADOS_BUSCA\}\}/g, variables.resultadosBusca || 'Nenhum resultado de busca disponível.');
 
   return result;
 }
@@ -166,4 +170,6 @@ export const AVAILABLE_VARIABLES = [
   { name: '{{HANDLER}}', description: 'Quem está atendendo (bot/humano)' },
   { name: '{{CATALOGO_PRODUTOS_SUBPRODUTOS}}', description: 'Lista JSON de produtos e subprodutos do catálogo' },
   { name: '{{TIPO_SOLICITACAO}}', description: 'Tipo de solicitação do cliente (Quer suporte/contratar/informações)' },
+  { name: '{{DEMANDA_IDENTIFICADA}}', description: 'Demanda identificada pelo DemandFinder (para SolutionProvider)' },
+  { name: '{{RESULTADOS_BUSCA}}', description: 'Resultados da busca na base de conhecimento (para SolutionProvider)' },
 ];
