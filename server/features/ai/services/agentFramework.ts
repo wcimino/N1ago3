@@ -37,6 +37,8 @@ export interface AgentContext {
     product?: string | null;
     subproduct?: string | null;
     customerRequestType?: string | null;
+    productConfidence?: number | null;
+    customerRequestTypeConfidence?: number | null;
   } | null;
   handler?: string | null;
   customerRequestType?: string | null;
@@ -114,6 +116,8 @@ export async function buildAgentContextFromEvent(
         product: existingSummary.product,
         subproduct: existingSummary.subproduct,
         customerRequestType: existingSummary.customerRequestType,
+        productConfidence: existingSummary.productConfidence,
+        customerRequestTypeConfidence: existingSummary.customerRequestTypeConfidence,
       }
     : null;
 
