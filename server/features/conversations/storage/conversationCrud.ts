@@ -358,7 +358,27 @@ export const conversationCrud = {
       .where(eq(conversationsSummary.conversationId, conversationId))
       .returning();
     
-    return result[0] || null;
+    if (result[0]) {
+      return result[0];
+    }
+    
+    const now = new Date();
+    const insertResult = await db.insert(conversationsSummary)
+      .values({
+        conversationId,
+        summary: "",
+        orchestratorStatus,
+        generatedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: conversationsSummary.conversationId,
+        set: { orchestratorStatus, updatedAt: now },
+      })
+      .returning();
+    
+    return insertResult[0] || null;
   },
 
   async getOrchestratorStatus(conversationId: number): Promise<string | null> {

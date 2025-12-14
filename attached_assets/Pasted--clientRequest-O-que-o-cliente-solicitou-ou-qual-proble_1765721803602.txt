@@ -1,0 +1,41 @@
+{
+  "clientRequest": "O que o cliente solicitou ou qual problema relatou",
+  "customerRequestType": "Quer suporte | Quer contratar | Quer informações",
+  "agentActions": "O que o atendente fez para resolver",
+  "currentStatus": "Resolvido | Em andamento | Aguardando cliente | Aguardando sistema | Escalado",
+  "importantInfo": "Informações relevantes como prazos, valores, documentos pendentes",
+  "customerEmotionLevel": 3,
+
+  "triage": {
+    "anamnese": {
+      "customerMainComplaint": "Queixa principal em linguagem do cliente (1 frase em terceira pessoa, ex: cliente relata que...)",
+      "customerRequestType": "Quer suporte | Quer contratar | Quer informações",
+      "customerRequestTypeConfidence": "Qual a confiança na definição desse Request Type",
+      "customerRequestTypeReason": "1 frase explicando por que esse Request Type foi escolhido",
+      "customerDeclaredObjective": "O que o cliente quer que aconteça agora (ex: contratar, desbloquear, entender). Se não estiver claro, null",
+      "customerDeclaredHypothesis": "Se o cliente sugeriu uma causa/diagnóstico ('acho que é X'), coloque aqui; senão null",
+      "customerKeyContext": [
+        "Contextos relevantes citados (ex: 'tenho fornecedor hoje', 'já tentei 3 vezes'). Se nenhum, []"
+      ]
+    },
+    "objectiveProblems": [
+      "Lista de evidências/estados observáveis e objetivos (ex: 'pagamento recusado', 'conta bloqueada'). Se não houver, []."
+    ],
+    "severity": {
+      "level": "low | medium | high | critical",
+      "redFlags": [
+        "Lista curta de alertas (ex: 'impacto financeiro', 'prazo critico', 'recorrencia'). Se nenhum, []"
+      ],
+      "rationale": "1 frase explicando por que esse nível de severidade foi escolhido"
+    }
+  },
+
+  "objectiveProblems": [
+    { "id": 1, "name": "Nome do problema", "matchScore": 85 }
+  ],
+
+  "articlesAndObjectiveProblems": [
+    { "id": 1, "source": "article", "name": "Nome do artigo", "description": "Descrição", "matchScore": 85 },
+    { "id": 2, "source": "problem", "name": "Nome do problema", "description": "Descrição", "matchScore": 75 }
+  ]
+}
