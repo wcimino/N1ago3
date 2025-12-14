@@ -339,4 +339,25 @@ export const conversationCrud = {
     
     return result[0] || null;
   },
+
+  async getById(conversationId: number) {
+    const result = await db.select()
+      .from(conversations)
+      .where(eq(conversations.id, conversationId))
+      .limit(1);
+    
+    return result[0] || null;
+  },
+
+  async updateOrchestratorStatus(conversationId: number, orchestratorStatus: string) {
+    const result = await db.update(conversations)
+      .set({
+        orchestratorStatus,
+        updatedAt: new Date(),
+      })
+      .where(eq(conversations.id, conversationId))
+      .returning();
+    
+    return result[0] || null;
+  },
 };

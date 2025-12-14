@@ -1,4 +1,4 @@
-export type AgentConfigType = "summary" | "classification" | "response" | "learning" | "enrichment";
+export type AgentConfigType = "summary" | "classification" | "response" | "learning" | "enrichment" | "demand_finder" | "solution_provider";
 
 export interface AgentToolsConfig {
   showKnowledgeBaseTool?: boolean;
@@ -105,6 +105,36 @@ export const agentConfigMetadata: Record<AgentConfigType, AgentConfigMetadata> =
     authorFilterDescription: "Selecione quais tipos de autor devem disparar o enriquecimento. Se nenhum for selecionado, todos os autores serão considerados.",
     promptRows: 24,
     responseFormatRows: 12,
+    recommendedModel: "gpt-4o",
+    tools: allToolsEnabled,
+  },
+
+  demand_finder: {
+    configType: "demand_finder",
+    title: "Configuração do Demand Finder",
+    description: "Configure o agente que identifica e entende qual é a demanda/necessidade do cliente na conversa",
+    enabledLabel: "Ativar Demand Finder",
+    enabledDescription: "Quando ativado, o sistema identifica automaticamente o que o cliente precisa",
+    eventTriggerLabel: "Eventos que disparam o Demand Finder",
+    eventTriggerDescription: "Selecione os tipos de eventos que devem disparar a identificação de demanda (gerenciado pelo ConversationOrchestrator)",
+    authorFilterDescription: "Selecione quais tipos de autor devem disparar a identificação. Se nenhum for selecionado, todos os autores serão considerados.",
+    promptRows: 20,
+    responseFormatRows: 8,
+    recommendedModel: "gpt-4o",
+    tools: allToolsEnabled,
+  },
+
+  solution_provider: {
+    configType: "solution_provider",
+    title: "Configuração do Solution Provider",
+    description: "Configure o agente que fornece soluções para as demandas identificadas do cliente",
+    enabledLabel: "Ativar Solution Provider",
+    enabledDescription: "Quando ativado, o sistema sugere soluções baseadas na demanda identificada",
+    eventTriggerLabel: "Eventos que disparam o Solution Provider",
+    eventTriggerDescription: "Selecione os tipos de eventos que devem disparar a geração de soluções (gerenciado pelo ConversationOrchestrator)",
+    authorFilterDescription: "Selecione quais tipos de autor devem disparar a geração. Se nenhum for selecionado, todos os autores serão considerados.",
+    promptRows: 20,
+    responseFormatRows: 8,
     recommendedModel: "gpt-4o",
     tools: allToolsEnabled,
   },

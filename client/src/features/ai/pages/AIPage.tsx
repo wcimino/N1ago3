@@ -1,12 +1,14 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
-import { FileText, Tags, MessageSquare, GraduationCap, Wrench, Settings, Lightbulb, Sparkles } from "lucide-react";
+import { FileText, Tags, MessageSquare, GraduationCap, Wrench, Settings, Lightbulb, Sparkles, Search, Zap } from "lucide-react";
 import { PageHeader } from "../../../shared/components/ui";
 import { OpenaiSummaryConfigPage } from "./OpenaiSummaryConfigPage";
 import { ClassificationConfigPage } from "./ClassificationConfigPage";
 import { ResponseConfigPage } from "./ResponseConfigPage";
 import { LearningConfigPage } from "./LearningConfigPage";
 import { EnrichmentConfigPage } from "./EnrichmentConfigPage";
+import { DemandFinderConfigPage } from "./DemandFinderConfigPage";
+import { SolutionProviderConfigPage } from "./SolutionProviderConfigPage";
 import { ToolsPage } from "./ToolsPage";
 import { GeneralSettingsPage } from "./GeneralSettingsPage";
 
@@ -16,6 +18,8 @@ const agentTabs = [
   { id: "response", label: "Resposta", icon: <MessageSquare className="w-4 h-4" /> },
   { id: "learning", label: "Aprendizado", icon: <GraduationCap className="w-4 h-4" /> },
   { id: "enrichment", label: "Enriquecimento", icon: <Lightbulb className="w-4 h-4" /> },
+  { id: "demand_finder", label: "Demand Finder", icon: <Search className="w-4 h-4" /> },
+  { id: "solution_provider", label: "Solution Provider", icon: <Zap className="w-4 h-4" /> },
 ];
 
 const utilityTabs = [
@@ -38,6 +42,8 @@ export function AIPage() {
     if (location.includes("/response")) return "response";
     if (location.includes("/learning")) return "learning";
     if (location.includes("/enrichment")) return "enrichment";
+    if (location.includes("/demand_finder")) return "demand_finder";
+    if (location.includes("/solution_provider")) return "solution_provider";
     if (location.includes("/tools")) return "tools";
     if (location.includes("/summary")) return "summary";
     return "summary";
@@ -70,6 +76,8 @@ export function AIPage() {
         {activeTab === "response" && <ResponseConfigPage />}
         {activeTab === "learning" && <LearningConfigPage />}
         {activeTab === "enrichment" && <EnrichmentConfigPage />}
+        {activeTab === "demand_finder" && <DemandFinderConfigPage />}
+        {activeTab === "solution_provider" && <SolutionProviderConfigPage />}
         {activeTab === "tools" && <ToolsPage />}
       </div>
     </div>
