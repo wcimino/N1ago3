@@ -10,15 +10,6 @@ export interface SearchArticleResult extends KnowledgeBaseArticle {
   matchReason: string;
 }
 
-function normalizeForFts(search: string): string {
-  return search
-    .toLowerCase()
-    .replace(/[^\w\sáàâãéèêíìîóòôõúùûç]/g, ' ')
-    .split(/\s+/)
-    .filter(term => term.length >= 2)
-    .join(' ');
-}
-
 export interface IntentWithArticle {
   intent: {
     id: number;

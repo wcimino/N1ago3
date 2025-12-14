@@ -2,6 +2,7 @@ import { knowledgeBaseStorage } from "../storage/knowledgeBaseStorage.js";
 import { KnowledgeBaseStatisticsStorage } from "../storage/knowledgeBaseStatisticsStorage.js";
 import { generateEmbedding } from "../../../shared/embeddings/index.js";
 import type { KnowledgeBaseArticle } from "../../../../shared/schema.js";
+import { normalizeText, calculateMatchScore as sharedCalculateMatchScore, parseSearchTerms, type MatchField } from "../../../shared/utils/matchScoring.js";
 
 export interface KBSearchParams {
   productId?: number;
@@ -33,90 +34,21 @@ export interface KBSearchResult {
   productId: number | null;
 }
 
-function normalizeText(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
-}
-
-function calculateMatchScore(
+function calculateArticleMatchScore(
   article: KnowledgeBaseArticle,
   searchTerms: string[]
 ): { score: number; reason: string } {
-  let maxScore = 0;
-  let bestReason = "";
+  const fields: MatchField[] = [
+    { name: "Nome", value: article.name || "", weight: 'contains_name' },
+    { name: "Descrição", value: article.description || "", weight: 'contains_secondary' },
+    { name: "Resolução", value: article.resolution || "", weight: 'contains_tertiary' },
+    { name: "Observações", value: article.observations || "", weight: 'contains_low' },
+    { name: "Produto", value: article.productStandard || "", weight: 'contains_low' },
+    { name: "Subproduto", value: article.subproductStandard || "", weight: 'contains_low' },
+  ];
 
-  for (const term of searchTerms) {
-    const normalizedTerm = normalizeText(term);
-    
-    // Check name (highest priority)
-    if (article.name) {
-      const normalizedName = normalizeText(article.name);
-      if (normalizedName === normalizedTerm) {
-        if (100 > maxScore) {
-          maxScore = 100;
-          bestReason = `Nome exato: '${article.name}'`;
-        }
-      } else if (normalizedName.includes(normalizedTerm)) {
-        if (80 > maxScore) {
-          maxScore = 80;
-          bestReason = `Nome contém: '${term}'`;
-        }
-      }
-    }
-
-    // Check description
-    const normalizedDescription = normalizeText(article.description);
-    if (normalizedDescription.includes(normalizedTerm)) {
-      if (70 > maxScore) {
-        maxScore = 70;
-        bestReason = `Descrição contém: '${term}'`;
-      }
-    }
-
-    // Check resolution
-    const normalizedResolution = normalizeText(article.resolution);
-    if (normalizedResolution.includes(normalizedTerm)) {
-      if (60 > maxScore) {
-        maxScore = 60;
-        bestReason = `Resolução contém: '${term}'`;
-      }
-    }
-
-    // Check observations
-    if (article.observations) {
-      const normalizedObs = normalizeText(article.observations);
-      if (normalizedObs.includes(normalizedTerm)) {
-        if (50 > maxScore) {
-          maxScore = 50;
-          bestReason = `Observações contém: '${term}'`;
-        }
-      }
-    }
-
-    // Check product/subproduct
-    const normalizedProduct = normalizeText(article.productStandard);
-    if (normalizedProduct.includes(normalizedTerm)) {
-      if (40 > maxScore) {
-        maxScore = 40;
-        bestReason = `Produto contém: '${term}'`;
-      }
-    }
-
-    if (article.subproductStandard) {
-      const normalizedSubproduct = normalizeText(article.subproductStandard);
-      if (normalizedSubproduct.includes(normalizedTerm)) {
-        if (40 > maxScore) {
-          maxScore = 40;
-          bestReason = `Subproduto contém: '${term}'`;
-        }
-      }
-    }
-  }
-
-  return { score: maxScore, reason: bestReason };
+  const result = sharedCalculateMatchScore(fields, searchTerms);
+  return { score: result.score, reason: result.reason };
 }
 
 function applyKeywordsBoost(

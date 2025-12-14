@@ -8,6 +8,7 @@ import {
 import { generateEmbedding } from "../../../../shared/embeddings/index.js";
 import type { ToolDefinition } from "../openaiApiService.js";
 import { productCatalogStorage } from "../../../products/storage/productCatalogStorage.js";
+import { normalizeText } from "../../../../shared/utils/matchScoring.js";
 
 export interface ProblemSearchResult {
   source: "problem";
@@ -31,14 +32,6 @@ export interface ProblemSearchParams {
   keywords?: string;
   conversationContext?: string;
   limit?: number;
-}
-
-function normalizeText(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
 }
 
 function applyKeywordsBoostToProblems(
