@@ -47,6 +47,10 @@ The React frontend offers a real-time dashboard for events and conversations, ad
 *   **Modular AI Tools and Prompts:** AI tools are separated into individual files, and prompt variables are centralized.
 *   **Objective Problems Search Tool:** Searches objective problems by keywords and product filter, utilizing semantic search with OpenAI embeddings and falling back to text-based search.
 *   **Unified Knowledge Base Search Helper:** Provides a single entry point for knowledge base searches, using semantic search with PostgreSQL FTS fallback, and recording article views. Supports filtering by `productId` (FK to `products_catalog`) for improved precision, with fallback to product name resolution via `buildSearchContext`.
+*   **Hybrid Search Architecture:** All knowledge base tools (`search_knowledge_base_articles`, `search_knowledge_base_problem_objective`, `search_knowledge_base_articles_and_problems`) support a hybrid search approach:
+    - `conversationContext`: Main semantic search using conversation summary/context embedding
+    - `keywords`: Optional boost/filter applied on top of semantic results (accent-insensitive matching)
+    - Retrocompatibility: If only keywords are provided, behaves as before (keywords → embedding → semantic search)
 *   **Enrichment Agent Modular Architecture:** Refactored into a sequential pipeline for robust logging of AI enrichment attempts.
 *   **Centralized AI Agent Configuration Metadata:** All AI agent configuration pages consume a central metadata registry for consistency.
 *   **Reports Feature Architecture:** Reports are modular with shared infrastructure:
