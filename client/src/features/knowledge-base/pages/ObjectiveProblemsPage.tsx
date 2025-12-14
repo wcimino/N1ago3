@@ -1,10 +1,15 @@
 import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, X, Check, AlertCircle, ChevronRight, ChevronDown, Minus, Loader2 } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Plus, Pencil, Trash2, AlertCircle, ChevronRight, ChevronDown, Minus, Loader2 } from "lucide-react";
 import { FilterBar } from "../../../shared/components/ui/FilterBar";
-import { FormField } from "../../../shared/components/crud";
-import { useCrudMutations } from "../../../shared/hooks";
+import { useCrudMutations, useCrudFormState } from "../../../shared/hooks";
 import { apiRequest } from "../../../lib/queryClient";
+import { 
+  ObjectiveProblemForm, 
+  emptyObjectiveProblemForm, 
+  transformObjectiveProblemFormData,
+  type ObjectiveProblemFormData 
+} from "../components/ObjectiveProblemForm";
 
 interface ObjectiveProblemStats {
   totalProblems: number;
@@ -33,26 +38,6 @@ interface ObjectiveProblem {
   updatedAt: string;
 }
 
-interface FormData {
-  name: string;
-  description: string;
-  synonyms: string;
-  examples: string;
-  presentedBy: "customer" | "system" | "both";
-  isActive: boolean;
-  productIds: number[];
-}
-
-const emptyForm: FormData = {
-  name: "",
-  description: "",
-  synonyms: "",
-  examples: "",
-  presentedBy: "customer",
-  isActive: true,
-  productIds: [],
-};
-
 interface ProductHierarchy {
   name: string;
   productId?: number;
@@ -60,40 +45,29 @@ interface ProductHierarchy {
   children: ProductHierarchy[];
 }
 
-const transformFormData = (data: FormData) => ({
-  name: data.name,
-  description: data.description,
-  synonyms: data.synonyms.split("\n").map(s => s.trim()).filter(Boolean),
-  examples: data.examples.split("\n").map(s => s.trim()).filter(Boolean),
-  presentedBy: data.presentedBy,
-  isActive: data.isActive,
-  productIds: data.productIds,
-});
-
 export function ObjectiveProblemsPage() {
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState<FormData>(emptyForm);
-  const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProduct, setSelectedProduct] = useState("");
-  const queryClient = useQueryClient();
+
+  const {
+    showForm,
+    editingId,
+    formData,
+    setFormData,
+    openCreateForm,
+    openEditForm,
+    resetForm,
+    isEditing,
+  } = useCrudFormState<ObjectiveProblemFormData>({
+    emptyForm: emptyObjectiveProblemForm,
+  });
 
   const togglePath = (path: string) => {
     setExpandedPaths(prev => {
       const next = new Set(prev);
       if (next.has(path)) next.delete(path);
       else next.add(path);
-      return next;
-    });
-  };
-
-  const toggleExpanded = (productName: string) => {
-    setExpandedProducts(prev => {
-      const next = new Set(prev);
-      if (next.has(productName)) next.delete(productName);
-      else next.add(productName);
       return next;
     });
   };
@@ -118,17 +92,11 @@ export function ObjectiveProblemsPage() {
     onSuccess: () => refetchStats(),
   });
 
-  const resetForm = () => {
-    setShowForm(false);
-    setEditingId(null);
-    setFormData(emptyForm);
-  };
-
-  const { handleCreate, handleUpdate, handleDelete, isMutating, isDeleting } = useCrudMutations<FormData, FormData>({
+  const { handleCreate, handleUpdate, handleDelete, isMutating, isDeleting } = useCrudMutations<ObjectiveProblemFormData, ObjectiveProblemFormData>({
     baseUrl: "/api/knowledge/objective-problems",
     queryKeys: ["/api/knowledge/objective-problems", "/api/knowledge/objective-problems/stats"],
-    transformCreateData: transformFormData,
-    transformUpdateData: transformFormData,
+    transformCreateData: transformObjectiveProblemFormData,
+    transformUpdateData: transformObjectiveProblemFormData,
     onCreateSuccess: resetForm,
     onUpdateSuccess: resetForm,
   });
@@ -220,8 +188,7 @@ export function ObjectiveProblemsPage() {
   }, [products]);
 
   const handleEdit = (problem: ObjectiveProblem) => {
-    setEditingId(problem.id);
-    setFormData({
+    openEditForm(problem.id, {
       name: problem.name,
       description: problem.description,
       synonyms: problem.synonyms.join("\n"),
@@ -230,7 +197,6 @@ export function ObjectiveProblemsPage() {
       isActive: problem.isActive,
       productIds: problem.productIds || [],
     });
-    setShowForm(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -241,22 +207,6 @@ export function ObjectiveProblemsPage() {
       handleCreate(formData);
     }
   };
-
-  const toggleProduct = (productId: number) => {
-    setFormData(prev => ({
-      ...prev,
-      productIds: prev.productIds.includes(productId)
-        ? prev.productIds.filter(id => id !== productId)
-        : [...prev.productIds, productId],
-    }));
-  };
-
-  const groupedProducts = products.reduce((acc, product) => {
-    const mainProduct = product.produto;
-    if (!acc[mainProduct]) acc[mainProduct] = [];
-    acc[mainProduct].push(product);
-    return acc;
-  }, {} as Record<string, Product[]>);
 
   const clearFilters = () => {
     setSearchTerm("");
@@ -331,172 +281,14 @@ export function ObjectiveProblemsPage() {
 
   if (showForm) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">
-            {editingId ? "Editar Problema" : "Novo Problema"}
-          </h3>
-          <button onClick={resetForm} className="p-2 text-gray-500 hover:text-gray-700">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-6">
-          <div className="space-y-4">
-            <FormField
-              type="text"
-              label="Nome"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Ex: Transacao recusada"
-            />
-
-            <FormField
-              type="textarea"
-              label="Descricao"
-              required
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={2}
-              placeholder="Descricao detalhada do problema"
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                type="textarea"
-                label="Sinonimos (um por linha)"
-                value={formData.synonyms}
-                onChange={(e) => setFormData({ ...formData, synonyms: e.target.value })}
-                rows={4}
-                placeholder="Pagamento negado&#10;Recusa de cartao"
-              />
-
-              <FormField
-                type="textarea"
-                label="Exemplos de frases (um por linha)"
-                value={formData.examples}
-                onChange={(e) => setFormData({ ...formData, examples: e.target.value })}
-                rows={4}
-                placeholder="Meu cartao nao passou&#10;Nao consegui pagar"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Produtos relacionados (opcional)
-              </label>
-              <div className="border border-gray-300 rounded-lg max-h-48 overflow-y-auto">
-                {products.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-2">Nenhum produto disponivel</p>
-                ) : (
-                  <div className="divide-y divide-gray-100">
-                    {Object.entries(groupedProducts).map(([mainProduct, subProducts]) => {
-                      const isExpanded = expandedProducts.has(mainProduct);
-                      const generalProduct = subProducts.find(p => !p.subproduto);
-                      const specificProducts = subProducts.filter(p => p.subproduto);
-                      const selectedCount = subProducts.filter(p => formData.productIds.includes(p.id)).length;
-                      
-                      return (
-                        <div key={mainProduct}>
-                          <div className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50">
-                            {specificProducts.length > 0 ? (
-                              <button
-                                type="button"
-                                onClick={() => toggleExpanded(mainProduct)}
-                                className="p-0.5"
-                              >
-                                {isExpanded ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
-                              </button>
-                            ) : <div className="w-5" />}
-                            
-                            {generalProduct && (
-                              <input
-                                type="checkbox"
-                                checked={formData.productIds.includes(generalProduct.id)}
-                                onChange={() => toggleProduct(generalProduct.id)}
-                                className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                              />
-                            )}
-                            
-                            <span className="font-medium text-gray-900 text-sm">{mainProduct}</span>
-                            {specificProducts.length > 0 && <span className="text-xs text-gray-400">{specificProducts.length}</span>}
-                            {selectedCount > 0 && (
-                              <span className="ml-auto text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">{selectedCount}</span>
-                            )}
-                          </div>
-                          
-                          {isExpanded && specificProducts.length > 0 && (
-                            <div className="bg-gray-50 border-t border-gray-100">
-                              {specificProducts.map((product) => (
-                                <label key={product.id} className="flex items-center gap-2 px-3 py-1.5 pl-10 hover:bg-gray-100 cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={formData.productIds.includes(product.id)}
-                                    onChange={() => toggleProduct(product.id)}
-                                    className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                                  />
-                                  <span className="text-sm text-gray-700">{product.subproduto}</span>
-                                </label>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-              {formData.productIds.length > 0 && (
-                <p className="text-xs text-gray-500 mt-1">
-                  {formData.productIds.length} produto{formData.productIds.length !== 1 ? "s" : ""} selecionado{formData.productIds.length !== 1 ? "s" : ""}
-                </p>
-              )}
-            </div>
-
-            <FormField
-              type="select"
-              label="Apresentado por"
-              value={formData.presentedBy}
-              onChange={(e) => setFormData({ ...formData, presentedBy: e.target.value as FormData["presentedBy"] })}
-              options={[
-                { value: "customer", label: "Cliente" },
-                { value: "system", label: "Sistema" },
-                { value: "both", label: "Ambos" },
-              ]}
-            />
-
-            <FormField
-              type="checkbox"
-              label="Ativo"
-              id="isActive"
-              checked={formData.isActive}
-              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-            />
-
-            <div className="flex gap-2 pt-2">
-              <button
-                type="submit"
-                disabled={isMutating}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
-              >
-                {isMutating && <Loader2 className="w-4 h-4 animate-spin" />}
-                <Check className="w-4 h-4" />
-                {editingId ? "Atualizar" : "Criar"}
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
+      <ObjectiveProblemForm
+        formData={formData}
+        setFormData={setFormData}
+        onSubmit={handleSubmit}
+        onCancel={resetForm}
+        isEditing={isEditing}
+        isMutating={isMutating}
+      />
     );
   }
 
@@ -539,7 +331,7 @@ export function ObjectiveProblemsPage() {
             {filteredProblems.length} problema{filteredProblems.length !== 1 ? "s" : ""} {searchTerm || selectedProduct ? "encontrado" : "cadastrado"}{filteredProblems.length !== 1 ? "s" : ""}
           </div>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={openCreateForm}
             className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
           >
             <Plus className="w-4 h-4" />
