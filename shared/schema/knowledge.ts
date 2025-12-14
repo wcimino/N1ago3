@@ -14,21 +14,17 @@ export const productsCatalog = pgTable("products_catalog", {
 
 export const knowledgeBase = pgTable("knowledge_base", {
   id: serial("id").primaryKey(),
-  name: text("name"),
+  question: text("question"),
+  answer: text("answer"),
+  keywords: text("keywords"),
+  questionVariation: json("question_variation").$type<string[]>().default([]),
   productId: integer("product_id").references(() => productsCatalog.id, { onDelete: "set null" }),
-  productStandard: text("product_standard").notNull(),
-  subproductStandard: text("subproduct_standard"),
   subjectId: integer("subject_id"),
   intentId: integer("intent_id"),
-  description: text("description").notNull(),
-  resolution: text("resolution").notNull(),
-  internalActions: text("internal_actions"),
-  observations: text("observations"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   productIdIdx: index("idx_knowledge_base_product_id").on(table.productId),
-  productIdx: index("idx_knowledge_base_product").on(table.productStandard),
   subjectIdx: index("idx_knowledge_base_subject").on(table.subjectId),
   intentIdIdx: index("idx_knowledge_base_intent_id").on(table.intentId),
 }));

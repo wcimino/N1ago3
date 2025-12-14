@@ -18,13 +18,12 @@ export interface KBSearchContext {
 
 export interface KBArticleResult {
   id: number;
-  name: string | null;
-  productStandard: string;
-  subproductStandard: string | null;
+  question: string | null;
+  answer: string | null;
+  keywords: string | null;
+  questionVariation: string[];
+  productId: number | null;
   intentId: number | null;
-  description: string;
-  resolution: string;
-  observations: string | null;
   relevanceScore: number;
   matchReason?: string;
 }

@@ -3,10 +3,11 @@ import { generateContentHashFromParts } from "../types.js";
 
 export interface KnowledgeBaseArticleWithProduct {
   id: number;
-  name?: string | null;
+  question?: string | null;
+  answer?: string | null;
+  keywords?: string | null;
+  questionVariation?: string[];
   productFullName: string;
-  description: string;
-  resolution: string;
 }
 
 export class KnowledgeBaseEmbeddableArticle implements EmbeddableArticle {
@@ -21,24 +22,36 @@ export class KnowledgeBaseEmbeddableArticle implements EmbeddableArticle {
   getContentForEmbedding(): string {
     const parts: string[] = [];
     
-    if (this.article.name) {
-      parts.push(`Nome: ${this.article.name}`);
+    if (this.article.question) {
+      parts.push(`Pergunta: ${this.article.question}`);
     }
     
-    parts.push(`Produto: ${this.article.productFullName}`);
+    if (this.article.questionVariation && this.article.questionVariation.length > 0) {
+      parts.push(`Variações: ${this.article.questionVariation.join("; ")}`);
+    }
     
-    parts.push(`Descrição: ${this.article.description}`);
-    parts.push(`Resolução: ${this.article.resolution}`);
+    if (this.article.answer) {
+      parts.push(`Resposta: ${this.article.answer}`);
+    }
+    
+    if (this.article.keywords) {
+      parts.push(`Keywords: ${this.article.keywords}`);
+    }
+    
+    if (this.article.productFullName) {
+      parts.push(`Produto: ${this.article.productFullName}`);
+    }
 
     return parts.join("\n\n");
   }
 
   getContentHash(): string {
     return generateContentHashFromParts([
-      this.article.name,
+      this.article.question,
+      this.article.answer,
+      this.article.keywords,
+      JSON.stringify(this.article.questionVariation || []),
       this.article.productFullName,
-      this.article.description,
-      this.article.resolution,
     ]);
   }
 
@@ -52,35 +65,49 @@ export class KnowledgeBaseEmbeddableArticle implements EmbeddableArticle {
 }
 
 export function generateKBContentHash(article: {
-  name?: string | null;
+  question?: string | null;
+  answer?: string | null;
+  keywords?: string | null;
+  questionVariation?: string[];
   productFullName: string;
-  description: string;
-  resolution: string;
 }): string {
   return generateContentHashFromParts([
-    article.name,
+    article.question,
+    article.answer,
+    article.keywords,
+    JSON.stringify(article.questionVariation || []),
     article.productFullName,
-    article.description,
-    article.resolution,
   ]);
 }
 
 export function generateKBContentForEmbedding(article: {
-  name?: string | null;
+  question?: string | null;
+  answer?: string | null;
+  keywords?: string | null;
+  questionVariation?: string[];
   productFullName: string;
-  description: string;
-  resolution: string;
 }): string {
   const parts: string[] = [];
   
-  if (article.name) {
-    parts.push(`Nome: ${article.name}`);
+  if (article.question) {
+    parts.push(`Pergunta: ${article.question}`);
   }
   
-  parts.push(`Produto: ${article.productFullName}`);
+  if (article.questionVariation && article.questionVariation.length > 0) {
+    parts.push(`Variações: ${article.questionVariation.join("; ")}`);
+  }
   
-  parts.push(`Descrição: ${article.description}`);
-  parts.push(`Resolução: ${article.resolution}`);
+  if (article.answer) {
+    parts.push(`Resposta: ${article.answer}`);
+  }
+  
+  if (article.keywords) {
+    parts.push(`Keywords: ${article.keywords}`);
+  }
+  
+  if (article.productFullName) {
+    parts.push(`Produto: ${article.productFullName}`);
+  }
 
   return parts.join("\n\n");
 }

@@ -29,7 +29,6 @@ export const knowledgeBaseStorage = {
   async getAllArticles(filters?: {
     search?: string;
     productId?: number;
-    subproductStandard?: string;
     subjectId?: number;
     intentId?: number;
     limit?: number;
@@ -40,21 +39,15 @@ export const knowledgeBaseStorage = {
       const searchPattern = `%${filters.search}%`;
       conditions.push(
         or(
-          ilike(knowledgeBase.name, searchPattern),
-          ilike(knowledgeBase.productStandard, searchPattern),
-          ilike(knowledgeBase.subproductStandard, searchPattern),
-          ilike(knowledgeBase.description, searchPattern),
-          ilike(knowledgeBase.resolution, searchPattern)
+          ilike(knowledgeBase.question, searchPattern),
+          ilike(knowledgeBase.answer, searchPattern),
+          ilike(knowledgeBase.keywords, searchPattern)
         )!
       );
     }
 
     if (filters?.productId) {
       conditions.push(eq(knowledgeBase.productId, filters.productId));
-    }
-
-    if (filters?.subproductStandard) {
-      conditions.push(eq(knowledgeBase.subproductStandard, filters.subproductStandard));
     }
 
     if (filters?.subjectId) {
@@ -111,9 +104,9 @@ export const knowledgeBaseStorage = {
     }
     
     const likeConditions = searchTerms.slice(0, 3).flatMap(term => [
-      ilike(knowledgeBase.description, `%${term}%`),
-      ilike(knowledgeBase.resolution, `%${term}%`),
-      ilike(knowledgeBase.name, `%${term}%`)
+      ilike(knowledgeBase.question, `%${term}%`),
+      ilike(knowledgeBase.answer, `%${term}%`),
+      ilike(knowledgeBase.keywords, `%${term}%`)
     ]).filter((c): c is SQL => c !== undefined);
     
     if (likeConditions.length > 0) {
@@ -130,10 +123,9 @@ export const knowledgeBaseStorage = {
     
     const scoredResults = articles.map(article => {
       const fields: MatchField[] = [
-        { name: "Nome", value: article.name || "", weight: 'contains_name' },
-        { name: "Descrição", value: article.description || "", weight: 'contains_secondary' },
-        { name: "Resolução", value: article.resolution || "", weight: 'contains_tertiary' },
-        { name: "Observações", value: article.observations || "", weight: 'contains_low' },
+        { name: "Pergunta", value: article.question || "", weight: 'contains_name' },
+        { name: "Resposta", value: article.answer || "", weight: 'contains_secondary' },
+        { name: "Keywords", value: article.keywords || "", weight: 'contains_tertiary' },
       ];
       
       const scoreResult = calculateMatchScore(fields, searchTerms);
@@ -162,16 +154,11 @@ export const knowledgeBaseStorage = {
     const results = await db.execute(sql`
       SELECT 
         a.id,
-        a.name,
-        COALESCE(p.full_name, 
-          CASE 
-            WHEN a.subproduct_standard IS NOT NULL AND a.subproduct_standard != '' 
-            THEN a.product_standard || ' > ' || a.subproduct_standard 
-            ELSE a.product_standard 
-          END
-        ) as product_full_name,
-        a.description,
-        a.resolution
+        a.question,
+        a.answer,
+        a.keywords,
+        a.question_variation,
+        COALESCE(p.full_name, '') as product_full_name
       FROM knowledge_base a
       LEFT JOIN products_catalog p ON a.product_id = p.id
       WHERE a.id = ${id}
@@ -182,10 +169,11 @@ export const knowledgeBaseStorage = {
     const row = results.rows[0] as any;
     return {
       id: row.id,
-      name: row.name,
+      question: row.question,
+      answer: row.answer,
+      keywords: row.keywords,
+      questionVariation: row.question_variation || [],
       productFullName: row.product_full_name,
-      description: row.description,
-      resolution: row.resolution,
     };
   },
 
@@ -279,18 +267,12 @@ export const knowledgeBaseStorage = {
     return result.length > 0;
   },
 
-  async getDistinctProducts(): Promise<string[]> {
-    const results = await db.selectDistinct({ productStandard: knowledgeBase.productStandard })
+  async getDistinctProductIds(): Promise<number[]> {
+    const results = await db.selectDistinct({ productId: knowledgeBase.productId })
       .from(knowledgeBase)
-      .orderBy(knowledgeBase.productStandard);
-    return results.map(r => r.productStandard);
-  },
-
-  async getDistinctSubproducts(): Promise<string[]> {
-    const results = await db.selectDistinct({ subproductStandard: knowledgeBase.subproductStandard })
-      .from(knowledgeBase)
-      .orderBy(knowledgeBase.subproductStandard);
-    return results.filter(r => r.subproductStandard).map(r => r.subproductStandard!);
+      .where(sql`${knowledgeBase.productId} IS NOT NULL`)
+      .orderBy(knowledgeBase.productId);
+    return results.map(r => r.productId!);
   },
 
   async getIntentsWithArticles(filters?: {
@@ -405,16 +387,11 @@ export const knowledgeBaseStorage = {
     const results = await db.execute(sql`
       SELECT 
         a.id,
-        a.name,
-        COALESCE(p.full_name, 
-          CASE 
-            WHEN a.subproduct_standard IS NOT NULL AND a.subproduct_standard != '' 
-            THEN a.product_standard || ' > ' || a.subproduct_standard 
-            ELSE a.product_standard 
-          END
-        ) as product_full_name,
-        a.description,
-        a.resolution
+        a.question,
+        a.answer,
+        a.keywords,
+        a.question_variation,
+        COALESCE(p.full_name, '') as product_full_name
       FROM knowledge_base a
       LEFT JOIN products_catalog p ON a.product_id = p.id
       LEFT JOIN knowledge_base_embeddings e ON a.id = e.article_id
@@ -425,10 +402,11 @@ export const knowledgeBaseStorage = {
     
     return results.rows.map((row: any) => ({
       id: row.id,
-      name: row.name,
+      question: row.question,
+      answer: row.answer,
+      keywords: row.keywords,
+      questionVariation: row.question_variation || [],
       productFullName: row.product_full_name,
-      description: row.description,
-      resolution: row.resolution,
     }));
   },
 
@@ -436,30 +414,20 @@ export const knowledgeBaseStorage = {
     const results = await db.execute(sql`
       SELECT 
         a.id,
-        a.name,
-        COALESCE(p.full_name, 
-          CASE 
-            WHEN a.subproduct_standard IS NOT NULL AND a.subproduct_standard != '' 
-            THEN a.product_standard || ' > ' || a.subproduct_standard 
-            ELSE a.product_standard 
-          END
-        ) as product_full_name,
-        a.description,
-        a.resolution
+        a.question,
+        a.answer,
+        a.keywords,
+        a.question_variation,
+        COALESCE(p.full_name, '') as product_full_name
       FROM knowledge_base a
       LEFT JOIN products_catalog p ON a.product_id = p.id
       INNER JOIN knowledge_base_embeddings e ON a.id = e.article_id
       WHERE e.content_hash != md5(
-        COALESCE(a.name, '') || 
-        COALESCE(p.full_name, 
-          CASE 
-            WHEN a.subproduct_standard IS NOT NULL AND a.subproduct_standard != '' 
-            THEN a.product_standard || ' > ' || a.subproduct_standard 
-            ELSE a.product_standard 
-          END
-        ) || 
-        COALESCE(a.description, '') || 
-        COALESCE(a.resolution, '')
+        COALESCE(a.question, '') || 
+        COALESCE(a.answer, '') || 
+        COALESCE(a.keywords, '') || 
+        COALESCE(a.question_variation::text, '[]') || 
+        COALESCE(p.full_name, '')
       )
       ORDER BY a.updated_at DESC
       LIMIT ${limit}
@@ -467,10 +435,11 @@ export const knowledgeBaseStorage = {
     
     return results.rows.map((row: any) => ({
       id: row.id,
-      name: row.name,
+      question: row.question,
+      answer: row.answer,
+      keywords: row.keywords,
+      questionVariation: row.question_variation || [],
       productFullName: row.product_full_name,
-      description: row.description,
-      resolution: row.resolution,
     }));
   },
 
@@ -489,16 +458,11 @@ export const knowledgeBaseStorage = {
          LEFT JOIN products_catalog p ON a.product_id = p.id
          INNER JOIN knowledge_base_embeddings e ON a.id = e.article_id 
          WHERE e.content_hash != md5(
-           COALESCE(a.name, '') || 
-           COALESCE(p.full_name, 
-             CASE 
-               WHEN a.subproduct_standard IS NOT NULL AND a.subproduct_standard != '' 
-               THEN a.product_standard || ' > ' || a.subproduct_standard 
-               ELSE a.product_standard 
-             END
-           ) || 
-           COALESCE(a.description, '') || 
-           COALESCE(a.resolution, '')
+           COALESCE(a.question, '') || 
+           COALESCE(a.answer, '') || 
+           COALESCE(a.keywords, '') || 
+           COALESCE(a.question_variation::text, '[]') || 
+           COALESCE(p.full_name, '')
          )) as outdated
     `).then(r => r.rows);
     
@@ -549,14 +513,13 @@ export const knowledgeBaseStorage = {
     const results = await db.execute(sql`
       SELECT 
         a.id,
-        a.name,
-        a.product_standard as "productStandard",
-        a.subproduct_standard as "subproductStandard",
+        a.question,
+        a.answer,
+        a.keywords,
+        a.question_variation as "questionVariation",
+        a.product_id as "productId",
         a.subject_id as "subjectId",
         a.intent_id as "intentId",
-        a.description,
-        a.resolution,
-        a.observations,
         a.created_at as "createdAt",
         a.updated_at as "updatedAt",
         ROUND((1 - (e.embedding_vector::vector <=> ${embeddingString}::vector)) * 100) as similarity
@@ -569,14 +532,13 @@ export const knowledgeBaseStorage = {
     
     return (results.rows as unknown as SemanticSearchResult[]).map(row => ({
       id: row.id,
-      name: row.name,
-      productStandard: row.productStandard,
-      subproductStandard: row.subproductStandard,
+      question: row.question,
+      answer: row.answer,
+      keywords: row.keywords,
+      questionVariation: row.questionVariation || [],
+      productId: row.productId,
       subjectId: row.subjectId,
       intentId: row.intentId,
-      description: row.description,
-      resolution: row.resolution,
-      observations: row.observations,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       similarity: Number(row.similarity),
@@ -634,14 +596,13 @@ export const knowledgeBaseStorage = {
 
 export interface SemanticSearchResult {
   id: number;
-  name: string | null;
-  productStandard: string;
-  subproductStandard: string | null;
+  question: string | null;
+  answer: string | null;
+  keywords: string | null;
+  questionVariation: string[];
+  productId: number | null;
   subjectId: number | null;
   intentId: number | null;
-  description: string;
-  resolution: string;
-  observations: string | null;
   createdAt: Date;
   updatedAt: Date;
   similarity: number;
