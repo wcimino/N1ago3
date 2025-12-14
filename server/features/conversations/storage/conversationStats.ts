@@ -284,6 +284,7 @@ export const conversationStats = {
         COALESCE(cs.product_standard, cs.product) as product_standard,
         cs.subproduct as subproduct_standard,
         cs.customer_emotion_level,
+        cs.customer_request_type,
         cs.objective_problems,
         u.id as user_db_id,
         u.external_id as user_external_id,

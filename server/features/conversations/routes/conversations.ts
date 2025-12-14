@@ -101,6 +101,7 @@ router.get("/api/conversations/list", isAuthenticated, requireAuthorizedUser, as
     product_standard: conv.product_standard || null,
     subproduct_standard: conv.subproduct_standard || null,
     customer_emotion_level: conv.customer_emotion_level || null,
+    customer_request_type: conv.customer_request_type || null,
     objective_problems: conv.objective_problems || [],
     user_info: conv.user_db_id ? {
       id: conv.user_db_id,
