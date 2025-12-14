@@ -157,7 +157,7 @@ export async function runKnowledgeBaseSearch(
           description: a.description,
           resolution: a.resolution,
           observations: a.observations,
-          relevanceScore: a.similarity,
+          relevanceScore: Math.round(a.similarity * 100), // Scale 0-100 like problems
           matchReason: `Similaridade semântica: ${Math.round(a.similarity * 100)}%`
         }));
         
@@ -236,8 +236,9 @@ async function runTextBasedSearch(
   // Apply calculateMatchScore on top of FTS results for better scoring
   const scoredArticles = ftsResults.map(article => {
     const { score, reason } = calculateMatchScore(article, searchTerms);
-    // Combine FTS relevance with our scoring (higher of the two)
-    const combinedScore = Math.max(score / 100, article.relevanceScore);
+    // Combine FTS relevance with our scoring (higher of the two), scale to 0-100
+    const ftsScoreNormalized = Math.round(article.relevanceScore * 100);
+    const combinedScore = Math.max(score, ftsScoreNormalized);
     return {
       id: article.id,
       name: article.name,
@@ -247,8 +248,8 @@ async function runTextBasedSearch(
       description: article.description,
       resolution: article.resolution,
       observations: article.observations,
-      relevanceScore: combinedScore,
-      matchReason: score > 0 ? reason : `FTS score: ${article.relevanceScore.toFixed(2)}`
+      relevanceScore: combinedScore, // Scale 0-100 like problems
+      matchReason: score > 0 ? reason : `FTS score: ${ftsScoreNormalized}%`
     };
   });
 

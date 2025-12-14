@@ -40,7 +40,7 @@ export function createKnowledgeBaseArticlesTool(): ToolDefinition {
         subproduct: a.subproductStandard,
         description: a.description,
         resolution: a.resolution,
-        relevance: a.relevanceScore.toFixed(2)
+        relevance: `${Math.round(a.relevanceScore)}%` // Scale 0-100
       }));
       
       return JSON.stringify({

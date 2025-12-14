@@ -54,7 +54,8 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
       name: article.name,
       description: article.description,
       resolution: article.resolution,
-      matchScore: article.relevanceScore,
+      matchScore: article.relevanceScore, // Now 0-100 scale like problems
+      matchReason: article.matchReason,
     });
   }
 
@@ -69,6 +70,9 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
       products: problem.products,
     });
   }
+
+  // Sort combined results by matchScore descending
+  results.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
 
   if (results.length === 0) {
     return {
