@@ -62,6 +62,7 @@ export interface ToolFlags {
   useZendeskKnowledgeBaseTool: boolean;
   useObjectiveProblemTool: boolean;
   useCombinedKnowledgeSearchTool: boolean;
+  useKnowledgeSuggestionTool: boolean;
 }
 
 function extractToolFlags(config: OpenaiApiConfig): ToolFlags {
@@ -72,6 +73,7 @@ function extractToolFlags(config: OpenaiApiConfig): ToolFlags {
     useZendeskKnowledgeBaseTool: config.useZendeskKnowledgeBaseTool ?? false,
     useObjectiveProblemTool: config.useObjectiveProblemTool ?? false,
     useCombinedKnowledgeSearchTool: config.useCombinedKnowledgeSearchTool ?? false,
+    useKnowledgeSuggestionTool: config.useKnowledgeSuggestionTool ?? false,
   };
 }
 
@@ -179,6 +181,9 @@ export async function runAgent(
 
   const toolFlags = extractToolFlags(config);
 
+  const effectiveFinalToolName = options?.finalToolName ?? 
+    (toolFlags.useKnowledgeSuggestionTool ? "create_knowledge_suggestion" : undefined);
+
   console.log(`[AgentFramework] Running ${configType} for conversation ${context.conversationId}`);
 
   const response = await callOpenAI({
@@ -190,7 +195,7 @@ export async function runAgent(
     contextId: context.externalConversationId || String(context.conversationId),
     toolFlags,
     maxIterations: options?.maxIterations,
-    finalToolName: options?.finalToolName,
+    finalToolName: effectiveFinalToolName,
   });
 
   if (!response.success) {

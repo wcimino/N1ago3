@@ -16,6 +16,7 @@ export const openaiApiConfig = pgTable("openai_api_config", {
   useZendeskKnowledgeBaseTool: boolean("use_zendesk_knowledge_base_tool").default(false).notNull(),
   useObjectiveProblemTool: boolean("use_objective_problem_tool").default(false).notNull(),
   useCombinedKnowledgeSearchTool: boolean("use_combined_knowledge_search_tool").default(false).notNull(),
+  useKnowledgeSuggestionTool: boolean("use_knowledge_suggestion_tool").default(false).notNull(),
   useGeneralSettings: boolean("use_general_settings").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
