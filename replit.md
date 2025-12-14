@@ -89,9 +89,17 @@ Key files:
 **External Sources & Knowledge Base Architecture:**
 
 *   **External Sources:** Replicas of external data (e.g., Zendesk articles) are synced manually.
-*   **Knowledge Base:** Internal generated knowledge from external and internal content.
+*   **Knowledge Base:** Internal Q&A articles stored in `knowledge_base` table with the following structure:
+    - `question`: The main question/topic (replaces old `name` field)
+    - `answer`: The complete answer/resolution (replaces old `resolution` field)
+    - `keywords`: Comma-separated keywords for search optimization
+    - `question_variation`: JSON array of alternative question phrasings
+    - `product_id`: FK to `products_catalog` for product association
+    - `subject_id` / `intent_id`: Classification hierarchy links
+*   **Knowledge Base Embeddings:** Stored in `knowledge_base_embeddings` with content hash for change detection. Embeddings include question, answer, keywords, variations, and product context.
 *   **Zendesk Articles:** Raw data from Zendesk Help Center stored in `zendesk_articles` with separate `zendesk_article_embeddings` for semantic search using pgvector and HNSW index.
 *   **RAG (Retrieval Augmented Generation):** Implements semantic search using OpenAI embeddings with pgvector and HNSW indexing for accurate results, with fallbacks to full-text search.
+*   **Embeddings Regeneration:** Use `npx tsx scripts/regenerate-kb-embeddings.ts` to regenerate all knowledge base embeddings after schema changes.
 
 ## External Dependencies
 
