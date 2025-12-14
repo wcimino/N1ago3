@@ -257,13 +257,9 @@ async function runTextBasedSearch(
     limit: limit * 5 // Get more candidates to re-score
   });
 
-  // Apply calculateArticleMatchScore on top of FTS results for better scoring
+  // Apply calculateArticleMatchScore on FTS results (aligned with problem search behavior)
   const scoredArticles = ftsResults.map(article => {
     const { score, reason } = calculateArticleMatchScore(article, searchTerms);
-    // O FTS score já vem em escala absoluta (não 0-1), então não multiplicamos por 100
-    // Apenas garantimos que fique no range 0-100
-    const ftsScoreNormalized = Math.min(100, Math.round(article.relevanceScore));
-    const combinedScore = Math.max(score, ftsScoreNormalized);
     return {
       id: article.id,
       name: article.name,
@@ -273,8 +269,8 @@ async function runTextBasedSearch(
       description: article.description,
       resolution: article.resolution,
       observations: article.observations,
-      relevanceScore: combinedScore, // Scale 0-100 like problems
-      matchReason: score > 0 ? reason : `FTS score: ${ftsScoreNormalized}%`
+      relevanceScore: score, // Scale 0-100, aligned with problem search
+      matchReason: reason
     };
   });
 
