@@ -5,7 +5,7 @@ const CONFIG_KEY = "demand_finder";
 
 export class DemandFinderAgent {
   static async process(context: OrchestratorContext): Promise<DemandFinderAgentResult> {
-    const { event, summary, classification } = context;
+    const { event, conversationId, summary, classification } = context;
 
     try {
       const agentContext = await buildAgentContextFromEvent(event, {

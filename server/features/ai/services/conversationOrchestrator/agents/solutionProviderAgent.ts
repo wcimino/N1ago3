@@ -5,7 +5,7 @@ const CONFIG_KEY = "solution_provider";
 
 export class SolutionProviderAgent {
   static async process(context: OrchestratorContext): Promise<SolutionProviderAgentResult> {
-    const { event, summary, classification, demand, searchResults } = context;
+    const { event, conversationId, summary, classification, demand, searchResults } = context;
 
     try {
       const agentContext = await buildAgentContextFromEvent(event, {

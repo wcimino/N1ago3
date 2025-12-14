@@ -126,7 +126,9 @@ export async function buildAgentContextFromEvent(
     lastEventId: event.id,
     summary: options?.overrides?.summary ?? (options?.includeSummary !== false ? existingSummary?.summary || null : null),
     previousSummary: existingSummary?.summary || null,
-    classification: options?.overrides?.classification ?? classification,
+    classification: options?.overrides?.classification 
+      ? { ...classification, ...options.overrides.classification }
+      : classification,
     demand: options?.overrides?.demand,
     searchResults: options?.overrides?.searchResults,
     handler: options?.overrides?.handler,
