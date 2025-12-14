@@ -181,9 +181,9 @@ export class ConversationOrchestrator {
 
   static async getConversationStatus(conversationId: number): Promise<OrchestratorStatus> {
     try {
-      const conversation = await conversationStorage.getById(conversationId);
-      if (conversation && conversation.orchestratorStatus) {
-        return conversation.orchestratorStatus as OrchestratorStatus;
+      const status = await conversationStorage.getOrchestratorStatus(conversationId);
+      if (status) {
+        return status as OrchestratorStatus;
       }
     } catch (error) {
       console.error(`[ConversationOrchestrator] Error getting status for ${conversationId}:`, error);

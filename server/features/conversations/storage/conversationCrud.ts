@@ -1,5 +1,5 @@
 import { db } from "../../../db.js";
-import { conversations, eventsStandard } from "../../../../shared/schema.js";
+import { conversations, eventsStandard, conversationsSummary } from "../../../../shared/schema.js";
 import { eq, desc, sql, and, lt, ne } from "drizzle-orm";
 import type { ExtractedConversation } from "../../../adapters/types.js";
 import { CONVERSATION_RULES, type ClosedReason } from "../../../config/conversationRules.js";
@@ -350,14 +350,23 @@ export const conversationCrud = {
   },
 
   async updateOrchestratorStatus(conversationId: number, orchestratorStatus: string) {
-    const result = await db.update(conversations)
+    const result = await db.update(conversationsSummary)
       .set({
         orchestratorStatus,
         updatedAt: new Date(),
       })
-      .where(eq(conversations.id, conversationId))
+      .where(eq(conversationsSummary.conversationId, conversationId))
       .returning();
     
     return result[0] || null;
+  },
+
+  async getOrchestratorStatus(conversationId: number): Promise<string | null> {
+    const result = await db.select({ orchestratorStatus: conversationsSummary.orchestratorStatus })
+      .from(conversationsSummary)
+      .where(eq(conversationsSummary.conversationId, conversationId))
+      .limit(1);
+    
+    return result[0]?.orchestratorStatus || null;
   },
 };
