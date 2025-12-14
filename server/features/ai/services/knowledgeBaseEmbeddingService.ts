@@ -1,4 +1,3 @@
-import type { KnowledgeBaseArticle } from "../../../../shared/schema.js";
 import {
   generateEmbedding as baseGenerateEmbedding,
   batchGenerateEmbeddings as baseBatchGenerateEmbeddings,
@@ -10,6 +9,7 @@ import {
   KnowledgeBaseEmbeddableArticle,
   generateKBContentHash,
   generateKBContentForEmbedding,
+  type KnowledgeBaseArticleWithProduct,
 } from "../../../shared/embeddings/adapters/knowledgeBaseAdapter.js";
 
 export { 
@@ -23,8 +23,7 @@ export async function generateEmbedding(text: string): Promise<EmbeddingResult> 
 
 export async function generateArticleEmbedding(article: {
   name?: string | null;
-  productStandard: string;
-  subproductStandard?: string | null;
+  productFullName: string;
   description: string;
   resolution: string;
 }): Promise<EmbeddingResult> {
@@ -34,8 +33,7 @@ export async function generateArticleEmbedding(article: {
 
 export function generateContentHash(article: {
   name?: string | null;
-  productStandard: string;
-  subproductStandard?: string | null;
+  productFullName: string;
   description: string;
   resolution: string;
 }): string {
@@ -47,7 +45,7 @@ export async function generateKBEmbedding(text: string): Promise<EmbeddingResult
 }
 
 export async function batchGenerateEmbeddings(
-  articles: KnowledgeBaseArticle[],
+  articles: KnowledgeBaseArticleWithProduct[],
   updateFn: (articleId: number, embeddingStr: string, contentHash: string, logId: number, tokensUsed: number | null) => Promise<void>,
   options?: { batchSize?: number; delayMs?: number }
 ): Promise<BatchEmbeddingResult> {

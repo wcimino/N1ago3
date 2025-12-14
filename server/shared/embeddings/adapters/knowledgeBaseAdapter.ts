@@ -1,12 +1,19 @@
-import type { KnowledgeBaseArticle } from "../../../../shared/schema.js";
 import type { EmbeddableArticle } from "../types.js";
 import { generateContentHashFromParts } from "../types.js";
 
+export interface KnowledgeBaseArticleWithProduct {
+  id: number;
+  name?: string | null;
+  productFullName: string;
+  description: string;
+  resolution: string;
+}
+
 export class KnowledgeBaseEmbeddableArticle implements EmbeddableArticle {
   id: number;
-  private article: KnowledgeBaseArticle;
+  private article: KnowledgeBaseArticleWithProduct;
 
-  constructor(article: KnowledgeBaseArticle) {
+  constructor(article: KnowledgeBaseArticleWithProduct) {
     this.id = article.id;
     this.article = article;
   }
@@ -14,16 +21,11 @@ export class KnowledgeBaseEmbeddableArticle implements EmbeddableArticle {
   getContentForEmbedding(): string {
     const parts: string[] = [];
     
-    // Nome do artigo é crucial para identificar semanticamente o tema
     if (this.article.name) {
       parts.push(`Nome: ${this.article.name}`);
     }
     
-    parts.push(`Produto: ${this.article.productStandard}`);
-    
-    if (this.article.subproductStandard) {
-      parts.push(`Subproduto: ${this.article.subproductStandard}`);
-    }
+    parts.push(`Produto: ${this.article.productFullName}`);
     
     parts.push(`Descrição: ${this.article.description}`);
     parts.push(`Resolução: ${this.article.resolution}`);
@@ -34,33 +36,30 @@ export class KnowledgeBaseEmbeddableArticle implements EmbeddableArticle {
   getContentHash(): string {
     return generateContentHashFromParts([
       this.article.name,
-      this.article.productStandard,
-      this.article.subproductStandard,
+      this.article.productFullName,
       this.article.description,
       this.article.resolution,
     ]);
   }
 
-  static fromArticle(article: KnowledgeBaseArticle): KnowledgeBaseEmbeddableArticle {
+  static fromArticle(article: KnowledgeBaseArticleWithProduct): KnowledgeBaseEmbeddableArticle {
     return new KnowledgeBaseEmbeddableArticle(article);
   }
 
-  static fromArticles(articles: KnowledgeBaseArticle[]): KnowledgeBaseEmbeddableArticle[] {
+  static fromArticles(articles: KnowledgeBaseArticleWithProduct[]): KnowledgeBaseEmbeddableArticle[] {
     return articles.map(a => new KnowledgeBaseEmbeddableArticle(a));
   }
 }
 
 export function generateKBContentHash(article: {
   name?: string | null;
-  productStandard: string;
-  subproductStandard?: string | null;
+  productFullName: string;
   description: string;
   resolution: string;
 }): string {
   return generateContentHashFromParts([
     article.name,
-    article.productStandard,
-    article.subproductStandard,
+    article.productFullName,
     article.description,
     article.resolution,
   ]);
@@ -68,8 +67,7 @@ export function generateKBContentHash(article: {
 
 export function generateKBContentForEmbedding(article: {
   name?: string | null;
-  productStandard: string;
-  subproductStandard?: string | null;
+  productFullName: string;
   description: string;
   resolution: string;
 }): string {
@@ -79,11 +77,7 @@ export function generateKBContentForEmbedding(article: {
     parts.push(`Nome: ${article.name}`);
   }
   
-  parts.push(`Produto: ${article.productStandard}`);
-  
-  if (article.subproductStandard) {
-    parts.push(`Subproduto: ${article.subproductStandard}`);
-  }
+  parts.push(`Produto: ${article.productFullName}`);
   
   parts.push(`Descrição: ${article.description}`);
   parts.push(`Resolução: ${article.resolution}`);

@@ -4,6 +4,7 @@ import { eq, desc, asc, ilike, or, and, isNull, sql, type SQL } from "drizzle-or
 import type { KnowledgeBaseArticle, InsertKnowledgeBaseArticle, KnowledgeIntent, KnowledgeBaseEmbedding } from "../../../../shared/schema.js";
 import { generateContentHash, generateArticleEmbedding, embeddingToString } from "../services/knowledgeBaseEmbeddingService.js";
 import { calculateMatchScore, parseSearchTerms, type MatchField } from "../../../shared/utils/matchScoring.js";
+import type { KnowledgeBaseArticleWithProduct } from "../../../shared/embeddings/adapters/knowledgeBaseAdapter.js";
 
 export interface SearchArticleResult extends KnowledgeBaseArticle {
   relevanceScore: number;
@@ -157,6 +158,37 @@ export const knowledgeBaseStorage = {
     return article || null;
   },
 
+  async getArticleByIdWithProduct(id: number): Promise<KnowledgeBaseArticleWithProduct | null> {
+    const results = await db.execute(sql`
+      SELECT 
+        a.id,
+        a.name,
+        COALESCE(p.full_name, 
+          CASE 
+            WHEN a.subproduct_standard IS NOT NULL AND a.subproduct_standard != '' 
+            THEN a.product_standard || ' > ' || a.subproduct_standard 
+            ELSE a.product_standard 
+          END
+        ) as product_full_name,
+        a.description,
+        a.resolution
+      FROM knowledge_base a
+      LEFT JOIN products_catalog p ON a.product_id = p.id
+      WHERE a.id = ${id}
+    `);
+    
+    if (results.rows.length === 0) return null;
+    
+    const row = results.rows[0] as any;
+    return {
+      id: row.id,
+      name: row.name,
+      productFullName: row.product_full_name,
+      description: row.description,
+      resolution: row.resolution,
+    };
+  },
+
   async createArticle(data: InsertKnowledgeBaseArticle): Promise<KnowledgeBaseArticle> {
     // Validação: apenas 1 artigo por intenção
     if (data.intentId) {
@@ -214,8 +246,15 @@ export const knowledgeBaseStorage = {
     (async () => {
       try {
         console.log(`[KnowledgeBase Embedding] Generating embedding for article ${article.id}...`);
-        const { embedding, logId, tokensUsed } = await generateArticleEmbedding(article);
-        const contentHash = generateContentHash(article);
+        
+        const articleWithProduct = await this.getArticleByIdWithProduct(article.id);
+        if (!articleWithProduct) {
+          console.error(`[KnowledgeBase Embedding] Article ${article.id} not found`);
+          return;
+        }
+        
+        const { embedding, logId, tokensUsed } = await generateArticleEmbedding(articleWithProduct);
+        const contentHash = generateContentHash(articleWithProduct);
         
         await this.upsertEmbedding({
           articleId: article.id,
@@ -362,28 +401,63 @@ export const knowledgeBaseStorage = {
     `);
   },
 
-  async getArticlesWithoutEmbedding(limit: number = 100): Promise<KnowledgeBaseArticle[]> {
+  async getArticlesWithoutEmbedding(limit: number = 100): Promise<KnowledgeBaseArticleWithProduct[]> {
     const results = await db.execute(sql`
-      SELECT a.* 
+      SELECT 
+        a.id,
+        a.name,
+        COALESCE(p.full_name, 
+          CASE 
+            WHEN a.subproduct_standard IS NOT NULL AND a.subproduct_standard != '' 
+            THEN a.product_standard || ' > ' || a.subproduct_standard 
+            ELSE a.product_standard 
+          END
+        ) as product_full_name,
+        a.description,
+        a.resolution
       FROM knowledge_base a
+      LEFT JOIN products_catalog p ON a.product_id = p.id
       LEFT JOIN knowledge_base_embeddings e ON a.id = e.article_id
       WHERE e.id IS NULL
       ORDER BY a.updated_at DESC
       LIMIT ${limit}
     `);
     
-    return results.rows as unknown as KnowledgeBaseArticle[];
+    return results.rows.map((row: any) => ({
+      id: row.id,
+      name: row.name,
+      productFullName: row.product_full_name,
+      description: row.description,
+      resolution: row.resolution,
+    }));
   },
 
-  async getArticlesWithChangedContent(limit: number = 100): Promise<KnowledgeBaseArticle[]> {
+  async getArticlesWithChangedContent(limit: number = 100): Promise<KnowledgeBaseArticleWithProduct[]> {
     const results = await db.execute(sql`
-      SELECT a.* 
+      SELECT 
+        a.id,
+        a.name,
+        COALESCE(p.full_name, 
+          CASE 
+            WHEN a.subproduct_standard IS NOT NULL AND a.subproduct_standard != '' 
+            THEN a.product_standard || ' > ' || a.subproduct_standard 
+            ELSE a.product_standard 
+          END
+        ) as product_full_name,
+        a.description,
+        a.resolution
       FROM knowledge_base a
+      LEFT JOIN products_catalog p ON a.product_id = p.id
       INNER JOIN knowledge_base_embeddings e ON a.id = e.article_id
       WHERE e.content_hash != md5(
         COALESCE(a.name, '') || 
-        COALESCE(a.product_standard, '') || 
-        COALESCE(a.subproduct_standard, '') || 
+        COALESCE(p.full_name, 
+          CASE 
+            WHEN a.subproduct_standard IS NOT NULL AND a.subproduct_standard != '' 
+            THEN a.product_standard || ' > ' || a.subproduct_standard 
+            ELSE a.product_standard 
+          END
+        ) || 
         COALESCE(a.description, '') || 
         COALESCE(a.resolution, '')
       )
@@ -391,7 +465,13 @@ export const knowledgeBaseStorage = {
       LIMIT ${limit}
     `);
     
-    return results.rows as unknown as KnowledgeBaseArticle[];
+    return results.rows.map((row: any) => ({
+      id: row.id,
+      name: row.name,
+      productFullName: row.product_full_name,
+      description: row.description,
+      resolution: row.resolution,
+    }));
   },
 
   async getEmbeddingStats(): Promise<{
@@ -405,11 +485,18 @@ export const knowledgeBaseStorage = {
         (SELECT count(*)::int FROM knowledge_base) as total,
         (SELECT count(*)::int FROM knowledge_base_embeddings) as with_embedding,
         (SELECT count(*)::int FROM knowledge_base a LEFT JOIN knowledge_base_embeddings e ON a.id = e.article_id WHERE e.id IS NULL) as without_embedding,
-        (SELECT count(*)::int FROM knowledge_base a INNER JOIN knowledge_base_embeddings e ON a.id = e.article_id 
+        (SELECT count(*)::int FROM knowledge_base a 
+         LEFT JOIN products_catalog p ON a.product_id = p.id
+         INNER JOIN knowledge_base_embeddings e ON a.id = e.article_id 
          WHERE e.content_hash != md5(
            COALESCE(a.name, '') || 
-           COALESCE(a.product_standard, '') || 
-           COALESCE(a.subproduct_standard, '') || 
+           COALESCE(p.full_name, 
+             CASE 
+               WHEN a.subproduct_standard IS NOT NULL AND a.subproduct_standard != '' 
+               THEN a.product_standard || ' > ' || a.subproduct_standard 
+               ELSE a.product_standard 
+             END
+           ) || 
            COALESCE(a.description, '') || 
            COALESCE(a.resolution, '')
          )) as outdated

@@ -270,16 +270,16 @@ router.post("/api/knowledge/embeddings/regenerate/:id", isAuthenticated, require
       return res.status(400).json({ error: "Invalid ID" });
     }
     
-    const article = await knowledgeBaseStorage.getArticleById(id);
-    if (!article) {
+    const articleWithProduct = await knowledgeBaseStorage.getArticleByIdWithProduct(id);
+    if (!articleWithProduct) {
       return res.status(404).json({ error: "Article not found" });
     }
     
-    const { embedding, logId, tokensUsed } = await generateArticleEmbedding(article);
-    const contentHash = generateContentHash(article);
+    const { embedding, logId, tokensUsed } = await generateArticleEmbedding(articleWithProduct);
+    const contentHash = generateContentHash(articleWithProduct);
     
     await knowledgeBaseStorage.upsertEmbedding({
-      articleId: article.id,
+      articleId: articleWithProduct.id,
       contentHash,
       embedding,
       modelUsed: 'text-embedding-3-small',
