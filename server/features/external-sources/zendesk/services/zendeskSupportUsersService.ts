@@ -13,6 +13,10 @@ import type { InsertZendeskSupportUser } from "../../../../../shared/schema.js";
 const ZENDESK_SUBDOMAIN = "movilepay";
 const SOURCE_TYPE = "zendesk-support-users";
 const BATCH_SIZE = 100;
+const DB_BATCH_SIZE = 500;
+const CHECKPOINT_INTERVAL = 10;
+const MAX_RETRIES = 5;
+const INITIAL_BACKOFF_MS = 1000;
 
 interface ZendeskUserApiResponse {
   id: number;
@@ -74,6 +78,7 @@ export type SyncType = "full" | "incremental";
 let isSyncing = false;
 let currentSyncId: number | null = null;
 let cancelRequested = false;
+let syncStartTime: number = 0;
 let currentProgress = {
   processed: 0,
   created: 0,
@@ -81,7 +86,64 @@ let currentProgress = {
   failed: 0,
   currentPage: 0,
   estimatedTotal: 0,
+  usersPerMinute: 0,
+  estimatedTimeRemainingMs: 0,
 };
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fetchWithRetry<T>(
+  url: string, 
+  options: RequestInit,
+  retries = MAX_RETRIES
+): Promise<T> {
+  let lastError: Error | null = null;
+  let backoffMs = INITIAL_BACKOFF_MS;
+  
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After');
+        const waitMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : backoffMs;
+        console.log(`[ZendeskSupportUsers] Rate limited (429). Waiting ${waitMs}ms before retry ${attempt}/${retries}...`);
+        await sleep(waitMs);
+        backoffMs = Math.min(backoffMs * 2, 60000);
+        continue;
+      }
+      
+      if (response.status >= 500) {
+        const errorBody = await response.text();
+        console.log(`[ZendeskSupportUsers] Server error (${response.status}). Retrying ${attempt}/${retries} after ${backoffMs}ms...`);
+        await sleep(backoffMs);
+        backoffMs = Math.min(backoffMs * 2, 60000);
+        lastError = new Error(`Zendesk API error: ${response.status} ${response.statusText} - ${errorBody}`);
+        continue;
+      }
+      
+      if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`Zendesk API error: ${response.status} ${response.statusText} - ${errorBody}`);
+      }
+      
+      return response.json() as Promise<T>;
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.log(`[ZendeskSupportUsers] Network error. Retrying ${attempt}/${retries} after ${backoffMs}ms...`);
+        await sleep(backoffMs);
+        backoffMs = Math.min(backoffMs * 2, 60000);
+        lastError = error as Error;
+        continue;
+      }
+      throw error;
+    }
+  }
+  
+  throw lastError || new Error('Max retries exceeded');
+}
 
 function getAuthHeader(): string {
   const email = process.env.ZENDESK_SUPPORT_EMAIL;
@@ -145,39 +207,41 @@ function mapApiUserToDbUser(apiUser: ZendeskUserApiResponse): InsertZendeskSuppo
 async function fetchUsersPage(url: string): Promise<ZendeskUsersListResponse> {
   console.log(`[ZendeskSupportUsers] Fetching URL: ${url}`);
   
-  const response = await fetch(url, {
+  return fetchWithRetry<ZendeskUsersListResponse>(url, {
     headers: { 
       Authorization: getAuthHeader(),
       "Content-Type": "application/json",
     },
   });
-  
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error(`[ZendeskSupportUsers] API Error - URL: ${url}, Status: ${response.status}, Body: ${errorBody}`);
-    throw new Error(`Zendesk API error: ${response.status} ${response.statusText} - ${errorBody}`);
-  }
-  
-  return response.json();
 }
 
 async function fetchIncrementalUsersPage(url: string): Promise<ZendeskIncrementalUsersResponse> {
   console.log(`[ZendeskSupportUsers] Fetching incremental URL: ${url}`);
   
-  const response = await fetch(url, {
+  return fetchWithRetry<ZendeskIncrementalUsersResponse>(url, {
     headers: { 
       Authorization: getAuthHeader(),
       "Content-Type": "application/json",
     },
   });
+}
+
+function updateProgressMetrics(processed: number, created: number, updated: number, failed: number, pageNum: number, estimatedTotal: number): void {
+  const elapsedMs = Date.now() - syncStartTime;
+  const usersPerMinute = elapsedMs > 0 ? Math.round((processed / elapsedMs) * 60000) : 0;
+  const remaining = Math.max(0, estimatedTotal - processed);
+  const estimatedTimeRemainingMs = usersPerMinute > 0 ? Math.round((remaining / usersPerMinute) * 60000) : 0;
   
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error(`[ZendeskSupportUsers] Incremental API Error - URL: ${url}, Status: ${response.status}, Body: ${errorBody}`);
-    throw new Error(`Zendesk Incremental API error: ${response.status} ${response.statusText} - ${errorBody}`);
-  }
-  
-  return response.json();
+  currentProgress = {
+    processed,
+    created,
+    updated,
+    failed,
+    currentPage: pageNum,
+    estimatedTotal,
+    usersPerMinute,
+    estimatedTimeRemainingMs,
+  };
 }
 
 export async function syncZendeskUsers(syncType: SyncType = "full", maxUsers?: number): Promise<{
@@ -212,7 +276,8 @@ export async function syncZendeskUsers(syncType: SyncType = "full", maxUsers?: n
   
   isSyncing = true;
   cancelRequested = false;
-  currentProgress = { processed: 0, created: 0, updated: 0, failed: 0, currentPage: 0, estimatedTotal: maxUsers || 0 };
+  currentProgress = { processed: 0, created: 0, updated: 0, failed: 0, currentPage: 0, estimatedTotal: maxUsers || 0, usersPerMinute: 0, estimatedTimeRemainingMs: 0 };
+  syncStartTime = Date.now();
   const startTime = Date.now();
   
   const logSyncType = syncType === "incremental" ? "incremental" : (maxUsers ? "partial" : "full");
@@ -516,7 +581,8 @@ export async function syncNewUsers(maxUsers?: number): Promise<{
   
   isSyncing = true;
   cancelRequested = false;
-  currentProgress = { processed: 0, created: 0, updated: 0, failed: 0, currentPage: 0, estimatedTotal: maxUsers || 0 };
+  currentProgress = { processed: 0, created: 0, updated: 0, failed: 0, currentPage: 0, estimatedTotal: maxUsers || 0, usersPerMinute: 0, estimatedTimeRemainingMs: 0 };
+  syncStartTime = Date.now();
   const startTime = Date.now();
   
   const lastAddNewSync = await getLatestAddNewSyncLog(SOURCE_TYPE);
