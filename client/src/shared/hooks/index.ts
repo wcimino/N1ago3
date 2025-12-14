@@ -12,3 +12,5 @@ export type {
   UseOpenaiApiConfigReturn 
 } from "./useOpenaiApiConfig";
 export { useCrudMutations } from "./useCrudMutations";
+export { useCrudFormState } from "./useCrudFormState";
+export type { CrudFormStateConfig, CrudFormStateReturn } from "./useCrudFormState";
