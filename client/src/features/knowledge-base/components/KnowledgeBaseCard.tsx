@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { Edit2, Trash2, ChevronDown, ChevronUp, MoreVertical } from "lucide-react";
+import { Edit2, Trash2, ChevronDown, ChevronUp, MoreVertical, Tag } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface KnowledgeBaseArticle {
   id: number;
-  productStandard: string;
-  subproductStandard: string | null;
-  description: string;
-  resolution: string;
-  internalActions?: string | null;
-  observations: string | null;
+  question: string | null;
+  answer: string | null;
+  keywords: string | null;
+  questionVariation: string[] | null;
+  productId: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -38,18 +37,8 @@ export function KnowledgeBaseCard({ article, onEdit, onDelete }: KnowledgeBaseCa
       >
         <div className="flex items-center gap-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold text-blue-700">
-                {article.productStandard}
-              </span>
-              {article.subproductStandard && (
-                <>
-                  <span className="text-gray-300">›</span>
-                  <span className="font-medium text-purple-600">
-                    {article.subproductStandard}
-                  </span>
-                </>
-              )}
+            <div className="text-sm text-gray-700 line-clamp-2">
+              {article.question || "Sem pergunta definida"}
             </div>
             {!isExpanded && (
               <div className="text-xs text-gray-400 mt-1.5">
@@ -126,51 +115,58 @@ export function KnowledgeBaseCard({ article, onEdit, onDelete }: KnowledgeBaseCa
 
       {isExpanded && (
         <div className="border-t bg-gray-50 p-4 space-y-4">
-          {article.description && (
+          {article.question && (
             <div>
               <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
-                Situação
+                Pergunta
               </h4>
               <p className="text-sm text-gray-700">
-                {article.description}
+                {article.question}
               </p>
             </div>
           )}
 
-          <div>
-            <h4 className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-2">
-              Solução
-            </h4>
-            <div className="bg-white rounded-lg p-3 border border-green-200">
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                {article.resolution}
-              </p>
-            </div>
-          </div>
-
-          {article.internalActions && (
+          {article.answer && (
             <div>
-              <h4 className="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-2">
-                Ações Internas
+              <h4 className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-2">
+                Resposta
               </h4>
-              <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
-                <p className="text-sm text-orange-800 whitespace-pre-wrap">
-                  {article.internalActions}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {article.observations && (
-            <div>
-              <h4 className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-2">
-                Observações
-              </h4>
-              <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+              <div className="bg-white rounded-lg p-3 border border-green-200">
                 <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                  {article.observations}
+                  {article.answer}
                 </p>
               </div>
+            </div>
+          )}
+
+          {article.keywords && (
+            <div>
+              <h4 className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2 flex items-center gap-1">
+                <Tag className="w-3 h-3" />
+                Palavras-chave
+              </h4>
+              <div className="flex flex-wrap gap-1">
+                {article.keywords.split(",").map((kw, i) => (
+                  <span key={i} className="px-2 py-0.5 text-xs bg-blue-50 border border-blue-200 rounded text-blue-700">
+                    {kw.trim()}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {article.questionVariation && article.questionVariation.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-2">
+                Variações da Pergunta
+              </h4>
+              <ul className="space-y-1">
+                {article.questionVariation.map((variation, i) => (
+                  <li key={i} className="text-sm text-gray-600 pl-2 border-l-2 border-purple-200">
+                    {variation}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 

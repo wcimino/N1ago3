@@ -7,9 +7,8 @@ import { summaryStorage } from "../../storage/summaryStorage.js";
 export interface CombinedSearchResult {
   source: "article" | "problem";
   id: number;
-  name: string | null;
-  description: string;
-  resolution?: string;
+  question: string | null;
+  answer: string | null;
   matchScore?: number;
   matchReason?: string;
   products?: string[];
@@ -54,10 +53,9 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
     results.push({
       source: "article",
       id: article.id,
-      name: article.name,
-      description: article.description,
-      resolution: article.resolution,
-      matchScore: article.relevanceScore, // Now 0-100 scale like problems
+      question: article.question,
+      answer: article.answer,
+      matchScore: article.relevanceScore,
       matchReason: article.matchReason,
     });
   }
@@ -66,15 +64,14 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
     results.push({
       source: "problem",
       id: problem.id,
-      name: problem.name,
-      description: problem.description || "",
+      question: problem.name,
+      answer: problem.description || "",
       matchScore: problem.matchScore,
       matchReason: problem.matchReason,
       products: problem.products,
     });
   }
 
-  // Sort combined results by matchScore descending
   results.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
 
   if (results.length === 0) {
@@ -146,7 +143,16 @@ export function createCombinedKnowledgeSearchToolWithContext(conversationId?: nu
       
       if (conversationId && result.results.length > 0) {
         try {
-          const saveResult = await summaryStorage.updateArticlesAndProblems(conversationId, result.results);
+          const resultsForStorage = result.results.map(r => ({
+            source: r.source,
+            id: r.id,
+            name: r.question,
+            description: r.answer || "",
+            matchScore: r.matchScore,
+            matchReason: r.matchReason,
+            products: r.products,
+          }));
+          const saveResult = await summaryStorage.updateArticlesAndProblems(conversationId, resultsForStorage);
           if (saveResult.created) {
             console.log(`[Combined Knowledge Search Tool] Created summary with ${result.articleCount} articles and ${result.problemCount} problems for conversation ${conversationId}`);
           } else if (saveResult.updated) {

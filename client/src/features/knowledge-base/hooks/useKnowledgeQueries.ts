@@ -5,13 +5,11 @@ export type CatalogProduct = ProductCatalogItem;
 
 export interface KnowledgeBaseArticle {
   id: number;
-  name: string | null;
-  productStandard: string;
-  subproductStandard: string | null;
-  description: string;
-  resolution: string;
-  internalActions: string | null;
-  observations: string | null;
+  question: string | null;
+  answer: string | null;
+  keywords: string | null;
+  questionVariation: string[] | null;
+  productId: number | null;
   subjectId: number | null;
   intentId: number | null;
   createdAt: string;
@@ -19,7 +17,7 @@ export interface KnowledgeBaseArticle {
 }
 
 interface Filters {
-  products: string[];
+  products: number[];
 }
 
 export interface EmbeddingStats {

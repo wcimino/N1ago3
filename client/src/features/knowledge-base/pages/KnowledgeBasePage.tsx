@@ -34,12 +34,12 @@ const baseTabs = [
 ];
 
 interface PrefilledArticleData {
-  productStandard: string;
-  subproductStandard: string | null;
+  productId: number;
   subjectId: number;
   intentId: number;
   subjectName: string;
   intentName: string;
+  productName: string;
 }
 
 interface InputModalState {
@@ -133,26 +133,23 @@ export function KnowledgeBasePage() {
 
   const isAllArticlesExpanded = expandedPaths.size >= allPathsCount && allPathsCount > 0;
 
-  const handleAddArticle = (subjectId?: number, intentId?: number, fullPath?: string) => {
-    if (!intentId || !subjectId || !fullPath) return;
+  const handleAddArticle = (subjectId?: number, intentId?: number, fullPath?: string, productCatalogId?: number) => {
+    if (!intentId || !subjectId) return;
     
     const subject = subjects.find(s => s.id === subjectId);
     const intent = intents.find(i => i.id === intentId);
     
-    if (subject && intent) {
-      // Parse fullPath to extract product and subproduct
-      // Format: "Produto > Subproduto > Assunto > Intenção" (4 parts) or "Produto > Assunto > Intenção" (3 parts)
-      const parts = fullPath.split(" > ");
-      const productStandard = parts[0] || "";
-      const subproductStandard = parts.length === 4 ? parts[1] : null;
+    if (subject && intent && productCatalogId) {
+      const parts = fullPath?.split(" > ") || [];
+      const productName = parts[0] || "";
       
       setPrefilledData({
-        productStandard,
-        subproductStandard,
+        productId: productCatalogId,
         subjectId,
         intentId,
         subjectName: subject.name,
         intentName: intent.name,
+        productName,
       });
       setShowForm(true);
     }
@@ -369,7 +366,7 @@ export function KnowledgeBasePage() {
               <FilterBar
                 filters={[
                   { type: "search", value: searchTerm, onChange: setSearchTerm, placeholder: "Buscar..." },
-                  { type: "select", value: selectedProduct, onChange: handleProductChange, placeholder: "Produto", options: filters?.products || [] },
+                  { type: "select", value: selectedProduct, onChange: handleProductChange, placeholder: "Produto", options: (filters?.products || []).map(id => id.toString()) },
                   { type: "select", value: selectedSubjectId?.toString() || "", onChange: (v) => handleSubjectChange(v ? parseInt(v) : null), placeholder: "Assunto", options: filteredSubjects.map(s => ({ value: s.id.toString(), label: s.name })), disabled: !selectedProduct || filteredSubjects.length === 0 },
                   { type: "select", value: selectedIntentId?.toString() || "", onChange: (v) => setSelectedIntentId(v ? parseInt(v) : null), placeholder: "Intenção", options: filteredIntents.map(i => ({ value: i.id.toString(), label: i.name })), disabled: !selectedSubjectId || filteredIntents.length === 0 },
                 ]}

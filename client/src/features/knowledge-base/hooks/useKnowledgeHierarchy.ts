@@ -176,32 +176,59 @@ function buildHierarchy(
     return null;
   };
   
+  const UNCLASSIFIED_KEY = "__sem_produto__";
+  
+  const getOrCreateUnclassifiedNode = (): HierarchyNode => {
+    let node = productNodes.get(UNCLASSIFIED_KEY);
+    if (!node) {
+      node = {
+        name: "Sem produto",
+        level: "produto",
+        fullPath: "Sem produto",
+        children: [],
+        articles: [],
+      };
+      productNodes.set(UNCLASSIFIED_KEY, node);
+    }
+    return node;
+  };
+  
   const placeArticleInFallback = (article: KnowledgeBaseArticle) => {
-    const prodNode = productNodes.get(article.productStandard);
-    if (!prodNode) {
-      if (!productNodes.has(article.productStandard)) {
-        productNodes.set(article.productStandard, {
-          name: article.productStandard,
-          level: "produto",
-          fullPath: article.productStandard,
-          children: [],
-          articles: [],
-        });
-      }
-      productNodes.get(article.productStandard)!.articles.push(article);
+    if (!article.productId) {
+      getOrCreateUnclassifiedNode().articles.push(article);
       return;
     }
     
-    if (article.subproductStandard) {
-      const subprodKey = `${article.productStandard}|${article.subproductStandard}`;
+    const product = products.find(p => p.id === article.productId);
+    if (!product) {
+      getOrCreateUnclassifiedNode().articles.push(article);
+      return;
+    }
+    
+    let prodNode = productNodes.get(product.produto);
+    if (!prodNode) {
+      prodNode = {
+        name: product.produto,
+        level: "produto",
+        fullPath: product.produto,
+        children: [],
+        articles: [],
+        productId: !product.subproduto ? product.id : undefined,
+      };
+      productNodes.set(product.produto, prodNode);
+    }
+    
+    if (product.subproduto) {
+      const subprodKey = `${product.produto}|${product.subproduto}`;
       let subprodNode = subproductNodes.get(subprodKey);
       if (!subprodNode) {
         subprodNode = {
-          name: article.subproductStandard,
+          name: product.subproduto,
           level: "subproduto",
-          fullPath: `${article.productStandard} > ${article.subproductStandard}`,
+          fullPath: `${product.produto} > ${product.subproduto}`,
           children: [],
           articles: [],
+          productId: product.id,
         };
         subproductNodes.set(subprodKey, subprodNode);
         prodNode.children.push(subprodNode);
@@ -234,7 +261,7 @@ function buildHierarchy(
   
   const sortNodeRecursively = (node: HierarchyNode): void => {
     node.children.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
-    node.articles.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR'));
+    node.articles.sort((a, b) => (a.question || '').localeCompare(b.question || '', 'pt-BR'));
     for (const child of node.children) {
       sortNodeRecursively(child);
     }

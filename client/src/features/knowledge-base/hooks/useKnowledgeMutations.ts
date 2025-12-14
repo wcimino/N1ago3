@@ -2,13 +2,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { KnowledgeBaseArticle } from "./useKnowledgeQueries";
 
 export interface KnowledgeBaseFormData {
-  name: string | null;
-  productStandard: string;
-  subproductStandard: string | null;
-  description: string;
-  resolution: string;
-  internalActions: string | null;
-  observations: string | null;
+  question: string;
+  answer: string;
+  keywords: string | null;
+  questionVariation: string[] | null;
+  productId: number | null;
   subjectId: number | null;
   intentId: number | null;
 }

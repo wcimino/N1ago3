@@ -37,13 +37,15 @@ function calculateArticleMatchScore(
   article: KnowledgeBaseArticle,
   searchTerms: string[]
 ): { score: number; reason: string } {
+  const questionVariationsStr = Array.isArray(article.questionVariation) 
+    ? (article.questionVariation as string[]).join(" ") 
+    : "";
+    
   const fields: MatchField[] = [
-    { name: "Nome", value: article.name || "", weight: 'contains_name' },
-    { name: "Descrição", value: article.description || "", weight: 'contains_secondary' },
-    { name: "Resolução", value: article.resolution || "", weight: 'contains_tertiary' },
-    { name: "Observações", value: article.observations || "", weight: 'contains_low' },
-    { name: "Produto", value: article.productStandard || "", weight: 'contains_low' },
-    { name: "Subproduto", value: article.subproductStandard || "", weight: 'contains_low' },
+    { name: "Pergunta", value: article.question || "", weight: 'contains_name' },
+    { name: "Resposta", value: article.answer || "", weight: 'contains_secondary' },
+    { name: "Keywords", value: article.keywords || "", weight: 'contains_tertiary' },
+    { name: "Variações", value: questionVariationsStr, weight: 'contains_low' },
   ];
 
   const result = sharedCalculateMatchScore(fields, searchTerms);
@@ -63,16 +65,16 @@ function applyKeywordsBoost(
     return articles.slice(0, limit);
   }
 
-  // Apply keyword matching as boost to existing semantic scores
   const boostedArticles = articles.map(article => {
-    // Normalize article content to match normalized keywords (accent-insensitive)
+    const questionVariationsStr = Array.isArray(article.questionVariation) 
+      ? article.questionVariation.join(" ") 
+      : "";
+      
     const articleContent = normalizeText([
-      article.name || "",
-      article.description,
-      article.resolution,
-      article.observations || "",
-      article.productStandard,
-      article.subproductStandard || ""
+      article.question || "",
+      article.answer || "",
+      article.keywords || "",
+      questionVariationsStr
     ].join(" "));
 
     let keywordBoost = 0;
@@ -81,7 +83,7 @@ function applyKeywordsBoost(
     for (const term of searchTerms) {
       const normalizedTerm = normalizeText(term);
       if (articleContent.includes(normalizedTerm)) {
-        keywordBoost += 5; // +5% boost per matched keyword
+        keywordBoost += 5;
         matchedKeywords.push(term);
       }
     }
@@ -98,7 +100,6 @@ function applyKeywordsBoost(
     };
   });
 
-  // Re-sort by boosted score and limit
   return boostedArticles
     .sort((a, b) => b.relevanceScore - a.relevanceScore)
     .slice(0, limit);
@@ -121,34 +122,30 @@ export async function runKnowledgeBaseSearch(
   let articles: KBArticleResult[] = [];
   const hasEmbeddings = await knowledgeBaseStorage.hasEmbeddings();
 
-  // Hybrid approach: conversationContext for main semantic search, keywords for boost/filter
   if (conversationContext && conversationContext.trim().length > 0 && hasEmbeddings) {
     try {
-      // Use conversation context as the main semantic search
       console.log(`[KB Search] Hybrid search: using conversationContext for embedding, productId=${productId || 'none'}`);
       
       const { embedding: contextEmbedding } = await generateEmbedding(conversationContext, { contextType: "query" });
       const semanticResults = await knowledgeBaseStorage.searchBySimilarity(
         contextEmbedding,
-        { productId, limit: keywordsStr ? limit * 2 : limit } // Get more if we'll filter by keywords
+        { productId, limit: keywordsStr ? limit * 2 : limit }
       );
       
       articles = semanticResults.map(a => ({
         id: a.id,
-        name: a.name,
-        productStandard: a.productStandard,
-        subproductStandard: a.subproductStandard,
+        question: a.question,
+        answer: a.answer,
+        keywords: a.keywords,
+        questionVariation: Array.isArray(a.questionVariation) ? a.questionVariation as string[] : [],
+        productId: a.productId,
         intentId: a.intentId,
-        description: a.description,
-        resolution: a.resolution,
-        observations: a.observations,
         relevanceScore: a.similarity,
         matchReason: `Similaridade semântica (contexto): ${a.similarity}%`
       }));
       
       console.log(`[KB Search] Context-based semantic search found ${articles.length} articles`);
 
-      // Apply keywords as boost/filter if provided
       if (keywordsStr && keywordsStr.trim().length > 0) {
         articles = applyKeywordsBoost(articles, keywordsStr, limit);
         console.log(`[KB Search] After keywords boost/filter: ${articles.length} articles`);
@@ -160,7 +157,6 @@ export async function runKnowledgeBaseSearch(
       }
     }
   } else if (keywordsStr && keywordsStr.trim().length > 0) {
-    // Fallback: use keywords for semantic/text search (original behavior)
     if (hasEmbeddings) {
       try {
         console.log(`[KB Search] Semantic search (keywords): productId=${productId || 'none'}, keywords="${keywordsStr.substring(0, 50)}..."`);
@@ -173,13 +169,12 @@ export async function runKnowledgeBaseSearch(
         
         articles = semanticResults.map(a => ({
           id: a.id,
-          name: a.name,
-          productStandard: a.productStandard,
-          subproductStandard: a.subproductStandard,
+          question: a.question,
+          answer: a.answer,
+          keywords: a.keywords,
+          questionVariation: Array.isArray(a.questionVariation) ? a.questionVariation as string[] : [],
+          productId: a.productId,
           intentId: a.intentId,
-          description: a.description,
-          resolution: a.resolution,
-          observations: a.observations,
           relevanceScore: a.similarity,
           matchReason: `Similaridade semântica: ${a.similarity}%`
         }));
@@ -201,13 +196,12 @@ export async function runKnowledgeBaseSearch(
     });
     articles = allArticles.map(a => ({
       id: a.id,
-      name: a.name,
-      productStandard: a.productStandard,
-      subproductStandard: a.subproductStandard,
+      question: a.question,
+      answer: a.answer,
+      keywords: a.keywords,
+      questionVariation: Array.isArray(a.questionVariation) ? a.questionVariation as string[] : [],
+      productId: a.productId,
       intentId: a.intentId,
-      description: a.description,
-      resolution: a.resolution,
-      observations: a.observations,
       relevanceScore: 0,
       matchReason: "Listagem por produto"
     }));
@@ -250,30 +244,26 @@ async function runTextBasedSearch(
     return [];
   }
 
-  // Use FTS to search across full corpus first (more candidates for better coverage)
   const ftsResults = await knowledgeBaseStorage.searchArticlesWithRelevance(keywordsStr, {
     productId,
-    limit: limit * 5 // Get more candidates to re-score
+    limit: limit * 5
   });
 
-  // Apply calculateArticleMatchScore on FTS results (aligned with problem search behavior)
   const scoredArticles = ftsResults.map(article => {
     const { score, reason } = calculateArticleMatchScore(article, searchTerms);
     return {
       id: article.id,
-      name: article.name,
-      productStandard: article.productStandard,
-      subproductStandard: article.subproductStandard,
+      question: article.question,
+      answer: article.answer,
+      keywords: article.keywords,
+      questionVariation: Array.isArray(article.questionVariation) ? article.questionVariation as string[] : [],
+      productId: article.productId,
       intentId: article.intentId,
-      description: article.description,
-      resolution: article.resolution,
-      observations: article.observations,
-      relevanceScore: score, // Scale 0-100, aligned with problem search
+      relevanceScore: score,
       matchReason: reason
     };
   });
 
-  // Filter articles with score > 0 and sort by score (aligned with problem search)
   const filteredArticles = scoredArticles
     .filter(a => a.relevanceScore > 0)
     .sort((a, b) => b.relevanceScore - a.relevanceScore)

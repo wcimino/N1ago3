@@ -41,11 +41,10 @@ export function createKnowledgeBaseArticlesTool(): ToolDefinition {
       
       const articleList = result.articles.map((a) => ({
         source: "article" as const,
-        product: a.productStandard,
-        subproduct: a.subproductStandard,
-        description: a.description,
-        resolution: a.resolution,
-        relevance: `${Math.round(a.relevanceScore)}%` // Scale 0-100
+        question: a.question,
+        answer: a.answer,
+        keywords: a.keywords,
+        relevance: `${Math.round(a.relevanceScore)}%`
       }));
       
       return JSON.stringify({

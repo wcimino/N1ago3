@@ -37,7 +37,7 @@ router.get("/api/knowledge/articles", async (req, res) => {
 
 router.get("/api/knowledge/articles/filters", async (req, res) => {
   try {
-    const products = await knowledgeBaseStorage.getDistinctProducts();
+    const products = await knowledgeBaseStorage.getDistinctProductIds();
     res.json({ products });
   } catch (error) {
     console.error("Error fetching filters:", error);
@@ -66,8 +66,8 @@ router.post("/api/knowledge/articles", async (req, res) => {
   try {
     const data: InsertKnowledgeBaseArticle = req.body;
     
-    if (!data.productStandard || !data.description || !data.resolution) {
-      return res.status(400).json({ error: "Missing required fields" });
+    if (!data.question || !data.answer) {
+      return res.status(400).json({ error: "Missing required fields (question, answer)" });
     }
     
     const article = await knowledgeBaseStorage.createArticle(data);
