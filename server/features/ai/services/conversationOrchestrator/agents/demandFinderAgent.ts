@@ -1,44 +1,24 @@
-import { storage } from "../../../../../storage/index.js";
-import { runAgentAndSaveSuggestion, type AgentContext, type ContentPayload } from "../../agentFramework.js";
+import { runAgentAndSaveSuggestion, buildAgentContextFromEvent } from "../../agentFramework.js";
 import type { DemandFinderAgentResult, OrchestratorContext } from "../types.js";
 
 const CONFIG_KEY = "demand_finder";
 
 export class DemandFinderAgent {
   static async process(context: OrchestratorContext): Promise<DemandFinderAgentResult> {
-    const { event, conversationId, summary, classification } = context;
+    const { event, summary, classification } = context;
 
     try {
-      const last20Messages = await storage.getLast20MessagesForConversation(conversationId);
-      const reversedMessages = [...last20Messages].reverse();
-
-      const agentContext: AgentContext = {
-        conversationId,
-        externalConversationId: event.externalConversationId,
-        lastEventId: event.id,
-        summary,
-        classification: classification ? {
-          product: classification.product,
-          subject: classification.subject,
-          intent: classification.intent,
-        } : null,
-        messages: reversedMessages.map(m => ({
-          authorType: m.authorType,
-          authorName: m.authorName,
-          contentText: m.contentText,
-          occurredAt: m.occurredAt,
-          eventSubtype: m.eventSubtype,
-          contentPayload: m.contentPayload as ContentPayload | null,
-        })),
-        lastMessage: {
-          authorType: event.authorType,
-          authorName: event.authorName,
-          contentText: event.contentText,
-          occurredAt: event.occurredAt,
-          eventSubtype: event.eventSubtype,
-          contentPayload: event.contentPayload as ContentPayload | null,
+      const agentContext = await buildAgentContextFromEvent(event, {
+        overrides: {
+          summary,
+          classification: classification ? {
+            product: classification.product,
+            subproduct: classification.subproduct,
+            subject: classification.subject,
+            intent: classification.intent,
+          } : undefined,
         },
-      };
+      });
 
       const result = await runAgentAndSaveSuggestion(CONFIG_KEY, agentContext, {
         skipIfDisabled: true,

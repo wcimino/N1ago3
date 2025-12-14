@@ -94,6 +94,7 @@ export async function buildAgentContextFromEvent(
     includeLastMessage?: boolean;
     includeSummary?: boolean;
     includeClassification?: boolean;
+    overrides?: Partial<Pick<AgentContext, 'summary' | 'classification' | 'demand' | 'searchResults' | 'handler' | 'customerRequestType'>>;
   }
 ): Promise<AgentContext> {
   if (!event.conversationId) {
@@ -123,9 +124,13 @@ export async function buildAgentContextFromEvent(
     conversationId: event.conversationId,
     externalConversationId: event.externalConversationId,
     lastEventId: event.id,
-    summary: options?.includeSummary !== false ? existingSummary?.summary || null : null,
+    summary: options?.overrides?.summary ?? (options?.includeSummary !== false ? existingSummary?.summary || null : null),
     previousSummary: existingSummary?.summary || null,
-    classification,
+    classification: options?.overrides?.classification ?? classification,
+    demand: options?.overrides?.demand,
+    searchResults: options?.overrides?.searchResults,
+    handler: options?.overrides?.handler,
+    customerRequestType: options?.overrides?.customerRequestType,
     messages: reversedMessages.map(m => ({
       authorType: m.authorType,
       authorName: m.authorName,

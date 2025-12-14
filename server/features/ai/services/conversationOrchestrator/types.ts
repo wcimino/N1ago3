@@ -80,6 +80,7 @@ export interface OrchestratorContext {
   summary?: string;
   classification?: {
     product?: string;
+    subproduct?: string;
     subject?: string;
     intent?: string;
   };
