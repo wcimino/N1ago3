@@ -70,6 +70,7 @@ export function ConversationCard({
   const productText = formatProductText(conversation.product_standard, conversation.subproduct_standard);
   const subjectText = formatSubjectText(conversation.subject, conversation.intent);
   const objectiveProblems = getObjectiveProblemsDisplay(conversation.objective_problems ?? []);
+  const customerRequestType = conversation.customer_request_type;
 
   return (
     <div className="p-4 hover:bg-gray-50/80 transition-colors border-b border-gray-100 last:border-b-0">
@@ -124,7 +125,7 @@ export function ConversationCard({
             </div>
           </div>
 
-          {(productText || subjectText || objectiveProblems.length > 0) && (
+          {(productText || subjectText || customerRequestType || objectiveProblems.length > 0) && (
             <div className="flex flex-wrap gap-1.5">
               {productText && (
                 <span 
@@ -132,6 +133,14 @@ export function ConversationCard({
                   title={productText}
                 >
                   {productText}
+                </span>
+              )}
+              {customerRequestType && (
+                <span 
+                  className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-teal-50 text-teal-700 border border-teal-200 max-w-full truncate"
+                  title={`Tipo: ${customerRequestType}`}
+                >
+                  {customerRequestType}
                 </span>
               )}
               {subjectText && (
