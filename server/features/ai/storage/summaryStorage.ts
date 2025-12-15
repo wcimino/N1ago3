@@ -55,7 +55,7 @@ export const summaryStorage = {
 
   async updateArticlesAndProblems(
     conversationId: number,
-    articlesAndObjectiveProblems: Array<{ source: "article" | "problem"; id: number; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; products?: string[] }>
+    articlesAndObjectiveProblems: Array<{ source: "article" | "problem"; id: number; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; matchedTerms?: string[]; products?: string[] }>
   ): Promise<{ created: boolean; updated: boolean }> {
     const existing = await db.select({ id: conversationsSummary.id })
       .from(conversationsSummary)

@@ -8,7 +8,7 @@ import {
 import { generateEmbedding } from "../../../../shared/embeddings/index.js";
 import type { ToolDefinition } from "../openaiApiService.js";
 import { productCatalogStorage } from "../../../products/storage/productCatalogStorage.js";
-import { normalizeText } from "../../../../shared/utils/matchScoring.js";
+import { normalizeText, extractMatchedTerms } from "../../../../shared/utils/matchScoring.js";
 
 export interface ProblemSearchResult {
   source: "problem";
@@ -16,6 +16,7 @@ export interface ProblemSearchResult {
   name: string;
   matchScore: number;
   matchReason: string;
+  matchedTerms?: string[];
   description: string | null;
   synonyms: string[];
   examples: string[];
@@ -110,17 +111,27 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
       };
     }
 
-    let problems: ProblemSearchResult[] = semanticResults.map((p: SemanticSearchResult) => ({
-      source: "problem" as const,
-      id: p.id,
-      name: p.name,
-      matchScore: p.similarity,
-      matchReason: `Similaridade semântica (contexto): ${p.similarity}%`,
-      description: p.description,
-      synonyms: p.synonyms || [],
-      examples: p.examples || [],
-      products: p.productNames || [],
-    }));
+    let problems: ProblemSearchResult[] = semanticResults.map((p: SemanticSearchResult) => {
+      const problemText = [
+        p.name,
+        p.description || "",
+        ...(p.synonyms || []),
+        ...(p.examples || [])
+      ].join(" ");
+      const queryForMatching = conversationContext + (params.keywords ? " " + params.keywords : "");
+      return {
+        source: "problem" as const,
+        id: p.id,
+        name: p.name,
+        matchScore: p.similarity,
+        matchReason: `Similaridade semântica (contexto): ${p.similarity}%`,
+        matchedTerms: extractMatchedTerms(queryForMatching, problemText),
+        description: p.description,
+        synonyms: p.synonyms || [],
+        examples: p.examples || [],
+        products: p.productNames || [],
+      };
+    });
 
     // Apply keywords as boost/filter if provided
     if (params.keywords && params.keywords.trim().length > 0) {
@@ -156,17 +167,26 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
 
     return {
       message: `Encontrados ${semanticResults.length} problemas objetivos (busca semântica)`,
-      problems: semanticResults.map((p: SemanticSearchResult) => ({
-        source: "problem" as const,
-        id: p.id,
-        name: p.name,
-        matchScore: p.similarity,
-        matchReason: `Similaridade semântica: ${p.similarity}%`,
-        description: p.description,
-        synonyms: p.synonyms || [],
-        examples: p.examples || [],
-        products: p.productNames || [],
-      }))
+      problems: semanticResults.map((p: SemanticSearchResult) => {
+        const problemText = [
+          p.name,
+          p.description || "",
+          ...(p.synonyms || []),
+          ...(p.examples || [])
+        ].join(" ");
+        return {
+          source: "problem" as const,
+          id: p.id,
+          name: p.name,
+          matchScore: p.similarity,
+          matchReason: `Similaridade semântica: ${p.similarity}%`,
+          matchedTerms: extractMatchedTerms(params.keywords || "", problemText),
+          description: p.description,
+          synonyms: p.synonyms || [],
+          examples: p.examples || [],
+          products: p.productNames || [],
+        };
+      })
     };
   }
 
@@ -187,17 +207,26 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
 
   return {
     message: `Encontrados ${results.length} problemas objetivos`,
-    problems: results.map((p: ObjectiveProblemSearchResult) => ({
-      source: "problem" as const,
-      id: p.id,
-      name: p.name,
-      matchScore: p.matchScore,
-      matchReason: p.matchReason,
-      description: p.description,
-      synonyms: p.synonyms || [],
-      examples: p.examples || [],
-      products: p.productNames || [],
-    }))
+    problems: results.map((p: ObjectiveProblemSearchResult) => {
+      const problemText = [
+        p.name,
+        p.description || "",
+        ...(p.synonyms || []),
+        ...(p.examples || [])
+      ].join(" ");
+      return {
+        source: "problem" as const,
+        id: p.id,
+        name: p.name,
+        matchScore: p.matchScore,
+        matchReason: p.matchReason,
+        matchedTerms: extractMatchedTerms(params.keywords || "", problemText),
+        description: p.description,
+        synonyms: p.synonyms || [],
+        examples: p.examples || [],
+        products: p.productNames || [],
+      };
+    })
   };
 }
 

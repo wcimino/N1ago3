@@ -2,7 +2,7 @@ import { knowledgeBaseStorage } from "../storage/knowledgeBaseStorage.js";
 import { KnowledgeBaseStatisticsStorage } from "../storage/knowledgeBaseStatisticsStorage.js";
 import { generateEmbedding } from "../../../shared/embeddings/index.js";
 import type { KnowledgeBaseArticle } from "../../../../shared/schema.js";
-import { normalizeText, calculateMatchScore as sharedCalculateMatchScore, parseSearchTerms, type MatchField } from "../../../shared/utils/matchScoring.js";
+import { normalizeText, calculateMatchScore as sharedCalculateMatchScore, parseSearchTerms, extractMatchedTerms, type MatchField } from "../../../shared/utils/matchScoring.js";
 
 export interface KBSearchParams {
   productId?: number;
@@ -26,6 +26,7 @@ export interface KBArticleResult {
   intentId: number | null;
   relevanceScore: number;
   matchReason?: string;
+  matchedTerms?: string[];
 }
 
 export interface KBSearchResult {
@@ -132,17 +133,27 @@ export async function runKnowledgeBaseSearch(
         { productId, limit: keywordsStr ? limit * 2 : limit }
       );
       
-      articles = semanticResults.map(a => ({
-        id: a.id,
-        question: a.question,
-        answer: a.answer,
-        keywords: a.keywords,
-        questionVariation: Array.isArray(a.questionVariation) ? a.questionVariation as string[] : [],
-        productId: a.productId,
-        intentId: a.intentId,
-        relevanceScore: a.similarity,
-        matchReason: `Similaridade semântica (contexto): ${a.similarity}%`
-      }));
+      articles = semanticResults.map(a => {
+        const articleText = [
+          a.question || "",
+          a.answer || "",
+          a.keywords || "",
+          ...(Array.isArray(a.questionVariation) ? a.questionVariation as string[] : [])
+        ].join(" ");
+        const queryForMatching = conversationContext + (keywordsStr ? " " + keywordsStr : "");
+        return {
+          id: a.id,
+          question: a.question,
+          answer: a.answer,
+          keywords: a.keywords,
+          questionVariation: Array.isArray(a.questionVariation) ? a.questionVariation as string[] : [],
+          productId: a.productId,
+          intentId: a.intentId,
+          relevanceScore: a.similarity,
+          matchReason: `Similaridade semântica (contexto): ${a.similarity}%`,
+          matchedTerms: extractMatchedTerms(queryForMatching, articleText)
+        };
+      });
       
       console.log(`[KB Search] Context-based semantic search found ${articles.length} articles`);
 
@@ -167,17 +178,26 @@ export async function runKnowledgeBaseSearch(
           { productId, limit }
         );
         
-        articles = semanticResults.map(a => ({
-          id: a.id,
-          question: a.question,
-          answer: a.answer,
-          keywords: a.keywords,
-          questionVariation: Array.isArray(a.questionVariation) ? a.questionVariation as string[] : [],
-          productId: a.productId,
-          intentId: a.intentId,
-          relevanceScore: a.similarity,
-          matchReason: `Similaridade semântica: ${a.similarity}%`
-        }));
+        articles = semanticResults.map(a => {
+          const articleText = [
+            a.question || "",
+            a.answer || "",
+            a.keywords || "",
+            ...(Array.isArray(a.questionVariation) ? a.questionVariation as string[] : [])
+          ].join(" ");
+          return {
+            id: a.id,
+            question: a.question,
+            answer: a.answer,
+            keywords: a.keywords,
+            questionVariation: Array.isArray(a.questionVariation) ? a.questionVariation as string[] : [],
+            productId: a.productId,
+            intentId: a.intentId,
+            relevanceScore: a.similarity,
+            matchReason: `Similaridade semântica: ${a.similarity}%`,
+            matchedTerms: extractMatchedTerms(keywordsStr, articleText)
+          };
+        });
         
         console.log(`[KB Search] Semantic search found ${articles.length} articles`);
       } catch (error) {
@@ -203,7 +223,8 @@ export async function runKnowledgeBaseSearch(
       productId: a.productId,
       intentId: a.intentId,
       relevanceScore: 0,
-      matchReason: "Listagem por produto"
+      matchReason: "Listagem por produto",
+      matchedTerms: []
     }));
     console.log(`[KB Search] Product filter found ${articles.length} articles`);
   }
@@ -251,6 +272,12 @@ async function runTextBasedSearch(
 
   const scoredArticles = ftsResults.map(article => {
     const { score, reason } = calculateArticleMatchScore(article, searchTerms);
+    const articleText = [
+      article.question || "",
+      article.answer || "",
+      article.keywords || "",
+      ...(Array.isArray(article.questionVariation) ? article.questionVariation as string[] : [])
+    ].join(" ");
     return {
       id: article.id,
       question: article.question,
@@ -260,7 +287,8 @@ async function runTextBasedSearch(
       productId: article.productId,
       intentId: article.intentId,
       relevanceScore: score,
-      matchReason: reason
+      matchReason: reason,
+      matchedTerms: extractMatchedTerms(keywordsStr, articleText)
     };
   });
 

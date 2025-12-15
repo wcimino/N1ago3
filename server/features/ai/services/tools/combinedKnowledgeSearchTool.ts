@@ -11,6 +11,7 @@ export interface CombinedSearchResult {
   answer: string | null;
   matchScore?: number;
   matchReason?: string;
+  matchedTerms?: string[];
   products?: string[];
 }
 
@@ -57,6 +58,7 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
       answer: article.answer,
       matchScore: article.relevanceScore,
       matchReason: article.matchReason,
+      matchedTerms: article.matchedTerms,
     });
   }
 
@@ -68,6 +70,7 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
       answer: problem.description || "",
       matchScore: problem.matchScore,
       matchReason: problem.matchReason,
+      matchedTerms: problem.matchedTerms,
       products: problem.products,
     });
   }
@@ -150,6 +153,7 @@ export function createCombinedKnowledgeSearchToolWithContext(conversationId?: nu
             description: r.answer || "",
             matchScore: r.matchScore,
             matchReason: r.matchReason,
+            matchedTerms: r.matchedTerms,
             products: r.products,
           }));
           const saveResult = await summaryStorage.updateArticlesAndProblems(conversationId, resultsForStorage);

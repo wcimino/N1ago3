@@ -236,7 +236,8 @@ async function buildPromptVariables(context: AgentContext): Promise<PromptVariab
             id: r.id,
             nome: r.question || r.answer,
             descricao: r.answer,
-            score: r.matchScore || 0
+            score: r.matchScore || 0,
+            matched_terms: r.matchedTerms || []
           }));
           artigosProblemasListaTop5 = JSON.stringify(formattedResults, null, 2);
         }

@@ -44,7 +44,8 @@ export function createKnowledgeBaseArticlesTool(): ToolDefinition {
         question: a.question,
         answer: a.answer,
         keywords: a.keywords,
-        relevance: `${Math.round(a.relevanceScore)}%`
+        relevance: `${Math.round(a.relevanceScore)}%`,
+        matched_terms: a.matchedTerms || []
       }));
       
       return JSON.stringify({
