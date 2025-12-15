@@ -1,19 +1,11 @@
 import { useState, type ReactNode } from "react";
-import { CheckboxListItem, CollapsibleSection, LoadingState, Modal, Button } from "../../../shared/components/ui";
+import { CheckboxListItem, CollapsibleSection, LoadingState, Button } from "../../../shared/components/ui";
 import { useOpenaiApiConfig } from "../../../shared/hooks";
 import { AUTHOR_TYPE_OPTIONS, MODEL_OPTIONS } from "../../../lib/constants";
-import { Info, Copy, Check } from "lucide-react";
-
-const AVAILABLE_VARIABLES = [
-  { name: '{{RESUMO}}', description: 'Resumo da conversa atual' },
-  { name: '{{RESUMO_ATUAL}}', description: 'Resumo anterior (para atualização)' },
-  { name: '{{PRODUCTS_AND_SUBPRODUCTS}}', description: 'Produto e Subproduto classificados da conversa' },
-  { name: '{{ULTIMAS_20_MENSAGENS}}', description: 'Histórico das últimas 20 mensagens' },
-  { name: '{{ULTIMA_MENSAGEM}}', description: 'A mensagem mais recente' },
-  { name: '{{HANDLER}}', description: 'Quem está atendendo (bot/humano)' },
-  { name: '{{CATALOGO_PRODUTOS_SUBPRODUTOS}}', description: 'Lista JSON de produtos e subprodutos do catálogo' },
-  { name: '{{TIPO_SOLICITACAO}}', description: 'Tipo de solicitação (Quer suporte/contratar/informações)' },
-];
+import { Info } from "lucide-react";
+import { AVAILABLE_VARIABLES } from "../constants/promptVariables";
+import { VariablesModal } from "./VariablesModal";
+import { AIToolsSection } from "./AIToolsSection";
 
 export interface OpenaiConfigFormProps {
   configType: string;
@@ -58,13 +50,6 @@ export function OpenaiConfigForm({
 }: OpenaiConfigFormProps) {
   const { state, actions, eventTypes, isLoading, isSaving } = useOpenaiApiConfig(configType);
   const [showVariablesModal, setShowVariablesModal] = useState(false);
-  const [copiedVariable, setCopiedVariable] = useState<string | null>(null);
-
-  const copyVariable = (name: string) => {
-    navigator.clipboard.writeText(name);
-    setCopiedVariable(name);
-    setTimeout(() => setCopiedVariable(null), 2000);
-  };
 
   if (isLoading) {
     return <LoadingState message="Carregando configurações..." />;
@@ -79,39 +64,19 @@ export function OpenaiConfigForm({
         </div>
 
         <div className="p-4 sm:p-6 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-medium text-gray-900">{enabledLabel}</h3>
-              <p className="text-sm text-gray-500">{enabledDescription}</p>
-            </div>
-            <button
-              onClick={() => actions.setEnabled(!state.enabled)}
-              className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${state.enabled ? "bg-green-500" : "bg-gray-300"}`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transform transition-transform ${
-                  state.enabled ? "translate-x-6" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
+          <ToggleRow
+            label={enabledLabel}
+            description={enabledDescription}
+            checked={state.enabled}
+            onChange={() => actions.setEnabled(!state.enabled)}
+          />
 
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-medium text-gray-900">Usar configurações gerais</h3>
-              <p className="text-sm text-gray-500">Concatena as configurações gerais ao prompt deste agente</p>
-            </div>
-            <button
-              onClick={() => actions.setUseGeneralSettings(!state.useGeneralSettings)}
-              className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${state.useGeneralSettings ? "bg-green-500" : "bg-gray-300"}`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transform transition-transform ${
-                  state.useGeneralSettings ? "translate-x-6" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
+          <ToggleRow
+            label="Usar configurações gerais"
+            description="Concatena as configurações gerais ao prompt deste agente"
+            checked={state.useGeneralSettings}
+            onChange={() => actions.setUseGeneralSettings(!state.useGeneralSettings)}
+          />
 
           <div>
             <h3 className="text-sm font-medium text-gray-900 mb-2">Modelo OpenAI</h3>
@@ -128,71 +93,21 @@ export function OpenaiConfigForm({
             </select>
           </div>
 
-          {(showKnowledgeBaseTool || showProductCatalogTool || showSubjectIntentTool || showZendeskKnowledgeBaseTool || showObjectiveProblemTool || showCombinedKnowledgeSearchTool) && (
-            <CollapsibleSection
-              title="Ferramentas de IA"
-              description="Habilite ferramentas que o modelo pode usar para buscar informações"
-              defaultOpen={false}
-              badge={
-                (state.useKnowledgeBaseTool || state.useProductCatalogTool || state.useSubjectIntentTool || state.useZendeskKnowledgeBaseTool || state.useObjectiveProblemTool || state.useCombinedKnowledgeSearchTool) && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    {[state.useKnowledgeBaseTool, state.useProductCatalogTool, state.useSubjectIntentTool, state.useZendeskKnowledgeBaseTool, state.useObjectiveProblemTool, state.useCombinedKnowledgeSearchTool].filter(Boolean).length} ativa{[state.useKnowledgeBaseTool, state.useProductCatalogTool, state.useSubjectIntentTool, state.useZendeskKnowledgeBaseTool, state.useObjectiveProblemTool, state.useCombinedKnowledgeSearchTool].filter(Boolean).length > 1 ? 's' : ''}
-                  </span>
-                )
-              }
-            >
-              <div className="divide-y">
-                {showKnowledgeBaseTool && (
-                  <CheckboxListItem
-                    label="Usar Base de Conhecimento"
-                    sublabel="Permite buscar artigos da base antes de gerar resposta"
-                    checked={state.useKnowledgeBaseTool}
-                    onChange={() => actions.setUseKnowledgeBaseTool(!state.useKnowledgeBaseTool)}
-                  />
-                )}
-                {showProductCatalogTool && (
-                  <CheckboxListItem
-                    label="Usar Catálogo de Produtos"
-                    sublabel="Permite buscar classificações no catálogo de produtos"
-                    checked={state.useProductCatalogTool}
-                    onChange={() => actions.setUseProductCatalogTool(!state.useProductCatalogTool)}
-                  />
-                )}
-                {showSubjectIntentTool && (
-                  <CheckboxListItem
-                    label="Usar Assuntos e Intenções"
-                    sublabel="Permite buscar assuntos e intenções válidos para classificação"
-                    checked={state.useSubjectIntentTool}
-                    onChange={() => actions.setUseSubjectIntentTool(!state.useSubjectIntentTool)}
-                  />
-                )}
-                {showZendeskKnowledgeBaseTool && (
-                  <CheckboxListItem
-                    label="Usar Base de Conhecimento Zendesk"
-                    sublabel="Permite buscar artigos do Help Center do Zendesk"
-                    checked={state.useZendeskKnowledgeBaseTool}
-                    onChange={() => actions.setUseZendeskKnowledgeBaseTool(!state.useZendeskKnowledgeBaseTool)}
-                  />
-                )}
-                {showObjectiveProblemTool && (
-                  <CheckboxListItem
-                    label="Usar Problemas Objetivos"
-                    sublabel="Permite buscar problemas objetivos para identificar o problema real do cliente"
-                    checked={state.useObjectiveProblemTool}
-                    onChange={() => actions.setUseObjectiveProblemTool(!state.useObjectiveProblemTool)}
-                  />
-                )}
-                {showCombinedKnowledgeSearchTool && (
-                  <CheckboxListItem
-                    label="Usar Busca Combinada de Artigos e Problemas"
-                    sublabel="Após classificar, busca artigos e problemas objetivos relacionados ao produto"
-                    checked={state.useCombinedKnowledgeSearchTool}
-                    onChange={() => actions.setUseCombinedKnowledgeSearchTool(!state.useCombinedKnowledgeSearchTool)}
-                  />
-                )}
-              </div>
-            </CollapsibleSection>
-          )}
+          <AIToolsSection
+            state={state}
+            showKnowledgeBaseTool={showKnowledgeBaseTool}
+            showProductCatalogTool={showProductCatalogTool}
+            showSubjectIntentTool={showSubjectIntentTool}
+            showZendeskKnowledgeBaseTool={showZendeskKnowledgeBaseTool}
+            showObjectiveProblemTool={showObjectiveProblemTool}
+            showCombinedKnowledgeSearchTool={showCombinedKnowledgeSearchTool}
+            onToggleKnowledgeBase={() => actions.setUseKnowledgeBaseTool(!state.useKnowledgeBaseTool)}
+            onToggleProductCatalog={() => actions.setUseProductCatalogTool(!state.useProductCatalogTool)}
+            onToggleSubjectIntent={() => actions.setUseSubjectIntentTool(!state.useSubjectIntentTool)}
+            onToggleZendeskKnowledgeBase={() => actions.setUseZendeskKnowledgeBaseTool(!state.useZendeskKnowledgeBaseTool)}
+            onToggleObjectiveProblem={() => actions.setUseObjectiveProblemTool(!state.useObjectiveProblemTool)}
+            onToggleCombinedKnowledgeSearch={() => actions.setUseCombinedKnowledgeSearchTool(!state.useCombinedKnowledgeSearchTool)}
+          />
 
           <CollapsibleSection
             title={eventTriggerLabel}
@@ -347,43 +262,36 @@ export function OpenaiConfigForm({
       </div>
 
       {showVariablesModal && (
-        <Modal
-          onClose={() => setShowVariablesModal(false)}
-          title="Variáveis Disponíveis"
-          maxWidth="md"
-        >
-        <div className="space-y-1">
-          <p className="text-sm text-gray-500 mb-4">
-            Clique em uma variável para copiá-la. Você pode usar essas variáveis nas orientações para o agente.
-          </p>
-          <div className="divide-y border rounded-lg overflow-hidden">
-            {AVAILABLE_VARIABLES.map((v) => (
-              <button
-                key={v.name}
-                type="button"
-                onClick={() => copyVariable(v.name)}
-                className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="font-mono text-sm font-medium text-blue-600">{v.name}</div>
-                  <div className="text-sm text-gray-500 mt-0.5">{v.description}</div>
-                </div>
-                <div className="ml-3 shrink-0">
-                  {copiedVariable === v.name ? (
-                    <span className="inline-flex items-center gap-1 text-xs text-green-600">
-                      <Check className="h-4 w-4" />
-                      Copiado!
-                    </span>
-                  ) : (
-                    <Copy className="h-4 w-4 text-gray-400" />
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-        </Modal>
+        <VariablesModal onClose={() => setShowVariablesModal(false)} />
       )}
+    </div>
+  );
+}
+
+interface ToggleRowProps {
+  label: string;
+  description: string;
+  checked: boolean;
+  onChange: () => void;
+}
+
+function ToggleRow({ label, description, checked, onChange }: ToggleRowProps) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+      <div className="flex-1 min-w-0">
+        <h3 className="text-sm font-medium text-gray-900">{label}</h3>
+        <p className="text-sm text-gray-500">{description}</p>
+      </div>
+      <button
+        onClick={onChange}
+        className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${checked ? "bg-green-500" : "bg-gray-300"}`}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transform transition-transform ${
+            checked ? "translate-x-6" : "translate-x-0"
+          }`}
+        />
+      </button>
     </div>
   );
 }

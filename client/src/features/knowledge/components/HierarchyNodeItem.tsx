@@ -1,70 +1,7 @@
-import { ChevronRight, ChevronDown, Pencil, Trash2, AlertCircle, Plus, Minus, FileText, X, BarChart3 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ChevronRight, ChevronDown, Pencil, AlertCircle, Plus, Minus, FileText, X, BarChart3 } from "lucide-react";
 import type { HierarchyNode, KnowledgeBaseArticle } from "../hooks/useKnowledgeBase";
-
-interface NodeStats {
-  subproductCount: number;
-  subjectCount: number;
-  intentCount: number;
-  articleCount: number;
-}
-
-const LEVEL_LABELS: Record<string, string> = {
-  produto: "Produto",
-  subproduto: "Subproduto",
-  assunto: "Assunto",
-  intencao: "Intenção",
-};
-
-const LEVEL_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  produto: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
-  subproduto: { bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200" },
-  assunto: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
-  intencao: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
-};
-
-function getNodeStats(node: HierarchyNode): NodeStats {
-  let subproductCount = 0;
-  let subjectCount = 0;
-  let intentCount = 0;
-  let articleCount = node.articles.length;
-
-  for (const child of node.children) {
-    if (child.level === "subproduto") subproductCount++;
-    else if (child.level === "assunto") subjectCount++;
-    else if (child.level === "intencao") intentCount++;
-    
-    const childStats = getNodeStats(child);
-    subproductCount += childStats.subproductCount;
-    subjectCount += childStats.subjectCount;
-    intentCount += childStats.intentCount;
-    articleCount += childStats.articleCount;
-  }
-
-  return { subproductCount, subjectCount, intentCount, articleCount };
-}
-
-interface StatBadge {
-  count: number;
-  label: string;
-}
-
-function getStatBadges(stats: NodeStats, level: string): StatBadge[] {
-  const badges: StatBadge[] = [];
-  
-  if (level === "produto" && stats.subproductCount > 0) {
-    badges.push({ count: stats.subproductCount, label: stats.subproductCount === 1 ? "subproduto" : "subprodutos" });
-  }
-  if ((level === "produto" || level === "subproduto") && stats.subjectCount > 0) {
-    badges.push({ count: stats.subjectCount, label: stats.subjectCount === 1 ? "assunto" : "assuntos" });
-  }
-  if ((level !== "intencao") && stats.intentCount > 0) {
-    badges.push({ count: stats.intentCount, label: stats.intentCount === 1 ? "intenção" : "intenções" });
-  }
-  
-  return badges;
-}
+import { ArticleListItem } from "./ArticleListItem";
+import { LEVEL_LABELS, LEVEL_COLORS, getNodeStats, getStatBadges } from "../utils";
 
 interface HierarchyNodeItemProps {
   node: HierarchyNode;
@@ -126,17 +63,9 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
               }}
             >
               {useNestedStyle ? (
-                isExpanded ? (
-                  <Minus className="w-4 h-4 text-gray-500" />
-                ) : (
-                  <Plus className="w-4 h-4 text-gray-500" />
-                )
+                isExpanded ? <Minus className="w-4 h-4 text-gray-500" /> : <Plus className="w-4 h-4 text-gray-500" />
               ) : (
-                isExpanded ? (
-                  <ChevronDown className="w-4 h-4 text-gray-500" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-gray-500" />
-                )
+                isExpanded ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronRight className="w-4 h-4 text-gray-500" />
               )}
             </button>
           ) : (
@@ -176,38 +105,35 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
               )}
 
               {isIntencao && stats.articleCount > 0 && (
+                <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-emerald-600">
+                  <FileText className="w-3 h-3" />
+                  Com artigo
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (node.articles.length > 0) {
+                        onEdit(node.articles[0]);
+                      }
+                    }}
+                    className="text-blue-500 hover:text-blue-700 hover:underline cursor-pointer ml-1"
+                    title="Editar artigo"
+                  >
+                    (Editar artigo)
+                  </button>
+                </span>
+              )}
+
+              {isAssunto && stats.articleCount === 0 && (
                 <>
-                  <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-emerald-600">
-                    <FileText className="w-3 h-3" />
-                    Com artigo
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (node.articles.length > 0) {
-                          onEdit(node.articles[0]);
-                        }
-                      }}
-                      className="text-blue-500 hover:text-blue-700 hover:underline cursor-pointer ml-1"
-                      title="Editar artigo"
-                    >
-                      (Editar artigo)
-                    </button>
+                  <span className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0 sm:hidden">
+                    <AlertCircle className="w-3 h-3" />
+                    <span>0</span>
+                  </span>
+                  <span className="hidden sm:flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
+                    <AlertCircle className="w-3 h-3" />
+                    Sem artigos
                   </span>
                 </>
-              )}
-
-              {isAssunto && stats.articleCount === 0 && (
-                <span className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0 sm:hidden">
-                  <AlertCircle className="w-3 h-3" />
-                  <span>0</span>
-                </span>
-              )}
-
-              {isAssunto && stats.articleCount === 0 && (
-                <span className="hidden sm:flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
-                  <AlertCircle className="w-3 h-3" />
-                  Sem artigos
-                </span>
               )}
 
               {isIntencao && stats.articleCount === 0 && (
@@ -247,89 +173,21 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
             )}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {onAddSubject && (isProduct || isSubproduct) && node.productId && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddSubject(node.productId!);
-                }}
-                className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-opacity"
-                title="Adicionar assunto"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            )}
-            {onAddIntent && isAssunto && node.subjectId && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddIntent(node.subjectId!);
-                }}
-                className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-opacity"
-                title="Adicionar intenção"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            )}
-            {onEditSubject && isAssunto && node.subjectId && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEditSubject(node.subjectId!, node.name);
-                }}
-                className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-opacity"
-                title="Editar assunto"
-              >
-                <Pencil className="w-4 h-4" />
-              </button>
-            )}
-            {onDeleteSubject && isAssunto && node.subjectId && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteSubject(node.subjectId!, node.name, stats.articleCount > 0);
-                }}
-                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-opacity"
-                title="Excluir assunto"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-            {isIntencao && stats.articleCount > 0 && node.intentId && intentViewCountMap && (
-              <span className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium" title="Acessos via IA">
-                <BarChart3 className="w-3 h-3" />
-                {intentViewCountMap.get(node.intentId) ?? 0}
-              </span>
-            )}
-            {onEditIntent && isIntencao && node.intentId && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEditIntent(node.intentId!, node.name);
-                }}
-                className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-opacity"
-                title="Editar intenção"
-              >
-                <Pencil className="w-4 h-4" />
-              </button>
-            )}
-            {onDeleteIntent && isIntencao && node.intentId && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteIntent(node.intentId!, node.name, stats.articleCount > 0);
-                }}
-                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-opacity"
-                title="Excluir intenção"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-            <span className={`inline-flex px-2 py-0.5 text-xs rounded border whitespace-nowrap ${LEVEL_COLORS[node.level]?.bg || "bg-gray-50"} ${LEVEL_COLORS[node.level]?.text || "text-gray-700"} ${LEVEL_COLORS[node.level]?.border || "border-gray-200"}`}>
-              {LEVEL_LABELS[node.level] || node.level}
-            </span>
-          </div>
+          <NodeActionButtons
+            node={node}
+            isProduct={isProduct}
+            isSubproduct={isSubproduct}
+            isAssunto={isAssunto}
+            isIntencao={isIntencao}
+            stats={stats}
+            onAddSubject={onAddSubject}
+            onAddIntent={onAddIntent}
+            onEditSubject={onEditSubject}
+            onDeleteSubject={onDeleteSubject}
+            onEditIntent={onEditIntent}
+            onDeleteIntent={onDeleteIntent}
+            intentViewCountMap={intentViewCountMap}
+          />
         </div>
 
         {isExpanded && (isProduct || isSubproduct) && (node.children.filter(c => c.level !== "subproduto").length > 0 || node.articles.length > 0) && (
@@ -354,7 +212,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
               />
             ))}
             {node.articles.map((article) => (
-              <ArticleItem 
+              <ArticleListItem 
                 key={article.id} 
                 article={article} 
                 depth={0}
@@ -412,7 +270,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
             />
           ))}
           {node.articles.map((article) => (
-            <ArticleItem 
+            <ArticleListItem 
               key={article.id} 
               article={article} 
               depth={depth + 1}
@@ -426,55 +284,106 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
   );
 }
 
-interface ArticleItemProps {
-  article: KnowledgeBaseArticle;
-  depth: number;
-  onEdit: (article: KnowledgeBaseArticle) => void;
-  onDelete: (id: number) => void;
+interface NodeActionButtonsProps {
+  node: HierarchyNode;
+  isProduct: boolean;
+  isSubproduct: boolean;
+  isAssunto: boolean;
+  isIntencao: boolean;
+  stats: { articleCount: number };
+  onAddSubject?: (productId: number) => void;
+  onAddIntent?: (subjectId: number) => void;
+  onEditSubject?: (subjectId: number, subjectName: string) => void;
+  onDeleteSubject?: (subjectId: number, subjectName: string, hasArticles: boolean) => void;
+  onEditIntent?: (intentId: number, intentName: string) => void;
+  onDeleteIntent?: (intentId: number, intentName: string, hasArticles: boolean) => void;
+  intentViewCountMap?: Map<number, number>;
 }
 
-function ArticleItem({ article, depth, onEdit, onDelete }: ArticleItemProps) {
-  const mobileIndent = depth * 12;
-  const desktopIndent = depth * 20;
-  
+function NodeActionButtons({ node, isProduct, isSubproduct, isAssunto, isIntencao, stats, onAddSubject, onAddIntent, onEditSubject, onDeleteSubject, onEditIntent, onDeleteIntent, intentViewCountMap }: NodeActionButtonsProps) {
   return (
-    <div 
-      className="flex items-start gap-2 py-2 px-2 sm:px-3 rounded-lg hover:bg-gray-50 group"
-      style={{ 
-        marginLeft: `max(${mobileIndent}px, min(${desktopIndent}px, calc(${mobileIndent}px + (${desktopIndent - mobileIndent}px) * ((100vw - 320px) / 400))))` 
-      }}
-    >
-      <div className="w-5 shrink-0" />
-
-      <div className="flex-1 min-w-0">
-        <span className="text-sm text-gray-900 break-words">
-          {article.question || (article.answer ? article.answer.substring(0, 60) : '')}
-        </span>
-        <span className="block sm:hidden text-xs text-gray-400 mt-0.5">
-          {formatDistanceToNow(new Date(article.updatedAt), { addSuffix: true, locale: ptBR })}
-        </span>
-      </div>
-
-      <span className="text-xs text-gray-400 whitespace-nowrap hidden sm:block shrink-0">
-        {formatDistanceToNow(new Date(article.updatedAt), { addSuffix: true, locale: ptBR })}
-      </span>
-
-      <div className="flex items-center gap-1 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+    <div className="flex items-center gap-2 shrink-0">
+      {onAddSubject && (isProduct || isSubproduct) && node.productId && (
         <button
-          onClick={(e) => { e.stopPropagation(); onEdit(article); }}
-          className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
-          title="Editar"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddSubject(node.productId!);
+          }}
+          className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-opacity"
+          title="Adicionar assunto"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      )}
+      {onAddIntent && isAssunto && node.subjectId && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddIntent(node.subjectId!);
+          }}
+          className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-opacity"
+          title="Adicionar intenção"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      )}
+      {onEditSubject && isAssunto && node.subjectId && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEditSubject(node.subjectId!, node.name);
+          }}
+          className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-opacity"
+          title="Editar assunto"
         >
           <Pencil className="w-4 h-4" />
         </button>
+      )}
+      {onDeleteSubject && isAssunto && node.subjectId && (
         <button
-          onClick={(e) => { e.stopPropagation(); onDelete(article.id); }}
-          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
-          title="Excluir"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDeleteSubject(node.subjectId!, node.name, stats.articleCount > 0);
+          }}
+          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-opacity"
+          title="Excluir assunto"
         >
-          <Trash2 className="w-4 h-4" />
+          <X className="w-4 h-4" />
         </button>
-      </div>
+      )}
+      {isIntencao && stats.articleCount > 0 && node.intentId && intentViewCountMap && (
+        <span className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium" title="Acessos via IA">
+          <BarChart3 className="w-3 h-3" />
+          {intentViewCountMap.get(node.intentId) ?? 0}
+        </span>
+      )}
+      {onEditIntent && isIntencao && node.intentId && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEditIntent(node.intentId!, node.name);
+          }}
+          className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-opacity"
+          title="Editar intenção"
+        >
+          <Pencil className="w-4 h-4" />
+        </button>
+      )}
+      {onDeleteIntent && isIntencao && node.intentId && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDeleteIntent(node.intentId!, node.name, stats.articleCount > 0);
+          }}
+          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-opacity"
+          title="Excluir intenção"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
+      <span className={`inline-flex px-2 py-0.5 text-xs rounded border whitespace-nowrap ${LEVEL_COLORS[node.level]?.bg || "bg-gray-50"} ${LEVEL_COLORS[node.level]?.text || "text-gray-700"} ${LEVEL_COLORS[node.level]?.border || "border-gray-200"}`}>
+        {LEVEL_LABELS[node.level] || node.level}
+      </span>
     </div>
   );
 }
