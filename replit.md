@@ -99,7 +99,10 @@ Key files:
 *   **Knowledge Base Embeddings:** Stored in `knowledge_base_embeddings` with content hash for change detection. Embeddings include question, answer, keywords, variations, and product context.
 *   **Zendesk Articles:** Raw data from Zendesk Help Center stored in `zendesk_articles` with separate `zendesk_article_embeddings` for semantic search using pgvector and HNSW index.
 *   **RAG (Retrieval Augmented Generation):** Implements semantic search using OpenAI embeddings with pgvector and HNSW indexing for accurate results, with fallbacks to full-text search.
-*   **Embeddings Regeneration:** Use `npx tsx scripts/regenerate-kb-embeddings.ts` to regenerate all knowledge base embeddings after schema changes.
+*   **Embeddings Regeneration:** 
+    - Knowledge Base Articles: `npx tsx scripts/regenerate-kb-embeddings.ts`
+    - Objective Problems: `npx tsx scripts/regenerate-problems-embeddings.ts`
+    - Both embeddings include product context (productFullName) for improved semantic search relevance.
 
 ## External Dependencies
 
