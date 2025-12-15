@@ -17,14 +17,26 @@ export interface PromptVariables {
   artigoOuProblemaPrincipalMatch?: string | null;
 }
 
+function extractClientRequest(summary: string | null | undefined): string {
+  if (!summary) return '';
+  try {
+    const parsed = JSON.parse(summary);
+    if (parsed && typeof parsed.clientRequest === 'string') {
+      return parsed.clientRequest;
+    }
+  } catch {
+  }
+  return summary;
+}
+
 export function replacePromptVariables(
   prompt: string,
   variables: PromptVariables
 ): string {
   let result = prompt;
 
-  result = result.replace(/\{\{RESUMO\}\}/g, variables.resumo || 'Nenhum resumo disponível.');
-  result = result.replace(/\{\{RESUMO_ATUAL\}\}/g, variables.resumoAtual || variables.resumo || 'Nenhum resumo anterior disponível.');
+  result = result.replace(/\{\{RESUMO\}\}/g, extractClientRequest(variables.resumo) || 'Nenhum resumo disponível.');
+  result = result.replace(/\{\{RESUMO_ATUAL\}\}/g, extractClientRequest(variables.resumoAtual) || extractClientRequest(variables.resumo) || 'Nenhum resumo anterior disponível.');
   result = result.replace(/\{\{PRODUCTS_AND_SUBPRODUCTS\}\}/g, variables.productsAndSubproducts || 'Produto/Subproduto não disponível.');
   result = result.replace(/\{\{PRODUCTS_AND_SUBPRODUCTS_ID\}\}/g, variables.productsAndSubproductsId || 'IDs não disponíveis');
   result = result.replace(/\{\{ULTIMAS_20_MENSAGENS\}\}/g, variables.ultimas20Mensagens || 'Nenhuma mensagem anterior.');
