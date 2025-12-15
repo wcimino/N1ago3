@@ -1,12 +1,12 @@
 export { 
   syncZendeskUsers, 
   syncNewUsers, 
-  getAddNewSyncStatus,
   type SyncType,
 } from "./zendeskSupportUsersSyncManager.js";
 
 export { 
   getSyncStatus, 
+  getAddNewSyncStatus,
   cancelSync,
 } from "./zendeskSupportUsersProgressTracker.js";
 
