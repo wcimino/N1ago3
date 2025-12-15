@@ -6,8 +6,8 @@
     <!-- N: diagonal -->
     <polygon points="6,18 13,18 26,48 19,48"/>
     
-    <!-- 1: complete shape as single path (stem + serif) -->
-    <polygon points="15,4 29,4 29,48 22,48 22,9 15,9"/>
+    <!-- 1: vertical bar (aligned with N and A) -->
+    <polygon points="22,18 29,18 29,48 22,48"/>
     
     <!-- A: right diagonal -->
     <polygon points="29,18 36,18 53,48 46,48"/>
