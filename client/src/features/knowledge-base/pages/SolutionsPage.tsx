@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, X, Loader2, Puzzle, ChevronDown, ChevronUp, Play, ArrowUp, ArrowDown } from "lucide-react";
 import { FilterBar } from "../../../shared/components/ui/FilterBar";
 import { useCrudFormState } from "../../../shared/hooks/useCrudFormState";
+import { useCrudMutations } from "../../../shared/hooks/useCrudMutations";
 import { SolutionForm, type SolutionFormData } from "../components/SolutionForm";
 import type { ProductCatalogItem, KnowledgeBaseSolution, KnowledgeBaseAction, SolutionWithActions } from "../../../types";
 import { ACTION_TYPE_LABELS } from "@shared/constants/actionTypes";
@@ -24,9 +25,27 @@ export function SolutionsPage() {
 
   const formState = useCrudFormState<SolutionFormData>({ emptyForm });
 
-  const invalidateAllSolutions = () => {
-    queryClient.invalidateQueries({ queryKey: ["/api/knowledge/solutions"] });
-  };
+  const solutionCrud = useCrudMutations<SolutionFormData, SolutionFormData>({
+    baseUrl: "/api/knowledge/solutions",
+    queryKeys: ["/api/knowledge/solutions", "/api/knowledge/solutions/filters"],
+    transformCreateData: (data) => ({
+      name: data.name,
+      description: data.description || null,
+      productId: data.productId,
+      isActive: data.isActive,
+    }),
+    transformUpdateData: (data) => ({
+      name: data.name,
+      description: data.description || null,
+      productId: data.productId,
+      isActive: data.isActive,
+    }),
+    onDeleteSuccess: (deletedId) => {
+      if (expandedSolutionId === deletedId) {
+        setExpandedSolutionId(null);
+      }
+    },
+  });
 
   const { data: solutions = [], isLoading } = useQuery<KnowledgeBaseSolution[]>({
     queryKey: ["/api/knowledge/solutions", searchTerm, selectedProductId],
@@ -66,54 +85,6 @@ export function SolutionsPage() {
       return res.json();
     },
     enabled: !!expandedSolutionId,
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data: SolutionFormData) => {
-      const res = await fetch("/api/knowledge/solutions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: data.name,
-          description: data.description || null,
-          productId: data.productId,
-          isActive: data.isActive,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to create solution");
-      return res.json();
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: SolutionFormData }) => {
-      const res = await fetch(`/api/knowledge/solutions/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: data.name,
-          description: data.description || null,
-          productId: data.productId,
-          isActive: data.isActive,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to update solution");
-      return res.json();
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await fetch(`/api/knowledge/solutions/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete solution");
-    },
-    onSuccess: (_, deletedId) => {
-      invalidateAllSolutions();
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/solutions/filters"] });
-      if (expandedSolutionId === deletedId) {
-        setExpandedSolutionId(null);
-      }
-    },
   });
 
   const addActionMutation = useMutation({
@@ -222,11 +193,11 @@ export function SolutionsPage() {
     
     try {
       if (formState.editingId) {
-        await updateMutation.mutateAsync({ id: formState.editingId, data: formState.formData });
+        await solutionCrud.updateMutation.mutateAsync({ id: formState.editingId, data: formState.formData });
         await syncSolutionActions(formState.editingId, formState.formData.selectedActionIds);
         queryClient.invalidateQueries({ queryKey: ["/api/knowledge/solutions", formState.editingId, "withActions"] });
       } else {
-        const newSolution = await createMutation.mutateAsync(formState.formData);
+        const newSolution = await solutionCrud.createMutation.mutateAsync(formState.formData);
         if (formState.formData.selectedActionIds.length > 0) {
           for (let i = 0; i < formState.formData.selectedActionIds.length; i++) {
             const actionId = formState.formData.selectedActionIds[i];
@@ -238,8 +209,6 @@ export function SolutionsPage() {
           }
         }
       }
-      invalidateAllSolutions();
-      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/solutions/filters"] });
       formState.resetForm();
     } catch (error) {
       console.error("Failed to save solution", error);
@@ -247,9 +216,7 @@ export function SolutionsPage() {
   };
 
   const handleDelete = (id: number) => {
-    if (confirm("Tem certeza que deseja excluir esta solução?")) {
-      deleteMutation.mutate(id);
-    }
+    solutionCrud.handleDelete(id, "Tem certeza que deseja excluir esta solução?");
   };
 
   const handleToggleExpand = (id: number) => {
@@ -345,7 +312,7 @@ export function SolutionsPage() {
           setFormData={formState.setFormData}
           onSubmit={handleSubmit}
           onCancel={formState.resetForm}
-          isSubmitting={createMutation.isPending || updateMutation.isPending}
+          isSubmitting={solutionCrud.isMutating}
           isEditing={formState.isEditing}
           productCatalog={productCatalog}
           allActions={allActions}
@@ -408,7 +375,7 @@ export function SolutionsPage() {
                       onClick={() => handleDelete(solution.id)}
                       className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                       title="Excluir"
-                      disabled={deleteMutation.isPending}
+                      disabled={solutionCrud.isDeleting}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
