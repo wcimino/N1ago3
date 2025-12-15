@@ -131,7 +131,7 @@ export function createCombinedKnowledgeSearchToolWithContext(conversationId?: nu
     },
     handler: async (args: { product: string; subproduct?: string; conversationContext?: string; keywords?: string }) => {
       const productContext = args.subproduct 
-        ? `${args.product} ${args.subproduct}`
+        ? `${args.product} > ${args.subproduct}`
         : args.product;
       
       console.log(`[Combined Knowledge Search Tool] Called with product="${args.product}", subproduct="${args.subproduct || 'none'}", productContext="${productContext}" (semantic, no filter)`);

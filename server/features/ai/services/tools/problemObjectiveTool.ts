@@ -272,7 +272,7 @@ export function createProblemObjectiveTool(): ToolDefinition {
     },
     handler: async (args: { product: string; subproduct?: string; conversationContext?: string; keywords?: string }) => {
       const productContext = args.subproduct 
-        ? `${args.product} ${args.subproduct}`
+        ? `${args.product} > ${args.subproduct}`
         : args.product;
       
       console.log(`[ProblemObjectiveTool] Called with product="${args.product}", subproduct="${args.subproduct || 'none'}", productContext="${productContext}"`);
