@@ -90,14 +90,10 @@ export async function processRawEvent(rawId: number, source: string, skipStatusC
       }
     }
 
-    if (isNewConversation && (standardUserData?.externalId || standardUserData?.email)) {
-      const identifier = standardUserData.externalId || standardUserData.email;
-      console.log(`[EventProcessor] Triggering Zendesk enrichment for: ${identifier}`);
-      enrichUserFromZendesk({
-        externalId: standardUserData.externalId,
-        email: standardUserData.email,
-      }).catch(err =>
-        console.error(`[EventProcessor] Failed to enrich user ${identifier}:`, err)
+    if (isNewConversation && standardUserData?.email) {
+      console.log(`[EventProcessor] Triggering Zendesk enrichment for email: ${standardUserData.email}`);
+      enrichUserFromZendesk(standardUserData.email).catch(err =>
+        console.error(`[EventProcessor] Failed to enrich user ${standardUserData.email}:`, err)
       );
     }
 
