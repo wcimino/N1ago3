@@ -1,7 +1,21 @@
 import { Router, type Request, type Response } from "express";
 import { storage } from "../../../storage.js";
 import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
+import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 import type { Triage } from "../../../../shared/types/index.js";
+
+async function getProductNames(productId: number | null | undefined): Promise<{ product: string | null; subproduct: string | null }> {
+  if (!productId) return { product: null, subproduct: null };
+  try {
+    const productInfo = await productCatalogStorage.getById(productId);
+    if (productInfo) {
+      return { product: productInfo.produto, subproduct: productInfo.subproduto };
+    }
+  } catch (error) {
+    console.error(`[Conversations] Error fetching product ${productId}:`, error);
+  }
+  return { product: null, subproduct: null };
+}
 
 function extractTriageFromSummary(summaryJson: string | null): Triage | null {
   if (!summaryJson) return null;
@@ -135,6 +149,7 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
         storage.getConversationSummary(item.conversation.id),
         storage.getAllSuggestedResponses(item.conversation.id),
       ]);
+      const productNames = summary ? await getProductNames(summary.productId) : { product: null, subproduct: null };
       return {
         conversation: {
           id: item.conversation.id,
@@ -154,6 +169,8 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
           generated_at: summary.generatedAt?.toISOString(),
           updated_at: summary.updatedAt?.toISOString(),
           product_id: summary.productId,
+          product: productNames.product,
+          subproduct: productNames.subproduct,
           product_confidence: summary.productConfidence,
           product_confidence_reason: summary.productConfidenceReason,
           classified_at: summary.classifiedAt?.toISOString(),
@@ -204,6 +221,8 @@ router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedU
     });
   }
 
+  const productNames = await getProductNames(summary.productId);
+
   res.json({
     conversation_id: id,
     has_summary: true,
@@ -212,6 +231,8 @@ router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedU
     generated_at: summary.generatedAt?.toISOString(),
     updated_at: summary.updatedAt?.toISOString(),
     product_id: summary.productId,
+    product: productNames.product,
+    subproduct: productNames.subproduct,
     product_confidence: summary.productConfidence,
     product_confidence_reason: summary.productConfidenceReason,
     objective_problems: summary.objectiveProblems || null,
