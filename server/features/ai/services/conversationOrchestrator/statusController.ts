@@ -34,19 +34,19 @@ export class StatusController {
       ? Math.max(...articles.map(a => a.matchScore || 0))
       : 0;
 
-    const productMatch = productConfidence === 100;
-    const requestTypeMatch = customerRequestTypeConfidence === 100;
-    const articleMatch = bestArticleMatchScore >= 90;
+    const productMatch = productConfidence !== null && productConfidence >= 90;
+    const requestTypeMatch = customerRequestTypeConfidence !== null && customerRequestTypeConfidence >= 90;
+    const articleMatch = bestArticleMatchScore >= 80;
 
     const canTransition = productMatch && requestTypeMatch && articleMatch;
 
     const reasons: string[] = [];
-    if (!productMatch) reasons.push(`productConfidence=${productConfidence} (need 100)`);
-    if (!requestTypeMatch) reasons.push(`customerRequestTypeConfidence=${customerRequestTypeConfidence} (need 100)`);
-    if (!articleMatch) reasons.push(`bestArticleMatchScore=${bestArticleMatchScore} (need >=90)`);
+    if (!productMatch) reasons.push(`productConfidence=${productConfidence} (need >=90)`);
+    if (!requestTypeMatch) reasons.push(`customerRequestTypeConfidence=${customerRequestTypeConfidence} (need >=90)`);
+    if (!articleMatch) reasons.push(`bestArticleMatchScore=${bestArticleMatchScore} (need >=80)`);
 
     const reason = canTransition
-      ? `All criteria met: productConfidence=100, customerRequestTypeConfidence=100, bestArticleMatchScore=${bestArticleMatchScore}`
+      ? `All criteria met: productConfidence>=${productConfidence}, customerRequestTypeConfidence>=${customerRequestTypeConfidence}, bestArticleMatchScore=${bestArticleMatchScore}`
       : `Criteria not met: ${reasons.join(", ")}`;
 
     console.log(`[StatusController] Evaluating conversation ${conversationId}: ${reason}`);
