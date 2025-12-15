@@ -100,10 +100,11 @@ export const classificationStorage = {
     };
   },
 
-  async getUniqueProductsAndRequestTypes(): Promise<{ productIds: number[]; customerRequestTypes: string[]; objectiveProblems: string[] }> {
-    const productIdsResult = await db
-      .selectDistinct({ productId: conversationsSummary.productId })
+  async getUniqueProductsAndRequestTypes(): Promise<{ productStandards: string[]; intents: string[]; customerRequestTypes: string[]; objectiveProblems: string[] }> {
+    const productStandardsResult = await db
+      .selectDistinct({ produto: productsCatalog.produto })
       .from(conversationsSummary)
+      .innerJoin(productsCatalog, eq(conversationsSummary.productId, productsCatalog.id))
       .where(isNotNull(conversationsSummary.productId));
     
     const customerRequestTypesResult = await db
@@ -120,8 +121,12 @@ export const classificationStorage = {
       ORDER BY problem_name
     `);
 
+    const productNames = productStandardsResult.map(r => r.produto).filter((p): p is string => p !== null).sort();
+    const productStandards = ['Sem classificação', ...productNames];
+    
     return {
-      productIds: productIdsResult.map(r => r.productId).filter((p): p is number => p !== null).sort((a, b) => a - b),
+      productStandards,
+      intents: [],
       customerRequestTypes: customerRequestTypesResult.map(r => r.customerRequestType).filter((i): i is string => i !== null).sort(),
       objectiveProblems: (objectiveProblemsResult.rows as any[]).map(r => r.problem_name).filter((p): p is string => p !== null),
     };

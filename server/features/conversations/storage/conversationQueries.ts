@@ -67,7 +67,7 @@ export async function getConversationsGroupedByUser(params: GroupedByUserParams 
     last_conv_filter AS (
       SELECT DISTINCT ON (c.user_id)
         c.user_id,
-        COALESCE(pc.produto || COALESCE(' - ' || pc.subproduto, ''), 'Sem classificação') as last_product_standard,
+        COALESCE(pc.produto, 'Sem classificação') as last_product_standard,
         c.current_handler_name,
         cs.customer_emotion_level as last_customer_emotion_level,
         u.profile->>'givenName' as profile_given_name,
@@ -169,7 +169,7 @@ export async function getConversationsGroupedByUser(params: GroupedByUserParams 
     last_conv_filter AS (
       SELECT DISTINCT ON (c.user_id)
         c.user_id,
-        COALESCE(pc.produto || COALESCE(' - ' || pc.subproduto, ''), 'Sem classificação') as last_product_standard,
+        COALESCE(pc.produto, 'Sem classificação') as last_product_standard,
         c.current_handler_name,
         cs.customer_emotion_level as last_customer_emotion_level,
         u.profile->>'givenName' as profile_given_name,

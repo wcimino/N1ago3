@@ -39,6 +39,8 @@ export function buildFiltersForConversationList(params: ConversationFilterParams
   let productCondition = sql``;
   if (productIdFilter) {
     productCondition = sql`AND cs.product_id = ${productIdFilter}`;
+  } else if (productStandardFilter === 'Sem classificação') {
+    productCondition = sql`AND COALESCE(pc.produto, 'Sem classificação') = 'Sem classificação'`;
   } else if (productStandardFilter) {
     productCondition = sql`AND pc.produto = ${productStandardFilter}`;
   }
@@ -121,9 +123,12 @@ export function buildFiltersForGroupedByUser(params: Omit<ConversationFilterPara
     handledByN1agoFilter,
   } = params;
 
-  const productCondition = productStandardFilter 
-    ? sql`AND lc_filter.last_product_standard = ${productStandardFilter}` 
-    : sql``;
+  let productCondition = sql``;
+  if (productStandardFilter === 'Sem classificação') {
+    productCondition = sql`AND lc_filter.last_product_standard = 'Sem classificação'`;
+  } else if (productStandardFilter) {
+    productCondition = sql`AND lc_filter.last_product_standard = ${productStandardFilter}`;
+  }
 
   const emotionCondition = emotionLevelFilter 
     ? sql`AND lc_filter.last_customer_emotion_level = ${emotionLevelFilter}` 
