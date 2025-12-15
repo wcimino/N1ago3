@@ -1,0 +1,79 @@
+import type { ContentPayload } from "./promptUtils.js";
+
+export interface AgentContext {
+  conversationId: number;
+  externalConversationId?: string | null;
+  lastEventId?: number;
+  summary?: string | null;
+  previousSummary?: string | null;
+  classification?: {
+    product?: string | null;
+    subproduct?: string | null;
+    customerRequestType?: string | null;
+    productConfidence?: number | null;
+    customerRequestTypeConfidence?: number | null;
+  } | null;
+  handler?: string | null;
+  customerRequestType?: string | null;
+  demand?: string | null;
+  searchResults?: Array<{
+    source: string;
+    id: number;
+    name: string;
+    description: string;
+    matchScore?: number;
+  }>;
+  messages?: Array<{
+    authorType: string;
+    authorName: string | null;
+    contentText: string | null;
+    occurredAt: Date;
+    eventSubtype?: string | null;
+    contentPayload?: ContentPayload | null;
+  }>;
+  lastMessage?: {
+    authorType: string;
+    authorName: string | null;
+    contentText: string | null;
+    occurredAt: Date;
+    eventSubtype?: string | null;
+    contentPayload?: ContentPayload | null;
+  };
+}
+
+export interface AgentRunnerResult {
+  success: boolean;
+  responseContent: string | null;
+  parsedContent: any;
+  logId: number;
+  toolResult?: any;
+  error?: string;
+}
+
+export interface AgentRunOptions {
+  skipIfDisabled?: boolean;
+  defaultModelName?: string;
+  maxIterations?: number;
+  finalToolName?: string;
+}
+
+export interface AgentSuggestionOptions extends AgentRunOptions {
+  suggestionField?: string;
+  inResponseTo?: string | null;
+}
+
+export interface SaveSuggestionOptions {
+  externalConversationId?: string | null;
+  lastEventId?: number;
+  openaiLogId?: number;
+  inResponseTo?: string | null;
+  articlesUsed?: Array<{ id: number; name: string; product: string; url?: string }>;
+  source?: string;
+}
+
+export interface BuildContextOptions {
+  includeLastMessage?: boolean;
+  includeSummary?: boolean;
+  includeClassification?: boolean;
+  overrides?: Partial<Pick<AgentContext, 'summary' | 'classification' | 'demand' | 'searchResults' | 'handler' | 'customerRequestType'>>;
+}
