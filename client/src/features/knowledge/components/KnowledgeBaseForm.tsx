@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Tag, MessageSquare, CheckCircle, Plus, Trash2 } from "lucide-react";
 import { ModernSelect, FormActions } from "@/shared/components/ui";
+import { InlineEnrichmentPanel } from "./InlineEnrichmentPanel";
 import type { KnowledgeSubject, KnowledgeIntent, ProductCatalogItem } from "../../../types";
 import type { KnowledgeBaseArticle, KnowledgeBaseFormData } from "../hooks/useKnowledgeBase";
 
@@ -364,6 +365,26 @@ export function KnowledgeBaseForm({
           </div>
         )}
       </div>
+
+      <InlineEnrichmentPanel
+        intentId={formData.intentId}
+        articleId={initialData?.id || null}
+        currentData={{
+          question: formData.question,
+          answer: formData.answer,
+          keywords: formData.keywords,
+          questionVariation: formData.questionVariation,
+        }}
+        onApply={(suggestion) => {
+          setFormData(prev => ({
+            ...prev,
+            question: suggestion.question || prev.question,
+            answer: suggestion.answer || prev.answer,
+            keywords: suggestion.keywords || prev.keywords,
+            questionVariation: suggestion.questionVariation || prev.questionVariation,
+          }));
+        }}
+      />
 
       <FormActions
         isLoading={isLoading}
