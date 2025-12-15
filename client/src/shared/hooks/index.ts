@@ -14,3 +14,5 @@ export type {
 export { useCrudMutations } from "./useCrudMutations";
 export { useCrudFormState } from "./useCrudFormState";
 export type { CrudFormStateConfig, CrudFormStateReturn } from "./useCrudFormState";
+export { useFilteredData, useSimpleFilter } from "./useFilteredData";
+export type { FilterState, UseFilteredDataConfig, FilterDefinition } from "./useFilteredData";
