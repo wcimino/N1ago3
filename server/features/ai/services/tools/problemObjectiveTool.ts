@@ -30,6 +30,7 @@ export interface ProblemSearchResponse {
 
 export interface ProblemSearchParams {
   productId?: number;
+  productContext?: string;
   keywords?: string;
   conversationContext?: string;
   limit?: number;
@@ -87,19 +88,29 @@ function applyKeywordsBoostToProblems(
 }
 
 export async function runProblemObjectiveSearch(params: ProblemSearchParams): Promise<ProblemSearchResponse> {
-  const { productId, conversationContext, limit = 5 } = params;
+  const { productId, productContext, conversationContext, limit = 5 } = params;
   
   const hasEmbeddings = await hasObjectiveProblemEmbeddings();
   
+  const enrichedContext = productContext && conversationContext
+    ? `Produto: ${productContext}. ${conversationContext}`
+    : conversationContext;
+  
+  const effectiveProductId = productContext ? undefined : productId;
+  
+  if (productContext) {
+    console.log(`[ProblemObjectiveSearch] Using productContext="${productContext}" (semantic, no filter)`);
+  }
+  
   // Hybrid approach: conversationContext for main semantic search, keywords for boost/filter
-  if (conversationContext && conversationContext.trim().length > 0 && hasEmbeddings) {
-    console.log(`[ProblemObjectiveSearch] Hybrid search: using conversationContext for embedding`);
+  if (enrichedContext && enrichedContext.trim().length > 0 && hasEmbeddings) {
+    console.log(`[ProblemObjectiveSearch] Hybrid search: using enrichedContext for embedding`);
     
-    const { embedding } = await generateEmbedding(conversationContext, { contextType: "query" });
+    const { embedding } = await generateEmbedding(enrichedContext, { contextType: "query" });
     
     const semanticResults = await searchObjectiveProblemsBySimilarity({
       queryEmbedding: embedding,
-      productId,
+      productId: effectiveProductId,
       onlyActive: true,
       limit: params.keywords ? limit * 2 : limit,
     });
@@ -147,13 +158,16 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
   
   // Fallback: use keywords for semantic search (original behavior)
   if (params.keywords && hasEmbeddings) {
+    const enrichedKeywords = productContext 
+      ? `Produto: ${productContext}. ${params.keywords}`
+      : params.keywords;
     console.log(`[ProblemObjectiveSearch] Semantic search (keywords): "${params.keywords}"`);
     
-    const { embedding } = await generateEmbedding(params.keywords, { contextType: "query" });
+    const { embedding } = await generateEmbedding(enrichedKeywords, { contextType: "query" });
     
     const semanticResults = await searchObjectiveProblemsBySimilarity({
       queryEmbedding: embedding,
-      productId,
+      productId: effectiveProductId,
       onlyActive: true,
       limit,
     });
@@ -193,7 +207,7 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
   // Fallback: text-based search
   const results = await searchObjectiveProblems({
     keywords: params.keywords,
-    productId,
+    productId: effectiveProductId,
     onlyActive: true,
     limit,
   });
@@ -257,10 +271,14 @@ export function createProblemObjectiveTool(): ToolDefinition {
       required: ["conversationContext", "product"]
     },
     handler: async (args: { product: string; subproduct?: string; conversationContext?: string; keywords?: string }) => {
-      const resolved = await productCatalogStorage.resolveProductId(args.product, args.subproduct);
+      const productContext = args.subproduct 
+        ? `${args.product} ${args.subproduct}`
+        : args.product;
+      
+      console.log(`[ProblemObjectiveTool] Called with product="${args.product}", subproduct="${args.subproduct || 'none'}", productContext="${productContext}"`);
       
       const result = await runProblemObjectiveSearch({
-        productId: resolved?.id,
+        productContext,
         conversationContext: args.conversationContext,
         keywords: args.keywords
       });

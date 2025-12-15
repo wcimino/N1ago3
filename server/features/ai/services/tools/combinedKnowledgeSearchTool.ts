@@ -17,6 +17,7 @@ export interface CombinedSearchResult {
 
 export interface CombinedSearchParams {
   productId?: number;
+  productContext?: string;
   keywords?: string;
   conversationContext?: string;
   limit?: number;
@@ -31,17 +32,19 @@ export interface CombinedSearchResponse {
 }
 
 export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): Promise<CombinedSearchResponse> {
-  const { productId, keywords, conversationContext, limit = 5 } = params;
+  const { productId, productContext, keywords, conversationContext, limit = 5 } = params;
 
   const [articlesResult, problemsResult] = await Promise.all([
     runKnowledgeBaseSearch({
       productId,
+      productContext,
       conversationContext,
       keywords,
       limit
     }),
     runProblemObjectiveSearch({
       productId,
+      productContext,
       conversationContext,
       keywords,
       limit
@@ -127,18 +130,14 @@ export function createCombinedKnowledgeSearchToolWithContext(conversationId?: nu
       required: ["conversationContext", "product"]
     },
     handler: async (args: { product: string; subproduct?: string; conversationContext?: string; keywords?: string }) => {
-      console.log(`[Combined Knowledge Search Tool] Called with product="${args.product}", subproduct="${args.subproduct || 'none'}"`);
+      const productContext = args.subproduct 
+        ? `${args.product} ${args.subproduct}`
+        : args.product;
       
-      const resolved = await productCatalogStorage.resolveProductId(args.product, args.subproduct);
-      
-      if (!resolved) {
-        console.warn(`[Combined Knowledge Search Tool] Product not resolved: "${args.product}" - search will NOT filter by product`);
-      } else {
-        console.log(`[Combined Knowledge Search Tool] Resolved to productId=${resolved.id} (${resolved.produto})`);
-      }
+      console.log(`[Combined Knowledge Search Tool] Called with product="${args.product}", subproduct="${args.subproduct || 'none'}", productContext="${productContext}" (semantic, no filter)`);
       
       const result = await runCombinedKnowledgeSearch({
-        productId: resolved?.id,
+        productContext,
         conversationContext: args.conversationContext,
         keywords: args.keywords,
         limit: 5
