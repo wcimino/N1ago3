@@ -20,7 +20,6 @@ import {
 import {
   getIsSyncing,
   setIsSyncing,
-  getCurrentSyncId,
   setCurrentSyncId,
   getCancelRequested,
   setCancelRequested,
@@ -31,26 +30,10 @@ import {
   updateProgressMetrics,
   formatDuration,
 } from "./zendeskSupportUsersProgressTracker.js";
+import { flushBufferWithRetry } from "./zendeskSupportUsersSyncHelpers.js";
+import type { SyncType, SyncResult, AddNewSyncResult, AddNewSyncStatus } from "./zendeskSupportUsersSyncTypes.js";
 
-export type SyncType = "full" | "incremental";
-
-async function flushBufferWithRetry(
-  buffer: InsertZendeskSupportUser[], 
-  maxRetries = 3
-): Promise<{ created: number; updated: number; success: boolean }> {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const result = await upsertZendeskUsersBatch(buffer);
-      return { ...result, success: true };
-    } catch (err) {
-      console.error(`[ZendeskSupportUsers] Error upserting batch (attempt ${attempt}/${maxRetries}):`, err);
-      if (attempt < maxRetries) {
-        await sleep(1000 * attempt);
-      }
-    }
-  }
-  return { created: 0, updated: 0, success: false };
-}
+export type { SyncType, SyncResult, AddNewSyncResult, AddNewSyncStatus };
 
 export async function syncZendeskUsers(syncType: SyncType = "full", maxUsers?: number): Promise<{
   success: boolean;
