@@ -61,12 +61,12 @@ function parseStructuredSummary(responseContent: string): StructuredSummary | nu
     }
 
     let clientRequestVersions: ClientRequestVersions | undefined;
-    const rawVersions = parsed.clientRequestVersions;
+    const rawVersions = parsed.clientRequestVersions || parsed.client_request_versions;
     if (rawVersions && typeof rawVersions === 'object') {
       clientRequestVersions = {
-        clientRequestStandardVersion: rawVersions.clientRequestStandardVersion || undefined,
-        clientRequestQuestionVersion: rawVersions.clientRequestQuestionVersion || undefined,
-        clientRequestProblemVersion: rawVersions.clientRequestProblemVersion || undefined,
+        clientRequestStandardVersion: rawVersions.clientRequestStandardVersion || rawVersions.client_request_standard_version || undefined,
+        clientRequestQuestionVersion: rawVersions.clientRequestQuestionVersion || rawVersions.client_request_question_version || undefined,
+        clientRequestProblemVersion: rawVersions.clientRequestProblemVersion || rawVersions.client_request_problem_version || undefined,
       };
       if (!clientRequestVersions.clientRequestStandardVersion && 
           !clientRequestVersions.clientRequestQuestionVersion && 

@@ -6,6 +6,7 @@ import {
   ObjectiveProblemsCard,
   ArticlesAndProblemsCard,
   TriageCard,
+  ClientRequestVersionsTooltip,
   emotionConfig,
   type SummaryData,
 } from "./summary";
@@ -62,14 +63,14 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
 
             <div className="flex flex-col gap-3">
               {summary.client_request && (
-                <SummaryCardItem
-                  icon={<User className="w-4 h-4" />}
-                  title="Solicitação do Cliente"
-                  content={summary.client_request}
-                  bgColor="bg-blue-50"
-                  borderColor="border-blue-200"
-                  iconColor="text-blue-600"
-                />
+                <div className={`rounded-lg p-3 bg-blue-50 border border-blue-200`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="text-blue-600"><User className="w-4 h-4" /></div>
+                    <h4 className="font-medium text-gray-800 text-sm">Solicitação do Cliente</h4>
+                    <ClientRequestVersionsTooltip versions={summary.client_request_versions} />
+                  </div>
+                  <p className="text-sm text-gray-700 leading-relaxed">{summary.client_request}</p>
+                </div>
               )}
               
               {summary.agent_actions && (
