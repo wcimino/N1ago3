@@ -11,9 +11,6 @@ export function ClassificationConfigPage() {
       description={config.description}
       enabledLabel={config.enabledLabel}
       enabledDescription={config.enabledDescription}
-      eventTriggerLabel={config.eventTriggerLabel}
-      eventTriggerDescription={config.eventTriggerDescription}
-      authorFilterDescription={config.authorFilterDescription}
       promptRows={config.promptRows}
       responseFormatRows={config.responseFormatRows}
       recommendedModel={config.recommendedModel}

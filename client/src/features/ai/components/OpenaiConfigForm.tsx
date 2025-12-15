@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
-import { CheckboxListItem, CollapsibleSection, LoadingState, Button } from "../../../shared/components/ui";
+import { CollapsibleSection, LoadingState, Button } from "../../../shared/components/ui";
 import { useOpenaiApiConfig } from "../../../shared/hooks";
-import { AUTHOR_TYPE_OPTIONS, MODEL_OPTIONS } from "../../../lib/constants";
+import { MODEL_OPTIONS } from "../../../lib/constants";
 import { Info } from "lucide-react";
 import { AVAILABLE_VARIABLES } from "../constants/promptVariables";
 import { VariablesModal } from "./VariablesModal";
@@ -13,9 +13,6 @@ export interface OpenaiConfigFormProps {
   description: string;
   enabledLabel: string;
   enabledDescription: string;
-  eventTriggerLabel: string;
-  eventTriggerDescription: string;
-  authorFilterDescription: string;
   promptRows?: number;
   responseFormatRows?: number;
   recommendedModel?: string;
@@ -34,9 +31,6 @@ export function OpenaiConfigForm({
   description,
   enabledLabel,
   enabledDescription,
-  eventTriggerLabel,
-  eventTriggerDescription,
-  authorFilterDescription,
   promptRows = 16,
   responseFormatRows = 8,
   recommendedModel = "gpt-4o-mini",
@@ -48,7 +42,7 @@ export function OpenaiConfigForm({
   showCombinedKnowledgeSearchTool = false,
   children,
 }: OpenaiConfigFormProps) {
-  const { state, actions, eventTypes, isLoading, isSaving } = useOpenaiApiConfig(configType);
+  const { state, actions, isLoading, isSaving } = useOpenaiApiConfig(configType);
   const [showVariablesModal, setShowVariablesModal] = useState(false);
 
   if (isLoading) {
@@ -108,63 +102,6 @@ export function OpenaiConfigForm({
             onToggleObjectiveProblem={() => actions.setUseObjectiveProblemTool(!state.useObjectiveProblemTool)}
             onToggleCombinedKnowledgeSearch={() => actions.setUseCombinedKnowledgeSearchTool(!state.useCombinedKnowledgeSearchTool)}
           />
-
-          <CollapsibleSection
-            title={eventTriggerLabel}
-            description={eventTriggerDescription}
-            defaultOpen={false}
-            badge={
-              state.triggerEventTypes.length > 0 && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {state.triggerEventTypes.length} selecionado{state.triggerEventTypes.length > 1 ? 's' : ''}
-                </span>
-              )
-            }
-          >
-            {eventTypes?.mappings && eventTypes.mappings.length > 0 ? (
-              <div className="divide-y max-h-60 overflow-auto">
-                {eventTypes.mappings.map((mapping) => {
-                  const eventKey = `${mapping.source}:${mapping.event_type}`;
-                  return (
-                    <CheckboxListItem
-                      key={mapping.id}
-                      label={mapping.display_name}
-                      sublabel={`${mapping.source}:${mapping.event_type}`}
-                      checked={state.triggerEventTypes.includes(eventKey)}
-                      onChange={() => actions.toggleEventType(eventKey)}
-                    />
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500 italic p-4">Nenhum tipo de evento configurado ainda.</p>
-            )}
-          </CollapsibleSection>
-
-          <CollapsibleSection
-            title="Filtrar por autor da mensagem"
-            description={authorFilterDescription}
-            defaultOpen={false}
-            badge={
-              state.triggerAuthorTypes.length > 0 && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {state.triggerAuthorTypes.length} selecionado{state.triggerAuthorTypes.length > 1 ? 's' : ''}
-                </span>
-              )
-            }
-          >
-            <div className="divide-y">
-              {AUTHOR_TYPE_OPTIONS.map(({ value, label }) => (
-                <CheckboxListItem
-                  key={value}
-                  label={label}
-                  sublabel={value}
-                  checked={state.triggerAuthorTypes.includes(value)}
-                  onChange={() => actions.toggleAuthorType(value)}
-                />
-              ))}
-            </div>
-          </CollapsibleSection>
 
           <CollapsibleSection
             title="Orientações para o Agente"

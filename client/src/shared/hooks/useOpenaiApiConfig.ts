@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi, apiRequest } from "../../lib/queryClient";
-import type { EventTypeMappingsResponse } from "../../types";
 
 export interface OpenaiApiConfigResponse {
   id?: number;
@@ -26,8 +25,6 @@ export interface OpenaiApiConfigResponse {
 
 export interface OpenaiApiConfigState {
   enabled: boolean;
-  triggerEventTypes: string[];
-  triggerAuthorTypes: string[];
   promptSystem: string;
   promptTemplate: string;
   responseFormat: string;
@@ -48,8 +45,6 @@ export interface OpenaiApiConfigActions {
   setPromptTemplate: (template: string) => void;
   setResponseFormat: (format: string) => void;
   setModelName: (model: string) => void;
-  toggleEventType: (eventKey: string) => void;
-  toggleAuthorType: (authorType: string) => void;
   setUseKnowledgeBaseTool: (value: boolean) => void;
   setUseProductCatalogTool: (value: boolean) => void;
   setUseSubjectIntentTool: (value: boolean) => void;
@@ -63,7 +58,6 @@ export interface OpenaiApiConfigActions {
 export interface UseOpenaiApiConfigReturn {
   state: OpenaiApiConfigState;
   actions: OpenaiApiConfigActions;
-  eventTypes: EventTypeMappingsResponse | undefined;
   isLoading: boolean;
   isSaving: boolean;
 }
@@ -72,8 +66,6 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
   const queryClient = useQueryClient();
   
   const [enabled, setEnabledState] = useState(false);
-  const [triggerEventTypes, setTriggerEventTypes] = useState<string[]>([]);
-  const [triggerAuthorTypes, setTriggerAuthorTypes] = useState<string[]>([]);
   const [promptSystem, setPromptSystemState] = useState("");
   const [promptTemplate, setPromptTemplateState] = useState("");
   const [responseFormat, setResponseFormatState] = useState("");
@@ -92,16 +84,9 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
     queryFn: () => fetchApi<OpenaiApiConfigResponse>(`/api/openai-config/${configType}`),
   });
 
-  const { data: eventTypes, isLoading: isLoadingEventTypes } = useQuery<EventTypeMappingsResponse>({
-    queryKey: ["event-type-mappings"],
-    queryFn: () => fetchApi<EventTypeMappingsResponse>("/api/event-type-mappings"),
-  });
-
   useEffect(() => {
     if (config) {
       setEnabledState(config.enabled);
-      setTriggerEventTypes(config.trigger_event_types || []);
-      setTriggerAuthorTypes(config.trigger_author_types || []);
       setPromptSystemState(config.prompt_system || "");
       setPromptTemplateState(config.prompt_template);
       setResponseFormatState(config.response_format || "");
@@ -121,8 +106,6 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
     mutationFn: async () => {
       await apiRequest("PUT", `/api/openai-config/${configType}`, {
         enabled,
-        trigger_event_types: triggerEventTypes,
-        trigger_author_types: triggerAuthorTypes,
         prompt_system: promptSystem || null,
         prompt_template: promptTemplate,
         response_format: responseFormat || null,
@@ -169,24 +152,6 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
     markChanged();
   }, [markChanged]);
 
-  const toggleEventType = useCallback((eventKey: string) => {
-    setTriggerEventTypes(prev =>
-      prev.includes(eventKey)
-        ? prev.filter(e => e !== eventKey)
-        : [...prev, eventKey]
-    );
-    markChanged();
-  }, [markChanged]);
-
-  const toggleAuthorType = useCallback((authorType: string) => {
-    setTriggerAuthorTypes(prev =>
-      prev.includes(authorType)
-        ? prev.filter(a => a !== authorType)
-        : [...prev, authorType]
-    );
-    markChanged();
-  }, [markChanged]);
-
   const setUseKnowledgeBaseTool = useCallback((value: boolean) => {
     setUseKnowledgeBaseToolState(value);
     markChanged();
@@ -229,8 +194,6 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
   return {
     state: {
       enabled,
-      triggerEventTypes,
-      triggerAuthorTypes,
       promptSystem,
       promptTemplate,
       responseFormat,
@@ -250,8 +213,6 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       setPromptTemplate,
       setResponseFormat,
       setModelName,
-      toggleEventType,
-      toggleAuthorType,
       setUseKnowledgeBaseTool,
       setUseProductCatalogTool,
       setUseSubjectIntentTool,
@@ -261,8 +222,7 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       setUseGeneralSettings,
       save,
     },
-    eventTypes,
-    isLoading: isLoadingConfig || isLoadingEventTypes,
+    isLoading: isLoadingConfig,
     isSaving: saveMutation.isPending,
   };
 }
