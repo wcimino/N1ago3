@@ -1,6 +1,5 @@
 import { storage } from "../../../../storage/index.js";
 import { conversationStorage } from "../../../conversations/storage/index.js";
-import { summaryStorage } from "../../storage/summaryStorage.js";
 import { SummaryAgent, ClassificationAgent, DemandFinderAgent, SolutionProviderAgent } from "./agents/index.js";
 import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext } from "./types.js";
 import type { EventStandard } from "../../../../../shared/schema.js";
@@ -115,68 +114,31 @@ export class ConversationOrchestrator {
 
   private static async step4_RouteToAgent(context: OrchestratorContext): Promise<string | null> {
     const { conversationId, currentStatus } = context;
-    console.log(`[ConversationOrchestrator] Step 4: Routing to agent based on status ${currentStatus}`);
+    console.log(`[ConversationOrchestrator] Step 4: Running DemandFinder for conversation ${conversationId}`);
 
-    let response: string | null = null;
-
+    // DemandFinder faz:
+    // 1. Busca artigos/problemas e grava no banco
+    // 2. Monta prompt e chama OpenAI, salvando sugestão
     const demandResult = await DemandFinderAgent.process(context);
 
-    if (demandResult.success && demandResult.demandIdentified) {
-      context.demand = demandResult.demand;
+    if (!demandResult.success) {
+      console.log(`[ConversationOrchestrator] Step 4: DemandFinder failed: ${demandResult.error}`);
+      return null;
+    }
+
+    // Atualiza contexto com resultados da busca
+    if (demandResult.searchResults && demandResult.searchResults.length > 0) {
       context.searchResults = demandResult.searchResults;
+      console.log(`[ConversationOrchestrator] Step 4: Found ${demandResult.searchResults.length} articles/problems`);
+    }
 
-      if (demandResult.searchResults && demandResult.searchResults.length > 0) {
-        const articlesAndObjectiveProblems = demandResult.searchResults.map((r) => ({
-          source: r.source as "article" | "problem",
-          id: r.id,
-          name: r.name || null,
-          description: r.description || "",
-          resolution: r.resolution,
-          matchScore: r.matchScore,
-          matchReason: r.matchReason,
-          matchedTerms: r.matchedTerms,
-          products: r.products,
-        }));
-
-        await summaryStorage.updateArticlesAndProblems(conversationId, articlesAndObjectiveProblems);
-
-        console.log(`[ConversationOrchestrator] Step 4: Saved ${articlesAndObjectiveProblems.length} articles/problems from DemandFinder`);
-      } else {
-        console.log(`[ConversationOrchestrator] Step 4: No search results from DemandFinder, preserving existing articles/problems`);
-      }
-
-      if (currentStatus !== ORCHESTRATOR_STATUS.DEMAND_RESOLVING) {
-        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.DEMAND_RESOLVING);
-        context.currentStatus = ORCHESTRATOR_STATUS.DEMAND_RESOLVING;
-      }
-
-      console.log(`[ConversationOrchestrator] Step 4: Demand confirmed, running SolutionProvider`);
-      
-      const solutionResult = await SolutionProviderAgent.process(context);
-
-      if (solutionResult.needsEscalation) {
-        await this.escalate(context, solutionResult.escalationReason || "Unable to resolve");
-      } else if (solutionResult.resolved) {
-        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.CLOSED);
-        context.currentStatus = ORCHESTRATOR_STATUS.CLOSED;
-        console.log(`[ConversationOrchestrator] Step 4: Resolved`);
-      }
-
-      response = solutionResult.suggestedResponse || null;
-
-    } else if (demandResult.needsMoreInfo) {
-      if (currentStatus === ORCHESTRATOR_STATUS.DEMAND_RESOLVING) {
-        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING);
-        context.currentStatus = ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING;
-        console.log(`[ConversationOrchestrator] Step 4: Downgraded to DEMAND_UNDERSTANDING - need more info`);
-      }
-
-      if (demandResult.followUpQuestion) {
-        console.log(`[ConversationOrchestrator] Step 4: Need more info, returning follow-up question`);
-        response = demandResult.followUpQuestion;
-      }
+    // Retorna a sugestão gerada pelo agente
+    const response = demandResult.suggestedResponse || null;
+    
+    if (response) {
+      console.log(`[ConversationOrchestrator] Step 4: DemandFinder generated response`);
     } else {
-      console.log(`[ConversationOrchestrator] Step 4: Demand not identified, waiting for more context`);
+      console.log(`[ConversationOrchestrator] Step 4: DemandFinder completed without response`);
     }
 
     return response;

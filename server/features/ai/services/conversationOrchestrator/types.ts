@@ -37,22 +37,17 @@ export interface ClassificationAgentResult extends AgentResult {
 }
 
 export interface DemandFinderAgentResult extends AgentResult {
-  demandIdentified: boolean;
-  demand?: string;
   searchResults?: Array<{
     source: string;
     id: number;
-    name: string;
+    name: string | null;
     description: string;
-    resolution?: string;
     matchScore?: number;
     matchReason?: string;
     matchedTerms?: string[];
     products?: string[];
   }>;
-  needsMoreInfo?: boolean;
-  followUpQuestion?: string;
-  suggestedAnswerToCustomer?: string;
+  suggestedResponse?: string;
   suggestionId?: number;
 }
 
