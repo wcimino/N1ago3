@@ -92,7 +92,6 @@ router.post("/api/ai/enrichment/generate", isAuthenticated, requireAuthorizedUse
 });
 
 router.post("/api/ai/enrichment/inline", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  console.log("[Enrichment Inline] Endpoint called with body:", JSON.stringify(req.body, null, 2));
   try {
     const { intentId, articleId, currentData } = req.body;
 
