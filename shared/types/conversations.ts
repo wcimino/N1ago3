@@ -154,6 +154,7 @@ export interface ObjectiveProblemIdentified {
   id: number;
   name: string;
   matchScore?: number;
+  matchedTerms?: string[];
 }
 
 export interface ArticleAndProblemResult {
@@ -164,6 +165,7 @@ export interface ArticleAndProblemResult {
   resolution?: string;
   matchScore?: number;
   matchReason?: string;
+  matchedTerms?: string[];
   products?: string[];
 }
 

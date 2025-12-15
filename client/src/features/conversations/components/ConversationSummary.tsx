@@ -184,6 +184,86 @@ const severityConfig: Record<string, { label: string; color: string }> = {
   critical: { label: "Crítica", color: "bg-red-100 text-red-700" },
 };
 
+interface MatchedTermsTooltipProps {
+  matchedTerms?: string[] | null;
+  bgColor?: string;
+  textColor?: string;
+}
+
+function MatchedTermsTooltip({ matchedTerms, bgColor = "bg-cyan-100", textColor = "text-cyan-600" }: MatchedTermsTooltipProps) {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        tooltipRef.current && 
+        !tooltipRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setShowTooltip(false);
+      }
+    }
+    
+    if (showTooltip) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showTooltip]);
+
+  const handleClick = () => {
+    if (!showTooltip && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setTooltipPos({
+        top: rect.bottom + 4,
+        left: Math.max(8, rect.left - 100),
+      });
+    }
+    setShowTooltip(!showTooltip);
+  };
+  
+  if (!matchedTerms || matchedTerms.length === 0) return null;
+  
+  return (
+    <>
+      <button
+        ref={buttonRef}
+        onClick={handleClick}
+        className={`${textColor} hover:opacity-70 transition-opacity ml-1`}
+        title="Ver termos correspondentes"
+      >
+        <InfoIcon className="w-3.5 h-3.5" />
+      </button>
+      {showTooltip && createPortal(
+        <div 
+          ref={tooltipRef}
+          className="fixed z-[9999] w-48 p-3 bg-gray-800 text-white text-xs rounded-lg shadow-xl"
+          style={{ top: tooltipPos.top, left: tooltipPos.left }}
+        >
+          <div className="font-medium mb-1">Termos correspondentes:</div>
+          <div className="flex flex-wrap gap-1">
+            {matchedTerms.map((term, i) => (
+              <span key={i} className={`${bgColor} ${textColor} px-1.5 py-0.5 rounded text-xs`}>
+                {term}
+              </span>
+            ))}
+          </div>
+          <button 
+            onClick={() => setShowTooltip(false)}
+            className="absolute top-1 right-1 text-gray-400 hover:text-white p-1"
+          >
+            ×
+          </button>
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
 interface ObjectiveProblemsCardProps {
   problems?: ObjectiveProblemIdentified[] | null;
 }
@@ -210,8 +290,9 @@ function ObjectiveProblemsCard({ problems }: ObjectiveProblemsCardProps) {
             <div key={problem.id} className="flex items-center justify-between bg-white rounded px-3 py-2 border border-violet-100">
               <span className="text-sm text-gray-700 font-medium">{problem.name}</span>
               {problem.matchScore !== undefined && (
-                <span className="text-xs text-violet-600 bg-violet-100 px-2 py-0.5 rounded">
-                  {problem.matchScore}% match
+                <span className="flex items-center text-xs text-violet-600 bg-violet-100 px-2 py-0.5 rounded">
+                  {problem.matchScore}%
+                  <MatchedTermsTooltip matchedTerms={problem.matchedTerms} bgColor="bg-violet-100" textColor="text-violet-600" />
                 </span>
               )}
             </div>
@@ -264,8 +345,9 @@ function ArticlesAndProblemsCard({ items }: ArticlesAndProblemsCardProps) {
                   <span className="text-sm text-gray-700 font-medium">{item.name}</span>
                 </div>
                 {item.matchScore !== undefined && (
-                  <span className="text-xs text-cyan-600 bg-cyan-100 px-2 py-0.5 rounded">
-                    {item.matchScore}% match
+                  <span className="flex items-center text-xs text-cyan-600 bg-cyan-100 px-2 py-0.5 rounded">
+                    {item.matchScore}%
+                    <MatchedTermsTooltip matchedTerms={item.matchedTerms} bgColor="bg-cyan-100" textColor="text-cyan-600" />
                   </span>
                 )}
               </div>
