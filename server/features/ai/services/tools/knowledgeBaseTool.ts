@@ -12,20 +12,30 @@ export function createKnowledgeBaseArticlesTool(): ToolDefinition {
           type: "string",
           description: "Resumo ou contexto da conversa para busca semântica principal (obrigatório). A busca usa o contexto para encontrar artigos semanticamente relevantes."
         },
-        productId: {
-          type: "number",
-          description: "ID do produto para filtrar (opcional)"
+        product: {
+          type: "string",
+          description: "Nome do produto (obrigatório). Ex: 'Cartão de Crédito', 'Conta Digital'"
+        },
+        subproduct: {
+          type: "string",
+          description: "Nome do subproduto (opcional). Ex: 'Gold', 'Platinum'"
         },
         keywords: {
           type: "string",
           description: "Palavras-chave opcionais para filtrar/priorizar os resultados. Usado como boost sobre os resultados semânticos."
         }
       },
-      required: ["conversationContext"]
+      required: ["conversationContext", "product"]
     },
-    handler: async (args: { productId?: number; conversationContext?: string; keywords?: string }) => {
+    handler: async (args: { product: string; subproduct?: string; conversationContext?: string; keywords?: string }) => {
+      const productContext = args.subproduct 
+        ? `${args.product} > ${args.subproduct}`
+        : args.product;
+      
+      console.log(`[KnowledgeBaseTool] Called with product="${args.product}", subproduct="${args.subproduct || 'none'}", productContext="${productContext}"`);
+      
       const result = await runKnowledgeBaseSearch({
-        productId: args.productId,
+        productContext,
         conversationContext: args.conversationContext,
         keywords: args.keywords,
         limit: 5
@@ -35,7 +45,7 @@ export function createKnowledgeBaseArticlesTool(): ToolDefinition {
         return JSON.stringify({ 
           message: "Nenhum artigo encontrado na base de conhecimento",
           articles: [],
-          productId: args.productId || null
+          product: productContext
         });
       }
       
@@ -51,7 +61,7 @@ export function createKnowledgeBaseArticlesTool(): ToolDefinition {
       return JSON.stringify({
         message: `Encontrados ${result.articles.length} artigos relevantes`,
         articles: articleList,
-        productId: result.productId
+        product: productContext
       });
     }
   };
