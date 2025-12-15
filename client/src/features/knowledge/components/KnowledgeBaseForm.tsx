@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Save, X, Tag, MessageSquare, CheckCircle, Plus, Trash2 } from "lucide-react";
-import { ModernSelect, Button } from "@/shared/components/ui";
+import { Tag, MessageSquare, CheckCircle, Plus, Trash2 } from "lucide-react";
+import { ModernSelect, FormActions } from "@/shared/components/ui";
 import type { KnowledgeSubject, KnowledgeIntent, ProductCatalogItem } from "../../../types";
 import type { KnowledgeBaseArticle, KnowledgeBaseFormData } from "../hooks/useKnowledgeBase";
 
@@ -365,26 +365,14 @@ export function KnowledgeBaseForm({
         )}
       </div>
 
-      <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
-        <Button
-          type="button"
-          onClick={onCancel}
-          variant="outline"
-          size="sm"
-          leftIcon={<X className="w-4 h-4" />}
-        >
-          Cancelar
-        </Button>
-        <Button
-          type="submit"
-          disabled={!isValid || isLoading}
-          isLoading={isLoading}
-          size="sm"
-          leftIcon={<Save className="w-4 h-4" />}
-        >
-          Salvar Artigo
-        </Button>
-      </div>
+      <FormActions
+        isLoading={isLoading}
+        isEditing={!!initialData}
+        onCancel={onCancel}
+        disabled={!isValid}
+        submitLabel="Salvar Artigo"
+        className="pt-3 border-t border-gray-100"
+      />
     </form>
   );
 }

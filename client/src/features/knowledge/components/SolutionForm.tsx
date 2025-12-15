@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
-import { X, Check, Loader2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { FormField } from "../../../shared/components/crud";
+import { FormActions } from "../../../shared/components/ui";
 import {
   DndContext,
   closestCenter,
@@ -268,26 +269,12 @@ export function SolutionForm({
           )}
         </div>
 
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting || !formData.name.trim()}
-            className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50"
-          >
-            {isSubmitting && (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            )}
-            <Check className="w-4 h-4" />
-            {isEditing ? "Salvar" : "Criar"}
-          </button>
-        </div>
+        <FormActions
+          isLoading={isSubmitting}
+          isEditing={isEditing}
+          onCancel={onCancel}
+          disabled={!formData.name.trim()}
+        />
       </form>
 
       {showActionModal && (

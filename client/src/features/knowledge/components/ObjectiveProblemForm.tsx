@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { X, Check, ChevronRight, ChevronDown, Loader2 } from "lucide-react";
+import { ChevronRight, ChevronDown } from "lucide-react";
 import { FormField } from "../../../shared/components/crud";
+import { FormActions } from "../../../shared/components/ui";
 
 interface Product {
   id: number;
@@ -236,24 +237,12 @@ export function ObjectiveProblemForm({
             onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
           />
 
-          <div className="flex gap-2 pt-2">
-            <button
-              type="submit"
-              disabled={isMutating}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
-            >
-              {isMutating && <Loader2 className="w-4 h-4 animate-spin" />}
-              <Check className="w-4 h-4" />
-              {isEditing ? "Atualizar" : "Criar"}
-            </button>
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              Cancelar
-            </button>
-          </div>
+          <FormActions
+            isLoading={isMutating}
+            isEditing={isEditing}
+            onCancel={onCancel}
+            className="pt-2"
+          />
         </div>
       </form>
     </div>
