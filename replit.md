@@ -120,3 +120,94 @@ Key files:
 *   **date-fns:** Date utilities.
 *   **wouter:** React routing.
 *   **OpenAI API:** AI capabilities (chat, embeddings).
+
+## Project Structure & Conventions
+
+### Directory Structure
+
+```
+├── client/src/           # Frontend React application
+│   ├── features/         # Feature-based modules (ai, conversations, knowledge, etc.)
+│   ├── shared/           # Reusable frontend components, hooks, and pages
+│   └── contexts/         # React contexts
+├── server/               # Backend Express application
+│   ├── features/         # Feature-based modules with routes/storage/services
+│   └── shared/           # Backend utilities and shared services
+├── shared/               # Types and schemas shared between client and server
+├── drizzle/              # Database migrations
+└── scripts/              # Utility scripts
+```
+
+### Shared Directories Documentation
+
+**1. `shared/` (Root)** - Cross-platform shared code
+- `types/`: TypeScript interfaces used by both client and server
+- `schema/`: Drizzle ORM schemas and Zod validation schemas
+- `constants/`: Shared constants (e.g., action types)
+- `services/openai/`: OpenAI service wrapper with logging
+
+**2. `client/src/shared/`** - Reusable frontend components and utilities
+- `components/ui/`: Base UI components (Button, Input, Modal, DataTable, etc.)
+- `components/badges/`: Status and type badges
+- `components/crud/`: CRUD page patterns (CrudPageLayout, FormField)
+- `components/dashboard/`: Dashboard cards and stats components
+- `components/detail/`: Detail page patterns (InfoField, HistoryList)
+- `components/charts/`: Chart components (DonutChart, HourlyBarChart)
+- `components/modals/`: Reusable modals (EventDetailModal, LogDetailModal)
+- `components/layout/`: Layout components (NavLink, EnvironmentBadge)
+- `hooks/`: Reusable hooks:
+  - `useCrudMutations.ts`: Standard create/update/delete mutations
+  - `useCrudFormState.ts`: Form state management for CRUD operations
+  - `usePaginatedQuery.ts`: Pagination with URL sync
+  - `useFilteredData.ts`: Generic filtering and search
+  - `useUrlFilters.ts`: URL-based filter state
+- `pages/`: Shared pages (HomePage, LandingPage, LoadingPage)
+
+**3. `server/shared/`** - Backend shared utilities
+- `storage/`: Storage utilities:
+  - `crudFactory.ts`: Generic CRUD operations factory
+  - `paginationHelpers.ts`: Pagination utilities
+  - `filterHelpers.ts`: Query filter builders
+  - `upsertHelpers.ts`: Upsert pattern utilities
+- `embeddings/`: Centralized embeddings layer:
+  - `embeddingService.ts`: Core embedding generation
+  - `adapters/`: Source-specific adapters (knowledgeBase, objectiveProblems, zendesk)
+- `services/`: Shared services (fetchWithRetry)
+- `utils/`: Utility functions (matchScoring)
+
+### Naming Conventions
+
+- **Directories**: kebab-case for URL routes, camelCase or simple lowercase for feature folders
+- **Files**: camelCase for TypeScript files (e.g., `knowledgeBaseStorage.ts`)
+- **React Components**: PascalCase (e.g., `KnowledgeBasePage.tsx`)
+- **Hooks**: camelCase with `use` prefix (e.g., `useCrudMutations.ts`)
+- **Database tables**: snake_case, plural (e.g., `knowledge_base_articles`)
+- **API endpoints**: kebab-case, REST plural resources
+
+### Code Patterns
+
+**Feature Module Structure** (both client and server):
+```
+features/<feature-name>/
+├── components/    # UI components (client only)
+├── hooks/         # Custom hooks (client only)
+├── pages/         # Page components (client only)
+├── routes/        # API routes (server only)
+├── storage/       # Database operations (server only)
+├── services/      # Business logic (server only)
+└── index.ts       # Public exports
+```
+
+**Component Extraction Pattern**: Large components (>300 lines) should be split into:
+- Sub-components in a dedicated folder
+- Types in `types.ts`
+- Configuration in `config.ts`
+- Custom hooks in `use<Feature>.ts`
+- Barrel export in `index.ts`
+
+**Storage File Pattern**: Large storage files should be split into:
+- `crud.ts`: Basic CRUD operations
+- `search.ts`: Search/filter logic
+- `embedding.ts`: Embedding-related operations
+- `types.ts`: TypeScript interfaces
+- `index.ts`: Re-exports main functions

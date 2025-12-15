@@ -9,7 +9,7 @@ import { EventsLayout } from "./features/events";
 import { AtendimentosPage, UserConversationsPage } from "./features/conversations";
 import { CadastroPage, UserStandardDetailPage, OrganizationStandardDetailPage } from "./features/cadastro";
 import { ExportPage } from "./features/export";
-import { KnowledgeBasePage } from "./features/knowledge-base";
+import { KnowledgeBasePage } from "./features/knowledge";
 import { ReportsPage } from "./features/reports";
 import { RoutingRulesPage } from "./features/routing";
 import { LandingPage, LoadingPage, UnauthorizedPage, HomePage } from "./shared/pages";
