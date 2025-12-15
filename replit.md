@@ -40,6 +40,7 @@ The React frontend provides a real-time dashboard, administrative interfaces, an
 *   **API Endpoints:** REST resources are plural, `kebab-case`; config endpoints are singular; specific actions use verbs.
 *   **File Structure:** Organized by feature for both frontend and backend.
 *   **Shared Types Architecture:** Centralized type definitions in `shared/types/`. Frontend re-exports via `client/src/types/`.
+*   **Shared Constants Architecture:** Centralized UI constants in `client/src/shared/constants/` including `emotionConfig`, `intentConfig`, `severityConfig`, and filter options like `EMOTION_OPTIONS`.
 *   **Backend Feature Architecture:** Each feature module includes `routes/`, `storage/`, and `services/`. Event adapters are in `server/features/events/adapters/`.
 *   **External API Services:** Zendesk API service is in `server/features/external-sources/zendesk/services/zendeskApiService.ts`.
 *   **Idempotent Event Creation:** Ensures unique event processing.
