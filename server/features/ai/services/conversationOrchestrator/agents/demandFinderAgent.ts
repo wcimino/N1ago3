@@ -157,6 +157,7 @@ export class DemandFinderAgent {
       skipIfDisabled: true,
       defaultModelName: "gpt-4o-mini",
       suggestionField: "suggestedAnswerToCustomer",
+      inResponseTo: String(event.id),
     });
 
     if (!result.success) {

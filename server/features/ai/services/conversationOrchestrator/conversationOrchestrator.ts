@@ -3,6 +3,7 @@ import { conversationStorage } from "../../../conversations/storage/index.js";
 import { SummaryAgent, ClassificationAgent, DemandFinderAgent, SolutionProviderAgent } from "./agents/index.js";
 import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext } from "./types.js";
 import { StatusController } from "./statusController.js";
+import { AutoPilotService } from "../../../autoPilot/services/autoPilotService.js";
 import type { EventStandard } from "../../../../../shared/schema.js";
 
 export class ConversationOrchestrator {
@@ -54,10 +55,10 @@ export class ConversationOrchestrator {
 
     await this.step4_DecideStatus(context);
 
-    const agentResponse = await this.step5_RouteToAgent(context);
+    const agentResult = await this.step5_RouteToAgent(context);
 
-    if (agentResponse) {
-      await this.step6_SendResponse(context, agentResponse);
+    if (agentResult.response && agentResult.suggestionId) {
+      await this.step6_SendResponse(context, agentResult.response, agentResult.suggestionId);
     }
 
     console.log(`[ConversationOrchestrator] Pipeline completed for conversation ${conversationId}, final status: ${context.currentStatus}`);
@@ -143,7 +144,7 @@ export class ConversationOrchestrator {
     }
   }
 
-  private static async step5_RouteToAgent(context: OrchestratorContext): Promise<string | null> {
+  private static async step5_RouteToAgent(context: OrchestratorContext): Promise<{ response: string | null; suggestionId?: number }> {
     const { conversationId } = context;
     console.log(`[ConversationOrchestrator] Step 5: Running DemandFinder agent for conversation ${conversationId}`);
 
@@ -151,26 +152,33 @@ export class ConversationOrchestrator {
 
     if (!agentResult.success) {
       console.log(`[ConversationOrchestrator] Step 5: DemandFinder failed: ${agentResult.error}`);
-      return null;
+      return { response: null };
     }
 
     const response = agentResult.suggestedResponse || null;
     
     if (response) {
-      console.log(`[ConversationOrchestrator] Step 5: DemandFinder generated response`);
+      console.log(`[ConversationOrchestrator] Step 5: DemandFinder generated response, suggestionId: ${agentResult.suggestionId}`);
     } else {
       console.log(`[ConversationOrchestrator] Step 5: DemandFinder completed without response`);
     }
 
-    return response;
+    return { response, suggestionId: agentResult.suggestionId };
   }
 
-  private static async step6_SendResponse(context: OrchestratorContext, response: string): Promise<void> {
-    const { conversationId } = context;
+  private static async step6_SendResponse(context: OrchestratorContext, response: string, suggestionId: number): Promise<void> {
+    const { conversationId, currentStatus } = context;
     console.log(`[ConversationOrchestrator] Step 6: Sending response for conversation ${conversationId}`);
     console.log(`[ConversationOrchestrator] Step 6: Response: "${response.substring(0, 100)}..."`);
     
-    console.log(`[ConversationOrchestrator] Step 6: Response sending not implemented yet`);
+    if (currentStatus !== ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING) {
+      console.log(`[ConversationOrchestrator] Step 6: Skipping send - status is ${currentStatus}, not demand_understanding`);
+      return;
+    }
+    
+    console.log(`[ConversationOrchestrator] Step 6: Processing suggestion ${suggestionId} via AutoPilot`);
+    const result = await AutoPilotService.processSuggestion(suggestionId);
+    console.log(`[ConversationOrchestrator] Step 6: AutoPilot result - action=${result.action}, reason=${result.reason}`);
   }
 
   private static async escalate(context: OrchestratorContext, reason: string): Promise<void> {
