@@ -14,7 +14,8 @@ The system employs a decoupled architecture with a React, TypeScript, Vite, Tail
 
 *   **Standardized Event Architecture:** Events are ingested and normalized into a `StandardEvent` format via webhook endpoints, an `EventBus`, an `Event Processor` with `Adapters`, and a `Polling Worker`.
 *   **Authentication System:** Uses Replit Auth (Google Login) with an Access Control List (ACL) based on email domains and an `authorized_users` table.
-*   **AI-Powered Features:** A unified architecture supports various AI capabilities (summarization, classification, response generation) with centralized OpenAI services, configurable triggers, and automatic API call logging.
+*   **AI-Powered Features:** A unified architecture supports various AI capabilities (summarization, classification, response generation, knowledge search) with centralized OpenAI services and automatic API call logging. Agents are invoked via the ConversationOrchestrator pipeline rather than event triggers.
+*   **ConversationOrchestrator Pipeline:** Sequential agent execution pipeline (Summary → Classification → ArticlesAndSolutions → StatusController → DemandFinder/SolutionProvider → AutoPilot) that processes customer messages. Each agent has a simple "enabled" toggle as a kill switch.
 *   **Shared Embeddings Architecture:** A centralized embeddings layer (`server/shared/embeddings/`) standardizes embedding generation, content hashing, and processing across knowledge sources.
 
 **UI/UX Decisions:**
