@@ -74,7 +74,7 @@ export class ConversationOrchestrator {
       if (existingSummary) {
         context.summary = existingSummary.summary;
         context.classification = {
-          product: existingSummary.product || undefined,
+          product: undefined,
           customerRequestType: existingSummary.customerRequestType || undefined,
         };
         console.log(`[ConversationOrchestrator] Step 1: Using existing summary`);

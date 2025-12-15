@@ -57,10 +57,11 @@ export const reportsService = {
     const countResult = await db.execute(sql.raw(`
       WITH problem_data AS (
         SELECT 
-          COALESCE(cs.product_standard, cs.product, 'Não identificado') as product,
-          cs.subproduct,
+          COALESCE(pc.produto, 'Não identificado') as product,
+          pc.subproduto as subproduct,
           jsonb_array_elements(cs.objective_problems::jsonb) as problem
         FROM conversations_summary cs
+        LEFT JOIN products_catalog pc ON pc.id = cs.product_id
         WHERE cs.objective_problems IS NOT NULL 
           AND cs.objective_problems::text != '[]'
           AND cs.objective_problems::text != 'null'
@@ -78,10 +79,11 @@ export const reportsService = {
     const results = await db.execute(sql.raw(`
       WITH problem_data AS (
         SELECT 
-          COALESCE(cs.product_standard, cs.product, 'Não identificado') as product,
-          cs.subproduct,
+          COALESCE(pc.produto, 'Não identificado') as product,
+          pc.subproduto as subproduct,
           jsonb_array_elements(cs.objective_problems::jsonb) as problem
         FROM conversations_summary cs
+        LEFT JOIN products_catalog pc ON pc.id = cs.product_id
         WHERE cs.objective_problems IS NOT NULL 
           AND cs.objective_problems::text != '[]'
           AND cs.objective_problems::text != 'null'
@@ -167,10 +169,11 @@ export const reportsService = {
     const results = await db.execute(sql.raw(`
       WITH problem_data AS (
         SELECT 
-          COALESCE(cs.product_standard, cs.product, 'Não identificado') as product,
-          COALESCE(cs.subproduct, '-') as subproduct,
+          COALESCE(pc.produto, 'Não identificado') as product,
+          COALESCE(pc.subproduto, '-') as subproduct,
           jsonb_array_elements(cs.objective_problems::jsonb)->>'name' as problem_name
         FROM conversations_summary cs
+        LEFT JOIN products_catalog pc ON pc.id = cs.product_id
         WHERE cs.objective_problems IS NOT NULL 
           AND cs.objective_problems::text != '[]'
           AND cs.objective_problems::text != 'null'

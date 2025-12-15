@@ -82,7 +82,7 @@ export const conversationStats = {
       last_conv_filter AS (
         SELECT DISTINCT ON (c.user_id)
           c.user_id,
-          COALESCE(cs.product_standard, cs.product) as last_product_standard,
+          COALESCE(pc.produto || COALESCE(' - ' || pc.subproduto, ''), 'Sem classificação') as last_product_standard,
           c.current_handler_name,
           cs.customer_emotion_level as last_customer_emotion_level,
           u.profile->>'givenName' as profile_given_name,
@@ -92,6 +92,7 @@ export const conversationStats = {
           uns.has_n1ago_conversation
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
+        LEFT JOIN products_catalog pc ON pc.id = cs.product_id
         LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
         LEFT JOIN users u ON c.user_id = u.sunshine_id
         LEFT JOIN user_n1ago_status uns ON uns.user_id = c.user_id
@@ -118,7 +119,7 @@ export const conversationStats = {
               'closed_reason', c.closed_reason,
               'created_at', TO_CHAR(c.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
               'updated_at', TO_CHAR(COALESCE(lm.last_message_at, c.created_at), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
-              'product_standard', COALESCE(cs.product_standard, cs.product),
+              'product_standard', COALESCE(pc.produto || COALESCE(' - ' || pc.subproduto, ''), NULL),
               'current_handler', c.current_handler,
               'current_handler_name', c.current_handler_name,
               'message_count', COALESCE(mc.message_count, 0)
@@ -126,6 +127,7 @@ export const conversationStats = {
           ) as conversations
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
+        LEFT JOIN products_catalog pc ON pc.id = cs.product_id
         LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
         LEFT JOIN message_count_per_conv mc ON mc.conversation_id = c.id
         WHERE c.user_id IS NOT NULL
@@ -137,11 +139,12 @@ export const conversationStats = {
       last_conv AS (
         SELECT DISTINCT ON (c.user_id)
           c.user_id,
-          COALESCE(cs.product_standard, cs.product) as last_product_standard,
-          cs.subproduct as last_subproduct_standard,
+          pc.produto as last_product_standard,
+          pc.subproduto as last_subproduct_standard,
           cs.customer_emotion_level as last_customer_emotion_level
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
+        LEFT JOIN products_catalog pc ON pc.id = cs.product_id
         LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
         WHERE c.user_id IS NOT NULL
         ORDER BY c.user_id, COALESCE(lm.last_message_at, c.created_at) DESC
@@ -181,7 +184,7 @@ export const conversationStats = {
       last_conv_filter AS (
         SELECT DISTINCT ON (c.user_id)
           c.user_id,
-          COALESCE(cs.product_standard, cs.product) as last_product_standard,
+          COALESCE(pc.produto || COALESCE(' - ' || pc.subproduto, ''), 'Sem classificação') as last_product_standard,
           c.current_handler_name,
           cs.customer_emotion_level as last_customer_emotion_level,
           u.profile->>'givenName' as profile_given_name,
@@ -191,6 +194,7 @@ export const conversationStats = {
           uns.has_n1ago_conversation
         FROM conversations c
         LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
+        LEFT JOIN products_catalog pc ON pc.id = cs.product_id
         LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
         LEFT JOIN users u ON c.user_id = u.sunshine_id
         LEFT JOIN user_n1ago_status uns ON uns.user_id = c.user_id
@@ -211,7 +215,7 @@ export const conversationStats = {
     const productCondition = productIdFilter 
       ? sql`AND cs.product_id = ${productIdFilter}` 
       : productStandardFilter 
-        ? sql`AND COALESCE(cs.product_standard, cs.product) = ${productStandardFilter}` 
+        ? sql`AND pc.produto = ${productStandardFilter}` 
         : sql``;
     const emotionCondition = emotionLevelFilter ? sql`AND cs.customer_emotion_level = ${emotionLevelFilter}` : sql``;
     
@@ -285,8 +289,8 @@ export const conversationStats = {
         c.current_handler,
         c.current_handler_name,
         COALESCE(mc.message_count, 0) as message_count,
-        COALESCE(cs.product_standard, cs.product) as product_standard,
-        cs.subproduct as subproduct_standard,
+        pc.produto as product_standard,
+        pc.subproduto as subproduct_standard,
         cs.customer_emotion_level,
         cs.customer_request_type,
         cs.objective_problems,
@@ -296,6 +300,7 @@ export const conversationStats = {
         u.profile as user_profile
       FROM conversations c
       LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
+      LEFT JOIN products_catalog pc ON pc.id = cs.product_id
       LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
       LEFT JOIN message_count_per_conv mc ON mc.conversation_id = c.id
       LEFT JOIN users u ON c.user_id = u.sunshine_id
@@ -316,6 +321,7 @@ export const conversationStats = {
       SELECT COUNT(*) as count
       FROM conversations c
       LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
+      LEFT JOIN products_catalog pc ON pc.id = cs.product_id
       LEFT JOIN users u ON c.user_id = u.sunshine_id
       WHERE c.user_id IS NOT NULL
         ${productCondition}

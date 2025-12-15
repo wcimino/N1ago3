@@ -29,7 +29,7 @@ export const summaryStorage = {
       objectiveProblems: data.objectiveProblems,
       lastEventId: data.lastEventId,
       externalConversationId: data.externalConversationId,
-      product: data.product,
+      productId: data.productId,
       classifiedAt: data.classifiedAt,
       generatedAt: new Date(),
       updatedAt: new Date(),
@@ -42,7 +42,6 @@ export const summaryStorage = {
     const [summary] = await db.insert(conversationsSummary)
       .values({
         ...data,
-        productStandard: data.product || null,
         generatedAt: new Date(),
       })
       .onConflictDoUpdate({
@@ -85,14 +84,12 @@ export const summaryStorage = {
   async getSummariesForExport(filters: {
     dateFrom?: Date;
     dateTo?: Date;
-    product?: string;
-    productStandard?: string;
+    productId?: number;
     customerRequestType?: string;
   }): Promise<Array<{
     id: number;
     generatedAt: Date;
-    product: string | null;
-    productStandard: string | null;
+    productId: number | null;
     customerRequestType: string | null;
     summary: string;
     clientRequest: string | null;
@@ -108,11 +105,8 @@ export const summaryStorage = {
     if (filters.dateTo) {
       conditions.push(lte(conversationsSummary.generatedAt, filters.dateTo));
     }
-    if (filters.product) {
-      conditions.push(eq(conversationsSummary.product, filters.product));
-    }
-    if (filters.productStandard) {
-      conditions.push(eq(conversationsSummary.productStandard, filters.productStandard));
+    if (filters.productId) {
+      conditions.push(eq(conversationsSummary.productId, filters.productId));
     }
     if (filters.customerRequestType) {
       conditions.push(eq(conversationsSummary.customerRequestType, filters.customerRequestType));
@@ -124,8 +118,7 @@ export const summaryStorage = {
       .select({
         id: conversationsSummary.id,
         generatedAt: conversationsSummary.generatedAt,
-        product: conversationsSummary.product,
-        productStandard: conversationsSummary.productStandard,
+        productId: conversationsSummary.productId,
         customerRequestType: conversationsSummary.customerRequestType,
         summary: conversationsSummary.summary,
         clientRequest: conversationsSummary.clientRequest,

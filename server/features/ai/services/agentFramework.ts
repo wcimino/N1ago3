@@ -111,10 +111,21 @@ export async function buildAgentContextFromEvent(
 
   const reversedMessages = [...last20Messages].reverse();
 
+  let classificationProduct: string | null = null;
+  let classificationSubproduct: string | null = null;
+  
+  if (options?.includeClassification !== false && existingSummary?.productId) {
+    const productInfo = await productCatalogStorage.getById(existingSummary.productId);
+    if (productInfo) {
+      classificationProduct = productInfo.produto;
+      classificationSubproduct = productInfo.subproduto || null;
+    }
+  }
+
   const classification = options?.includeClassification !== false && existingSummary
     ? {
-        product: existingSummary.product,
-        subproduct: existingSummary.subproduct,
+        product: classificationProduct,
+        subproduct: classificationSubproduct,
         customerRequestType: existingSummary.customerRequestType,
         productConfidence: existingSummary.productConfidence,
         customerRequestTypeConfidence: existingSummary.customerRequestTypeConfidence,
