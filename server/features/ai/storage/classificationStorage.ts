@@ -1,12 +1,10 @@
 import { db } from "../../../db.js";
-import { conversationsSummary, conversations, eventsStandard } from "../../../../shared/schema.js";
+import { conversationsSummary, conversations, eventsStandard, productsCatalog } from "../../../../shared/schema.js";
 import { eq, sql, gte, and, isNotNull } from "drizzle-orm";
 
 export const classificationStorage = {
   async getConversationClassification(conversationId: number): Promise<{
-    product: string | null;
-    productStandard: string | null;
-    subproduct: string | null;
+    productId: number | null;
     productConfidence: number | null;
     productConfidenceReason: string | null;
     customerRequestType: string | null;
@@ -15,9 +13,7 @@ export const classificationStorage = {
   } | null> {
     const result = await db
       .select({
-        product: conversationsSummary.product,
-        productStandard: conversationsSummary.productStandard,
-        subproduct: conversationsSummary.subproduct,
+        productId: conversationsSummary.productId,
         productConfidence: conversationsSummary.productConfidence,
         productConfidenceReason: conversationsSummary.productConfidenceReason,
         customerRequestType: conversationsSummary.customerRequestType,
@@ -34,8 +30,7 @@ export const classificationStorage = {
   async updateConversationClassification(
     conversationId: number, 
     data: { 
-      product: string | null; 
-      subproduct?: string | null;
+      productId: number | null; 
       productConfidence?: number | null;
       productConfidenceReason?: string | null;
       customerRequestType?: string | null;
@@ -45,8 +40,7 @@ export const classificationStorage = {
   ): Promise<void> {
     await db.update(conversationsSummary)
       .set({
-        product: data.product,
-        subproduct: data.subproduct ?? null,
+        productId: data.productId,
         productConfidence: data.productConfidence ?? null,
         productConfidenceReason: data.productConfidenceReason ?? null,
         customerRequestType: data.customerRequestType ?? null,
@@ -81,18 +75,19 @@ export const classificationStorage = {
       .where(gte(eventsStandard.occurredAt, since));
 
     // Count distinct conversations (atendimentos) that had activity in the period grouped by productId
-    // Groups by product_id for precise filtering, falls back to product name display
+    // Groups by product_id for precise filtering, uses products_catalog for product name display
     const results = await db
       .select({
         productId: conversationsSummary.productId,
-        product: sql<string>`COALESCE(${conversationsSummary.productStandard}, ${conversationsSummary.product}, 'Sem classificação')`,
+        product: sql<string>`COALESCE(${productsCatalog.produto}, 'Sem classificação')`,
         count: sql<number>`count(DISTINCT ${conversations.id})::int`,
       })
       .from(eventsStandard)
       .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
       .leftJoin(conversationsSummary, eq(conversations.id, conversationsSummary.conversationId))
+      .leftJoin(productsCatalog, eq(conversationsSummary.productId, productsCatalog.id))
       .where(gte(eventsStandard.occurredAt, since))
-      .groupBy(conversationsSummary.productId, sql`COALESCE(${conversationsSummary.productStandard}, ${conversationsSummary.product}, 'Sem classificação')`)
+      .groupBy(conversationsSummary.productId, sql`COALESCE(${productsCatalog.produto}, 'Sem classificação')`)
       .orderBy(sql`count(DISTINCT ${conversations.id}) desc`);
 
     return { 
@@ -105,16 +100,11 @@ export const classificationStorage = {
     };
   },
 
-  async getUniqueProductsAndRequestTypes(): Promise<{ products: string[]; productStandards: string[]; customerRequestTypes: string[]; objectiveProblems: string[] }> {
-    const productsResult = await db
-      .selectDistinct({ product: conversationsSummary.product })
+  async getUniqueProductsAndRequestTypes(): Promise<{ productIds: number[]; customerRequestTypes: string[]; objectiveProblems: string[] }> {
+    const productIdsResult = await db
+      .selectDistinct({ productId: conversationsSummary.productId })
       .from(conversationsSummary)
-      .where(isNotNull(conversationsSummary.product));
-    
-    const productStandardsResult = await db
-      .selectDistinct({ productStandard: conversationsSummary.productStandard })
-      .from(conversationsSummary)
-      .where(isNotNull(conversationsSummary.productStandard));
+      .where(isNotNull(conversationsSummary.productId));
     
     const customerRequestTypesResult = await db
       .selectDistinct({ customerRequestType: conversationsSummary.customerRequestType })
@@ -131,37 +121,10 @@ export const classificationStorage = {
     `);
 
     return {
-      products: productsResult.map(r => r.product).filter((p): p is string => p !== null).sort(),
-      productStandards: productStandardsResult.map(r => r.productStandard).filter((ps): ps is string => ps !== null).sort(),
+      productIds: productIdsResult.map(r => r.productId).filter((p): p is number => p !== null).sort((a, b) => a - b),
       customerRequestTypes: customerRequestTypesResult.map(r => r.customerRequestType).filter((i): i is string => i !== null).sort(),
       objectiveProblems: (objectiveProblemsResult.rows as any[]).map(r => r.problem_name).filter((p): p is string => p !== null),
     };
-  },
-
-  async getProductStandards(): Promise<Array<{ product: string; productStandard: string | null }>> {
-    const results = await db
-      .select({
-        product: conversationsSummary.product,
-        productStandard: sql<string | null>`MAX(${conversationsSummary.productStandard})`,
-      })
-      .from(conversationsSummary)
-      .where(isNotNull(conversationsSummary.product))
-      .groupBy(conversationsSummary.product)
-      .orderBy(conversationsSummary.product);
-
-    return results.filter(r => r.product !== null) as Array<{ product: string; productStandard: string | null }>;
-  },
-
-  async updateProductStandard(product: string, productStandard: string): Promise<number> {
-    const result = await db
-      .update(conversationsSummary)
-      .set({ 
-        productStandard,
-        updatedAt: new Date(),
-      })
-      .where(eq(conversationsSummary.product, product));
-    
-    return result.rowCount ?? 0;
   },
 
   async getEmotionStatsByPeriod(

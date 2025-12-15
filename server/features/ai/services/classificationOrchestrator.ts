@@ -1,4 +1,5 @@
 import { storage } from "../../../storage/index.js";
+import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 import { runAgent, type AgentContext } from "./agentFramework.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 import type { ContentPayload } from "./promptUtils.js";
@@ -134,9 +135,10 @@ export async function classifyConversationProduct(event: EventStandard): Promise
     }
 
     if (parsed.product) {
+      const resolvedProduct = await productCatalogStorage.resolveProductId(parsed.product, parsed.subproduct || undefined);
+      
       await storage.updateConversationClassification(event.conversationId, {
-        product: parsed.product,
-        subproduct: parsed.subproduct,
+        productId: resolvedProduct?.id || null,
         productConfidence: parsed.productConfidence,
         productConfidenceReason: parsed.productConfidenceReason,
         customerRequestType: parsed.customerRequestType,
@@ -144,7 +146,8 @@ export async function classifyConversationProduct(event: EventStandard): Promise
         customerRequestTypeReason: parsed.customerRequestTypeReason,
       });
 
-      console.log(`[Classification Orchestrator] Classification saved for conversation ${event.conversationId}: ${parsed.product}/${parsed.subproduct} (${parsed.productConfidence}%), requestType: ${parsed.customerRequestType} (${parsed.customerRequestTypeConfidence}%), logId: ${result.logId}`);
+      const productName = resolvedProduct ? `${resolvedProduct.produto}/${resolvedProduct.subproduto || 'N/A'}` : `${parsed.product}/${parsed.subproduct || 'N/A'} (not found in catalog)`;
+      console.log(`[Classification Orchestrator] Classification saved for conversation ${event.conversationId}: ${productName} (${parsed.productConfidence}%), requestType: ${parsed.customerRequestType} (${parsed.customerRequestTypeConfidence}%), logId: ${result.logId}`);
     }
   } catch (error: any) {
     console.error(`[Classification Orchestrator] Error in classifyConversationProduct for conversation ${event.conversationId}:`, error);

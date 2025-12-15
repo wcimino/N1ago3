@@ -42,7 +42,7 @@ export interface SummaryAgentResult extends AgentResult {
 }
 
 export interface ClassificationAgentResult extends AgentResult {
-  product?: string;
+  productId?: number;
   customerRequestType?: string;
 }
 
@@ -78,8 +78,7 @@ export interface OrchestratorContext {
   currentStatus: OrchestratorStatus;
   summary?: string;
   classification?: {
-    product?: string;
-    subproduct?: string;
+    productId?: number;
     customerRequestType?: string;
   };
   demand?: string;

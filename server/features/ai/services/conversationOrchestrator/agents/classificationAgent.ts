@@ -13,7 +13,7 @@ export class ClassificationAgent {
       
       return {
         success: true,
-        product: summaryRecord?.product || undefined,
+        productId: summaryRecord?.productId || undefined,
         customerRequestType: summaryRecord?.customerRequestType || undefined,
       };
     } catch (error: any) {

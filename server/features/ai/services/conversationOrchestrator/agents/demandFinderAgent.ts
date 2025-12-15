@@ -1,4 +1,5 @@
 import { runAgentAndSaveSuggestion, buildAgentContextFromEvent } from "../../agentFramework.js";
+import { productCatalogStorage } from "../../../../products/storage/productCatalogStorage.js";
 import type { DemandFinderAgentResult, OrchestratorContext } from "../types.js";
 
 const CONFIG_KEY = "demand_finder";
@@ -8,15 +9,26 @@ export class DemandFinderAgent {
     const { event, conversationId, summary, classification } = context;
 
     try {
+      let resolvedClassification: { product?: string | null; subproduct?: string | null; customerRequestType?: string | null } | undefined;
+      if (classification?.productId) {
+        const product = await productCatalogStorage.getById(classification.productId);
+        if (product) {
+          resolvedClassification = {
+            product: product.produto,
+            subproduct: product.subproduto,
+            customerRequestType: classification.customerRequestType,
+          };
+        }
+      } else if (classification?.customerRequestType) {
+        resolvedClassification = {
+          customerRequestType: classification.customerRequestType,
+        };
+      }
+
       const agentContext = await buildAgentContextFromEvent(event, {
         overrides: {
           summary,
-          classification: classification ? {
-            product: classification.product,
-            subproduct: classification.subproduct,
-            subject: classification.subject,
-            intent: classification.intent,
-          } : undefined,
+          classification: resolvedClassification,
         },
       });
 
