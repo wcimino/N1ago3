@@ -2,11 +2,15 @@ import type { KnowledgeBaseObjectiveProblem } from "../../../../shared/schema.js
 import type { EmbeddableArticle } from "../types.js";
 import { generateContentHashFromParts } from "../types.js";
 
+export type ObjectiveProblemWithProductNames = KnowledgeBaseObjectiveProblem & {
+  productNames?: string[];
+};
+
 export class ObjectiveProblemEmbeddableArticle implements EmbeddableArticle {
   id: number;
-  private problem: KnowledgeBaseObjectiveProblem;
+  private problem: ObjectiveProblemWithProductNames;
 
-  constructor(problem: KnowledgeBaseObjectiveProblem) {
+  constructor(problem: ObjectiveProblemWithProductNames) {
     this.id = problem.id;
     this.problem = problem;
   }
@@ -27,26 +31,33 @@ export class ObjectiveProblemEmbeddableArticle implements EmbeddableArticle {
       parts.push(`Exemplos: ${examples.join("; ")}`);
     }
 
+    const productNames = this.problem.productNames || [];
+    if (productNames.length > 0) {
+      parts.push(`Produtos: ${productNames.join(", ")}`);
+    }
+
     return parts.join("\n\n");
   }
 
   getContentHash(): string {
     const synonyms = this.problem.synonyms || [];
     const examples = this.problem.examples || [];
+    const productNames = this.problem.productNames || [];
     
     return generateContentHashFromParts([
       this.problem.name,
       this.problem.description,
       synonyms.join(","),
       examples.join(","),
+      productNames.join(","),
     ]);
   }
 
-  static fromProblem(problem: KnowledgeBaseObjectiveProblem): ObjectiveProblemEmbeddableArticle {
+  static fromProblem(problem: ObjectiveProblemWithProductNames): ObjectiveProblemEmbeddableArticle {
     return new ObjectiveProblemEmbeddableArticle(problem);
   }
 
-  static fromProblems(problems: KnowledgeBaseObjectiveProblem[]): ObjectiveProblemEmbeddableArticle[] {
+  static fromProblems(problems: ObjectiveProblemWithProductNames[]): ObjectiveProblemEmbeddableArticle[] {
     return problems.map(p => new ObjectiveProblemEmbeddableArticle(p));
   }
 }
@@ -56,15 +67,18 @@ export function generateProblemContentHash(problem: {
   description: string;
   synonyms?: string[] | null;
   examples?: string[] | null;
+  productNames?: string[] | null;
 }): string {
   const synonyms = problem.synonyms || [];
   const examples = problem.examples || [];
+  const productNames = problem.productNames || [];
   
   return generateContentHashFromParts([
     problem.name,
     problem.description,
     synonyms.join(","),
     examples.join(","),
+    productNames.join(","),
   ]);
 }
 
@@ -73,6 +87,7 @@ export function generateProblemContentForEmbedding(problem: {
   description: string;
   synonyms?: string[] | null;
   examples?: string[] | null;
+  productNames?: string[] | null;
 }): string {
   const parts: string[] = [];
   
@@ -87,6 +102,11 @@ export function generateProblemContentForEmbedding(problem: {
   const examples = problem.examples || [];
   if (examples.length > 0) {
     parts.push(`Exemplos: ${examples.join("; ")}`);
+  }
+
+  const productNames = problem.productNames || [];
+  if (productNames.length > 0) {
+    parts.push(`Produtos: ${productNames.join(", ")}`);
   }
 
   return parts.join("\n\n");

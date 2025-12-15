@@ -130,7 +130,9 @@ async function setProductsForProblem(problemId: number, productIds: number[]): P
   }
 }
 
-function generateProblemContentForEmbedding(problem: KnowledgeBaseObjectiveProblem): string {
+type ProblemWithProductNames = KnowledgeBaseObjectiveProblem & { productNames?: string[] };
+
+function generateProblemContentForEmbedding(problem: ProblemWithProductNames): string {
   const parts: string[] = [];
   
   parts.push(`Problema: ${problem.name}`);
@@ -146,19 +148,36 @@ function generateProblemContentForEmbedding(problem: KnowledgeBaseObjectiveProbl
     parts.push(`Exemplos: ${examples.join("; ")}`);
   }
 
+  const productNames = problem.productNames || [];
+  if (productNames.length > 0) {
+    parts.push(`Produtos: ${productNames.join(", ")}`);
+  }
+
   return parts.join("\n\n");
 }
 
-function generateProblemContentHash(problem: KnowledgeBaseObjectiveProblem): string {
+function generateProblemContentHash(problem: ProblemWithProductNames): string {
   const synonyms = problem.synonyms || [];
   const examples = problem.examples || [];
+  const productNames = problem.productNames || [];
   
   return generateContentHashFromParts([
     problem.name,
     problem.description,
     synonyms.join(","),
     examples.join(","),
+    productNames.join(","),
   ]);
+}
+
+async function getProductNamesForProblem(problemId: number): Promise<string[]> {
+  const links = await db
+    .select({ fullName: productsCatalog.fullName })
+    .from(knowledgeBaseObjectiveProblemsHasProductsCatalog)
+    .innerJoin(productsCatalog, eq(knowledgeBaseObjectiveProblemsHasProductsCatalog.productId, productsCatalog.id))
+    .where(eq(knowledgeBaseObjectiveProblemsHasProductsCatalog.objectiveProblemId, problemId));
+  
+  return links.map((l: typeof links[number]) => l.fullName);
 }
 
 export function generateAndSaveEmbeddingAsync(problem: KnowledgeBaseObjectiveProblem): void {
@@ -166,11 +185,14 @@ export function generateAndSaveEmbeddingAsync(problem: KnowledgeBaseObjectivePro
     try {
       console.log(`[ObjectiveProblem Embedding] Generating embedding for problem ${problem.id}...`);
       
-      const contentText = generateProblemContentForEmbedding(problem);
+      const productNames = await getProductNamesForProblem(problem.id);
+      const problemWithProducts: ProblemWithProductNames = { ...problem, productNames };
+      
+      const contentText = generateProblemContentForEmbedding(problemWithProducts);
       const { embedding, logId, tokensUsed } = await generateEmbedding(contentText, { 
         contextType: "knowledge_base_article" 
       });
-      const contentHash = generateProblemContentHash(problem);
+      const contentHash = generateProblemContentHash(problemWithProducts);
       
       await upsertProblemEmbedding({
         problemId: problem.id,
@@ -535,11 +557,14 @@ export async function generateAllMissingEmbeddings(): Promise<{ processed: numbe
 }
 
 async function generateAndSaveEmbeddingSync(problem: KnowledgeBaseObjectiveProblem): Promise<void> {
-  const contentText = generateProblemContentForEmbedding(problem);
+  const productNames = await getProductNamesForProblem(problem.id);
+  const problemWithProducts: ProblemWithProductNames = { ...problem, productNames };
+  
+  const contentText = generateProblemContentForEmbedding(problemWithProducts);
   const { embedding, logId, tokensUsed } = await generateEmbedding(contentText, { 
     contextType: "knowledge_base_article" 
   });
-  const contentHash = generateProblemContentHash(problem);
+  const contentHash = generateProblemContentHash(problemWithProducts);
   
   await upsertProblemEmbedding({
     problemId: problem.id,
