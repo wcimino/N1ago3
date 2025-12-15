@@ -26,3 +26,4 @@ export { Select } from "./Select";
 export { StatsBar } from "./StatsBar";
 export { ToggleSwitch } from "./ToggleSwitch";
 export { TreeView, TreeNodeItem, useTreeExpansion } from "./TreeView";
+export { FormActions } from "./FormActions";

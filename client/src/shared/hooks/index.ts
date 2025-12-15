@@ -16,3 +16,5 @@ export { useCrudFormState } from "./useCrudFormState";
 export type { CrudFormStateConfig, CrudFormStateReturn } from "./useCrudFormState";
 export { useFilteredData, useSimpleFilter } from "./useFilteredData";
 export type { FilterState, UseFilteredDataConfig, FilterDefinition } from "./useFilteredData";
+export { useFilteredQuery, useLocalFilter } from "./useFilteredQuery";
+export type { FilterConfig, UseFilteredQueryOptions, UseFilteredQueryResult } from "./useFilteredQuery";
