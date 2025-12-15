@@ -1,8 +1,6 @@
-# N1ago - Atendimento sobre Crédito
-
 ## Overview
 
-N1ago is a system designed to manage and monitor customer credit inquiry interactions. It processes webhooks from Zendesk Sunshine Conversations, stores conversation data, and provides a real-time React dashboard for event visualization. The project's primary goal is to enhance customer service efficiency, offer comprehensive interaction insights, and establish a foundation for future AI-driven automations such as conversation summarization, product classification, and automated support to improve customer experience and generate valuable business insights.
+N1ago is a system for managing and monitoring customer credit inquiry interactions. It processes webhooks from Zendesk Sunshine Conversations, stores conversation data, and provides a real-time React dashboard for visualization. The project aims to improve customer service efficiency, offer interaction insights, and lay the groundwork for future AI-driven automations like conversation summarization, product classification, and automated support to enhance customer experience and generate business insights.
 
 ## User Preferences
 
@@ -10,31 +8,31 @@ I prefer clear and direct communication. When suggesting changes, please provide
 
 ## System Architecture
 
-The system utilizes a decoupled architecture comprising a React, TypeScript, Vite, Tailwind CSS, TanStack Query, and wouter frontend, and an Express.js, Drizzle ORM (for PostgreSQL), and Replit Auth backend. It operates on a `vm` deployment target to support continuous background workers.
+The system employs a decoupled architecture with a React, TypeScript, Vite, Tailwind CSS, TanStack Query, and wouter frontend, and an Express.js, Drizzle ORM (PostgreSQL), and Replit Auth backend. It operates on a `vm` deployment target to support continuous background workers.
 
 **Core Architectural Patterns:**
 
-*   **Standardized Event Architecture:** Events from various sources are ingested and normalized into a `StandardEvent` format using dedicated webhook endpoints, an `EventBus`, an `Event Processor` with `Adapters`, and a `Polling Worker`.
-*   **Authentication System:** Leverages Replit Auth (Google Login) with an Access Control List (ACL) based on email domains and an `authorized_users` table.
-*   **AI-Powered Features:** A unified architecture supports multiple AI capabilities (summarization, classification, response generation) with centralized OpenAI services, configurable triggers, and automatic logging of all API calls.
-*   **Shared Embeddings Architecture:** A centralized embeddings layer in `server/shared/embeddings/` standardizes embedding generation, content hashing, and processing across different knowledge sources.
+*   **Standardized Event Architecture:** Events are ingested and normalized into a `StandardEvent` format via webhook endpoints, an `EventBus`, an `Event Processor` with `Adapters`, and a `Polling Worker`.
+*   **Authentication System:** Uses Replit Auth (Google Login) with an Access Control List (ACL) based on email domains and an `authorized_users` table.
+*   **AI-Powered Features:** A unified architecture supports various AI capabilities (summarization, classification, response generation) with centralized OpenAI services, configurable triggers, and automatic API call logging.
+*   **Shared Embeddings Architecture:** A centralized embeddings layer (`server/shared/embeddings/`) standardizes embedding generation, content hashing, and processing across knowledge sources.
 
 **UI/UX Decisions:**
 
-The React frontend offers a real-time dashboard for events and conversations, administrative interfaces, and employs a component-based design with Tailwind CSS for styling. Reusable components include badges, data tables, modals, and pagination.
+The React frontend provides a real-time dashboard, administrative interfaces, and uses a component-based design with Tailwind CSS. Reusable components include badges, data tables, modals, and pagination.
 
 **Feature Specifications:**
 
-*   **Webhook Ingestion & Conversation Storage:** Receives, logs, processes, and stores conversation data and events in PostgreSQL.
+*   **Webhook Ingestion & Conversation Storage:** Receives, logs, processes, and stores conversation data and events.
 *   **Real-time Dashboard:** Live view of events, metrics, and user/webhook management.
-*   **Atendimentos Listing:** Displays individual conversations with full filtering capabilities and pagination.
-*   **User Management:** Secure authentication and authorization with domain and user-list restrictions.
+*   **Atendimentos Listing:** Displays individual conversations with filtering and pagination.
+*   **User Management:** Secure authentication and authorization.
 *   **AI Integrations:** Includes Conversation Summaries, Product Classification, API Logging, and Configurable Triggers.
-*   **Four-Field Classification System:** Classifies conversations hierarchically (Product → Subproduct → Subject → Intent) using sequential AI tools.
+*   **Four-Field Classification System:** Hierarchical conversation classification (Product → Subproduct → Subject → Intent) using sequential AI tools.
 *   **Structured Conversation Summary:** Displays AI-generated summaries with specific structured fields.
-*   **Automatic Routing Rules:** A unified routing system handles conversation allocation to `n1ago`, `human`, or `bot` using rule types like `allocate_next_n` and `transfer_ongoing`, with detailed logging and Zendesk Switchboard API integration.
-*   **AutoPilot - Automatic Response Sending:** Automatically sends suggested responses under specific conditions.
-*   **Objective Problems Catalog:** A normalized catalog of evidence-based problems stored in `knowledge_base_objective_problems` table, used by the Organizer Agent and Diagnostician, and accessible via the Base de Conhecimento.
+*   **Automatic Routing Rules:** Unified routing system for conversation allocation (`n1ago`, `human`, `bot`) with detailed logging and Zendesk Switchboard API integration.
+*   **AutoPilot:** Automatically sends suggested responses based on conditions.
+*   **Objective Problems Catalog:** Normalized catalog of evidence-based problems in `knowledge_base_objective_problems`.
 
 **System Design Choices:**
 
@@ -43,66 +41,19 @@ The React frontend offers a real-time dashboard for events and conversations, ad
 *   **File Structure:** Organized by feature for both frontend and backend.
 *   **Shared Types Architecture:** Centralized type definitions in `shared/types/`.
 *   **Backend Feature Architecture:** Each feature module includes `routes/`, `storage/`, and `services/`.
-*   **Idempotent Event Creation:** Ensures unique event processing and prevents duplicates.
-*   **Modular AI Tools and Prompts:** AI tools are separated into individual files, and prompt variables are centralized.
-*   **Objective Problems Search Tool:** Searches objective problems by keywords and product filter, utilizing semantic search with OpenAI embeddings and falling back to text-based search.
-*   **Unified Knowledge Base Search Helper:** Provides a single entry point for knowledge base searches, using semantic search with PostgreSQL FTS fallback, and recording article views. Supports filtering by `productId` (FK to `products_catalog`) for improved precision, with fallback to product name resolution via `buildSearchContext`.
-*   **Hybrid Search Architecture:** All knowledge base tools (`search_knowledge_base_articles`, `search_knowledge_base_problem_objective`, `search_knowledge_base_articles_and_problems`) support a hybrid search approach:
-    - `conversationContext`: **Obrigatório** - Main semantic search using conversation summary/context embedding
-    - `keywords`: Optional boost/filter applied on top of semantic results (accent-insensitive matching)
-    - Fallback: If embeddings are unavailable, falls back to text-based search using keywords
-*   **Enrichment Agent Modular Architecture:** Refactored into a sequential pipeline for robust logging of AI enrichment attempts.
-*   **Centralized AI Agent Configuration Metadata:** All AI agent configuration pages consume a central metadata registry for consistency.
-*   **Reports Feature Architecture:** Reports are modular with shared infrastructure:
-    - `server/features/reports/utils/dateFilter.ts`: Reusable period filter helper (1h, 24h, all)
-    - `server/features/reports/services/reportsService.ts`: Service layer with SQL queries
-    - `server/features/reports/routes/reports.ts`: Thin route handlers
-    - `client/src/features/reports/hooks/useReportData.ts`: Generic data fetching hook
-    - `client/src/features/reports/components/`: Reusable components (ReportTable, PeriodFilter)
-
-**OpenAI Services Architecture:**
-
-Centralized OpenAI services in `shared/services/openai/` provide wrappers for `chat()`, `chatWithTools()`, and `embedding()` methods, with automatic logging of all OpenAI calls to `openai_api_logs` and support for `correlationId` for tracing.
-
-**AI Agent Framework Patterns:**
-
-The agent architecture is centralized in `server/features/ai/services/agentFramework.ts`:
-
-*   **`runAgent(configType, context, options)`**: Unified entry point for conversation-based agents. Handles config loading, prompt templating, tool wiring, and OpenAI calls.
-*   **`buildAgentContextFromEvent(event, options)`**: Helper to build `AgentContext` from an event, automatically fetching messages, summary, and classification.
-*   **`runAgentAndSaveSuggestion()`**: Extension of `runAgent` that also saves suggested responses.
-*   **Catálogo de Produtos com Cache**: Product catalog is cached for 5 minutes using memoizee to reduce database queries.
-
-When to use each pattern:
-
-| Padrão | Quando usar | Exemplos |
-|--------|-------------|----------|
-| `runAgent()` + `buildAgentContextFromEvent()` | Agentes **event-triggered** que processam conversas buscando dados frescos do banco | summary, response, classification |
-| `runAgent()` com context manual | Agentes dentro de **pipelines** que recebem dados frescos via contexto do orchestrator | demandFinder, solutionProvider (ConversationOrchestrator) |
-| Implementação customizada | Agentes que processam **outros domínios** (não conversas) com prompts/variáveis específicas | enrichment (processa intents/articles) |
-
-Key files:
-- `server/features/ai/services/agentFramework.ts` - Framework unificado
-- `server/features/ai/services/aiTools.ts` - Interface `ToolFlags` e fábricas de tools
-- `server/features/ai/services/openaiApiService.ts` - Serviço base de chamadas OpenAI
-
-**External Sources & Knowledge Base Architecture:**
-
-*   **External Sources:** Replicas of external data (e.g., Zendesk articles) are synced manually.
-*   **Knowledge Base:** Internal Q&A articles stored in `knowledge_base` table with the following structure:
-    - `question`: The main question/topic (replaces old `name` field)
-    - `answer`: The complete answer/resolution (replaces old `resolution` field)
-    - `keywords`: Comma-separated keywords for search optimization
-    - `question_variation`: JSON array of alternative question phrasings
-    - `product_id`: FK to `products_catalog` for product association
-    - `subject_id` / `intent_id`: Classification hierarchy links
-*   **Knowledge Base Embeddings:** Stored in `knowledge_base_embeddings` with content hash for change detection. Embeddings include question, answer, keywords, variations, and product context.
-*   **Zendesk Articles:** Raw data from Zendesk Help Center stored in `zendesk_articles` with separate `zendesk_article_embeddings` for semantic search using pgvector and HNSW index.
-*   **RAG (Retrieval Augmented Generation):** Implements semantic search using OpenAI embeddings with pgvector and HNSW indexing for accurate results, with fallbacks to full-text search.
-*   **Embeddings Regeneration:** 
-    - Knowledge Base Articles: `npx tsx scripts/regenerate-kb-embeddings.ts`
-    - Objective Problems: `npx tsx scripts/regenerate-problems-embeddings.ts`
-    - Both embeddings include product context (productFullName) for improved semantic search relevance.
+*   **Idempotent Event Creation:** Ensures unique event processing.
+*   **Modular AI Tools and Prompts:** AI tools are in individual files; prompt variables are centralized.
+*   **Objective Problems Search Tool:** Searches objective problems by keywords and product filter, using semantic search with OpenAI embeddings and text-based fallback.
+*   **Unified Knowledge Base Search Helper:** Single entry point for knowledge base searches, using semantic search with PostgreSQL FTS fallback, and recording article views. Supports filtering by `productId`.
+*   **Hybrid Search Architecture:** Knowledge base tools support hybrid search: `conversationContext` for semantic search, optional `keywords` for boosting/filtering, and text-based fallback.
+*   **Enrichment Agent Modular Architecture:** Refactored into a sequential pipeline for robust logging.
+*   **Centralized AI Agent Configuration Metadata:** All AI agent configuration pages consume a central metadata registry.
+*   **Reports Feature Architecture:** Modular reports with shared infrastructure for date filtering, service layers, route handlers, data fetching hooks, and reusable components.
+*   **OpenAI Services Architecture:** Centralized services in `shared/services/openai/` provide wrappers for `chat()`, `chatWithTools()`, and `embedding()` with automatic logging to `openai_api_logs` and `correlationId` support.
+*   **AI Agent Framework Patterns:** Centralized in `server/features/ai/services/agentFramework.ts` with `runAgent()`, `buildAgentContextFromEvent()`, and `runAgentAndSaveSuggestion()`. Product catalog is cached for 5 minutes.
+*   **External Sources & Knowledge Base Architecture:** Replicas of external data (e.g., Zendesk articles) are synced manually. Internal Q&A articles stored in `knowledge_base` with `question`, `answer`, `keywords`, `question_variation`, `product_id`, `subject_id`, and `intent_id`. Knowledge base embeddings are stored with content hash. Raw Zendesk data is in `zendesk_articles` with separate `zendesk_article_embeddings`.
+*   **RAG (Retrieval Augmented Generation):** Implements semantic search using OpenAI embeddings with pgvector and HNSW indexing, with fallbacks to full-text search.
+*   **Embeddings Regeneration:** Scripts available for knowledge base and objective problems embeddings regeneration, including product context.
 
 ## External Dependencies
 
@@ -120,94 +71,3 @@ Key files:
 *   **date-fns:** Date utilities.
 *   **wouter:** React routing.
 *   **OpenAI API:** AI capabilities (chat, embeddings).
-
-## Project Structure & Conventions
-
-### Directory Structure
-
-```
-├── client/src/           # Frontend React application
-│   ├── features/         # Feature-based modules (ai, conversations, knowledge, etc.)
-│   ├── shared/           # Reusable frontend components, hooks, and pages
-│   └── contexts/         # React contexts
-├── server/               # Backend Express application
-│   ├── features/         # Feature-based modules with routes/storage/services
-│   └── shared/           # Backend utilities and shared services
-├── shared/               # Types and schemas shared between client and server
-├── drizzle/              # Database migrations
-└── scripts/              # Utility scripts
-```
-
-### Shared Directories Documentation
-
-**1. `shared/` (Root)** - Cross-platform shared code
-- `types/`: TypeScript interfaces used by both client and server
-- `schema/`: Drizzle ORM schemas and Zod validation schemas
-- `constants/`: Shared constants (e.g., action types)
-- `services/openai/`: OpenAI service wrapper with logging
-
-**2. `client/src/shared/`** - Reusable frontend components and utilities
-- `components/ui/`: Base UI components (Button, Input, Modal, DataTable, etc.)
-- `components/badges/`: Status and type badges
-- `components/crud/`: CRUD page patterns (CrudPageLayout, FormField)
-- `components/dashboard/`: Dashboard cards and stats components
-- `components/detail/`: Detail page patterns (InfoField, HistoryList)
-- `components/charts/`: Chart components (DonutChart, HourlyBarChart)
-- `components/modals/`: Reusable modals (EventDetailModal, LogDetailModal)
-- `components/layout/`: Layout components (NavLink, EnvironmentBadge)
-- `hooks/`: Reusable hooks:
-  - `useCrudMutations.ts`: Standard create/update/delete mutations
-  - `useCrudFormState.ts`: Form state management for CRUD operations
-  - `usePaginatedQuery.ts`: Pagination with URL sync
-  - `useFilteredData.ts`: Generic filtering and search
-  - `useUrlFilters.ts`: URL-based filter state
-- `pages/`: Shared pages (HomePage, LandingPage, LoadingPage)
-
-**3. `server/shared/`** - Backend shared utilities
-- `storage/`: Storage utilities:
-  - `crudFactory.ts`: Generic CRUD operations factory
-  - `paginationHelpers.ts`: Pagination utilities
-  - `filterHelpers.ts`: Query filter builders
-  - `upsertHelpers.ts`: Upsert pattern utilities
-- `embeddings/`: Centralized embeddings layer:
-  - `embeddingService.ts`: Core embedding generation
-  - `adapters/`: Source-specific adapters (knowledgeBase, objectiveProblems, zendesk)
-- `services/`: Shared services (fetchWithRetry)
-- `utils/`: Utility functions (matchScoring)
-
-### Naming Conventions
-
-- **Directories**: kebab-case for URL routes, camelCase or simple lowercase for feature folders
-- **Files**: camelCase for TypeScript files (e.g., `knowledgeBaseStorage.ts`)
-- **React Components**: PascalCase (e.g., `KnowledgeBasePage.tsx`)
-- **Hooks**: camelCase with `use` prefix (e.g., `useCrudMutations.ts`)
-- **Database tables**: snake_case, plural (e.g., `knowledge_base_articles`)
-- **API endpoints**: kebab-case, REST plural resources
-
-### Code Patterns
-
-**Feature Module Structure** (both client and server):
-```
-features/<feature-name>/
-├── components/    # UI components (client only)
-├── hooks/         # Custom hooks (client only)
-├── pages/         # Page components (client only)
-├── routes/        # API routes (server only)
-├── storage/       # Database operations (server only)
-├── services/      # Business logic (server only)
-└── index.ts       # Public exports
-```
-
-**Component Extraction Pattern**: Large components (>300 lines) should be split into:
-- Sub-components in a dedicated folder
-- Types in `types.ts`
-- Configuration in `config.ts`
-- Custom hooks in `use<Feature>.ts`
-- Barrel export in `index.ts`
-
-**Storage File Pattern**: Large storage files should be split into:
-- `crud.ts`: Basic CRUD operations
-- `search.ts`: Search/filter logic
-- `embedding.ts`: Embedding-related operations
-- `types.ts`: TypeScript interfaces
-- `index.ts`: Re-exports main functions
