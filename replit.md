@@ -39,8 +39,9 @@ The React frontend provides a real-time dashboard, administrative interfaces, an
 *   **Database Schema:** Plural, `snake_case` table names; singular for config tables; `snake_case` foreign keys; `idx_<table_name>_<field>` indices.
 *   **API Endpoints:** REST resources are plural, `kebab-case`; config endpoints are singular; specific actions use verbs.
 *   **File Structure:** Organized by feature for both frontend and backend.
-*   **Shared Types Architecture:** Centralized type definitions in `shared/types/`.
-*   **Backend Feature Architecture:** Each feature module includes `routes/`, `storage/`, and `services/`.
+*   **Shared Types Architecture:** Centralized type definitions in `shared/types/`. Frontend re-exports via `client/src/types/`.
+*   **Backend Feature Architecture:** Each feature module includes `routes/`, `storage/`, and `services/`. Event adapters are in `server/features/events/adapters/`.
+*   **External API Services:** Zendesk API service is in `server/features/external-sources/zendesk/services/zendeskApiService.ts`.
 *   **Idempotent Event Creation:** Ensures unique event processing.
 *   **Modular AI Tools and Prompts:** AI tools are in individual files; prompt variables are centralized.
 *   **Objective Problems Search Tool:** Searches objective problems by keywords and product filter, using semantic search with OpenAI embeddings and text-based fallback.
