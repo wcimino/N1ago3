@@ -1,4 +1,6 @@
-import { Cross } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { Cross, Info as InfoIcon } from "lucide-react";
 import { severityConfig } from "./config";
 import type { Triage } from "./types";
 
@@ -8,6 +10,42 @@ export interface TriageCardProps {
 
 export function TriageCard({ triage }: TriageCardProps) {
   const severity = severityConfig[triage.severity?.level] || { label: triage.severity?.level || "Desconhecida", color: "bg-gray-100 text-gray-700" };
+  
+  const [showComplaintTooltip, setShowComplaintTooltip] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
+  const complaintButtonRef = useRef<HTMLButtonElement>(null);
+  const complaintTooltipRef = useRef<HTMLDivElement>(null);
+  
+  const hasComplaintVariants = triage.anamnese?.customerMainComplaintQuestionVersion || triage.anamnese?.customerMainComplaintProblemVersion;
+  
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        complaintTooltipRef.current && 
+        !complaintTooltipRef.current.contains(event.target as Node) &&
+        complaintButtonRef.current &&
+        !complaintButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowComplaintTooltip(false);
+      }
+    }
+    
+    if (showComplaintTooltip) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showComplaintTooltip]);
+
+  const handleComplaintTooltipClick = () => {
+    if (!showComplaintTooltip && complaintButtonRef.current) {
+      const rect = complaintButtonRef.current.getBoundingClientRect();
+      setTooltipPos({
+        top: rect.bottom + 4,
+        left: Math.max(8, rect.left - 100),
+      });
+    }
+    setShowComplaintTooltip(!showComplaintTooltip);
+  };
   
   return (
     <div className="rounded-lg p-3 bg-rose-50 border border-rose-200">
@@ -25,8 +63,51 @@ export function TriageCard({ triage }: TriageCardProps) {
       <div className="space-y-2 text-sm">
         {triage.anamnese?.customerMainComplaint && (
           <div>
-            <span className="font-medium text-gray-600">Queixa principal</span>
-            <span className="text-gray-400 text-xs ml-1">(anamnese.customerMainComplaint)</span>
+            <div className="flex items-center gap-1">
+              <span className="font-medium text-gray-600">Queixa principal</span>
+              <span className="text-gray-400 text-xs">(anamnese.customerMainComplaint)</span>
+              {hasComplaintVariants && (
+                <>
+                  <button
+                    ref={complaintButtonRef}
+                    onClick={handleComplaintTooltipClick}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Ver variantes da queixa"
+                  >
+                    <InfoIcon className="w-4 h-4" />
+                  </button>
+                  {showComplaintTooltip && createPortal(
+                    <div 
+                      ref={complaintTooltipRef}
+                      className="fixed z-[9999] w-80 p-3 bg-gray-800 text-white text-xs rounded-lg shadow-xl"
+                      style={{ top: tooltipPos.top, left: tooltipPos.left }}
+                    >
+                      <button 
+                        onClick={() => setShowComplaintTooltip(false)}
+                        className="absolute top-1 right-1 text-gray-400 hover:text-white p-1"
+                      >
+                        x
+                      </button>
+                      <div className="space-y-2">
+                        {triage.anamnese?.customerMainComplaintQuestionVersion && (
+                          <div>
+                            <span className="text-gray-400 block mb-0.5">(customerMainComplaintQuestionVersion)</span>
+                            <p className="text-white">{triage.anamnese.customerMainComplaintQuestionVersion}</p>
+                          </div>
+                        )}
+                        {triage.anamnese?.customerMainComplaintProblemVersion && (
+                          <div>
+                            <span className="text-gray-400 block mb-0.5">(customerMainComplaintProblemVersion)</span>
+                            <p className="text-white">{triage.anamnese.customerMainComplaintProblemVersion}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>,
+                    document.body
+                  )}
+                </>
+              )}
+            </div>
             <p className="text-gray-700 mt-0.5">{triage.anamnese.customerMainComplaint}</p>
           </div>
         )}
