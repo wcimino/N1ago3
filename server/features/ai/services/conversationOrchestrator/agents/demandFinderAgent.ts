@@ -40,15 +40,25 @@ export class DemandFinderAgent {
   private static async searchAndSaveKnowledge(context: OrchestratorContext): Promise<DemandFinderAgentResult["searchResults"]> {
     const { conversationId, summary, classification } = context;
 
-    // Monta contexto de busca LIMPO (apenas campos relevantes)
+    // Monta contexto de busca LIMPO (apenas campos relevantes) - usado como fallback
     const conversationContext = await this.buildCleanSearchContext(summary, classification);
     
-    console.log(`[DemandFinderAgent] Search input for conversation ${conversationId}:\n${conversationContext}`);
+    // Extrai versões específicas do clientRequest (se existirem)
+    const versions = this.extractClientRequestVersions(summary);
+    const articleContext = versions?.clientRequestQuestionVersion;
+    const problemContext = versions?.clientRequestProblemVersion;
     
-    // Busca artigos e problemas (productId é resolvido automaticamente para productContext)
+    console.log(`[DemandFinderAgent] Search input for conversation ${conversationId}:`);
+    console.log(`  - articleContext: ${articleContext ? 'Question version' : 'fallback'}`);
+    console.log(`  - problemContext: ${problemContext ? 'Problem version' : 'fallback'}`);
+    console.log(`  - fallback: ${conversationContext}`);
+    
+    // Busca artigos e problemas com contextos específicos
     const searchResponse = await runCombinedKnowledgeSearch({
       productId: classification?.productId,
       conversationContext,
+      articleContext,
+      problemContext,
       limit: 5,
     });
 
@@ -123,6 +133,32 @@ export class DemandFinderAgent {
       suggestedResponse: result.parsedContent?.suggestedAnswerToCustomer,
       suggestionId: result.suggestionId,
     };
+  }
+
+  /**
+   * Extrai as versões do clientRequest do summary JSON
+   */
+  private static extractClientRequestVersions(summary: string | null | undefined): {
+    clientRequestQuestionVersion?: string;
+    clientRequestProblemVersion?: string;
+    clientRequestStandardVersion?: string;
+  } | undefined {
+    if (!summary) return undefined;
+    
+    try {
+      const summaryData = JSON.parse(summary);
+      const versions = summaryData.clientRequestVersions;
+      if (versions && typeof versions === 'object') {
+        return {
+          clientRequestQuestionVersion: versions.clientRequestQuestionVersion || undefined,
+          clientRequestProblemVersion: versions.clientRequestProblemVersion || undefined,
+          clientRequestStandardVersion: versions.clientRequestStandardVersion || undefined,
+        };
+      }
+    } catch {
+      // Se não for JSON válido, retorna undefined
+    }
+    return undefined;
   }
 
   /**

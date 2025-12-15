@@ -20,6 +20,8 @@ export interface CombinedSearchParams {
   productContext?: string;
   keywords?: string;
   conversationContext?: string;
+  articleContext?: string;
+  problemContext?: string;
   limit?: number;
 }
 
@@ -32,23 +34,26 @@ export interface CombinedSearchResponse {
 }
 
 export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): Promise<CombinedSearchResponse> {
-  const { productId, keywords, conversationContext, limit = 5 } = params;
+  const { productId, keywords, conversationContext, articleContext, problemContext, limit = 5 } = params;
   
   let productContext = params.productContext;
   if (!productContext && productId) {
     productContext = await productCatalogStorage.resolveProductContext(productId);
   }
 
+  const effectiveArticleContext = articleContext || conversationContext;
+  const effectiveProblemContext = problemContext || conversationContext;
+
   const [articlesResult, problemsResult] = await Promise.all([
     runKnowledgeBaseSearch({
       productContext,
-      conversationContext,
+      conversationContext: effectiveArticleContext,
       keywords,
       limit
     }),
     runProblemObjectiveSearch({
       productContext,
-      conversationContext,
+      conversationContext: effectiveProblemContext,
       keywords,
       limit
     })
