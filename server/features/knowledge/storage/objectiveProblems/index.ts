@@ -6,7 +6,7 @@ export type {
   SemanticSearchParams,
   SemanticSearchResult,
   ObjectiveProblemStats,
-} from "./objectiveProblems/index.js";
+} from "./types.js";
 
 export {
   getAllObjectiveProblems,
@@ -15,14 +15,14 @@ export {
   createObjectiveProblem,
   updateObjectiveProblem,
   deleteObjectiveProblem,
-} from "./objectiveProblems/index.js";
+} from "./crud.js";
 
 export {
   getProductIdsForProblem,
   setProductsForProblem,
   getProductNamesForProblem,
   getAllProducts,
-} from "./objectiveProblems/index.js";
+} from "./products.js";
 
 export {
   generateAndSaveEmbeddingAsync,
@@ -30,9 +30,9 @@ export {
   getObjectiveProblemStats,
   getProblemsWithoutEmbeddings,
   generateAllMissingEmbeddings,
-} from "./objectiveProblems/index.js";
+} from "./embedding.js";
 
 export {
   searchObjectiveProblems,
   searchObjectiveProblemsBySimilarity,
-} from "./objectiveProblems/index.js";
+} from "./search.js";
