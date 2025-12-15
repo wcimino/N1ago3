@@ -6,6 +6,7 @@ export interface ObjectiveProblemResult {
   id: number;
   name: string;
   matchScore?: number;
+  matchedTerms?: string[];
 }
 
 export interface ArticleAndProblemResult {
@@ -16,6 +17,7 @@ export interface ArticleAndProblemResult {
   resolution?: string;
   matchScore?: number;
   matchReason?: string;
+  matchedTerms?: string[];
   products?: string[];
 }
 
@@ -46,11 +48,21 @@ function parseStructuredSummary(responseContent: string): StructuredSummary | nu
     if (Array.isArray(rawProblems) && rawProblems.length > 0) {
       objectiveProblems = rawProblems
         .filter((p: any) => p && typeof p.id === 'number' && typeof p.name === 'string')
-        .map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          matchScore: typeof p.matchScore === 'number' ? p.matchScore : undefined,
-        }));
+        .map((p: any) => {
+          const rawMatchedTerms = p.matchedTerms || p.matched_terms || p.termosCorrespondentes || p.termos_correspondentes;
+          let matchedTerms: string[] | undefined;
+          if (Array.isArray(rawMatchedTerms)) {
+            matchedTerms = rawMatchedTerms.filter((t: any) => typeof t === 'string' && t.trim());
+          } else if (typeof rawMatchedTerms === 'string' && rawMatchedTerms.trim()) {
+            matchedTerms = rawMatchedTerms.split(/[,;]+/).map((t: string) => t.trim()).filter(Boolean);
+          }
+          return {
+            id: p.id,
+            name: p.name,
+            matchScore: typeof p.matchScore === 'number' ? p.matchScore : (typeof p.match_score === 'number' ? p.match_score : undefined),
+            matchedTerms: matchedTerms && matchedTerms.length > 0 ? matchedTerms : undefined,
+          };
+        });
       if (objectiveProblems.length === 0) objectiveProblems = undefined;
     }
 
@@ -59,16 +71,26 @@ function parseStructuredSummary(responseContent: string): StructuredSummary | nu
     if (Array.isArray(rawArticlesAndProblems) && rawArticlesAndProblems.length > 0) {
       articlesAndObjectiveProblems = rawArticlesAndProblems
         .filter((item: any) => item && typeof item.id === 'number' && (item.source === 'article' || item.source === 'problem'))
-        .map((item: any) => ({
-          source: item.source as "article" | "problem",
-          id: item.id,
-          name: item.name || null,
-          description: item.description || '',
-          resolution: item.resolution,
-          matchScore: typeof item.matchScore === 'number' ? item.matchScore : undefined,
-          matchReason: item.matchReason,
-          products: Array.isArray(item.products) ? item.products : undefined,
-        }));
+        .map((item: any) => {
+          const rawMatchedTerms = item.matchedTerms || item.matched_terms || item.termosCorrespondentes || item.termos_correspondentes;
+          let matchedTerms: string[] | undefined;
+          if (Array.isArray(rawMatchedTerms)) {
+            matchedTerms = rawMatchedTerms.filter((t: any) => typeof t === 'string' && t.trim());
+          } else if (typeof rawMatchedTerms === 'string' && rawMatchedTerms.trim()) {
+            matchedTerms = rawMatchedTerms.split(/[,;]+/).map((t: string) => t.trim()).filter(Boolean);
+          }
+          return {
+            source: item.source as "article" | "problem",
+            id: item.id,
+            name: item.name || null,
+            description: item.description || item.descricao || '',
+            resolution: item.resolution || item.resolucao,
+            matchScore: typeof item.matchScore === 'number' ? item.matchScore : (typeof item.match_score === 'number' ? item.match_score : undefined),
+            matchReason: item.matchReason || item.match_reason || item.motivoMatch || item.motivo_match,
+            matchedTerms: matchedTerms && matchedTerms.length > 0 ? matchedTerms : undefined,
+            products: Array.isArray(item.products) ? item.products : (Array.isArray(item.produtos) ? item.produtos : undefined),
+          };
+        });
       if (articlesAndObjectiveProblems.length === 0) articlesAndObjectiveProblems = undefined;
     }
 
