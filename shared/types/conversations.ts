@@ -130,6 +130,8 @@ export interface ConversationListResponse {
 
 export interface TriageAnamnese {
   customerMainComplaint: string | null;
+  customerMainComplaintQuestionVersion: string | null;
+  customerMainComplaintProblemVersion: string | null;
   customerRequestType: string | null;
   customerRequestTypeConfidence: string | null;
   customerRequestTypeReason: string | null;
