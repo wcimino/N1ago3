@@ -3,6 +3,7 @@ import { storage } from "../../../storage/index.js";
 import { organizationsStandardStorage } from "../../cadastro/storage/organizationsStandardStorage.js";
 import { eventBus, EVENTS } from "./eventBus.js";
 import { saveAndDispatchEvent } from "./eventDispatcher.js";
+import { enrichUserFromZendesk } from "../../external-sources/zendesk/services/zendeskUserEnrichmentService.js";
 
 const SUPPORTED_SOURCES = ["zendesk"] as const;
 type SupportedSource = typeof SUPPORTED_SOURCES[number];
@@ -78,9 +79,17 @@ export async function processRawEvent(rawId: number, source: string, skipStatusC
 
     const convData = adapter.extractConversation(payload);
     let conversationId: number | undefined;
+    let isNewConversation = false;
     if (convData) {
-      const conversation = await storage.getOrCreateConversationByExternalId(convData);
-      conversationId = conversation?.id;
+      const result = await storage.getOrCreateConversationByExternalId(convData);
+      conversationId = result?.conversation?.id;
+      isNewConversation = result?.isNew ?? false;
+    }
+
+    if (isNewConversation && standardUserData?.email) {
+      enrichUserFromZendesk(standardUserData.email).catch(err =>
+        console.error(`[EventProcessor] Failed to enrich user ${standardUserData.email}:`, err)
+      );
     }
 
     const standardEvents = adapter.normalize(payload);

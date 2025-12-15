@@ -43,7 +43,7 @@ async function createConversationClosedEvent(
   }
 }
 
-async function upsertConversation(data: ConversationData) {
+async function upsertConversation(data: ConversationData): Promise<{ conversation: typeof conversations.$inferSelect; isNew: boolean }> {
   const existing = await db.select({ id: conversations.id })
     .from(conversations)
     .where(eq(conversations.externalConversationId, data.externalConversationId))
@@ -83,7 +83,7 @@ async function upsertConversation(data: ConversationData) {
     }
   }
   
-  return conversation;
+  return { conversation, isNew: isNewConversation };
 }
 
 async function closePreviousConversationsForUser(userExternalId: string, excludeConversationId: number) {

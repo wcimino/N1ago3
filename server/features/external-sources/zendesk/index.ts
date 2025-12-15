@@ -3,3 +3,4 @@ export { default as zendeskSupportUsersRouter } from "./routes/zendeskSupportUse
 export { ZendeskGuideService } from "./services/zendeskGuideService.js";
 export { ZendeskApiService } from "./services/zendeskApiService.js";
 export { ZendeskArticlesStorage } from "./storage/zendeskArticlesStorage.js";
+export { enrichUserFromZendesk } from "./services/zendeskUserEnrichmentService.js";
