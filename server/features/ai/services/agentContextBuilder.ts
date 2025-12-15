@@ -150,7 +150,20 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
   }
 
   let artigosProblemasListaTop5: string | null = null;
-  if (context.classification?.product && context.summary) {
+  
+  // Se searchResults já foram fornecidos no contexto, usar diretamente (evita busca duplicada)
+  if (context.searchResults && context.searchResults.length > 0) {
+    const formattedResults = context.searchResults.slice(0, 5).map(r => ({
+      tipo: r.source === "article" ? "artigo" : "problema",
+      id: r.id,
+      nome: r.name || r.description,
+      descricao: r.description,
+      score: r.matchScore || 0,
+      matched_terms: r.matchedTerms || []
+    }));
+    artigosProblemasListaTop5 = JSON.stringify(formattedResults, null, 2);
+  } else if (context.classification?.product && context.summary) {
+    // Fallback: buscar se não foram fornecidos
     try {
       let customerMainComplaint: string | null = null;
       try {

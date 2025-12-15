@@ -15,6 +15,8 @@ export class ClassificationAgent {
         success: true,
         productId: summaryRecord?.productId || undefined,
         customerRequestType: summaryRecord?.customerRequestType || undefined,
+        productConfidence: summaryRecord?.productConfidence || undefined,
+        customerRequestTypeConfidence: summaryRecord?.customerRequestTypeConfidence || undefined,
       };
     } catch (error: any) {
       console.error(`[ClassificationAgent] Error processing conversation ${conversationId}:`, error);

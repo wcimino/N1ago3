@@ -22,6 +22,7 @@ export interface AgentContext {
     name: string;
     description: string;
     matchScore?: number;
+    matchedTerms?: string[];
   }>;
   messages?: Array<{
     authorType: string;

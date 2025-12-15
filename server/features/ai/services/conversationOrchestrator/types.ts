@@ -35,6 +35,8 @@ export interface SummaryAgentResult extends AgentResult {
 export interface ClassificationAgentResult extends AgentResult {
   productId?: number;
   customerRequestType?: string;
+  productConfidence?: number;
+  customerRequestTypeConfidence?: number;
 }
 
 export interface DemandFinderAgentResult extends AgentResult {
@@ -70,6 +72,8 @@ export interface OrchestratorContext {
   classification?: {
     productId?: number;
     customerRequestType?: string;
+    productConfidence?: number;
+    customerRequestTypeConfidence?: number;
   };
   demand?: string;
   searchResults?: DemandFinderAgentResult["searchResults"];

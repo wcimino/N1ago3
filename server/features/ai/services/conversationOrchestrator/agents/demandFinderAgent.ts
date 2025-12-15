@@ -122,10 +122,10 @@ export class DemandFinderAgent {
    * Passo 2: Monta prompt e chama OpenAI, salvando sugestão
    */
   private static async runAgent(context: OrchestratorContext): Promise<{ suggestedResponse?: string; suggestionId?: number }> {
-    const { event, conversationId, summary, classification } = context;
+    const { event, conversationId, summary, classification, searchResults } = context;
 
     // Resolve classificação para nomes legíveis
-    let resolvedClassification: { product?: string | null; subproduct?: string | null; customerRequestType?: string | null } | undefined;
+    let resolvedClassification: { product?: string | null; subproduct?: string | null; customerRequestType?: string | null; productConfidence?: number | null; customerRequestTypeConfidence?: number | null } | undefined;
     if (classification?.productId) {
       const product = await productCatalogStorage.getById(classification.productId);
       if (product) {
@@ -133,19 +133,24 @@ export class DemandFinderAgent {
           product: product.produto,
           subproduct: product.subproduto,
           customerRequestType: classification.customerRequestType,
+          productConfidence: classification.productConfidence,
+          customerRequestTypeConfidence: classification.customerRequestTypeConfidence,
         };
       }
     } else if (classification?.customerRequestType) {
       resolvedClassification = {
         customerRequestType: classification.customerRequestType,
+        productConfidence: classification.productConfidence,
+        customerRequestTypeConfidence: classification.customerRequestTypeConfidence,
       };
     }
 
-    // Monta contexto do agente
+    // Monta contexto do agente, passando searchResults para evitar busca duplicada
     const agentContext = await buildAgentContextFromEvent(event, {
       overrides: {
         summary,
         classification: resolvedClassification,
+        searchResults,
       },
     });
 

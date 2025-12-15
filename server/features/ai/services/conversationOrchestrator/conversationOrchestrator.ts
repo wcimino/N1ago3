@@ -79,6 +79,8 @@ export class ConversationOrchestrator {
         context.classification = {
           productId: existingSummary.productId || undefined,
           customerRequestType: existingSummary.customerRequestType || undefined,
+          productConfidence: existingSummary.productConfidence || undefined,
+          customerRequestTypeConfidence: existingSummary.customerRequestTypeConfidence || undefined,
         };
         console.log(`[ConversationOrchestrator] Step 1: Using existing summary`);
       }
@@ -95,8 +97,10 @@ export class ConversationOrchestrator {
       context.classification = {
         productId: classificationResult.productId || context.classification?.productId,
         customerRequestType: classificationResult.customerRequestType || context.classification?.customerRequestType,
+        productConfidence: classificationResult.productConfidence || context.classification?.productConfidence,
+        customerRequestTypeConfidence: classificationResult.customerRequestTypeConfidence || context.classification?.customerRequestTypeConfidence,
       };
-      console.log(`[ConversationOrchestrator] Step 2: Classification successful - productId: ${context.classification.productId}, requestType: ${context.classification.customerRequestType}`);
+      console.log(`[ConversationOrchestrator] Step 2: Classification successful - productId: ${context.classification.productId}, requestType: ${context.classification.customerRequestType}, productConfidence: ${context.classification.productConfidence}, requestTypeConfidence: ${context.classification.customerRequestTypeConfidence}`);
     } else {
       console.log(`[ConversationOrchestrator] Step 2: Classification failed or skipped, keeping existing`);
     }
