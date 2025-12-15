@@ -8,13 +8,10 @@ const CONFIG_KEY = "demand_finder";
 
 export class DemandFinderAgent {
   static async process(context: OrchestratorContext): Promise<DemandFinderAgentResult> {
-    const { event, conversationId, summary, classification } = context;
+    const { conversationId } = context;
 
     try {
-      // Passo 1: Buscar artigos/problemas e gravar no banco
       const searchResults = await this.searchAndSaveKnowledge(context);
-
-      // Passo 2: Montar prompt e chamar OpenAI
       const agentResult = await this.runAgent(context);
 
       console.log(`[DemandFinderAgent] Processed conversation ${conversationId}, searchResults: ${searchResults?.length || 0}, suggestionId: ${agentResult.suggestionId || 'none'}`);
@@ -30,6 +27,41 @@ export class DemandFinderAgent {
       return {
         success: false,
         error: error.message || "Failed to process demand finder",
+      };
+    }
+  }
+
+  static async searchOnly(context: OrchestratorContext): Promise<DemandFinderAgentResult["searchResults"]> {
+    const { conversationId } = context;
+
+    try {
+      const searchResults = await this.searchAndSaveKnowledge(context);
+      console.log(`[DemandFinderAgent] searchOnly completed for conversation ${conversationId}, found ${searchResults?.length || 0} results`);
+      return searchResults;
+    } catch (error: any) {
+      console.error(`[DemandFinderAgent] Error in searchOnly for conversation ${conversationId}:`, error);
+      return [];
+    }
+  }
+
+  static async generateResponseOnly(context: OrchestratorContext): Promise<DemandFinderAgentResult> {
+    const { conversationId } = context;
+
+    try {
+      const agentResult = await this.runAgent(context);
+
+      console.log(`[DemandFinderAgent] generateResponseOnly completed for conversation ${conversationId}, suggestionId: ${agentResult.suggestionId || 'none'}`);
+
+      return {
+        success: true,
+        suggestedResponse: agentResult.suggestedResponse,
+        suggestionId: agentResult.suggestionId,
+      };
+    } catch (error: any) {
+      console.error(`[DemandFinderAgent] Error in generateResponseOnly for conversation ${conversationId}:`, error);
+      return {
+        success: false,
+        error: error.message || "Failed to generate response",
       };
     }
   }

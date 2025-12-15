@@ -2,6 +2,7 @@ import { storage } from "../../../../storage/index.js";
 import { conversationStorage } from "../../../conversations/storage/index.js";
 import { SummaryAgent, ClassificationAgent, DemandFinderAgent, SolutionProviderAgent } from "./agents/index.js";
 import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext } from "./types.js";
+import { StatusController } from "./statusController.js";
 import type { EventStandard } from "../../../../../shared/schema.js";
 
 export class ConversationOrchestrator {
@@ -49,12 +50,14 @@ export class ConversationOrchestrator {
 
     await this.step2_Classify(context);
 
-    await this.step3_DecideStatus(context);
+    await this.step3_SearchArticlesAndProblems(context);
 
-    const agentResponse = await this.step4_RouteToAgent(context);
+    await this.step4_DecideStatus(context);
+
+    const agentResponse = await this.step5_RouteToAgent(context);
 
     if (agentResponse) {
-      await this.step5_SendResponse(context, agentResponse);
+      await this.step6_SendResponse(context, agentResponse);
     }
 
     console.log(`[ConversationOrchestrator] Pipeline completed for conversation ${conversationId}, final status: ${context.currentStatus}`);
@@ -99,57 +102,71 @@ export class ConversationOrchestrator {
     }
   }
 
-  private static async step3_DecideStatus(context: OrchestratorContext): Promise<void> {
+  private static async step3_SearchArticlesAndProblems(context: OrchestratorContext): Promise<void> {
+    const { conversationId } = context;
+    console.log(`[ConversationOrchestrator] Step 3: Searching articles and problems for conversation ${conversationId}`);
+
+    const searchResults = await DemandFinderAgent.searchOnly(context);
+
+    if (searchResults && searchResults.length > 0) {
+      context.searchResults = searchResults;
+      console.log(`[ConversationOrchestrator] Step 3: Found ${searchResults.length} articles/problems`);
+    } else {
+      console.log(`[ConversationOrchestrator] Step 3: No articles/problems found`);
+    }
+  }
+
+  private static async step4_DecideStatus(context: OrchestratorContext): Promise<void> {
     const { conversationId, currentStatus } = context;
-    console.log(`[ConversationOrchestrator] Step 3: Deciding status for conversation ${conversationId}, current: ${currentStatus}`);
+    console.log(`[ConversationOrchestrator] Step 4: Deciding status for conversation ${conversationId}, current: ${currentStatus}`);
 
     if (currentStatus === ORCHESTRATOR_STATUS.NEW) {
       await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING);
       context.currentStatus = ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING;
-      console.log(`[ConversationOrchestrator] Step 3: Status updated to DEMAND_UNDERSTANDING`);
+      console.log(`[ConversationOrchestrator] Step 4: Status updated to DEMAND_UNDERSTANDING`);
+    } else if (currentStatus === ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING) {
+      const evaluation = await StatusController.evaluateDemandUnderstood(conversationId);
+      
+      if (evaluation.canTransition) {
+        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.TEMP_DEMAND_UNDERSTOOD);
+        context.currentStatus = ORCHESTRATOR_STATUS.TEMP_DEMAND_UNDERSTOOD;
+        console.log(`[ConversationOrchestrator] Step 4: Status updated to TEMP_DEMAND_UNDERSTOOD - ${evaluation.reason}`);
+      } else {
+        console.log(`[ConversationOrchestrator] Step 4: Status remains DEMAND_UNDERSTANDING - ${evaluation.reason}`);
+      }
     } else {
-      console.log(`[ConversationOrchestrator] Step 3: Status remains ${currentStatus}`);
+      console.log(`[ConversationOrchestrator] Step 4: Status remains ${currentStatus}`);
     }
   }
 
-  private static async step4_RouteToAgent(context: OrchestratorContext): Promise<string | null> {
-    const { conversationId, currentStatus } = context;
-    console.log(`[ConversationOrchestrator] Step 4: Running DemandFinder for conversation ${conversationId}`);
+  private static async step5_RouteToAgent(context: OrchestratorContext): Promise<string | null> {
+    const { conversationId } = context;
+    console.log(`[ConversationOrchestrator] Step 5: Running DemandFinder agent for conversation ${conversationId}`);
 
-    // DemandFinder faz:
-    // 1. Busca artigos/problemas e grava no banco
-    // 2. Monta prompt e chama OpenAI, salvando sugestão
-    const demandResult = await DemandFinderAgent.process(context);
+    const agentResult = await DemandFinderAgent.generateResponseOnly(context);
 
-    if (!demandResult.success) {
-      console.log(`[ConversationOrchestrator] Step 4: DemandFinder failed: ${demandResult.error}`);
+    if (!agentResult.success) {
+      console.log(`[ConversationOrchestrator] Step 5: DemandFinder failed: ${agentResult.error}`);
       return null;
     }
 
-    // Atualiza contexto com resultados da busca
-    if (demandResult.searchResults && demandResult.searchResults.length > 0) {
-      context.searchResults = demandResult.searchResults;
-      console.log(`[ConversationOrchestrator] Step 4: Found ${demandResult.searchResults.length} articles/problems`);
-    }
-
-    // Retorna a sugestão gerada pelo agente
-    const response = demandResult.suggestedResponse || null;
+    const response = agentResult.suggestedResponse || null;
     
     if (response) {
-      console.log(`[ConversationOrchestrator] Step 4: DemandFinder generated response`);
+      console.log(`[ConversationOrchestrator] Step 5: DemandFinder generated response`);
     } else {
-      console.log(`[ConversationOrchestrator] Step 4: DemandFinder completed without response`);
+      console.log(`[ConversationOrchestrator] Step 5: DemandFinder completed without response`);
     }
 
     return response;
   }
 
-  private static async step5_SendResponse(context: OrchestratorContext, response: string): Promise<void> {
+  private static async step6_SendResponse(context: OrchestratorContext, response: string): Promise<void> {
     const { conversationId } = context;
-    console.log(`[ConversationOrchestrator] Step 5: Sending response for conversation ${conversationId}`);
-    console.log(`[ConversationOrchestrator] Step 5: Response: "${response.substring(0, 100)}..."`);
+    console.log(`[ConversationOrchestrator] Step 6: Sending response for conversation ${conversationId}`);
+    console.log(`[ConversationOrchestrator] Step 6: Response: "${response.substring(0, 100)}..."`);
     
-    console.log(`[ConversationOrchestrator] Step 5: Response sending not implemented yet`);
+    console.log(`[ConversationOrchestrator] Step 6: Response sending not implemented yet`);
   }
 
   private static async escalate(context: OrchestratorContext, reason: string): Promise<void> {
