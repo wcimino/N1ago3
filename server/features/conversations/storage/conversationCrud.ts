@@ -185,6 +185,7 @@ export const conversationCrud = {
     
     if (isN1ago) {
       updateData.handledByN1ago = true;
+      updateData.autopilotEnabled = true;
     }
     
     const result = await db.update(conversations)
