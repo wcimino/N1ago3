@@ -1,21 +1,5 @@
 import { FilterBar as GenericFilterBar } from "../../../shared/components/ui";
-
-const EMOTION_OPTIONS = [
-  { value: "1", label: "Positivo" },
-  { value: "2", label: "Bom" },
-  { value: "3", label: "Neutro" },
-  { value: "4", label: "Irritado" },
-  { value: "5", label: "Muito irritado" },
-];
-
-const USER_AUTHENTICATED_OPTIONS = [
-  { value: "authenticated", label: "Autenticado" },
-  { value: "not_authenticated", label: "Nao autenticado" },
-];
-
-const HANDLED_BY_N1AGO_OPTIONS = [
-  { value: "yes", label: "Passou pelo N1ago" },
-];
+import { EMOTION_OPTIONS, USER_AUTHENTICATED_OPTIONS, HANDLED_BY_N1AGO_OPTIONS } from "../../../shared/constants";
 
 interface FilterBarProps {
   productStandards: string[];

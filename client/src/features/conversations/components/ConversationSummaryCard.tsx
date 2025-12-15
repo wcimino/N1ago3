@@ -1,36 +1,11 @@
 import { Sparkles, Clock, Package, Target } from "lucide-react";
 import { useDateFormatters } from "../../../shared/hooks";
+import { emotionConfig, intentConfig } from "../../../shared/constants";
 import type { ConversationSummary } from "../types/conversations";
 
 interface ConversationSummaryCardProps {
   summary: ConversationSummary | null;
 }
-
-const intentLabels: Record<string, string> = {
-  contratar: "Quer contratar",
-  suporte: "Precisa de suporte",
-  cancelar: "Quer cancelar",
-  duvida: "Tem dúvidas",
-  reclamacao: "Reclamação",
-  outros: "Outros",
-};
-
-const intentColors: Record<string, string> = {
-  contratar: "bg-green-100 text-green-700",
-  suporte: "bg-blue-100 text-blue-700",
-  cancelar: "bg-red-100 text-red-700",
-  duvida: "bg-yellow-100 text-yellow-700",
-  reclamacao: "bg-orange-100 text-orange-700",
-  outros: "bg-gray-100 text-gray-700",
-};
-
-const emotionConfig: Record<number, { label: string; color: string; emoji: string }> = {
-  1: { label: "Muito positivo", color: "bg-green-100 text-green-700", emoji: "😊" },
-  2: { label: "Positivo", color: "bg-emerald-100 text-emerald-700", emoji: "🙂" },
-  3: { label: "Neutro", color: "bg-gray-100 text-gray-600", emoji: "😐" },
-  4: { label: "Irritado", color: "bg-orange-100 text-orange-700", emoji: "😤" },
-  5: { label: "Muito irritado", color: "bg-red-100 text-red-700", emoji: "😠" },
-};
 
 export function ConversationSummaryCard({ summary }: ConversationSummaryCardProps) {
   const { formatDateTime, formatRelativeTime } = useDateFormatters();
@@ -78,9 +53,9 @@ export function ConversationSummaryCard({ summary }: ConversationSummaryCardProp
             </div>
             <div className="flex items-start gap-2">
               <span className="text-gray-500 min-w-[70px]">Intenção:</span>
-              <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${intentColors[summary.intent || "outros"] || intentColors.outros}`}>
+              <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${intentConfig[summary.intent || "outros"]?.color || intentConfig.outros.color}`}>
                 <Target className="w-3 h-3" />
-                {summary.subject || "(vazio)"} {">"} {intentLabels[summary.intent || ""] || summary.intent || "(vazio)"}
+                {summary.subject || "(vazio)"} {">"} {intentConfig[summary.intent || ""]?.label || summary.intent || "(vazio)"}
               </div>
             </div>
             {summary.customer_emotion_level && emotionConfig[summary.customer_emotion_level] && (
