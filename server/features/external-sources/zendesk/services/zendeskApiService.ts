@@ -243,12 +243,19 @@ export async function releaseControl(
 }
 
 export function getAgentWorkspaceIntegrationId(): string {
-  return "5fbcf90112addf000c227bb2";
+  const id = process.env.ZENDESK_AGENT_WORKSPACE_ID;
+  if (!id) {
+    throw new Error("Missing ZENDESK_AGENT_WORKSPACE_ID environment variable");
+  }
+  return id;
 }
 
 export function getN1agoIntegrationId(): string {
-  const isDev = process.env.NODE_ENV !== "production";
-  return isDev ? "69357782256891c6fda71018" : "693577c73ef61062218d9705";
+  const id = process.env.ZENDESK_SWITCHBOARD_INTEGRATION_ID;
+  if (!id) {
+    throw new Error("Missing ZENDESK_SWITCHBOARD_INTEGRATION_ID environment variable");
+  }
+  return id;
 }
 
 export function getAnswerBotIntegrationId(): string {
