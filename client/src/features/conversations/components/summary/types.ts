@@ -1,5 +1,11 @@
 import type { Triage, ObjectiveProblemIdentified, ArticleAndProblemResult } from "../../types/conversations";
 
+export interface ClientRequestVersions {
+  clientRequestStandardVersion?: string;
+  clientRequestQuestionVersion?: string;
+  clientRequestProblemVersion?: string;
+}
+
 export interface SummaryData {
   product?: string | null;
   subproduct?: string | null;
@@ -7,6 +13,7 @@ export interface SummaryData {
   product_confidence_reason?: string | null;
   text?: string | null;
   client_request?: string | null;
+  client_request_versions?: ClientRequestVersions | null;
   agent_actions?: string | null;
   current_status?: string | null;
   important_info?: string | null;

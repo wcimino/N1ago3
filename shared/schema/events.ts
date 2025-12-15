@@ -89,6 +89,7 @@ export const conversationsSummary = pgTable("conversations_summary", {
   customerRequestTypeReason: text("customer_request_type_reason"),
   objectiveProblems: json("objective_problems").$type<Array<{ id: number; name: string; matchScore?: number; matchedTerms?: string[] }>>(),
   articlesAndObjectiveProblems: json("articles_and_objective_problems").$type<Array<{ source: "article" | "problem"; id: number; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; matchedTerms?: string[]; products?: string[] }>>(),
+  clientRequestVersions: json("client_request_versions").$type<{ clientRequestStandardVersion?: string; clientRequestQuestionVersion?: string; clientRequestProblemVersion?: string }>(),
   generatedAt: timestamp("generated_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

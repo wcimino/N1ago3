@@ -22,6 +22,7 @@ export const summaryStorage = {
     const updateSet: Record<string, any> = {
       summary: data.summary,
       clientRequest: data.clientRequest,
+      clientRequestVersions: data.clientRequestVersions,
       agentActions: data.agentActions,
       currentStatus: data.currentStatus,
       importantInfo: data.importantInfo,

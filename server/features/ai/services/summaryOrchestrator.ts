@@ -9,8 +9,15 @@ export interface ObjectiveProblemResult {
   matchedTerms?: string[];
 }
 
+export interface ClientRequestVersions {
+  clientRequestStandardVersion?: string;
+  clientRequestQuestionVersion?: string;
+  clientRequestProblemVersion?: string;
+}
+
 export interface StructuredSummary {
   clientRequest?: string;
+  clientRequestVersions?: ClientRequestVersions;
   agentActions?: string;
   currentStatus?: string;
   importantInfo?: string;
@@ -53,8 +60,24 @@ function parseStructuredSummary(responseContent: string): StructuredSummary | nu
       if (objectiveProblems.length === 0) objectiveProblems = undefined;
     }
 
+    let clientRequestVersions: ClientRequestVersions | undefined;
+    const rawVersions = parsed.clientRequestVersions;
+    if (rawVersions && typeof rawVersions === 'object') {
+      clientRequestVersions = {
+        clientRequestStandardVersion: rawVersions.clientRequestStandardVersion || undefined,
+        clientRequestQuestionVersion: rawVersions.clientRequestQuestionVersion || undefined,
+        clientRequestProblemVersion: rawVersions.clientRequestProblemVersion || undefined,
+      };
+      if (!clientRequestVersions.clientRequestStandardVersion && 
+          !clientRequestVersions.clientRequestQuestionVersion && 
+          !clientRequestVersions.clientRequestProblemVersion) {
+        clientRequestVersions = undefined;
+      }
+    }
+
     return {
       clientRequest: parsed.clientRequest || parsed.solicitacaoCliente || parsed.solicitacao_cliente || undefined,
+      clientRequestVersions,
       agentActions: parsed.agentActions || parsed.acoesAtendente || parsed.acoes_atendente || undefined,
       currentStatus: parsed.currentStatus || parsed.statusAtual || parsed.status_atual || undefined,
       importantInfo: parsed.importantInfo || parsed.informacoesImportantes || parsed.informacoes_importantes || undefined,
@@ -131,6 +154,7 @@ export async function generateConversationSummary(event: EventStandard): Promise
       externalConversationId: event.externalConversationId || undefined,
       summary: result.responseContent,
       clientRequest: structured?.clientRequest,
+      clientRequestVersions: structured?.clientRequestVersions,
       agentActions: structured?.agentActions,
       currentStatus: structured?.currentStatus,
       importantInfo: structured?.importantInfo,
