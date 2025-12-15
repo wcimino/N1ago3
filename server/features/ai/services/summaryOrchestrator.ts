@@ -9,18 +9,6 @@ export interface ObjectiveProblemResult {
   matchedTerms?: string[];
 }
 
-export interface ArticleAndProblemResult {
-  source: "article" | "problem";
-  id: number;
-  name: string | null;
-  description: string;
-  resolution?: string;
-  matchScore?: number;
-  matchReason?: string;
-  matchedTerms?: string[];
-  products?: string[];
-}
-
 export interface StructuredSummary {
   clientRequest?: string;
   agentActions?: string;
@@ -28,7 +16,6 @@ export interface StructuredSummary {
   importantInfo?: string;
   customerEmotionLevel?: number;
   objectiveProblems?: ObjectiveProblemResult[];
-  articlesAndObjectiveProblems?: ArticleAndProblemResult[];
 }
 
 function parseStructuredSummary(responseContent: string): StructuredSummary | null {
@@ -66,34 +53,6 @@ function parseStructuredSummary(responseContent: string): StructuredSummary | nu
       if (objectiveProblems.length === 0) objectiveProblems = undefined;
     }
 
-    let articlesAndObjectiveProblems: ArticleAndProblemResult[] | undefined;
-    const rawArticlesAndProblems = parsed.articlesAndObjectiveProblems || parsed.artigosEProblemas || parsed.artigos_e_problemas;
-    if (Array.isArray(rawArticlesAndProblems) && rawArticlesAndProblems.length > 0) {
-      articlesAndObjectiveProblems = rawArticlesAndProblems
-        .filter((item: any) => item && typeof item.id === 'number' && (item.source === 'article' || item.source === 'problem'))
-        .map((item: any) => {
-          const rawMatchedTerms = item.matchedTerms || item.matched_terms || item.termosCorrespondentes || item.termos_correspondentes;
-          let matchedTerms: string[] | undefined;
-          if (Array.isArray(rawMatchedTerms)) {
-            matchedTerms = rawMatchedTerms.filter((t: any) => typeof t === 'string' && t.trim());
-          } else if (typeof rawMatchedTerms === 'string' && rawMatchedTerms.trim()) {
-            matchedTerms = rawMatchedTerms.split(/[,;]+/).map((t: string) => t.trim()).filter(Boolean);
-          }
-          return {
-            source: item.source as "article" | "problem",
-            id: item.id,
-            name: item.name || null,
-            description: item.description || item.descricao || '',
-            resolution: item.resolution || item.resolucao,
-            matchScore: typeof item.matchScore === 'number' ? item.matchScore : (typeof item.match_score === 'number' ? item.match_score : undefined),
-            matchReason: item.matchReason || item.match_reason || item.motivoMatch || item.motivo_match,
-            matchedTerms: matchedTerms && matchedTerms.length > 0 ? matchedTerms : undefined,
-            products: Array.isArray(item.products) ? item.products : (Array.isArray(item.produtos) ? item.produtos : undefined),
-          };
-        });
-      if (articlesAndObjectiveProblems.length === 0) articlesAndObjectiveProblems = undefined;
-    }
-
     return {
       clientRequest: parsed.clientRequest || parsed.solicitacaoCliente || parsed.solicitacao_cliente || undefined,
       agentActions: parsed.agentActions || parsed.acoesAtendente || parsed.acoes_atendente || undefined,
@@ -101,7 +60,6 @@ function parseStructuredSummary(responseContent: string): StructuredSummary | nu
       importantInfo: parsed.importantInfo || parsed.informacoesImportantes || parsed.informacoes_importantes || undefined,
       customerEmotionLevel: validEmotionLevel,
       objectiveProblems,
-      articlesAndObjectiveProblems,
     };
   } catch {
     return null;
@@ -178,7 +136,6 @@ export async function generateConversationSummary(event: EventStandard): Promise
       importantInfo: structured?.importantInfo,
       customerEmotionLevel: structured?.customerEmotionLevel,
       objectiveProblems: structured?.objectiveProblems,
-      articlesAndObjectiveProblems: structured?.articlesAndObjectiveProblems,
       lastEventId: event.id,
     });
 

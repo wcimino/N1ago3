@@ -67,7 +67,11 @@ export class DemandFinderAgent {
               id: r.id,
               name: r.name || "",
               description: r.description,
+              resolution: r.resolution,
               matchScore: r.matchScore,
+              matchReason: r.matchReason,
+              matchedTerms: Array.isArray(r.matchedTerms) ? r.matchedTerms : undefined,
+              products: Array.isArray(r.products) ? r.products : undefined,
             }));
           }
         } catch (e: any) {

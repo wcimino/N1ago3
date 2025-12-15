@@ -1,5 +1,6 @@
 import { storage } from "../../../../storage/index.js";
 import { conversationStorage } from "../../../conversations/storage/index.js";
+import { summaryStorage } from "../../storage/summaryStorage.js";
 import { SummaryAgent, ClassificationAgent, DemandFinderAgent, SolutionProviderAgent } from "./agents/index.js";
 import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext } from "./types.js";
 import type { EventStandard } from "../../../../../shared/schema.js";
@@ -123,6 +124,26 @@ export class ConversationOrchestrator {
     if (demandResult.success && demandResult.demandIdentified) {
       context.demand = demandResult.demand;
       context.searchResults = demandResult.searchResults;
+
+      if (demandResult.searchResults && demandResult.searchResults.length > 0) {
+        const articlesAndObjectiveProblems = demandResult.searchResults.map((r) => ({
+          source: r.source as "article" | "problem",
+          id: r.id,
+          name: r.name || null,
+          description: r.description || "",
+          resolution: r.resolution,
+          matchScore: r.matchScore,
+          matchReason: r.matchReason,
+          matchedTerms: r.matchedTerms,
+          products: r.products,
+        }));
+
+        await summaryStorage.updateArticlesAndProblems(conversationId, articlesAndObjectiveProblems);
+
+        console.log(`[ConversationOrchestrator] Step 4: Saved ${articlesAndObjectiveProblems.length} articles/problems from DemandFinder`);
+      } else {
+        console.log(`[ConversationOrchestrator] Step 4: No search results from DemandFinder, preserving existing articles/problems`);
+      }
 
       if (currentStatus !== ORCHESTRATOR_STATUS.DEMAND_RESOLVING) {
         await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.DEMAND_RESOLVING);

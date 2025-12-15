@@ -26,16 +26,6 @@ export interface SummaryAgentResult extends AgentResult {
     customerEmotionLevel?: number;
     customerRequestType?: string;
     objectiveProblems?: Array<{ id: number; name: string; matchScore?: number }>;
-    articlesAndObjectiveProblems?: Array<{
-      source: "article" | "problem";
-      id: number;
-      name: string | null;
-      description: string;
-      resolution?: string;
-      matchScore?: number;
-      matchReason?: string;
-      products?: string[];
-    }>;
   };
   lastEventId?: number;
   externalConversationId?: string | null;
@@ -54,7 +44,11 @@ export interface DemandFinderAgentResult extends AgentResult {
     id: number;
     name: string;
     description: string;
+    resolution?: string;
     matchScore?: number;
+    matchReason?: string;
+    matchedTerms?: string[];
+    products?: string[];
   }>;
   needsMoreInfo?: boolean;
   followUpQuestion?: string;
