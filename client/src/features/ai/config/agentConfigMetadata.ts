@@ -1,4 +1,4 @@
-export type AgentConfigType = "summary" | "classification" | "response" | "learning" | "enrichment" | "demand_finder" | "solution_provider";
+export type AgentConfigType = "summary" | "classification" | "response" | "learning" | "enrichment" | "demand_finder" | "solution_provider" | "articles_and_solutions";
 
 export interface AgentToolsConfig {
   showKnowledgeBaseTool?: boolean;
@@ -137,6 +137,21 @@ export const agentConfigMetadata: Record<AgentConfigType, AgentConfigMetadata> =
     responseFormatRows: 8,
     recommendedModel: "gpt-4o",
     tools: allToolsEnabled,
+  },
+
+  articles_and_solutions: {
+    configType: "articles_and_solutions",
+    title: "Configuração de Artigos e Soluções",
+    description: "Configure o agente que busca e avalia artigos e problemas da base de conhecimento, reordenando por relevância",
+    enabledLabel: "Ativar Artigos e Soluções",
+    enabledDescription: "Quando ativado, o sistema busca e avalia artigos/problemas usando IA para melhor relevância",
+    eventTriggerLabel: "Eventos que disparam a busca",
+    eventTriggerDescription: "Selecione os tipos de eventos que devem disparar a busca de artigos e soluções (gerenciado pelo ConversationOrchestrator)",
+    authorFilterDescription: "Selecione quais tipos de autor devem disparar a busca. Se nenhum for selecionado, todos os autores serão considerados.",
+    promptRows: 20,
+    responseFormatRows: 8,
+    recommendedModel: "gpt-4o-mini",
+    tools: {},
   },
 };
 
