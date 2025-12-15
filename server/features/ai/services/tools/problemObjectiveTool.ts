@@ -7,7 +7,6 @@ import {
 } from "../../../knowledge/storage/objectiveProblemsStorage.js";
 import { generateEmbedding } from "../../../../shared/embeddings/index.js";
 import type { ToolDefinition } from "../openaiApiService.js";
-import { productCatalogStorage } from "../../../products/storage/productCatalogStorage.js";
 import { normalizeText, extractMatchedTerms } from "../../../../shared/utils/matchScoring.js";
 
 export interface ProblemSearchResult {
@@ -29,7 +28,6 @@ export interface ProblemSearchResponse {
 }
 
 export interface ProblemSearchParams {
-  productId?: number;
   productContext?: string;
   keywords?: string;
   conversationContext?: string;
@@ -88,7 +86,7 @@ function applyKeywordsBoostToProblems(
 }
 
 export async function runProblemObjectiveSearch(params: ProblemSearchParams): Promise<ProblemSearchResponse> {
-  const { productId, productContext, conversationContext, limit = 5 } = params;
+  const { productContext, conversationContext, limit = 5 } = params;
   
   const hasEmbeddings = await hasObjectiveProblemEmbeddings();
   
@@ -96,11 +94,8 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
     ? `Produto: ${productContext}. ${conversationContext}`
     : conversationContext;
   
-  // Nunca usar productId como filtro - sempre usar apenas para enriquecer o embedding
-  const effectiveProductId = undefined;
-  
   if (productContext) {
-    console.log(`[ProblemObjectiveSearch] Using productContext="${productContext}" (semantic, no filter)`);
+    console.log(`[ProblemObjectiveSearch] Using productContext="${productContext}"`);
   }
   
   // Hybrid approach: conversationContext for main semantic search, keywords for boost/filter
@@ -111,7 +106,6 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
     
     const semanticResults = await searchObjectiveProblemsBySimilarity({
       queryEmbedding: embedding,
-      productId: effectiveProductId,
       onlyActive: true,
       limit: params.keywords ? limit * 2 : limit,
     });
@@ -168,7 +162,6 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
     
     const semanticResults = await searchObjectiveProblemsBySimilarity({
       queryEmbedding: embedding,
-      productId: effectiveProductId,
       onlyActive: true,
       limit,
     });
@@ -208,7 +201,6 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
   // Fallback: text-based search
   const results = await searchObjectiveProblems({
     keywords: params.keywords,
-    productId: effectiveProductId,
     onlyActive: true,
     limit,
   });

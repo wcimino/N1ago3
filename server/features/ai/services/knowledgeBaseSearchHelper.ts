@@ -5,7 +5,6 @@ import type { KnowledgeBaseArticle } from "../../../../shared/schema.js";
 import { normalizeText, calculateMatchScore as sharedCalculateMatchScore, parseSearchTerms, extractMatchedTerms, type MatchField } from "../../../shared/utils/matchScoring.js";
 
 export interface KBSearchParams {
-  productId?: number;
   productContext?: string;
   keywords?: string | string[];
   conversationContext?: string;
@@ -111,12 +110,10 @@ export async function runKnowledgeBaseSearch(
   params: KBSearchParams,
   context: KBSearchContext = {}
 ): Promise<KBSearchResult> {
-  const { productId, productContext, conversationContext, limit = 5 } = params;
+  const { productContext, conversationContext, limit = 5 } = params;
 
   if (productContext) {
-    console.log(`[KB Search] Using productContext="${productContext}" (semantic, no filter)`);
-  } else if (productId) {
-    console.log(`[KB Search] Using productId=${productId} (filter mode)`);
+    console.log(`[KB Search] Using productContext="${productContext}"`);
   }
 
   const keywordsStr = Array.isArray(params.keywords) 
@@ -130,17 +127,14 @@ export async function runKnowledgeBaseSearch(
     ? `Produto: ${productContext}. ${conversationContext}`
     : conversationContext;
 
-  // Nunca usar productId como filtro - sempre usar apenas para enriquecer o embedding
-  const effectiveProductId = undefined;
-
   if (enrichedContext && enrichedContext.trim().length > 0 && hasEmbeddings) {
     try {
-      console.log(`[KB Search] Hybrid search: using enrichedContext for embedding, productId=${effectiveProductId || 'none (semantic only)'}`);
+      console.log(`[KB Search] Semantic search with enrichedContext`);
       
       const { embedding: contextEmbedding } = await generateEmbedding(enrichedContext, { contextType: "query" });
       const semanticResults = await knowledgeBaseStorage.searchBySimilarity(
         contextEmbedding,
-        { productId: effectiveProductId, limit: keywordsStr ? limit * 2 : limit }
+        { limit: keywordsStr ? limit * 2 : limit }
       );
       
       articles = semanticResults.map(a => {
@@ -172,9 +166,9 @@ export async function runKnowledgeBaseSearch(
         console.log(`[KB Search] After keywords boost/filter: ${articles.length} articles`);
       }
     } catch (error) {
-      console.error("[KB Search] Hybrid search failed, falling back to keywords-only search:", error);
+      console.error("[KB Search] Semantic search failed, falling back to keywords-only search:", error);
       if (keywordsStr) {
-        articles = await runTextBasedSearch(keywordsStr, effectiveProductId, limit);
+        articles = await runTextBasedSearch(keywordsStr, limit);
       }
     }
   } else if (keywordsStr && keywordsStr.trim().length > 0) {
@@ -183,12 +177,12 @@ export async function runKnowledgeBaseSearch(
       : keywordsStr;
     if (hasEmbeddings) {
       try {
-        console.log(`[KB Search] Semantic search (keywords): productId=${effectiveProductId || 'none'}, keywords="${keywordsStr.substring(0, 50)}..."`);
+        console.log(`[KB Search] Semantic search (keywords): "${keywordsStr.substring(0, 50)}..."`);
         
         const { embedding: queryEmbedding } = await generateEmbedding(enrichedKeywords, { contextType: "query" });
         const semanticResults = await knowledgeBaseStorage.searchBySimilarity(
           queryEmbedding,
-          { productId: effectiveProductId, limit }
+          { limit }
         );
         
         articles = semanticResults.map(a => {
@@ -215,31 +209,12 @@ export async function runKnowledgeBaseSearch(
         console.log(`[KB Search] Semantic search found ${articles.length} articles`);
       } catch (error) {
         console.error("[KB Search] Semantic search failed, falling back to text search:", error);
-        articles = await runTextBasedSearch(keywordsStr, effectiveProductId, limit);
+        articles = await runTextBasedSearch(keywordsStr, limit);
       }
     } else {
-      console.log(`[KB Search] No embeddings available, using text search: productId=${effectiveProductId || 'none'}, keywords="${keywordsStr.substring(0, 50)}..."`);
-      articles = await runTextBasedSearch(keywordsStr, effectiveProductId, limit);
+      console.log(`[KB Search] No embeddings available, using text search: keywords="${keywordsStr.substring(0, 50)}..."`);
+      articles = await runTextBasedSearch(keywordsStr, limit);
     }
-  } else if (effectiveProductId) {
-    console.log(`[KB Search] No keywords or context, filtering by productId: ${effectiveProductId}`);
-    const allArticles = await knowledgeBaseStorage.getAllArticles({
-      productId: effectiveProductId,
-      limit
-    });
-    articles = allArticles.map(a => ({
-      id: a.id,
-      question: a.question,
-      answer: a.answer,
-      keywords: a.keywords,
-      questionVariation: Array.isArray(a.questionVariation) ? a.questionVariation as string[] : [],
-      productId: a.productId,
-      intentId: a.intentId,
-      relevanceScore: 0,
-      matchReason: "Listagem por produto",
-      matchedTerms: []
-    }));
-    console.log(`[KB Search] Product filter found ${articles.length} articles`);
   }
 
   if (articles.length > 0) {
@@ -260,13 +235,12 @@ export async function runKnowledgeBaseSearch(
 
   return {
     articles,
-    productId: productId || null
+    productId: null
   };
 }
 
 async function runTextBasedSearch(
   keywordsStr: string,
-  productId: number | undefined,
   limit: number
 ): Promise<KBArticleResult[]> {
   const searchTerms = keywordsStr
@@ -279,7 +253,6 @@ async function runTextBasedSearch(
   }
 
   const ftsResults = await knowledgeBaseStorage.searchArticlesWithRelevance(keywordsStr, {
-    productId,
     limit: limit * 5
   });
 
