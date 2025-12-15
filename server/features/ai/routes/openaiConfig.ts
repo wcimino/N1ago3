@@ -57,9 +57,14 @@ router.put("/api/openai-config/:configType", isAuthenticated, requireAuthorizedU
 
   const { enabled, trigger_event_types, trigger_author_types, prompt_system, prompt_template, response_format, model_name, use_knowledge_base_tool, use_product_catalog_tool, use_subject_intent_tool, use_zendesk_knowledge_base_tool, use_objective_problem_tool, use_combined_knowledge_search_tool, use_knowledge_suggestion_tool, use_general_settings } = req.body;
 
-  if (!prompt_template || !prompt_template.trim()) {
-    return res.status(400).json({ error: "prompt_template is required and cannot be empty" });
+  const hasPromptTemplate = prompt_template && prompt_template.trim();
+  const hasPromptSystem = prompt_system && prompt_system.trim();
+  
+  if (!hasPromptTemplate && !hasPromptSystem) {
+    return res.status(400).json({ error: "Either prompt_template or prompt_system is required" });
   }
+  
+  const finalPromptTemplate = hasPromptTemplate ? prompt_template : prompt_system;
 
   const existingConfig = await storage.getOpenaiApiConfig(configType);
   
@@ -86,7 +91,7 @@ router.put("/api/openai-config/:configType", isAuthenticated, requireAuthorizedU
     triggerEventTypes: trigger_event_types || [],
     triggerAuthorTypes: trigger_author_types || [],
     promptSystem: finalPromptSystem,
-    promptTemplate: prompt_template,
+    promptTemplate: finalPromptTemplate,
     responseFormat: finalResponseFormat,
     modelName: model_name || "gpt-4o-mini",
     useKnowledgeBaseTool: use_knowledge_base_tool ?? false,
@@ -133,9 +138,14 @@ router.put("/api/openai-summary-config", isAuthenticated, requireAuthorizedUser,
     use_general_settings,
   } = req.body;
 
-  if (!prompt_template || !prompt_template.trim()) {
-    return res.status(400).json({ error: "prompt_template is required and cannot be empty" });
+  const hasPromptTemplate = prompt_template && prompt_template.trim();
+  const hasPromptSystem = prompt_system && prompt_system.trim();
+  
+  if (!hasPromptTemplate && !hasPromptSystem) {
+    return res.status(400).json({ error: "Either prompt_template or prompt_system is required" });
   }
+  
+  const finalPromptTemplate = hasPromptTemplate ? prompt_template : prompt_system;
 
   const existingConfig = await storage.getOpenaiApiConfig("summary");
 
@@ -162,7 +172,7 @@ router.put("/api/openai-summary-config", isAuthenticated, requireAuthorizedUser,
     triggerEventTypes: trigger_event_types || [],
     triggerAuthorTypes: trigger_author_types || [],
     promptSystem: finalPromptSystem,
-    promptTemplate: prompt_template,
+    promptTemplate: finalPromptTemplate,
     responseFormat: finalResponseFormat,
     modelName: model_name || "gpt-4o-mini",
     useKnowledgeBaseTool: use_knowledge_base_tool ?? false,
