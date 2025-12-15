@@ -1,0 +1,296 @@
+[
+  {
+    "id": 4,
+    "objective_problem_id": 4,
+    "product_id": 2,
+    "created_at": "2025-12-12T14:58:25.297Z"
+  },
+  {
+    "id": 5,
+    "objective_problem_id": 5,
+    "product_id": 2,
+    "created_at": "2025-12-12T14:58:25.297Z"
+  },
+  {
+    "id": 7,
+    "objective_problem_id": 7,
+    "product_id": 2,
+    "created_at": "2025-12-12T14:58:25.297Z"
+  },
+  {
+    "id": 10,
+    "objective_problem_id": 10,
+    "product_id": 2,
+    "created_at": "2025-12-12T14:58:25.297Z"
+  },
+  {
+    "id": 11,
+    "objective_problem_id": 11,
+    "product_id": 2,
+    "created_at": "2025-12-12T14:58:25.297Z"
+  },
+  {
+    "id": 12,
+    "objective_problem_id": 12,
+    "product_id": 2,
+    "created_at": "2025-12-12T14:58:25.297Z"
+  },
+  {
+    "id": 13,
+    "objective_problem_id": 13,
+    "product_id": 2,
+    "created_at": "2025-12-12T14:58:25.297Z"
+  },
+  {
+    "id": 15,
+    "objective_problem_id": 15,
+    "product_id": 2,
+    "created_at": "2025-12-12T14:58:25.297Z"
+  },
+  {
+    "id": 16,
+    "objective_problem_id": 16,
+    "product_id": 2,
+    "created_at": "2025-12-12T14:58:25.297Z"
+  },
+  {
+    "id": 18,
+    "objective_problem_id": 19,
+    "product_id": 1,
+    "created_at": "2025-12-12T20:56:15.661Z"
+  },
+  {
+    "id": 19,
+    "objective_problem_id": 18,
+    "product_id": 1,
+    "created_at": "2025-12-12T20:56:21.999Z"
+  },
+  {
+    "id": 20,
+    "objective_problem_id": 25,
+    "product_id": 1,
+    "created_at": "2025-12-12T20:56:47.281Z"
+  },
+  {
+    "id": 21,
+    "objective_problem_id": 21,
+    "product_id": 13,
+    "created_at": "2025-12-12T20:56:58.975Z"
+  },
+  {
+    "id": 22,
+    "objective_problem_id": 24,
+    "product_id": 1,
+    "created_at": "2025-12-12T20:57:06.039Z"
+  },
+  {
+    "id": 23,
+    "objective_problem_id": 26,
+    "product_id": 13,
+    "created_at": "2025-12-12T20:57:31.015Z"
+  },
+  {
+    "id": 24,
+    "objective_problem_id": 23,
+    "product_id": 1,
+    "created_at": "2025-12-12T20:57:36.891Z"
+  },
+  {
+    "id": 29,
+    "objective_problem_id": 32,
+    "product_id": 5,
+    "created_at": "2025-12-12T21:41:51.921Z"
+  },
+  {
+    "id": 32,
+    "objective_problem_id": 35,
+    "product_id": 5,
+    "created_at": "2025-12-12T21:42:17.147Z"
+  },
+  {
+    "id": 33,
+    "objective_problem_id": 41,
+    "product_id": 1,
+    "created_at": "2025-12-12T21:42:26.214Z"
+  },
+  {
+    "id": 40,
+    "objective_problem_id": 51,
+    "product_id": 4,
+    "created_at": "2025-12-12T21:50:12.578Z"
+  },
+  {
+    "id": 41,
+    "objective_problem_id": 48,
+    "product_id": 4,
+    "created_at": "2025-12-12T21:50:18.380Z"
+  },
+  {
+    "id": 42,
+    "objective_problem_id": 50,
+    "product_id": 4,
+    "created_at": "2025-12-12T21:50:23.026Z"
+  },
+  {
+    "id": 43,
+    "objective_problem_id": 46,
+    "product_id": 4,
+    "created_at": "2025-12-12T21:50:27.915Z"
+  },
+  {
+    "id": 46,
+    "objective_problem_id": 55,
+    "product_id": 4,
+    "created_at": "2025-12-12T21:50:41.192Z"
+  },
+  {
+    "id": 47,
+    "objective_problem_id": 45,
+    "product_id": 4,
+    "created_at": "2025-12-12T21:50:45.504Z"
+  },
+  {
+    "id": 48,
+    "objective_problem_id": 49,
+    "product_id": 4,
+    "created_at": "2025-12-12T21:50:49.252Z"
+  },
+  {
+    "id": 49,
+    "objective_problem_id": 53,
+    "product_id": 4,
+    "created_at": "2025-12-12T21:51:00.407Z"
+  },
+  {
+    "id": 50,
+    "objective_problem_id": 52,
+    "product_id": 4,
+    "created_at": "2025-12-12T21:51:06.229Z"
+  },
+  {
+    "id": 51,
+    "objective_problem_id": 47,
+    "product_id": 4,
+    "created_at": "2025-12-12T21:51:11.144Z"
+  },
+  {
+    "id": 52,
+    "objective_problem_id": 54,
+    "product_id": 4,
+    "created_at": "2025-12-12T21:51:14.868Z"
+  },
+  {
+    "id": 53,
+    "objective_problem_id": 44,
+    "product_id": 4,
+    "created_at": "2025-12-12T21:51:18.729Z"
+  },
+  {
+    "id": 59,
+    "objective_problem_id": 56,
+    "product_id": 1,
+    "created_at": "2025-12-12T23:49:43.849Z"
+  },
+  {
+    "id": 63,
+    "objective_problem_id": 58,
+    "product_id": 2,
+    "created_at": "2025-12-13T01:23:21.200Z"
+  },
+  {
+    "id": 64,
+    "objective_problem_id": 59,
+    "product_id": 7,
+    "created_at": "2025-12-13T02:31:46.419Z"
+  },
+  {
+    "id": 71,
+    "objective_problem_id": 38,
+    "product_id": 1,
+    "created_at": "2025-12-13T03:23:03.863Z"
+  },
+  {
+    "id": 75,
+    "objective_problem_id": 42,
+    "product_id": 4,
+    "created_at": "2025-12-13T03:33:28.074Z"
+  },
+  {
+    "id": 77,
+    "objective_problem_id": 3,
+    "product_id": 10,
+    "created_at": "2025-12-13T03:39:02.750Z"
+  },
+  {
+    "id": 78,
+    "objective_problem_id": 34,
+    "product_id": 19,
+    "created_at": "2025-12-13T04:13:35.484Z"
+  },
+  {
+    "id": 79,
+    "objective_problem_id": 34,
+    "product_id": 18,
+    "created_at": "2025-12-13T04:13:35.484Z"
+  },
+  {
+    "id": 80,
+    "objective_problem_id": 22,
+    "product_id": 17,
+    "created_at": "2025-12-13T04:13:43.065Z"
+  },
+  {
+    "id": 81,
+    "objective_problem_id": 30,
+    "product_id": 17,
+    "created_at": "2025-12-13T04:13:50.155Z"
+  },
+  {
+    "id": 83,
+    "objective_problem_id": 60,
+    "product_id": 14,
+    "created_at": "2025-12-13T10:26:22.637Z"
+  },
+  {
+    "id": 84,
+    "objective_problem_id": 9,
+    "product_id": 2,
+    "created_at": "2025-12-13T10:44:37.946Z"
+  },
+  {
+    "id": 86,
+    "objective_problem_id": 1,
+    "product_id": 10,
+    "created_at": "2025-12-14T15:41:46.168Z"
+  },
+  {
+    "id": 87,
+    "objective_problem_id": 61,
+    "product_id": 1,
+    "created_at": "2025-12-14T17:06:26.750Z"
+  },
+  {
+    "id": 88,
+    "objective_problem_id": 61,
+    "product_id": 13,
+    "created_at": "2025-12-14T17:06:26.750Z"
+  },
+  {
+    "id": 89,
+    "objective_problem_id": 61,
+    "product_id": 14,
+    "created_at": "2025-12-14T17:06:26.750Z"
+  },
+  {
+    "id": 90,
+    "objective_problem_id": 61,
+    "product_id": 15,
+    "created_at": "2025-12-14T17:06:26.750Z"
+  },
+  {
+    "id": 91,
+    "objective_problem_id": 62,
+    "product_id": 1,
+    "created_at": "2025-12-14T18:58:28.432Z"
+  }
+]

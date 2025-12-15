@@ -1,0 +1,191 @@
+[
+  {
+    "table_name": "knowledge_base_objective_problems",
+    "column_name": "id",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": "nextval('knowledge_base_objective_problems_id_seq'::regclass)"
+  },
+  {
+    "table_name": "knowledge_base_objective_problems",
+    "column_name": "name",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "table_name": "knowledge_base_objective_problems",
+    "column_name": "description",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "table_name": "knowledge_base_objective_problems",
+    "column_name": "synonyms",
+    "data_type": "json",
+    "is_nullable": "YES",
+    "column_default": "'[]'::json"
+  },
+  {
+    "table_name": "knowledge_base_objective_problems",
+    "column_name": "examples",
+    "data_type": "json",
+    "is_nullable": "YES",
+    "column_default": "'[]'::json"
+  },
+  {
+    "table_name": "knowledge_base_objective_problems",
+    "column_name": "presented_by",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": "'customer'::text"
+  },
+  {
+    "table_name": "knowledge_base_objective_problems",
+    "column_name": "is_active",
+    "data_type": "boolean",
+    "is_nullable": "NO",
+    "column_default": "true"
+  },
+  {
+    "table_name": "knowledge_base_objective_problems",
+    "column_name": "created_at",
+    "data_type": "timestamp without time zone",
+    "is_nullable": "NO",
+    "column_default": "now()"
+  },
+  {
+    "table_name": "knowledge_base_objective_problems",
+    "column_name": "updated_at",
+    "data_type": "timestamp without time zone",
+    "is_nullable": "NO",
+    "column_default": "now()"
+  },
+  {
+    "table_name": "knowledge_base_objective_problems_embeddings",
+    "column_name": "id",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": "nextval('knowledge_base_objective_problems_embeddings_id_seq'::regclass)"
+  },
+  {
+    "table_name": "knowledge_base_objective_problems_embeddings",
+    "column_name": "problem_id",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "table_name": "knowledge_base_objective_problems_embeddings",
+    "column_name": "content_hash",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "table_name": "knowledge_base_objective_problems_embeddings",
+    "column_name": "embedding_vector",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "knowledge_base_objective_problems_embeddings",
+    "column_name": "model_used",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": "'text-embedding-3-small'::text"
+  },
+  {
+    "table_name": "knowledge_base_objective_problems_embeddings",
+    "column_name": "tokens_used",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "knowledge_base_objective_problems_embeddings",
+    "column_name": "openai_log_id",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "knowledge_base_objective_problems_embeddings",
+    "column_name": "created_at",
+    "data_type": "timestamp without time zone",
+    "is_nullable": "NO",
+    "column_default": "now()"
+  },
+  {
+    "table_name": "knowledge_base_objective_problems_embeddings",
+    "column_name": "updated_at",
+    "data_type": "timestamp without time zone",
+    "is_nullable": "NO",
+    "column_default": "now()"
+  },
+  {
+    "table_name": "knowledge_base_objective_problems_has_products_catalog",
+    "column_name": "id",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": "nextval('knowledge_base_objective_problems_has_products_catalog_id_seq'::regclass)"
+  },
+  {
+    "table_name": "knowledge_base_objective_problems_has_products_catalog",
+    "column_name": "objective_problem_id",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "table_name": "knowledge_base_objective_problems_has_products_catalog",
+    "column_name": "product_id",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "table_name": "knowledge_base_objective_problems_has_products_catalog",
+    "column_name": "created_at",
+    "data_type": "timestamp without time zone",
+    "is_nullable": "NO",
+    "column_default": "now()"
+  },
+  {
+    "table_name": "knowledge_base_root_cause_has_knowledge_base_objective_problems",
+    "column_name": "id",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": "nextval('knowledge_base_root_cause_has_knowledge_base_objective_p_id_seq'::regclass)"
+  },
+  {
+    "table_name": "knowledge_base_root_cause_has_knowledge_base_objective_problems",
+    "column_name": "root_cause_id",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "table_name": "knowledge_base_root_cause_has_knowledge_base_objective_problems",
+    "column_name": "problem_id",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "table_name": "knowledge_base_root_cause_has_knowledge_base_objective_problems",
+    "column_name": "created_at",
+    "data_type": "timestamp without time zone",
+    "is_nullable": "NO",
+    "column_default": "now()"
+  },
+  {
+    "table_name": "knowledge_base_root_cause_has_knowledge_base_objective_problems",
+    "column_name": "validation_questions",
+    "data_type": "jsonb",
+    "is_nullable": "NO",
+    "column_default": "'[]'::jsonb"
+  }
+]
