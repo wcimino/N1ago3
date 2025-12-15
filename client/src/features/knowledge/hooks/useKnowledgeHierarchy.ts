@@ -120,6 +120,7 @@ function buildHierarchy(
         children: [],
         articles: [],
         subjectId: subject.id,
+        productId: parentNode.productId,
       };
       parentNode.children.push(subjectNode);
     }
@@ -154,6 +155,7 @@ function buildHierarchy(
         articles: [],
         subjectId: intent.subjectId,
         intentId: intent.id,
+        productId: subjectNode.productId,
       };
       subjectNode.children.push(intentNode);
     }

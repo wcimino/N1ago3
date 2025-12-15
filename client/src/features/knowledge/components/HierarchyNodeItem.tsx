@@ -10,7 +10,7 @@ interface HierarchyNodeItemProps {
   onToggle: (path: string) => void;
   onEdit: (article: KnowledgeBaseArticle) => void;
   onDelete: (id: number) => void;
-  onAddArticle?: (subjectId?: number, intentId?: number, productName?: string) => void;
+  onAddArticle?: (subjectId?: number, intentId?: number, fullPath?: string, productCatalogId?: number) => void;
   onAddSubject?: (productId: number) => void;
   onAddIntent?: (subjectId: number) => void;
   onEditIntent?: (intentId: number, intentName: string) => void;
@@ -144,7 +144,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onAddArticle(node.subjectId, node.intentId, node.fullPath);
+                        onAddArticle(node.subjectId, node.intentId, node.fullPath, node.productId);
                       }}
                       className="text-blue-500 hover:text-blue-700 hover:underline cursor-pointer ml-1"
                       title="Criar artigo"
