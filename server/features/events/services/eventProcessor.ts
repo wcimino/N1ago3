@@ -84,9 +84,14 @@ export async function processRawEvent(rawId: number, source: string, skipStatusC
       const result = await storage.getOrCreateConversationByExternalId(convData);
       conversationId = result?.conversation?.id;
       isNewConversation = result?.isNew ?? false;
+      
+      if (isNewConversation) {
+        console.log(`[EventProcessor] New conversation created: ${conversationId}, externalId: ${convData.externalConversationId}`);
+      }
     }
 
     if (isNewConversation && standardUserData?.email) {
+      console.log(`[EventProcessor] Triggering Zendesk enrichment for email: ${standardUserData.email}`);
       enrichUserFromZendesk(standardUserData.email).catch(err =>
         console.error(`[EventProcessor] Failed to enrich user ${standardUserData.email}:`, err)
       );
