@@ -43,12 +43,9 @@ export class DemandFinderAgent {
     // Monta contexto de busca
     const conversationContext = summary || "";
     
-    // Resolve productId para productContext (nome completo do produto)
-    const productContext = await productCatalogStorage.resolveProductContext(classification?.productId);
-    
-    // Busca artigos e problemas usando productContext (igual à tool)
+    // Busca artigos e problemas (productId é resolvido automaticamente para productContext)
     const searchResponse = await runCombinedKnowledgeSearch({
-      productContext,
+      productId: classification?.productId,
       conversationContext,
       limit: 5,
     });
