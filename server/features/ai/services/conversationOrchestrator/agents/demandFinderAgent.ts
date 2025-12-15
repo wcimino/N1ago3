@@ -40,8 +40,10 @@ export class DemandFinderAgent {
   private static async searchAndSaveKnowledge(context: OrchestratorContext): Promise<DemandFinderAgentResult["searchResults"]> {
     const { conversationId, summary, classification } = context;
 
-    // Monta contexto de busca
-    const conversationContext = summary || "";
+    // Monta contexto de busca LIMPO (apenas campos relevantes)
+    const conversationContext = await this.buildCleanSearchContext(summary, classification);
+    
+    console.log(`[DemandFinderAgent] Search input for conversation ${conversationId}:\n${conversationContext}`);
     
     // Busca artigos e problemas (productId é resolvido automaticamente para productContext)
     const searchResponse = await runCombinedKnowledgeSearch({
@@ -121,5 +123,52 @@ export class DemandFinderAgent {
       suggestedResponse: result.parsedContent?.suggestedAnswerToCustomer,
       suggestionId: result.suggestionId,
     };
+  }
+
+  /**
+   * Monta contexto de busca limpo com apenas os campos relevantes:
+   * - Produto (nome completo)
+   * - Solicitação (clientRequest do summary)
+   * - Tipo (customerRequestType)
+   */
+  private static async buildCleanSearchContext(
+    summary: string | null | undefined,
+    classification: OrchestratorContext["classification"]
+  ): Promise<string> {
+    const parts: string[] = [];
+
+    // 1. Produto (resolver productId para nome legível)
+    if (classification?.productId) {
+      const product = await productCatalogStorage.getById(classification.productId);
+      if (product) {
+        const productFullName = product.subproduto 
+          ? `${product.produto} > ${product.subproduto}`
+          : product.produto;
+        parts.push(`Produto: ${productFullName}`);
+      }
+    }
+
+    // 2. Solicitação (extrair clientRequest do summary JSON, com fallback para importantInfo)
+    if (summary) {
+      try {
+        const summaryData = JSON.parse(summary);
+        const solicitation = summaryData.clientRequest || summaryData.importantInfo;
+        if (solicitation) {
+          parts.push(`Solicitação: ${solicitation}`);
+        }
+      } catch {
+        // Se não for JSON válido, usa o summary como está (fallback)
+        if (summary.trim()) {
+          parts.push(`Solicitação: ${summary}`);
+        }
+      }
+    }
+
+    // 3. Tipo de solicitação
+    if (classification?.customerRequestType) {
+      parts.push(`Tipo: ${classification.customerRequestType}`);
+    }
+
+    return parts.join("\n");
   }
 }
