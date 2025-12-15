@@ -3,3 +3,4 @@ export { OpenaiSummaryConfigPage } from "./OpenaiSummaryConfigPage";
 export { ClassificationConfigPage } from "./ClassificationConfigPage";
 export { ResponseConfigPage } from "./ResponseConfigPage";
 export { EnrichmentConfigPage } from "./EnrichmentConfigPage";
+export { ArticlesAndSolutionsConfigPage } from "./ArticlesAndSolutionsConfigPage";

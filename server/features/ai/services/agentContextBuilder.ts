@@ -151,10 +151,11 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
   }
 
   let artigosProblemasListaTop5: string | null = null;
+  let artigosProblemasListaTop10: string | null = null;
   
   // Se searchResults já foram fornecidos no contexto, usar diretamente (evita busca duplicada)
   if (context.searchResults && context.searchResults.length > 0) {
-    const formattedResults = context.searchResults.slice(0, 5).map(r => ({
+    const formattedResults5 = context.searchResults.slice(0, 5).map(r => ({
       tipo: r.source === "article" ? "artigo" : "problema",
       id: r.id,
       nome: r.name || r.description,
@@ -162,7 +163,17 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
       score: r.matchScore || 0,
       matched_terms: r.matchedTerms || []
     }));
-    artigosProblemasListaTop5 = JSON.stringify(formattedResults, null, 2);
+    artigosProblemasListaTop5 = JSON.stringify(formattedResults5, null, 2);
+    
+    const formattedResults10 = context.searchResults.slice(0, 10).map(r => ({
+      tipo: r.source === "article" ? "artigo" : "problema",
+      id: r.id,
+      nome: r.name || r.description,
+      descricao: r.description,
+      score: r.matchScore || 0,
+      matched_terms: r.matchedTerms || []
+    }));
+    artigosProblemasListaTop10 = JSON.stringify(formattedResults10, null, 2);
   } else if (context.classification?.product && context.summary) {
     // Fallback: buscar se não foram fornecidos
     try {
@@ -177,11 +188,11 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
         const searchResult = await runCombinedKnowledgeSearch({
           productId: resolved?.id,
           conversationContext: customerMainComplaint,
-          limit: 5
+          limit: 10
         });
         
         if (searchResult.results.length > 0) {
-          const formattedResults = searchResult.results.slice(0, 5).map(r => ({
+          const formattedResults5 = searchResult.results.slice(0, 5).map(r => ({
             tipo: r.source === "article" ? "artigo" : "problema",
             id: r.id,
             nome: r.question || r.answer,
@@ -189,7 +200,17 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
             score: r.matchScore || 0,
             matched_terms: r.matchedTerms || []
           }));
-          artigosProblemasListaTop5 = JSON.stringify(formattedResults, null, 2);
+          artigosProblemasListaTop5 = JSON.stringify(formattedResults5, null, 2);
+          
+          const formattedResults10 = searchResult.results.slice(0, 10).map(r => ({
+            tipo: r.source === "article" ? "artigo" : "problema",
+            id: r.id,
+            nome: r.question || r.answer,
+            descricao: r.answer,
+            score: r.matchScore || 0,
+            matched_terms: r.matchedTerms || []
+          }));
+          artigosProblemasListaTop10 = JSON.stringify(formattedResults10, null, 2);
         }
       }
     } catch (error) {
@@ -239,6 +260,7 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
     demandaIdentificada: context.demand,
     resultadosBusca: searchResultsFormatted,
     artigosProblemasListaTop5,
+    artigosProblemasListaTop10,
     produtoESubprodutoMatch,
     tipoDeDemandaMatch,
     artigoOuProblemaPrincipalMatch,
