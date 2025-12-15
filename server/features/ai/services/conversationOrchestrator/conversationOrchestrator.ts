@@ -1,6 +1,6 @@
 import { storage } from "../../../../storage/index.js";
 import { conversationStorage } from "../../../conversations/storage/index.js";
-import { SummaryAgent, ClassificationAgent, DemandFinderAgent, SolutionProviderAgent } from "./agents/index.js";
+import { SummaryAgent, ClassificationAgent, DemandFinderAgent, SolutionProviderAgent, ArticlesAndSolutionsAgent } from "./agents/index.js";
 import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext } from "./types.js";
 import { StatusController } from "./statusController.js";
 import { AutoPilotService } from "../../../autoPilot/services/autoPilotService.js";
@@ -111,11 +111,11 @@ export class ConversationOrchestrator {
     const { conversationId } = context;
     console.log(`[ConversationOrchestrator] Step 3: Searching articles and problems for conversation ${conversationId}`);
 
-    const searchResults = await DemandFinderAgent.searchOnly(context);
+    const result = await ArticlesAndSolutionsAgent.process(context);
 
-    if (searchResults && searchResults.length > 0) {
-      context.searchResults = searchResults;
-      console.log(`[ConversationOrchestrator] Step 3: Found ${searchResults.length} articles/problems`);
+    if (result.success && result.searchResults && result.searchResults.length > 0) {
+      context.searchResults = result.searchResults;
+      console.log(`[ConversationOrchestrator] Step 3: Found ${result.searchResults.length} articles/problems (AI reranked)`);
     } else {
       console.log(`[ConversationOrchestrator] Step 3: No articles/problems found`);
     }
