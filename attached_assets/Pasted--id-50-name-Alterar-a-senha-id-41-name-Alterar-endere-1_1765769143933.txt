@@ -1,0 +1,250 @@
+[
+  {
+    "id": 50,
+    "name": "Alterar a senha"
+  },
+  {
+    "id": 41,
+    "name": "Alterar endereço de entrega"
+  },
+  {
+    "id": 55,
+    "name": "Anuidade cartão de crédito"
+  },
+  {
+    "id": 40,
+    "name": "Aplicativo mostra tela de erro ao tentar enviar um PIX"
+  },
+  {
+    "id": 42,
+    "name": "Ativar cartão"
+  },
+  {
+    "id": 25,
+    "name": "Atraso no pagamento da fatura"
+  },
+  {
+    "id": 33,
+    "name": "Aumentar"
+  },
+  {
+    "id": 16,
+    "name": "Aumentar limite"
+  },
+  {
+    "id": 8,
+    "name": "Bloquear"
+  },
+  {
+    "id": 45,
+    "name": "Bloquear cartão"
+  },
+  {
+    "id": 53,
+    "name": "Cancelar cartão"
+  },
+  {
+    "id": 47,
+    "name": "Carteiras digitais"
+  },
+  {
+    "id": 48,
+    "name": "Cartão perdido ou roubado"
+  },
+  {
+    "id": 56,
+    "name": "Cartão virtual"
+  },
+  {
+    "id": 59,
+    "name": "Cashback"
+  },
+  {
+    "id": 39,
+    "name": "Cliente quer solicitar estorno do PIX"
+  },
+  {
+    "id": 28,
+    "name": "Como cancelar"
+  },
+  {
+    "id": 17,
+    "name": "Como contratar"
+  },
+  {
+    "id": 20,
+    "name": "Compra duplicada"
+  },
+  {
+    "id": 21,
+    "name": "Compra negada"
+  },
+  {
+    "id": 61,
+    "name": "Compra não-reconhecida"
+  },
+  {
+    "id": 63,
+    "name": "Compra parcelada"
+  },
+  {
+    "id": 62,
+    "name": "Compra recusada"
+  },
+  {
+    "id": 60,
+    "name": "Compras internacionais"
+  },
+  {
+    "id": 57,
+    "name": "Compras online"
+  },
+  {
+    "id": 58,
+    "name": "Compras parceladas"
+  },
+  {
+    "id": 32,
+    "name": "Consultar"
+  },
+  {
+    "id": 67,
+    "name": "Consultar compra"
+  },
+  {
+    "id": 22,
+    "name": "Consultar fatura"
+  },
+  {
+    "id": 15,
+    "name": "Consultar limite"
+  },
+  {
+    "id": 12,
+    "name": "Contestar compra"
+  },
+  {
+    "id": 23,
+    "name": "Data de vencimento da fatura"
+  },
+  {
+    "id": 9,
+    "name": "Desbloquear"
+  },
+  {
+    "id": 46,
+    "name": "Desbloquear cartão"
+  },
+  {
+    "id": 11,
+    "name": "Desconto em compras no iFood Shop"
+  },
+  {
+    "id": 18,
+    "name": "Documentos necessários para contratar"
+  },
+  {
+    "id": 13,
+    "name": "Elegibilidade para contratar"
+  },
+  {
+    "id": 65,
+    "name": "Entender a fatura"
+  },
+  {
+    "id": 19,
+    "name": "Entrega"
+  },
+  {
+    "id": 14,
+    "name": "Erro para contratar"
+  },
+  {
+    "id": 52,
+    "name": "Esqueceu a senha"
+  },
+  {
+    "id": 64,
+    "name": "Fatura não chegou"
+  },
+  {
+    "id": 43,
+    "name": "Não consegue ativar o cartão"
+  },
+  {
+    "id": 30,
+    "name": "Não recebeu"
+  },
+  {
+    "id": 34,
+    "name": "Onde sacar"
+  },
+  {
+    "id": 24,
+    "name": "Pagamento da fatura"
+  },
+  {
+    "id": 27,
+    "name": "Pagamento mínimo da fatura"
+  },
+  {
+    "id": 26,
+    "name": "Parcelar pagamento da fatura"
+  },
+  {
+    "id": 36,
+    "name": "Perda ou roubo"
+  },
+  {
+    "id": 29,
+    "name": "Prazo de entrega"
+  },
+  {
+    "id": 44,
+    "name": "Prazo para ativar o cartão"
+  },
+  {
+    "id": 54,
+    "name": "Preços e tarifas"
+  },
+  {
+    "id": 10,
+    "name": "Programa de pontos"
+  },
+  {
+    "id": 35,
+    "name": "Qual é a senha"
+  },
+  {
+    "id": 51,
+    "name": "Recuperar a senha"
+  },
+  {
+    "id": 69,
+    "name": "Saldo insuficiente"
+  },
+  {
+    "id": 66,
+    "name": "Saque na função crédito"
+  },
+  {
+    "id": 49,
+    "name": "Solicitar segunda via"
+  },
+  {
+    "id": 31,
+    "name": "Tarifas"
+  },
+  {
+    "id": 38,
+    "name": "Uso com chip e senha"
+  },
+  {
+    "id": 37,
+    "name": "Uso por aproximação"
+  },
+  {
+    "id": 68,
+    "name": "Verificar saldo"
+  }
+]

@@ -1,0 +1,282 @@
+[
+  {
+    "id": 51,
+    "name": "Alterar a senha"
+  },
+  {
+    "id": 40,
+    "name": "Alterar endereço de entrega"
+  },
+  {
+    "id": 55,
+    "name": "Anuidade cartão de crédito"
+  },
+  {
+    "id": 39,
+    "name": "Aplicativo mostra tela de erro ao tentar enviar um PIX"
+  },
+  {
+    "id": 43,
+    "name": "Ativar cartão"
+  },
+  {
+    "id": 20,
+    "name": "Atraso no pagamento da fatura"
+  },
+  {
+    "id": 30,
+    "name": "Aumentar"
+  },
+  {
+    "id": 10,
+    "name": "Aumentar limite"
+  },
+  {
+    "id": 1,
+    "name": "Bloquear"
+  },
+  {
+    "id": 46,
+    "name": "Bloquear cartão"
+  },
+  {
+    "id": 53,
+    "name": "Cancelar cartão"
+  },
+  {
+    "id": 48,
+    "name": "Carteiras digitais"
+  },
+  {
+    "id": 49,
+    "name": "Cartão perdido ou roubado"
+  },
+  {
+    "id": 56,
+    "name": "Cartão virtual"
+  },
+  {
+    "id": 59,
+    "name": "Cashback"
+  },
+  {
+    "id": 38,
+    "name": "Cliente quer solicitar estorno do PIX"
+  },
+  {
+    "id": 23,
+    "name": "Como cancelar"
+  },
+  {
+    "id": 11,
+    "name": "Como contratar"
+  },
+  {
+    "id": 74,
+    "name": "Compra duplicada"
+  },
+  {
+    "id": 14,
+    "name": "Compra duplicada"
+  },
+  {
+    "id": 15,
+    "name": "Compra negada"
+  },
+  {
+    "id": 72,
+    "name": "Compra negada"
+  },
+  {
+    "id": 73,
+    "name": "Compra não-reconhecida"
+  },
+  {
+    "id": 61,
+    "name": "Compra não-reconhecida"
+  },
+  {
+    "id": 71,
+    "name": "Compra parcelada"
+  },
+  {
+    "id": 63,
+    "name": "Compra parcelada"
+  },
+  {
+    "id": 62,
+    "name": "Compra recusada"
+  },
+  {
+    "id": 70,
+    "name": "Compra recusada"
+  },
+  {
+    "id": 60,
+    "name": "Compras internacionais"
+  },
+  {
+    "id": 57,
+    "name": "Compras online"
+  },
+  {
+    "id": 58,
+    "name": "Compras parceladas"
+  },
+  {
+    "id": 29,
+    "name": "Consultar"
+  },
+  {
+    "id": 69,
+    "name": "Consultar compra"
+  },
+  {
+    "id": 67,
+    "name": "Consultar compra"
+  },
+  {
+    "id": 17,
+    "name": "Consultar fatura"
+  },
+  {
+    "id": 9,
+    "name": "Consultar limite"
+  },
+  {
+    "id": 68,
+    "name": "Contestar compra"
+  },
+  {
+    "id": 5,
+    "name": "Contestar compra"
+  },
+  {
+    "id": 18,
+    "name": "Data de vencimento da fatura"
+  },
+  {
+    "id": 2,
+    "name": "Desbloquear"
+  },
+  {
+    "id": 47,
+    "name": "Desbloquear cartão"
+  },
+  {
+    "id": 4,
+    "name": "Desconto em compras no iFood Shop"
+  },
+  {
+    "id": 12,
+    "name": "Documentos necessários para contratar"
+  },
+  {
+    "id": 7,
+    "name": "Elegibilidade para contratar"
+  },
+  {
+    "id": 65,
+    "name": "Entender a fatura"
+  },
+  {
+    "id": 13,
+    "name": "Entrega"
+  },
+  {
+    "id": 8,
+    "name": "Erro para contratar"
+  },
+  {
+    "id": 42,
+    "name": "Esqueceu a senha"
+  },
+  {
+    "id": 64,
+    "name": "Fatura não chegou"
+  },
+  {
+    "id": 44,
+    "name": "Não consegue ativar o cartão"
+  },
+  {
+    "id": 25,
+    "name": "Não recebeu"
+  },
+  {
+    "id": 31,
+    "name": "Onde sacar"
+  },
+  {
+    "id": 19,
+    "name": "Pagamento da fatura"
+  },
+  {
+    "id": 22,
+    "name": "Pagamento mínimo da fatura"
+  },
+  {
+    "id": 21,
+    "name": "Parcelar pagamento da fatura"
+  },
+  {
+    "id": 34,
+    "name": "Perda ou roubo"
+  },
+  {
+    "id": 24,
+    "name": "Prazo de entrega"
+  },
+  {
+    "id": 45,
+    "name": "Prazo para ativar o cartão"
+  },
+  {
+    "id": 54,
+    "name": "Preços e tarifas"
+  },
+  {
+    "id": 3,
+    "name": "Programa de pontos"
+  },
+  {
+    "id": 41,
+    "name": "Qual é a senha"
+  },
+  {
+    "id": 33,
+    "name": "Qual é a senha"
+  },
+  {
+    "id": 52,
+    "name": "Recuperar a senha"
+  },
+  {
+    "id": 76,
+    "name": "Saldo insuficiente"
+  },
+  {
+    "id": 66,
+    "name": "Saque na função crédito"
+  },
+  {
+    "id": 50,
+    "name": "Solicitar segunda via"
+  },
+  {
+    "id": 28,
+    "name": "Tarifas"
+  },
+  {
+    "id": 36,
+    "name": "Uso com chip e senha"
+  },
+  {
+    "id": 35,
+    "name": "Uso por aproximação"
+  },
+  {
+    "id": 75,
+    "name": "Verificar saldo"
+  }
+]
