@@ -1,4 +1,4 @@
-import { ZendeskApiService } from "../../../services/zendeskApiService.js";
+import { ZendeskApiService } from "../../external-sources/zendesk/services/zendeskApiService.js";
 import { conversationStorage } from "../../conversations/storage/index.js";
 import { TargetResolver } from "../../routing/services/targetResolver.js";
 import type { EventStandard } from "../../../../shared/schema.js";

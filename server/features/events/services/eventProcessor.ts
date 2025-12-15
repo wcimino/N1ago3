@@ -1,4 +1,4 @@
-import { getAdapter } from "../../../adapters/index.js";
+import { getAdapter } from "../adapters/index.js";
 import { storage } from "../../../storage/index.js";
 import { organizationsStandardStorage } from "../../cadastro/storage/organizationsStandardStorage.js";
 import { eventBus, EVENTS } from "./eventBus.js";

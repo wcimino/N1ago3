@@ -1,4 +1,4 @@
-import { ZendeskApiService } from "../../../services/zendeskApiService.js";
+import { ZendeskApiService } from "../../external-sources/zendesk/services/zendeskApiService.js";
 
 export const VALID_TARGETS = ["n1ago", "human", "bot"] as const;
 export type ValidTarget = typeof VALID_TARGETS[number];

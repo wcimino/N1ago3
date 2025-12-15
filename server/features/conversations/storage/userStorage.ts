@@ -2,7 +2,7 @@ import { db } from "../../../db.js";
 import { users, conversations, eventsStandard } from "../../../../shared/schema.js";
 import { eq, desc, sql, gte } from "drizzle-orm";
 import type { User } from "../../../../shared/schema.js";
-import type { ExtractedUser } from "../../../adapters/types.js";
+import type { ExtractedUser } from "../../events/adapters/types.js";
 
 export const userStorage = {
   async upsertUser(userData: any): Promise<User | null> {

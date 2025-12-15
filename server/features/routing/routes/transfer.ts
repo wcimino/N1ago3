@@ -3,7 +3,7 @@ import { db } from "../../../db.js";
 import { conversations } from "../../../../shared/schema.js";
 import { eq } from "drizzle-orm";
 import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
-import { ZendeskApiService } from "../../../services/zendeskApiService.js";
+import { ZendeskApiService } from "../../external-sources/zendesk/services/zendeskApiService.js";
 import { TargetResolver } from "../services/targetResolver.js";
 
 const router = Router();

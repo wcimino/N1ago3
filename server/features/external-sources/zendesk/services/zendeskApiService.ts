@@ -1,5 +1,5 @@
-import { db } from "../db.js";
-import { zendeskApiLogs } from "../../shared/schema.js";
+import { db } from "../../../../db.js";
+import { zendeskApiLogs } from "../../../../../shared/schema.js";
 
 const ZENDESK_APP_ID = "5fbcf8fffea626000bbaa1eb";
 const ZENDESK_BASE_URL = "https://api.smooch.io";

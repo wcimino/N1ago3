@@ -1,7 +1,7 @@
 import { db } from "../../../db.js";
 import { conversations, eventsStandard, conversationsSummary } from "../../../../shared/schema.js";
 import { eq, desc, sql, and, lt, ne } from "drizzle-orm";
-import type { ExtractedConversation } from "../../../adapters/types.js";
+import type { ExtractedConversation } from "../../events/adapters/types.js";
 import { CONVERSATION_RULES, type ClosedReason } from "../../../config/conversationRules.js";
 import { saveAndDispatchEvent } from "../../events/services/eventDispatcher.js";
 

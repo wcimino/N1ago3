@@ -2,7 +2,7 @@ import { db } from "../../../db.js";
 import { eventsStandard, eventTypeMappings } from "../../../../shared/schema.js";
 import { eq, desc, sql, and } from "drizzle-orm";
 import type { InsertEventStandard, EventStandard, EventTypeMapping, InsertEventTypeMapping } from "../../../../shared/schema.js";
-import type { StandardEvent } from "../../../adapters/types.js";
+import type { StandardEvent } from "../adapters/types.js";
 
 export const eventStorage = {
   async saveStandardEvent(event: StandardEvent & { sourceRawId?: number; conversationId?: number; userId?: number }): Promise<{ event: EventStandard; isNew: boolean }> {

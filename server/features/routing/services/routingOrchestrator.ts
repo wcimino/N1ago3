@@ -1,7 +1,7 @@
 import { routingStorage } from "../storage/routingStorage.js";
 import { routingTrackingStorage } from "../storage/routingTrackingStorage.js";
 import { TargetResolver } from "./targetResolver.js";
-import { ZendeskApiService } from "../../../services/zendeskApiService.js";
+import { ZendeskApiService } from "../../external-sources/zendesk/services/zendeskApiService.js";
 import { userStorage } from "../../conversations/storage/userStorage.js";
 import { conversationStorage } from "../../conversations/storage/index.js";
 import type { EventStandard, RoutingRule } from "../../../../shared/schema.js";

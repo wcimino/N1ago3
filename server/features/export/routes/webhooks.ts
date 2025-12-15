@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import { storage } from "../../../storage/index.js";
-import { getAdapter } from "../../../adapters/index.js";
+import { getAdapter } from "../../events/adapters/index.js";
 import { eventBus, EVENTS } from "../../events/services/eventBus.js";
 
 declare global {

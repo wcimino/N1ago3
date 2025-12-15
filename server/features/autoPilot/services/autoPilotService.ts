@@ -1,7 +1,7 @@
 import { db } from "../../../db.js";
 import { conversations, eventsStandard, responsesSuggested } from "../../../../shared/schema.js";
 import { eq, desc, and, gt } from "drizzle-orm";
-import * as ZendeskApiService from "../../../services/zendeskApiService.js";
+import * as ZendeskApiService from "../../external-sources/zendesk/services/zendeskApiService.js";
 
 type SuggestionStatus = "created" | "sent" | "expired";
 
