@@ -1,18 +1,13 @@
 import { getAuthHeader, getBaseUrl, type ZendeskUserApiResponse } from "../server/features/external-sources/zendesk/services/zendeskSupportUsersApiClient.js";
+import { db } from "../server/db.js";
+import { usersStandard } from "../shared/schema.js";
+import { isNotNull, ne, sql } from "drizzle-orm";
 
 interface ZendeskUsersSearchResponse {
   users: ZendeskUserApiResponse[];
   next_page: string | null;
   count: number;
 }
-
-const TEST_EXTERNAL_IDS = [
-  "01368318-3b47-48fb-8bd4-adecf501dffa",
-  "02fc16ec-4d11-41c5-9849-b96ccfe8474d",
-  "093f1bc3-2135-4058-9ccc-84678ffe6339",
-  "0a0e2fd3-a254-4586-922d-2b29785dec2c",
-  "0acc9018-425d-4d96-a4ca-fabb6e6624bc",
-];
 
 async function searchByExternalId(externalId: string): Promise<ZendeskUserApiResponse | null> {
   const url = `${getBaseUrl()}/api/v2/users/search.json?external_id=${encodeURIComponent(externalId)}`;
@@ -26,14 +21,12 @@ async function searchByExternalId(externalId: string): Promise<ZendeskUserApiRes
     });
 
     if (!response.ok) {
-      console.error(`  [external_id] Error ${response.status}: ${await response.text()}`);
       return null;
     }
 
     const data: ZendeskUsersSearchResponse = await response.json();
     return data.users?.[0] ?? null;
   } catch (error) {
-    console.error(`  [external_id] Error:`, error);
     return null;
   }
 }
@@ -50,113 +43,138 @@ async function searchByEmail(email: string): Promise<ZendeskUserApiResponse | nu
     });
 
     if (!response.ok) {
-      console.error(`  [email] Error ${response.status}: ${await response.text()}`);
       return null;
     }
 
     const data: ZendeskUsersSearchResponse = await response.json();
     return data.users?.[0] ?? null;
   } catch (error) {
-    console.error(`  [email] Error:`, error);
     return null;
   }
 }
 
-function formatUser(user: ZendeskUserApiResponse | null): string {
-  if (!user) return "  (não encontrado)";
-  return `
-  ID: ${user.id}
-  Name: ${user.name}
-  Email: ${user.email}
-  Phone: ${user.phone || "(sem telefone)"}
-  External ID: ${user.external_id || "(sem external_id)"}
-  Role: ${user.role}
-  Created: ${user.created_at}
-  Tags: ${user.tags?.join(", ") || "(sem tags)"}`;
-}
-
 async function main() {
-  console.log("=== Teste Detalhado: Comparação de Usuários por external_id vs email ===\n");
-  console.log("Passo 1: Buscar usuários por external_id");
-  console.log("Passo 2: Usar o email retornado para buscar novamente");
-  console.log("Passo 3: Comparar os resultados\n");
-  console.log("=".repeat(80) + "\n");
+  console.log("=== Teste com 100 Usuários: external_id vs email ===\n");
   
-  for (const externalId of TEST_EXTERNAL_IDS) {
-    console.log(`\n${"=".repeat(80)}`);
-    console.log(`TESTE: external_id = ${externalId}`);
-    console.log("=".repeat(80));
+  const users = await db
+    .select({ externalId: usersStandard.externalId, email: usersStandard.email })
+    .from(usersStandard)
+    .where(sql`${usersStandard.externalId} IS NOT NULL AND ${usersStandard.externalId} != ''`)
+    .limit(100);
+  
+  console.log(`Total de usuários para testar: ${users.length}\n`);
+  
+  let stats = {
+    total: 0,
+    foundByExternalId: 0,
+    foundByEmail: 0,
+    externalIdHasEmail: 0,
+    sameUser: 0,
+    differentUser: 0,
+    onlyExternalId: 0,
+    onlyEmail: 0,
+    neitherFound: 0,
+  };
+  
+  const results: any[] = [];
+  
+  for (let i = 0; i < users.length; i++) {
+    const user = users[i];
+    stats.total++;
     
-    // Passo 1: Buscar por external_id
-    console.log("\n--- PASSO 1: Busca por external_id ---");
-    const userByExternalId = await searchByExternalId(externalId);
-    
-    if (!userByExternalId) {
-      console.log("  Usuário NÃO encontrado por external_id");
-      continue;
+    if (i % 10 === 0) {
+      console.log(`Progresso: ${i}/${users.length}...`);
     }
     
-    console.log("  Usuário encontrado por external_id:");
-    console.log(formatUser(userByExternalId));
+    const byExternalId = await searchByExternalId(user.externalId!);
+    await new Promise(r => setTimeout(r, 100));
     
-    // Passo 2: Buscar pelo email retornado
-    const email = userByExternalId.email;
-    if (!email) {
-      console.log("\n--- PASSO 2: Busca por email ---");
-      console.log("  O usuário não tem email, não é possível comparar");
-      continue;
-    }
+    const byEmail = await searchByEmail(user.email);
+    await new Promise(r => setTimeout(r, 100));
     
-    console.log(`\n--- PASSO 2: Busca por email (${email}) ---`);
-    const userByEmail = await searchByEmail(email);
+    const foundByExt = byExternalId !== null;
+    const foundByEmail = byEmail !== null;
+    const extHasEmail = byExternalId?.email !== null && byExternalId?.email !== undefined;
     
-    if (!userByEmail) {
-      console.log("  Usuário NÃO encontrado por email");
-      console.log("\n--- CONCLUSÃO ---");
-      console.log("  ⚠️ Email não encontra usuário no Zendesk Support");
-      console.log("  → Usar external_id é a única opção para esse usuário");
-      continue;
-    }
+    if (foundByExt) stats.foundByExternalId++;
+    if (foundByEmail) stats.foundByEmail++;
+    if (extHasEmail) stats.externalIdHasEmail++;
     
-    console.log("  Usuário encontrado por email:");
-    console.log(formatUser(userByEmail));
-    
-    // Passo 3: Comparar
-    console.log("\n--- PASSO 3: Comparação ---");
-    const sameId = userByExternalId.id === userByEmail.id;
-    const sameName = userByExternalId.name === userByEmail.name;
-    const samePhone = userByExternalId.phone === userByEmail.phone;
-    const sameExternalId = userByExternalId.external_id === userByEmail.external_id;
-    
-    console.log(`  IDs iguais: ${sameId ? "✅ SIM" : "❌ NÃO"} (${userByExternalId.id} vs ${userByEmail.id})`);
-    console.log(`  Nomes iguais: ${sameName ? "✅ SIM" : "❌ NÃO"} ("${userByExternalId.name}" vs "${userByEmail.name}")`);
-    console.log(`  Telefones iguais: ${samePhone ? "✅ SIM" : "❌ NÃO"} (${userByExternalId.phone} vs ${userByEmail.phone})`);
-    console.log(`  External IDs iguais: ${sameExternalId ? "✅ SIM" : "❌ NÃO"} (${userByExternalId.external_id} vs ${userByEmail.external_id})`);
-    
-    console.log("\n--- CONCLUSÃO ---");
-    if (sameId) {
-      console.log("  ✅ Mesmo usuário - external_id e email retornam o mesmo registro");
+    let comparison = "N/A";
+    if (foundByExt && foundByEmail) {
+      if (byExternalId!.id === byEmail!.id) {
+        stats.sameUser++;
+        comparison = "SAME";
+      } else {
+        stats.differentUser++;
+        comparison = "DIFFERENT";
+      }
+    } else if (foundByExt && !foundByEmail) {
+      stats.onlyExternalId++;
+      comparison = "ONLY_EXT";
+    } else if (!foundByExt && foundByEmail) {
+      stats.onlyEmail++;
+      comparison = "ONLY_EMAIL";
     } else {
-      console.log("  ❌ REGISTROS DIFERENTES - São usuários distintos no Zendesk!");
-      console.log("  → O usuário por external_id é do Sunshine Conversations");
-      console.log("  → O usuário por email é um registro separado no Zendesk Support");
+      stats.neitherFound++;
+      comparison = "NONE";
     }
     
-    await new Promise(r => setTimeout(r, 300));
+    results.push({
+      externalId: user.externalId,
+      email: user.email,
+      foundByExt,
+      foundByEmail,
+      extZendeskId: byExternalId?.id || null,
+      emailZendeskId: byEmail?.id || null,
+      extHasEmail,
+      extEmail: byExternalId?.email || null,
+      comparison,
+    });
+  }
+  
+  console.log("\n" + "=".repeat(80));
+  console.log("ESTATÍSTICAS FINAIS");
+  console.log("=".repeat(80));
+  console.log(`\nTotal testado: ${stats.total}`);
+  console.log(`\n--- Resultados de Busca ---`);
+  console.log(`Encontrados por external_id: ${stats.foundByExternalId} (${(stats.foundByExternalId/stats.total*100).toFixed(1)}%)`);
+  console.log(`Encontrados por email: ${stats.foundByEmail} (${(stats.foundByEmail/stats.total*100).toFixed(1)}%)`);
+  console.log(`\n--- Usuários por external_id COM email no Zendesk ---`);
+  console.log(`Com email preenchido: ${stats.externalIdHasEmail} (${(stats.externalIdHasEmail/stats.total*100).toFixed(1)}%)`);
+  console.log(`\n--- Comparação de Resultados ---`);
+  console.log(`MESMO usuário (IDs iguais): ${stats.sameUser}`);
+  console.log(`DIFERENTE usuário (IDs diferentes): ${stats.differentUser}`);
+  console.log(`Só encontrado por external_id: ${stats.onlyExternalId}`);
+  console.log(`Só encontrado por email: ${stats.onlyEmail}`);
+  console.log(`Não encontrado em nenhum: ${stats.neitherFound}`);
+  
+  console.log("\n\n--- Detalhes dos casos DIFERENTE ---");
+  const differentCases = results.filter(r => r.comparison === "DIFFERENT");
+  for (const r of differentCases.slice(0, 10)) {
+    console.log(`\n  Email: ${r.email}`);
+    console.log(`  External ID: ${r.externalId}`);
+    console.log(`  Zendesk ID (via ext): ${r.extZendeskId}`);
+    console.log(`  Zendesk ID (via email): ${r.emailZendeskId}`);
+    console.log(`  Usuário por ext tem email? ${r.extHasEmail ? `SIM (${r.extEmail})` : "NÃO"}`);
+  }
+  
+  if (differentCases.length > 10) {
+    console.log(`\n  ... e mais ${differentCases.length - 10} casos`);
   }
   
   console.log("\n\n" + "=".repeat(80));
-  console.log("RESUMO FINAL");
+  console.log("CONCLUSÃO");
   console.log("=".repeat(80));
-  console.log(`
-A busca por external_id retorna usuários criados pelo Sunshine Conversations.
-A busca por email pode retornar usuários diferentes, criados diretamente no Zendesk Support.
-
-RECOMENDAÇÃO:
-- Se o objetivo é enriquecer dados do usuário atual (do Sunshine), use external_id
-- Se o objetivo é buscar histórico do usuário no Zendesk Support, use email
-- Ambos podem ser válidos dependendo do caso de uso
-`);
+  
+  if (stats.sameUser > 0 && stats.differentUser === 0) {
+    console.log("\n✅ SEGURO: Todos os usuários encontrados por ambos os métodos são o MESMO registro.");
+  } else if (stats.differentUser > 0) {
+    console.log(`\n⚠️ ATENÇÃO: ${stats.differentUser} usuários retornam registros DIFERENTES!`);
+    console.log("   Isso significa que external_id e email podem buscar pessoas diferentes no Zendesk.");
+  }
+  
+  process.exit(0);
 }
 
 main().catch(console.error);
