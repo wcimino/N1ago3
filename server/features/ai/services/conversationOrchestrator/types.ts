@@ -3,6 +3,7 @@ import type { EventStandard } from "../../../../../shared/schema.js";
 export const ORCHESTRATOR_STATUS = {
   NEW: "new",
   DEMAND_UNDERSTANDING: "demand_understanding",
+  TEMP_DEMAND_UNDERSTOOD: "temp_demand_understood",
   DEMAND_RESOLVING: "demand_resolving",
   ESCALATED: "escalated",
   CLOSED: "closed",

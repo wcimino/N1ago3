@@ -24,6 +24,7 @@ export interface SummaryData {
   objective_problems?: ObjectiveProblemIdentified[] | null;
   articles_and_objective_problems?: ArticleAndProblemResult[] | null;
   triage?: Triage | null;
+  orchestrator_status?: string | null;
 }
 
 export type { Triage, ObjectiveProblemIdentified, ArticleAndProblemResult };
