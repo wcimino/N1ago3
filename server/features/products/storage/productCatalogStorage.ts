@@ -53,6 +53,17 @@ export const productCatalogStorage = {
     return result.map(r => r.fullName);
   },
 
+  async resolveProductContext(productId?: number): Promise<string | undefined> {
+    if (!productId) return undefined;
+    
+    const product = await this.getById(productId);
+    if (!product) return undefined;
+    
+    return product.subproduto 
+      ? `${product.produto} > ${product.subproduto}` 
+      : product.produto;
+  },
+
   async resolveProductId(product: string, subproduct?: string): Promise<{ id: number; produto: string; subproduto: string | null } | null> {
     const products = await this.getAll();
     const productLower = product.toLowerCase().trim();

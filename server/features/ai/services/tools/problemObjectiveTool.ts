@@ -96,7 +96,8 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
     ? `Produto: ${productContext}. ${conversationContext}`
     : conversationContext;
   
-  const effectiveProductId = productContext ? undefined : productId;
+  // Nunca usar productId como filtro - sempre usar apenas para enriquecer o embedding
+  const effectiveProductId = undefined;
   
   if (productContext) {
     console.log(`[ProblemObjectiveSearch] Using productContext="${productContext}" (semantic, no filter)`);
