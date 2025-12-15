@@ -5,3 +5,4 @@ export * from "./relationHelpers.js";
 export * from "./paginationHelpers.js";
 export * from "./upsertHelpers.js";
 export * from "./synonymsHelpers.js";
+export * from "./synonymsMixin.js";

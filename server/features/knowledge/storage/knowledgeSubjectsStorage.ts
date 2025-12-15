@@ -1,8 +1,8 @@
 import { db } from "../../../db.js";
 import { knowledgeSubjects, productsCatalog, knowledgeIntents, knowledgeBase } from "../../../../shared/schema.js";
-import { eq, desc, ilike, or, and, sql, inArray, asc, type SQL } from "drizzle-orm";
+import { eq, desc, inArray, asc } from "drizzle-orm";
 import type { KnowledgeSubject, InsertKnowledgeSubject } from "../../../../shared/schema.js";
-import { createCrudStorage, normalizeSynonymsInData } from "../../../shared/storage/index.js";
+import { createCrudStorage, normalizeSynonymsInData, withSynonymsMixin } from "../../../shared/storage/index.js";
 
 interface SubjectFilters {
   search?: string;
@@ -43,8 +43,19 @@ const baseCrud = createCrudStorage<KnowledgeSubject, InsertKnowledgeSubject, Sub
   },
 });
 
+const synonymsMixin = withSynonymsMixin<KnowledgeSubject, typeof knowledgeSubjects>({
+  baseCrud,
+  table: knowledgeSubjects,
+  columns: {
+    name: knowledgeSubjects.name,
+    synonyms: knowledgeSubjects.synonyms,
+  },
+  parentIdColumn: knowledgeSubjects.productCatalogId,
+});
+
 export const knowledgeSubjectsStorage = {
   ...baseCrud,
+  ...synonymsMixin,
 
   async getAllWithProduct(): Promise<(KnowledgeSubject & { productName: string | null })[]> {
     const results = await db.select({
@@ -67,49 +78,6 @@ export const knowledgeSubjectsStorage = {
     return await db.select()
       .from(knowledgeSubjects)
       .where(eq(knowledgeSubjects.productCatalogId, productCatalogId))
-      .orderBy(asc(knowledgeSubjects.name));
-  },
-
-  async addSynonym(id: number, synonym: string): Promise<KnowledgeSubject | null> {
-    const subject = await baseCrud.getById(id);
-    if (!subject) return null;
-
-    const normalizedSynonym = synonym.trim().toLowerCase();
-    if (subject.synonyms.includes(normalizedSynonym)) {
-      return subject;
-    }
-
-    const updatedSynonyms = [...subject.synonyms, normalizedSynonym];
-    return await baseCrud.update(id, { synonyms: updatedSynonyms });
-  },
-
-  async removeSynonym(id: number, synonym: string): Promise<KnowledgeSubject | null> {
-    const subject = await baseCrud.getById(id);
-    if (!subject) return null;
-
-    const normalizedSynonym = synonym.trim().toLowerCase();
-    const updatedSynonyms = subject.synonyms.filter(s => s !== normalizedSynonym);
-    return await baseCrud.update(id, { synonyms: updatedSynonyms });
-  },
-
-  async findByNameOrSynonym(searchTerm: string, productCatalogId?: number): Promise<KnowledgeSubject[]> {
-    const normalizedTerm = searchTerm.trim().toLowerCase();
-    const searchPattern = `%${normalizedTerm}%`;
-    
-    const conditions: SQL[] = [
-      or(
-        ilike(knowledgeSubjects.name, searchPattern),
-        sql`EXISTS (SELECT 1 FROM jsonb_array_elements_text(${knowledgeSubjects.synonyms}::jsonb) AS s WHERE s ILIKE ${searchPattern})`
-      )!
-    ];
-    
-    if (productCatalogId) {
-      conditions.push(eq(knowledgeSubjects.productCatalogId, productCatalogId));
-    }
-    
-    return await db.select()
-      .from(knowledgeSubjects)
-      .where(and(...conditions))
       .orderBy(asc(knowledgeSubjects.name));
   },
 };

@@ -1,8 +1,8 @@
 import { db } from "../../../db.js";
 import { knowledgeIntents, knowledgeSubjects, knowledgeBase } from "../../../../shared/schema.js";
-import { eq, desc, ilike, or, and, sql, asc, type SQL } from "drizzle-orm";
+import { eq, desc, asc } from "drizzle-orm";
 import type { KnowledgeIntent, InsertKnowledgeIntent } from "../../../../shared/schema.js";
-import { createCrudStorage, normalizeSynonymsInData } from "../../../shared/storage/index.js";
+import { createCrudStorage, normalizeSynonymsInData, withSynonymsMixin } from "../../../shared/storage/index.js";
 
 interface IntentFilters {
   search?: string;
@@ -29,8 +29,19 @@ const baseCrud = createCrudStorage<KnowledgeIntent, InsertKnowledgeIntent, Inten
   },
 });
 
+const synonymsMixin = withSynonymsMixin<KnowledgeIntent, typeof knowledgeIntents>({
+  baseCrud,
+  table: knowledgeIntents,
+  columns: {
+    name: knowledgeIntents.name,
+    synonyms: knowledgeIntents.synonyms,
+  },
+  parentIdColumn: knowledgeIntents.subjectId,
+});
+
 export const knowledgeIntentsStorage = {
   ...baseCrud,
+  ...synonymsMixin,
 
   async getAllWithSubject(): Promise<(KnowledgeIntent & { subjectName: string | null })[]> {
     const results = await db.select({
@@ -53,49 +64,6 @@ export const knowledgeIntentsStorage = {
     return await db.select()
       .from(knowledgeIntents)
       .where(eq(knowledgeIntents.subjectId, subjectId))
-      .orderBy(asc(knowledgeIntents.name));
-  },
-
-  async addSynonym(id: number, synonym: string): Promise<KnowledgeIntent | null> {
-    const intent = await baseCrud.getById(id);
-    if (!intent) return null;
-
-    const normalizedSynonym = synonym.trim().toLowerCase();
-    if (intent.synonyms.includes(normalizedSynonym)) {
-      return intent;
-    }
-
-    const updatedSynonyms = [...intent.synonyms, normalizedSynonym];
-    return await baseCrud.update(id, { synonyms: updatedSynonyms });
-  },
-
-  async removeSynonym(id: number, synonym: string): Promise<KnowledgeIntent | null> {
-    const intent = await baseCrud.getById(id);
-    if (!intent) return null;
-
-    const normalizedSynonym = synonym.trim().toLowerCase();
-    const updatedSynonyms = intent.synonyms.filter(s => s !== normalizedSynonym);
-    return await baseCrud.update(id, { synonyms: updatedSynonyms });
-  },
-
-  async findByNameOrSynonym(searchTerm: string, subjectId?: number): Promise<KnowledgeIntent[]> {
-    const normalizedTerm = searchTerm.trim().toLowerCase();
-    const searchPattern = `%${normalizedTerm}%`;
-    
-    const conditions: SQL[] = [
-      or(
-        ilike(knowledgeIntents.name, searchPattern),
-        sql`EXISTS (SELECT 1 FROM jsonb_array_elements_text(${knowledgeIntents.synonyms}::jsonb) AS s WHERE s ILIKE ${searchPattern})`
-      )!
-    ];
-    
-    if (subjectId) {
-      conditions.push(eq(knowledgeIntents.subjectId, subjectId));
-    }
-    
-    return await db.select()
-      .from(knowledgeIntents)
-      .where(and(...conditions))
       .orderBy(asc(knowledgeIntents.name));
   },
 };
