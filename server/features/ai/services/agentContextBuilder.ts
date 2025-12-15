@@ -10,6 +10,7 @@ import {
 } from "./promptUtils.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 import { runCombinedKnowledgeSearch } from "./tools/combinedKnowledgeSearchTool.js";
+import { resolveProductById, resolveProductByName, getCustomerMainComplaint } from "./helpers/index.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 import type { AgentContext, BuildContextOptions } from "./agentTypes.js";
 import memoize from "memoizee";
@@ -46,10 +47,10 @@ export async function buildAgentContextFromEvent(
   let classificationSubproduct: string | null = null;
   
   if (options?.includeClassification !== false && existingSummary?.productId) {
-    const productInfo = await productCatalogStorage.getById(existingSummary.productId);
-    if (productInfo) {
-      classificationProduct = productInfo.produto;
-      classificationSubproduct = productInfo.subproduto || null;
+    const resolvedProduct = await resolveProductById(existingSummary.productId);
+    if (resolvedProduct) {
+      classificationProduct = resolvedProduct.produto;
+      classificationSubproduct = resolvedProduct.subproduto;
     }
   }
 
@@ -126,12 +127,12 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
 
   let productsIdContext = 'IDs não disponíveis';
   if (context.classification?.product) {
-    const resolved = await productCatalogStorage.resolveProductId(
+    const resolved = await resolveProductByName(
       context.classification.product,
-      context.classification.subproduct ?? undefined
+      context.classification.subproduct
     );
     if (resolved) {
-      productsIdContext = `ID: ${resolved.id} (${resolved.produto}${resolved.subproduto ? ' - ' + resolved.subproduto : ''})`;
+      productsIdContext = `ID: ${resolved.id} (${resolved.fullName})`;
     }
   }
 
@@ -165,18 +166,12 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
   } else if (context.classification?.product && context.summary) {
     // Fallback: buscar se não foram fornecidos
     try {
-      let customerMainComplaint: string | null = null;
-      try {
-        const summaryJson = JSON.parse(context.summary);
-        customerMainComplaint = summaryJson?.triage?.anamnese?.customerMainComplaint || summaryJson?.clientRequest || null;
-      } catch {
-        customerMainComplaint = context.summary;
-      }
+      const customerMainComplaint = getCustomerMainComplaint(context.summary);
       
       if (customerMainComplaint) {
-        const resolved = await productCatalogStorage.resolveProductId(
+        const resolved = await resolveProductByName(
           context.classification.product,
-          context.classification.subproduct ?? undefined
+          context.classification.subproduct
         );
         
         const searchResult = await runCombinedKnowledgeSearch({
@@ -204,18 +199,15 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
 
   let produtoESubprodutoMatch: string | null = null;
   if (context.classification?.product) {
-    const resolved = await productCatalogStorage.resolveProductId(
+    const resolved = await resolveProductByName(
       context.classification.product,
-      context.classification.subproduct ?? undefined
+      context.classification.subproduct
     );
     if (resolved) {
-      const productName = resolved.subproduto 
-        ? `${resolved.produto} - ${resolved.subproduto}`
-        : resolved.produto;
       const productScore = context.classification.productConfidence;
       produtoESubprodutoMatch = productScore != null 
-        ? `${productName} (score: ${productScore}%)`
-        : productName;
+        ? `${resolved.fullName} (score: ${productScore}%)`
+        : resolved.fullName;
     }
   }
 

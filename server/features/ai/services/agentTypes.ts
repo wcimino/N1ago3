@@ -19,10 +19,12 @@ export interface AgentContext {
   searchResults?: Array<{
     source: string;
     id: number;
-    name: string;
+    name: string | null;
     description: string;
     matchScore?: number;
+    matchReason?: string;
     matchedTerms?: string[];
+    products?: string[];
   }>;
   messages?: Array<{
     authorType: string;

@@ -1,7 +1,7 @@
 import { runAgentAndSaveSuggestion, buildAgentContextFromEvent } from "../../agentFramework.js";
-import { productCatalogStorage } from "../../../../products/storage/productCatalogStorage.js";
 import { runCombinedKnowledgeSearch } from "../../tools/combinedKnowledgeSearchTool.js";
 import { summaryStorage } from "../../../storage/summaryStorage.js";
+import { resolveProductById, getClientRequest, getClientRequestVersions } from "../../helpers/index.js";
 import type { DemandFinderAgentResult, OrchestratorContext } from "../types.js";
 
 const CONFIG_KEY = "demand_finder";
@@ -75,8 +75,8 @@ export class DemandFinderAgent {
     // Monta contexto de busca LIMPO (apenas campos relevantes) - usado como fallback
     const conversationContext = await this.buildCleanSearchContext(summary, classification);
     
-    // Extrai versões específicas do clientRequest (se existirem)
-    const versions = this.extractClientRequestVersions(summary);
+    // Extrai versões específicas do clientRequest usando helper
+    const versions = getClientRequestVersions(summary);
     const articleContext = versions?.clientRequestQuestionVersion;
     const problemContext = versions?.clientRequestProblemVersion;
     
@@ -99,11 +99,11 @@ export class DemandFinderAgent {
       return [];
     }
 
-    // Formata para salvar no banco
+    // Formata para salvar no banco (fallback para answer se question não existir)
     const resultsForStorage = searchResponse.results.map(r => ({
       source: r.source,
       id: r.id,
-      name: r.question,
+      name: r.question || r.answer || "",
       description: r.answer || "",
       matchScore: r.matchScore,
       matchReason: r.matchReason,
@@ -124,26 +124,24 @@ export class DemandFinderAgent {
   private static async runAgent(context: OrchestratorContext): Promise<{ suggestedResponse?: string; suggestionId?: number }> {
     const { event, conversationId, summary, classification, searchResults } = context;
 
-    // Resolve classificação para nomes legíveis
-    let resolvedClassification: { product?: string | null; subproduct?: string | null; customerRequestType?: string | null; productConfidence?: number | null; customerRequestTypeConfidence?: number | null } | undefined;
-    if (classification?.productId) {
-      const product = await productCatalogStorage.getById(classification.productId);
-      if (product) {
-        resolvedClassification = {
-          product: product.produto,
-          subproduct: product.subproduto,
-          customerRequestType: classification.customerRequestType,
-          productConfidence: classification.productConfidence,
-          customerRequestTypeConfidence: classification.customerRequestTypeConfidence,
-        };
-      }
-    } else if (classification?.customerRequestType) {
-      resolvedClassification = {
-        customerRequestType: classification.customerRequestType,
-        productConfidence: classification.productConfidence,
-        customerRequestTypeConfidence: classification.customerRequestTypeConfidence,
-      };
-    }
+    // Resolve classificação para nomes legíveis usando helper
+    const resolvedProduct = await resolveProductById(classification?.productId);
+    
+    const resolvedClassification = resolvedProduct
+      ? {
+          product: resolvedProduct.produto,
+          subproduct: resolvedProduct.subproduto,
+          customerRequestType: classification?.customerRequestType,
+          productConfidence: classification?.productConfidence,
+          customerRequestTypeConfidence: classification?.customerRequestTypeConfidence,
+        }
+      : classification?.customerRequestType
+        ? {
+            customerRequestType: classification.customerRequestType,
+            productConfidence: classification.productConfidence,
+            customerRequestTypeConfidence: classification.customerRequestTypeConfidence,
+          }
+        : undefined;
 
     // Monta contexto do agente, passando searchResults para evitar busca duplicada
     const agentContext = await buildAgentContextFromEvent(event, {
@@ -173,32 +171,6 @@ export class DemandFinderAgent {
   }
 
   /**
-   * Extrai as versões do clientRequest do summary JSON
-   */
-  private static extractClientRequestVersions(summary: string | null | undefined): {
-    clientRequestQuestionVersion?: string;
-    clientRequestProblemVersion?: string;
-    clientRequestStandardVersion?: string;
-  } | undefined {
-    if (!summary) return undefined;
-    
-    try {
-      const summaryData = JSON.parse(summary);
-      const versions = summaryData.clientRequestVersions;
-      if (versions && typeof versions === 'object') {
-        return {
-          clientRequestQuestionVersion: versions.clientRequestQuestionVersion || undefined,
-          clientRequestProblemVersion: versions.clientRequestProblemVersion || undefined,
-          clientRequestStandardVersion: versions.clientRequestStandardVersion || undefined,
-        };
-      }
-    } catch {
-      // Se não for JSON válido, retorna undefined
-    }
-    return undefined;
-  }
-
-  /**
    * Monta contexto de busca limpo com apenas os campos relevantes:
    * - Produto (nome completo)
    * - Solicitação (clientRequest do summary)
@@ -210,31 +182,16 @@ export class DemandFinderAgent {
   ): Promise<string> {
     const parts: string[] = [];
 
-    // 1. Produto (resolver productId para nome legível)
-    if (classification?.productId) {
-      const product = await productCatalogStorage.getById(classification.productId);
-      if (product) {
-        const productFullName = product.subproduto 
-          ? `${product.produto} > ${product.subproduto}`
-          : product.produto;
-        parts.push(`Produto: ${productFullName}`);
-      }
+    // 1. Produto (resolver productId para nome legível usando helper)
+    const resolvedProduct = await resolveProductById(classification?.productId);
+    if (resolvedProduct) {
+      parts.push(`Produto: ${resolvedProduct.fullName}`);
     }
 
-    // 2. Solicitação (extrair clientRequest do summary JSON, com fallback para importantInfo)
-    if (summary) {
-      try {
-        const summaryData = JSON.parse(summary);
-        const solicitation = summaryData.clientRequest || summaryData.importantInfo;
-        if (solicitation) {
-          parts.push(`Solicitação: ${solicitation}`);
-        }
-      } catch {
-        // Se não for JSON válido, usa o summary como está (fallback)
-        if (summary.trim()) {
-          parts.push(`Solicitação: ${summary}`);
-        }
-      }
+    // 2. Solicitação (extrair clientRequest do summary usando helper)
+    const clientRequest = getClientRequest(summary);
+    if (clientRequest) {
+      parts.push(`Solicitação: ${clientRequest}`);
     }
 
     // 3. Tipo de solicitação
