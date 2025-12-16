@@ -179,11 +179,17 @@ export async function callOpenAIForIntent(
   ];
 
   if (config.useZendeskKnowledgeBaseTool) {
+    const { article } = intentWithArticle;
+    const questionVariation = article?.questionVariation && article.questionVariation.length > 0 
+      ? article.questionVariation 
+      : undefined;
     const zendeskTool = createZendeskKnowledgeBaseTool({
       produto: intent.productName,
       subproduto: intent.subproductName || undefined,
       assunto: intent.subjectName || undefined,
       intencao: intent.name,
+      question: article?.question || undefined,
+      questionVariation,
     });
     const originalHandler = zendeskTool.handler;
     zendeskTool.handler = async (args) => {
