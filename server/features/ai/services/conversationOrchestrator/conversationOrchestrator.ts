@@ -208,8 +208,6 @@ export class ConversationOrchestrator {
       return;
     }
 
-    const previousStatus = context.currentStatus;
-
     // Update status to ESCALATED FIRST to prevent duplicate messages from concurrent events
     await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
     context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
@@ -224,16 +222,11 @@ export class ConversationOrchestrator {
       `transfer:${conversationId}`
     );
 
-    if (!messageResult.success) {
+    if (messageResult.success) {
+      console.log(`[ConversationOrchestrator] Step 7: Transfer message sent successfully`);
+    } else {
       console.error(`[ConversationOrchestrator] Step 7: Failed to send transfer message: ${messageResult.error}`);
-      // Rollback status on failure so retry can happen
-      await this.updateStatus(conversationId, previousStatus);
-      context.currentStatus = previousStatus;
-      console.log(`[ConversationOrchestrator] Step 7: Rolled back status to ${previousStatus} due to message failure`);
-      return;
     }
-    
-    console.log(`[ConversationOrchestrator] Step 7: Transfer message sent successfully`);
 
     const agentWorkspaceId = ZendeskApiService.getAgentWorkspaceIntegrationId();
     const passControlResult = await ZendeskApiService.passControl(
@@ -244,15 +237,11 @@ export class ConversationOrchestrator {
       `transfer:${conversationId}`
     );
 
-    if (!passControlResult.success) {
+    if (passControlResult.success) {
+      console.log(`[ConversationOrchestrator] Step 7: Control passed to agent workspace successfully`);
+    } else {
       console.error(`[ConversationOrchestrator] Step 7: Failed to pass control: ${passControlResult.error}`);
-      // Note: Message was sent but passControl failed. Keep ESCALATED to prevent duplicate messages.
-      // The conversation will be picked up by agent workspace even without passControl in most cases.
-      console.log(`[ConversationOrchestrator] Step 7: Keeping ESCALATED status despite passControl failure (message already sent)`);
-      return;
     }
-    
-    console.log(`[ConversationOrchestrator] Step 7: Control passed to agent workspace successfully`);
   }
 
   private static async escalate(context: OrchestratorContext, reason: string): Promise<void> {
