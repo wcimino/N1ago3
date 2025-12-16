@@ -197,6 +197,11 @@ async function classifyBatch(
     .replace("{{PERGUNTAS}}", questionsText)
     .replace("{{PRODUTO_SUBPRODUTO_ASSUNTO}}", subjectsJson);
 
+  // Append response format instructions if configured
+  if (config.responseFormat) {
+    promptUser += "\n\n" + config.responseFormat;
+  }
+
   try {
     const result = await callOpenAI({
       requestType: "topic_classification",
