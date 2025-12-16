@@ -1,7 +1,7 @@
 import { runAgentAndSaveSuggestion, buildAgentContextFromEvent } from "../../agentFramework.js";
 import { runCombinedKnowledgeSearch } from "../../tools/combinedKnowledgeSearchTool.js";
 import { summaryStorage } from "../../../storage/summaryStorage.js";
-import { resolveProductById, getClientRequest, getClientRequestVersions } from "../../helpers/index.js";
+import { getClientRequestVersions, buildCleanSearchContext, buildResolvedClassification } from "../../helpers/index.js";
 import type { DemandFinderAgentResult, OrchestratorContext } from "../types.js";
 
 const CONFIG_KEY = "demand_finder";
@@ -66,16 +66,11 @@ export class DemandFinderAgent {
     }
   }
 
-  /**
-   * Passo 1: Busca artigos e problemas na base de conhecimento e grava no banco
-   */
   private static async searchAndSaveKnowledge(context: OrchestratorContext): Promise<DemandFinderAgentResult["searchResults"]> {
     const { conversationId, summary, classification } = context;
 
-    // Monta contexto de busca LIMPO (apenas campos relevantes) - usado como fallback
-    const conversationContext = await this.buildCleanSearchContext(summary, classification);
+    const conversationContext = await buildCleanSearchContext(summary, classification);
     
-    // Extrai versões específicas do clientRequest usando helper
     const versions = getClientRequestVersions(summary);
     const articleContext = versions?.clientRequestQuestionVersion;
     const problemContext = versions?.clientRequestProblemVersion;
@@ -85,7 +80,6 @@ export class DemandFinderAgent {
     console.log(`  - problemContext: ${problemContext ? 'Problem version' : 'fallback'}`);
     console.log(`  - fallback: ${conversationContext}`);
     
-    // Busca artigos e problemas com contextos específicos
     const searchResponse = await runCombinedKnowledgeSearch({
       productId: classification?.productId,
       conversationContext,
@@ -99,7 +93,6 @@ export class DemandFinderAgent {
       return [];
     }
 
-    // Formata para salvar no banco (fallback para answer se question não existir)
     const resultsForStorage = searchResponse.results.map(r => ({
       source: r.source,
       id: r.id,
@@ -111,39 +104,17 @@ export class DemandFinderAgent {
       products: r.products,
     }));
 
-    // Grava no banco
     await summaryStorage.updateArticlesAndProblems(conversationId, resultsForStorage);
     console.log(`[DemandFinderAgent] Saved ${resultsForStorage.length} articles/problems for conversation ${conversationId}`);
 
     return resultsForStorage;
   }
 
-  /**
-   * Passo 2: Monta prompt e chama OpenAI, salvando sugestão
-   */
   private static async runAgent(context: OrchestratorContext): Promise<{ suggestedResponse?: string; suggestionId?: number }> {
     const { event, conversationId, summary, classification, searchResults } = context;
 
-    // Resolve classificação para nomes legíveis usando helper
-    const resolvedProduct = await resolveProductById(classification?.productId);
-    
-    const resolvedClassification = resolvedProduct
-      ? {
-          product: resolvedProduct.produto,
-          subproduct: resolvedProduct.subproduto,
-          customerRequestType: classification?.customerRequestType,
-          productConfidence: classification?.productConfidence,
-          customerRequestTypeConfidence: classification?.customerRequestTypeConfidence,
-        }
-      : classification?.customerRequestType
-        ? {
-            customerRequestType: classification.customerRequestType,
-            productConfidence: classification.productConfidence,
-            customerRequestTypeConfidence: classification.customerRequestTypeConfidence,
-          }
-        : undefined;
+    const resolvedClassification = await buildResolvedClassification(classification);
 
-    // Monta contexto do agente, passando searchResults para evitar busca duplicada
     const agentContext = await buildAgentContextFromEvent(event, {
       overrides: {
         summary,
@@ -152,7 +123,6 @@ export class DemandFinderAgent {
       },
     });
 
-    // Chama OpenAI e salva sugestão
     const result = await runAgentAndSaveSuggestion(CONFIG_KEY, agentContext, {
       skipIfDisabled: true,
       defaultModelName: "gpt-4o-mini",
@@ -169,37 +139,5 @@ export class DemandFinderAgent {
       suggestedResponse: result.parsedContent?.suggestedAnswerToCustomer,
       suggestionId: result.suggestionId,
     };
-  }
-
-  /**
-   * Monta contexto de busca limpo com apenas os campos relevantes:
-   * - Produto (nome completo)
-   * - Solicitação (clientRequest do summary)
-   * - Tipo (customerRequestType)
-   */
-  private static async buildCleanSearchContext(
-    summary: string | null | undefined,
-    classification: OrchestratorContext["classification"]
-  ): Promise<string> {
-    const parts: string[] = [];
-
-    // 1. Produto (resolver productId para nome legível usando helper)
-    const resolvedProduct = await resolveProductById(classification?.productId);
-    if (resolvedProduct) {
-      parts.push(`Produto: ${resolvedProduct.fullName}`);
-    }
-
-    // 2. Solicitação (extrair clientRequest do summary usando helper)
-    const clientRequest = getClientRequest(summary);
-    if (clientRequest) {
-      parts.push(`Solicitação: ${clientRequest}`);
-    }
-
-    // 3. Tipo de solicitação
-    if (classification?.customerRequestType) {
-      parts.push(`Tipo: ${classification.customerRequestType}`);
-    }
-
-    return parts.join("\n");
   }
 }

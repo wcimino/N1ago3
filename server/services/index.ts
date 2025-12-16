@@ -4,6 +4,13 @@ export { startPollingWorker, stopPollingWorker, isPollingWorkerRunning } from ".
 export { reprocessingService, type ReprocessingType, type ReprocessingProgress } from "../features/sync/services/reprocessingService.js";
 
 export { callOpenAI, getOpenaiLogs, getOpenaiLogById } from "../features/ai/services/openaiApiService.js";
-export { processSummaryForEvent, generateConversationSummary } from "../features/ai/services/summaryOrchestrator.js";
-export { generateAndSaveProductClassification, classifyConversationProduct } from "../features/ai/services/classificationOrchestrator.js";
 export { processResponseForEvent, generateConversationResponse } from "../features/ai/services/responseOrchestrator.js";
+
+export { 
+  SummaryAgent,
+  ClassificationAgent,
+  DemandFinderAgent,
+  SolutionProviderAgent,
+  ArticlesAndSolutionsAgent,
+  TopicClassificationAgent,
+} from "../features/ai/services/conversationOrchestrator/agents/index.js";

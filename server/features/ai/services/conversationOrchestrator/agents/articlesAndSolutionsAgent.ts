@@ -1,7 +1,7 @@
 import { runAgent, buildAgentContextFromEvent } from "../../agentFramework.js";
 import { runCombinedKnowledgeSearch } from "../../tools/combinedKnowledgeSearchTool.js";
 import { summaryStorage } from "../../../storage/summaryStorage.js";
-import { resolveProductById, getClientRequest, getClientRequestVersions } from "../../helpers/index.js";
+import { getClientRequestVersions, buildCleanSearchContext, buildResolvedClassification } from "../../helpers/index.js";
 import type { ArticlesAndSolutionsAgentResult, OrchestratorContext } from "../types.js";
 
 const CONFIG_KEY = "articles_and_solutions";
@@ -47,7 +47,7 @@ export class ArticlesAndSolutionsAgent {
   private static async searchKnowledge(context: OrchestratorContext): Promise<ArticlesAndSolutionsAgentResult["searchResults"]> {
     const { conversationId, summary, classification } = context;
 
-    const conversationContext = await this.buildCleanSearchContext(summary, classification);
+    const conversationContext = await buildCleanSearchContext(summary, classification);
     
     const versions = getClientRequestVersions(summary);
     const articleContext = versions?.clientRequestQuestionVersion;
@@ -88,23 +88,7 @@ export class ArticlesAndSolutionsAgent {
     const { event, conversationId, summary, classification } = context;
 
     try {
-      const resolvedProduct = await resolveProductById(classification?.productId);
-      
-      const resolvedClassification = resolvedProduct
-        ? {
-            product: resolvedProduct.produto,
-            subproduct: resolvedProduct.subproduto,
-            customerRequestType: classification?.customerRequestType,
-            productConfidence: classification?.productConfidence,
-            customerRequestTypeConfidence: classification?.customerRequestTypeConfidence,
-          }
-        : classification?.customerRequestType
-          ? {
-              customerRequestType: classification.customerRequestType,
-              productConfidence: classification.productConfidence,
-              customerRequestTypeConfidence: classification.customerRequestTypeConfidence,
-            }
-          : undefined;
+      const resolvedClassification = await buildResolvedClassification(classification);
 
       const agentContext = await buildAgentContextFromEvent(event, {
         overrides: {
@@ -171,28 +155,5 @@ export class ArticlesAndSolutionsAgent {
 
     await summaryStorage.updateArticlesAndProblems(conversationId, resultsForStorage);
     console.log(`[ArticlesAndSolutionsAgent] Saved ${resultsForStorage.length} articles/problems for conversation ${conversationId}`);
-  }
-
-  private static async buildCleanSearchContext(
-    summary: string | null | undefined,
-    classification: OrchestratorContext["classification"]
-  ): Promise<string> {
-    const parts: string[] = [];
-
-    const resolvedProduct = await resolveProductById(classification?.productId);
-    if (resolvedProduct) {
-      parts.push(`Produto: ${resolvedProduct.fullName}`);
-    }
-
-    const clientRequest = getClientRequest(summary);
-    if (clientRequest) {
-      parts.push(`Solicitação: ${clientRequest}`);
-    }
-
-    if (classification?.customerRequestType) {
-      parts.push(`Tipo: ${classification.customerRequestType}`);
-    }
-
-    return parts.join("\n");
   }
 }

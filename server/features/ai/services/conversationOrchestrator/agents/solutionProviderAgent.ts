@@ -1,5 +1,5 @@
 import { runAgentAndSaveSuggestion, buildAgentContextFromEvent } from "../../agentFramework.js";
-import { productCatalogStorage } from "../../../../products/storage/productCatalogStorage.js";
+import { buildResolvedClassification } from "../../helpers/index.js";
 import type { SolutionProviderAgentResult, OrchestratorContext } from "../types.js";
 
 const CONFIG_KEY = "solution_provider";
@@ -9,21 +9,7 @@ export class SolutionProviderAgent {
     const { event, conversationId, summary, classification, demand, searchResults } = context;
 
     try {
-      let resolvedClassification: { product?: string | null; subproduct?: string | null; customerRequestType?: string | null } | undefined;
-      if (classification?.productId) {
-        const product = await productCatalogStorage.getById(classification.productId);
-        if (product) {
-          resolvedClassification = {
-            product: product.produto,
-            subproduct: product.subproduto,
-            customerRequestType: classification.customerRequestType,
-          };
-        }
-      } else if (classification?.customerRequestType) {
-        resolvedClassification = {
-          customerRequestType: classification.customerRequestType,
-        };
-      }
+      const resolvedClassification = await buildResolvedClassification(classification);
 
       const agentContext = await buildAgentContextFromEvent(event, {
         overrides: {

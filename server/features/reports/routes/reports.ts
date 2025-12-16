@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { reportsService } from "../services/reportsService.js";
 import { validatePeriod } from "../utils/dateFilter.js";
-import { getQuestionTopics, getAvailableProducts, getAvailableSubproducts, type PeriodFilter } from "../services/topicClassificationService.js";
+import { TopicClassificationAgent, type PeriodFilter } from "../../ai/services/conversationOrchestrator/agents/index.js";
 
 const router = Router();
 
@@ -54,7 +54,7 @@ router.get("/api/reports/question-topics", async (req, res) => {
     const period: PeriodFilter = (periodParam === "last_hour" || periodParam === "last_24h" || periodParam === "all") 
       ? periodParam 
       : "all";
-    const results = await getQuestionTopics(product, subproduct, period);
+    const results = await TopicClassificationAgent.process(product, subproduct, period);
     res.json(results);
   } catch (error) {
     console.error("Error fetching question topics:", error);
@@ -64,7 +64,7 @@ router.get("/api/reports/question-topics", async (req, res) => {
 
 router.get("/api/reports/question-topics/products", async (req, res) => {
   try {
-    const products = await getAvailableProducts();
+    const products = await TopicClassificationAgent.getAvailableProducts();
     res.json(products);
   } catch (error) {
     console.error("Error fetching available products:", error);
@@ -75,7 +75,7 @@ router.get("/api/reports/question-topics/products", async (req, res) => {
 router.get("/api/reports/question-topics/subproducts", async (req, res) => {
   try {
     const product = req.query.product as string | undefined;
-    const subproducts = await getAvailableSubproducts(product);
+    const subproducts = await TopicClassificationAgent.getAvailableSubproducts(product);
     res.json(subproducts);
   } catch (error) {
     console.error("Error fetching available subproducts:", error);

@@ -12,3 +12,10 @@ export {
   formatProductName,
   type ResolvedProduct,
 } from "./productHelpers.js";
+
+export {
+  buildCleanSearchContext,
+  buildResolvedClassification,
+  type ClassificationContext,
+  type ResolvedClassification,
+} from "./searchContextHelpers.js";
