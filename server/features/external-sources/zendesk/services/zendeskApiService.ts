@@ -309,10 +309,8 @@ export async function addConversationTags(
     endpoint: `/v2/apps/${getAppId()}/conversations/${conversationId}`,
     method: "PATCH",
     body: {
-      conversation: {
-        metadata: {
-          tags,
-        },
+      metadata: {
+        tags,
       },
     },
     conversationId,
