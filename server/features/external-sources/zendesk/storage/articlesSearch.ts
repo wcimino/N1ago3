@@ -34,6 +34,7 @@ export interface SearchArticleResult {
 export interface SemanticSearchResult {
   id: number;
   zendeskId: string;
+  helpCenterSubdomain: string | null;
   title: string;
   body: string | null;
   sectionName: string | null;
@@ -168,6 +169,7 @@ export async function searchBySimilarity(
     SELECT 
       a.id,
       a.zendesk_id as "zendeskId",
+      a.help_center_subdomain as "helpCenterSubdomain",
       a.title,
       a.body,
       a.section_name as "sectionName",
@@ -186,6 +188,7 @@ export async function searchBySimilarity(
     .map(row => ({
       id: row.id,
       zendeskId: row.zendeskId,
+      helpCenterSubdomain: row.helpCenterSubdomain,
       title: row.title,
       body: stripHtmlTags(row.body),
       sectionName: row.sectionName,

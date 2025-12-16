@@ -4,8 +4,8 @@ import { generateEmbedding as generateZendeskEmbedding, generateEnrichedQueryEmb
 import type { ToolDefinition } from "../openaiApiService.js";
 
 const RELEVANCE_THRESHOLD = 0.05;
-const ENABLED_HELP_CENTER_SUBDOMAIN = "centralajudaifp";
 const PRODUCT_MISMATCH_PENALTY = 0.20;
+const MOVILE_PAY_SUBDOMAIN_PENALTY = 0.20;
 
 function normalizeForComparison(text: string): string {
   return text
@@ -36,6 +36,23 @@ function applyProductMismatchPenalty<T extends { similarity: number; sectionName
       if (!matches) {
         const penalizedSimilarity = Math.max(0, article.similarity - (article.similarity * PRODUCT_MISMATCH_PENALTY));
         console.log(`[Zendesk KB Tool] Product mismatch penalty applied: "${article.sectionName}" vs "${produto}" - score ${article.similarity.toFixed(2)} -> ${penalizedSimilarity.toFixed(2)}`);
+        return { ...article, similarity: penalizedSimilarity };
+      }
+      return article;
+    })
+    .sort((a, b) => b.similarity - a.similarity);
+}
+
+function applySubdomainPenalty<T extends { similarity: number; helpCenterSubdomain: string | null }>(
+  articles: T[]
+): T[] {
+  return articles
+    .map(article => {
+      const subdomain = article.helpCenterSubdomain?.toLowerCase() || '';
+      const isMovilePay = subdomain.includes('movile') || subdomain.includes('movilepay');
+      if (isMovilePay) {
+        const penalizedSimilarity = Math.max(0, article.similarity * (1 - MOVILE_PAY_SUBDOMAIN_PENALTY));
+        console.log(`[Zendesk KB Tool] Movile Pay subdomain penalty applied: "${article.helpCenterSubdomain}" - score ${article.similarity.toFixed(2)} -> ${penalizedSimilarity.toFixed(2)}`);
         return { ...article, similarity: penalizedSimilarity };
       }
       return article;
@@ -91,6 +108,7 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
       let articles: Array<{
         id: number;
         zendeskId: string;
+        helpCenterSubdomain: string | null;
         title: string;
         body: string | null;
         sectionName: string | null;
@@ -131,12 +149,13 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
             
             const semanticResults = await ZendeskArticlesStorage.searchBySimilarity(
               queryEmbedding,
-              { limit: 5, helpCenterSubdomain: ENABLED_HELP_CENTER_SUBDOMAIN }
+              { limit: 10 }
             );
             
             const mappedArticles = semanticResults.map(a => ({
               id: a.id,
               zendeskId: a.zendeskId,
+              helpCenterSubdomain: a.helpCenterSubdomain,
               title: a.title,
               body: a.body,
               sectionName: a.sectionName,
@@ -144,64 +163,71 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
               similarity: a.similarity,
             }));
             
-            articles = applyProductMismatchPenalty(mappedArticles, mergedContext.produto);
+            let penalizedArticles = applySubdomainPenalty(mappedArticles);
+            penalizedArticles = applyProductMismatchPenalty(penalizedArticles, mergedContext.produto);
+            articles = penalizedArticles.slice(0, 5);
             
             console.log(`[Zendesk KB Tool] Semantic search found ${articles.length} articles (enriched=${hasContext}, product penalty applied for: ${mergedContext.produto || 'none'})`);
           } catch (error) {
             console.error("[Zendesk KB Tool] Semantic search failed, falling back to full-text:", error);
             const searchResults = await ZendeskArticlesStorage.searchArticlesWithRelevance(
               args.keywords,
-              { sectionId: args.section, limit: 10, helpCenterSubdomain: ENABLED_HELP_CENTER_SUBDOMAIN }
+              { sectionId: args.section, limit: 20 }
             );
             const fallbackArticles = searchResults
               .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
-              .slice(0, 5)
               .map(a => ({
                 id: a.id,
                 zendeskId: a.zendeskId,
+                helpCenterSubdomain: a.helpCenterSubdomain,
                 title: a.title,
                 body: a.body,
                 sectionName: a.sectionName,
                 htmlUrl: a.htmlUrl,
                 similarity: Math.round(a.relevanceScore),
               }));
-            articles = applyProductMismatchPenalty(fallbackArticles, mergedContext.produto);
+            let penalizedFallback = applySubdomainPenalty(fallbackArticles);
+            penalizedFallback = applyProductMismatchPenalty(penalizedFallback, mergedContext.produto);
+            articles = penalizedFallback.slice(0, 5);
           }
         } else {
           console.log("[Zendesk KB Tool] No embeddings available, using full-text search");
           const searchResults = await ZendeskArticlesStorage.searchArticlesWithRelevance(
             args.keywords,
-            { sectionId: args.section, limit: 10, helpCenterSubdomain: ENABLED_HELP_CENTER_SUBDOMAIN }
+            { sectionId: args.section, limit: 20 }
           );
           const fullTextArticles = searchResults
             .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
-            .slice(0, 5)
             .map(a => ({
               id: a.id,
               zendeskId: a.zendeskId,
+              helpCenterSubdomain: a.helpCenterSubdomain,
               title: a.title,
               body: a.body,
               sectionName: a.sectionName,
               htmlUrl: a.htmlUrl,
               similarity: Math.round(a.relevanceScore),
             }));
-          articles = applyProductMismatchPenalty(fullTextArticles, mergedContext.produto);
+          let penalizedFullText = applySubdomainPenalty(fullTextArticles);
+          penalizedFullText = applyProductMismatchPenalty(penalizedFullText, mergedContext.produto);
+          articles = penalizedFullText.slice(0, 5);
         }
       } else {
         const allArticles = await ZendeskArticlesStorage.getAllArticles({
           sectionId: args.section,
-          limit: 5,
-          helpCenterSubdomain: ENABLED_HELP_CENTER_SUBDOMAIN
+          limit: 10
         });
-        articles = allArticles.map(a => ({
+        const mappedAll = allArticles.map(a => ({
           id: a.id,
           zendeskId: a.zendeskId,
+          helpCenterSubdomain: a.helpCenterSubdomain,
           title: a.title,
           body: a.body,
           sectionName: a.sectionName,
           htmlUrl: a.htmlUrl,
           similarity: 0,
         }));
+        articles = applySubdomainPenalty(mappedAll).slice(0, 5);
       }
       
       if (articles.length === 0) {
@@ -226,7 +252,7 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
         title: a.title,
         section: a.sectionName,
         relevance: a.similarity,
-        body: a.body ? a.body.substring(0, 500) + (a.body.length > 500 ? "..." : "") : null,
+        body: a.body ? a.body.substring(0, 1000) + (a.body.length > 1000 ? "..." : "") : null,
         url: a.htmlUrl
       }));
       
