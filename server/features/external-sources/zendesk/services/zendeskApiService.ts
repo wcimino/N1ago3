@@ -1,8 +1,15 @@
 import { db } from "../../../../db.js";
 import { zendeskApiLogs } from "../../../../../shared/schema.js";
 
-const ZENDESK_APP_ID = "5fbcf8fffea626000bbaa1eb";
 const ZENDESK_BASE_URL = "https://api.smooch.io";
+
+function getAppId(): string {
+  const appId = process.env.ZENDESK_APP_ID;
+  if (!appId) {
+    throw new Error("Missing ZENDESK_APP_ID environment variable");
+  }
+  return appId;
+}
 
 interface ApiCallOptions {
   endpoint: string;
@@ -149,7 +156,7 @@ export async function sendMessage(
   console.log(`[ZendeskApiService] Sending message to conversation ${conversationId}`);
   
   return makeApiCall<SendMessageResponse>({
-    endpoint: `/v2/apps/${ZENDESK_APP_ID}/conversations/${conversationId}/messages`,
+    endpoint: `/v2/apps/${getAppId()}/conversations/${conversationId}/messages`,
     method: "POST",
     body: {
       author: { type: "business" },
@@ -172,7 +179,7 @@ export async function passControl(
   console.log(`[ZendeskApiService] Passing control for conversation ${conversationId} to ${targetIntegrationId}`);
   
   return makeApiCall<PassControlResponse>({
-    endpoint: `/v2/apps/${ZENDESK_APP_ID}/conversations/${conversationId}/passControl`,
+    endpoint: `/v2/apps/${getAppId()}/conversations/${conversationId}/passControl`,
     method: "POST",
     body: {
       switchboardIntegration: targetIntegrationId,
@@ -195,7 +202,7 @@ export async function offerControl(
   console.log(`[ZendeskApiService] Offering control for conversation ${conversationId} to ${targetIntegrationId}`);
   
   return makeApiCall<PassControlResponse>({
-    endpoint: `/v2/apps/${ZENDESK_APP_ID}/conversations/${conversationId}/offerControl`,
+    endpoint: `/v2/apps/${getAppId()}/conversations/${conversationId}/offerControl`,
     method: "POST",
     body: {
       switchboardIntegration: targetIntegrationId,
@@ -216,7 +223,7 @@ export async function acceptControl(
   console.log(`[ZendeskApiService] Accepting control for conversation ${conversationId}`);
   
   return makeApiCall<PassControlResponse>({
-    endpoint: `/v2/apps/${ZENDESK_APP_ID}/conversations/${conversationId}/acceptControl`,
+    endpoint: `/v2/apps/${getAppId()}/conversations/${conversationId}/acceptControl`,
     method: "POST",
     conversationId,
     requestType: "acceptControl",
@@ -233,7 +240,7 @@ export async function releaseControl(
   console.log(`[ZendeskApiService] Releasing control for conversation ${conversationId}`);
   
   return makeApiCall<PassControlResponse>({
-    endpoint: `/v2/apps/${ZENDESK_APP_ID}/conversations/${conversationId}/releaseControl`,
+    endpoint: `/v2/apps/${getAppId()}/conversations/${conversationId}/releaseControl`,
     method: "POST",
     conversationId,
     requestType: "releaseControl",
@@ -259,7 +266,11 @@ export function getN1agoIntegrationId(): string {
 }
 
 export function getAnswerBotIntegrationId(): string {
-  return "64d65d81a40bc6cf30ebfbb1";
+  const id = process.env.ZENDESK_ANSWER_BOT_ID;
+  if (!id) {
+    throw new Error("Missing ZENDESK_ANSWER_BOT_ID environment variable");
+  }
+  return id;
 }
 
 export const ZendeskApiService = {

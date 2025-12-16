@@ -73,18 +73,7 @@ export async function processHandoffEvent(event: EventStandard): Promise<void> {
 async function handleReceivedControl(context: HandoffContext): Promise<void> {
   console.log(`[HandoffOrchestrator] Handling received control for conversation ${context.conversationId}`);
   
-  const acceptResult = await ZendeskApiService.acceptControl(
-    context.conversationId,
-    "handoff",
-    `passControl:${context.conversationId}`
-  );
-
-  if (!acceptResult.success) {
-    console.error(`[HandoffOrchestrator] Failed to accept control: ${acceptResult.error}`);
-    return;
-  }
-
-  console.log(`[HandoffOrchestrator] Control accepted for conversation ${context.conversationId}`);
+  console.log(`[HandoffOrchestrator] Control received via passControl for conversation ${context.conversationId} - no acceptControl needed`);
 
   const welcomeMessage = "Olá! Sou a assistente virtual da N1. Como posso ajudar você hoje?";
   

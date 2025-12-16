@@ -4,6 +4,7 @@ import { eq, desc, sql, and, lt, ne } from "drizzle-orm";
 import type { ExtractedConversation } from "../../events/adapters/types.js";
 import { CONVERSATION_RULES, type ClosedReason } from "../../../config/conversationRules.js";
 import { saveAndDispatchEvent } from "../../events/services/eventDispatcher.js";
+import { ZendeskApiService } from "../../external-sources/zendesk/services/zendeskApiService.js";
 
 interface ConversationData {
   externalConversationId: string;
@@ -58,7 +59,7 @@ async function upsertConversation(data: ConversationData): Promise<{ conversatio
       userId: data.externalUserId,
       userExternalId: data.userExternalId,
       metadataJson: data.metadata,
-      currentHandler: "64d65d81a40bc6cf30ebfbb1",
+      currentHandler: ZendeskApiService.getAnswerBotIntegrationId(),
       currentHandlerName: "zd-answerBot",
     })
     .onConflictDoUpdate({
