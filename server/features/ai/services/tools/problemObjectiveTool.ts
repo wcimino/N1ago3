@@ -85,6 +85,42 @@ function applyKeywordsBoostToProblems(
     .slice(0, limit);
 }
 
+function applyProductMismatchPenalty(
+  problems: ProblemSearchResult[],
+  productContext?: string
+): ProblemSearchResult[] {
+  if (!productContext || problems.length === 0) {
+    return problems;
+  }
+
+  const normalizedProductContext = productContext.toLowerCase();
+
+  return problems.map(problem => {
+    if (!problem.products || problem.products.length === 0) {
+      return problem;
+    }
+
+    const hasMatchingProduct = problem.products.some(p => {
+      const normalizedProduct = p.toLowerCase();
+      return normalizedProduct.includes(normalizedProductContext) || 
+             normalizedProductContext.includes(normalizedProduct);
+    });
+
+    if (hasMatchingProduct) {
+      return problem;
+    }
+
+    const penalizedScore = problem.matchScore * 0.90;
+    console.log(`[ProblemObjectiveSearch] Product mismatch penalty: [${problem.products.join(", ")}] vs "${productContext}" - score ${problem.matchScore.toFixed(1)} -> ${penalizedScore.toFixed(1)}`);
+    
+    return {
+      ...problem,
+      matchScore: penalizedScore,
+      matchReason: `${problem.matchReason} [produto diferente: -10%]`
+    };
+  });
+}
+
 export async function runProblemObjectiveSearch(params: ProblemSearchParams): Promise<ProblemSearchResponse> {
   const { productContext, conversationContext, limit = 5 } = params;
   
@@ -145,6 +181,11 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
       console.log(`[ProblemObjectiveSearch] After keywords boost/filter: ${problems.length} problems`);
     }
 
+    problems = applyProductMismatchPenalty(problems, productContext);
+    problems = problems
+      .sort((a, b) => b.matchScore - a.matchScore)
+      .slice(0, limit);
+
     return {
       message: `Encontrados ${problems.length} problemas objetivos (busca híbrida)`,
       problems
@@ -173,28 +214,35 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
       };
     }
 
+    let problems: ProblemSearchResult[] = semanticResults.map((p: SemanticSearchResult) => {
+      const problemText = [
+        p.name,
+        p.description || "",
+        ...(p.synonyms || []),
+        ...(p.examples || [])
+      ].join(" ");
+      return {
+        source: "problem" as const,
+        id: p.id,
+        name: p.name,
+        matchScore: p.similarity,
+        matchReason: `Similaridade semântica: ${p.similarity}%`,
+        matchedTerms: extractMatchedTerms(params.keywords || "", problemText),
+        description: p.description,
+        synonyms: p.synonyms || [],
+        examples: p.examples || [],
+        products: p.productNames || [],
+      };
+    });
+
+    problems = applyProductMismatchPenalty(problems, productContext);
+    problems = problems
+      .sort((a, b) => b.matchScore - a.matchScore)
+      .slice(0, limit);
+
     return {
-      message: `Encontrados ${semanticResults.length} problemas objetivos (busca semântica)`,
-      problems: semanticResults.map((p: SemanticSearchResult) => {
-        const problemText = [
-          p.name,
-          p.description || "",
-          ...(p.synonyms || []),
-          ...(p.examples || [])
-        ].join(" ");
-        return {
-          source: "problem" as const,
-          id: p.id,
-          name: p.name,
-          matchScore: p.similarity,
-          matchReason: `Similaridade semântica: ${p.similarity}%`,
-          matchedTerms: extractMatchedTerms(params.keywords || "", problemText),
-          description: p.description,
-          synonyms: p.synonyms || [],
-          examples: p.examples || [],
-          products: p.productNames || [],
-        };
-      })
+      message: `Encontrados ${problems.length} problemas objetivos (busca semântica)`,
+      problems
     };
   }
 
@@ -212,28 +260,35 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
     };
   }
 
+  let problems: ProblemSearchResult[] = results.map((p: ObjectiveProblemSearchResult) => {
+    const problemText = [
+      p.name,
+      p.description || "",
+      ...(p.synonyms || []),
+      ...(p.examples || [])
+    ].join(" ");
+    return {
+      source: "problem" as const,
+      id: p.id,
+      name: p.name,
+      matchScore: p.matchScore,
+      matchReason: p.matchReason,
+      matchedTerms: extractMatchedTerms(params.keywords || "", problemText),
+      description: p.description,
+      synonyms: p.synonyms || [],
+      examples: p.examples || [],
+      products: p.productNames || [],
+    };
+  });
+
+  problems = applyProductMismatchPenalty(problems, productContext);
+  problems = problems
+    .sort((a, b) => b.matchScore - a.matchScore)
+    .slice(0, limit);
+
   return {
-    message: `Encontrados ${results.length} problemas objetivos`,
-    problems: results.map((p: ObjectiveProblemSearchResult) => {
-      const problemText = [
-        p.name,
-        p.description || "",
-        ...(p.synonyms || []),
-        ...(p.examples || [])
-      ].join(" ");
-      return {
-        source: "problem" as const,
-        id: p.id,
-        name: p.name,
-        matchScore: p.matchScore,
-        matchReason: p.matchReason,
-        matchedTerms: extractMatchedTerms(params.keywords || "", problemText),
-        description: p.description,
-        synonyms: p.synonyms || [],
-        examples: p.examples || [],
-        products: p.productNames || [],
-      };
-    })
+    message: `Encontrados ${problems.length} problemas objetivos`,
+    problems
   };
 }
 

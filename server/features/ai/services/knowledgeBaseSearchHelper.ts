@@ -3,6 +3,7 @@ import { KnowledgeBaseStatisticsStorage } from "../storage/knowledgeBaseStatisti
 import { generateEmbedding } from "../../../shared/embeddings/index.js";
 import type { KnowledgeBaseArticle } from "../../../../shared/schema.js";
 import { normalizeText, calculateMatchScore as sharedCalculateMatchScore, parseSearchTerms, extractMatchedTerms, type MatchField } from "../../../shared/utils/matchScoring.js";
+import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 
 export interface KBSearchParams {
   productContext?: string;
@@ -104,6 +105,57 @@ function applyKeywordsBoost(
   return boostedArticles
     .sort((a, b) => b.relevanceScore - a.relevanceScore)
     .slice(0, limit);
+}
+
+async function applyProductMismatchPenalty(
+  articles: KBArticleResult[],
+  productContext?: string
+): Promise<KBArticleResult[]> {
+  if (!productContext || articles.length === 0) {
+    return articles;
+  }
+
+  const productIds = [...new Set(articles.filter(a => a.productId).map(a => a.productId!))];
+  if (productIds.length === 0) {
+    return articles;
+  }
+
+  const productNameMap = new Map<number, string>();
+  for (const productId of productIds) {
+    const resolved = await productCatalogStorage.resolveProductContext(productId);
+    if (resolved) {
+      productNameMap.set(productId, resolved.toLowerCase());
+    }
+  }
+
+  const normalizedProductContext = productContext.toLowerCase();
+
+  return articles.map(article => {
+    if (!article.productId) {
+      return article;
+    }
+
+    const articleProductName = productNameMap.get(article.productId);
+    if (!articleProductName) {
+      return article;
+    }
+
+    const isMatch = articleProductName.includes(normalizedProductContext) || 
+                    normalizedProductContext.includes(articleProductName);
+
+    if (isMatch) {
+      return article;
+    }
+
+    const penalizedScore = article.relevanceScore * 0.90;
+    console.log(`[KB Search] Product mismatch penalty: "${articleProductName}" vs "${productContext}" - score ${article.relevanceScore.toFixed(1)} -> ${penalizedScore.toFixed(1)}`);
+    
+    return {
+      ...article,
+      relevanceScore: penalizedScore,
+      matchReason: `${article.matchReason} [produto diferente: -10%]`
+    };
+  });
 }
 
 export async function runKnowledgeBaseSearch(
@@ -218,6 +270,11 @@ export async function runKnowledgeBaseSearch(
   }
 
   if (articles.length > 0) {
+    articles = await applyProductMismatchPenalty(articles, productContext);
+    articles = articles
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .slice(0, limit);
+    
     try {
       await KnowledgeBaseStatisticsStorage.recordMultipleArticleViews(
         articles.map(a => ({ id: a.id })),
