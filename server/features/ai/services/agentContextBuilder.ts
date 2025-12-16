@@ -264,6 +264,7 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
     produtoESubprodutoMatch,
     tipoDeDemandaMatch,
     artigoOuProblemaPrincipalMatch,
+    customVariables: context.customVariables,
   };
 }
 

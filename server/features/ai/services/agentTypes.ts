@@ -42,6 +42,7 @@ export interface AgentContext {
     eventSubtype?: string | null;
     contentPayload?: ContentPayload | null;
   };
+  customVariables?: Record<string, string>;
 }
 
 export interface AgentRunnerResult {

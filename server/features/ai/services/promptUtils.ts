@@ -15,6 +15,7 @@ export interface PromptVariables {
   produtoESubprodutoMatch?: string | null;
   tipoDeDemandaMatch?: string | null;
   artigoOuProblemaPrincipalMatch?: string | null;
+  customVariables?: Record<string, string>;
 }
 
 function extractClientRequest(summary: string | null | undefined): string {
@@ -51,6 +52,13 @@ export function replacePromptVariables(
   result = result.replace(/\{\{PRODUTO_E_SUBPRODUTO_MATCH\}\}/g, variables.produtoESubprodutoMatch || 'Nenhum produto/subproduto identificado.');
   result = result.replace(/\{\{TIPO_DE_DEMANDA_MATCH\}\}/g, variables.tipoDeDemandaMatch || 'Nenhum tipo de demanda identificado.');
   result = result.replace(/\{\{ARTIGO_OU_PROBLEMA_PRINCIPAL_MATCH\}\}/g, variables.artigoOuProblemaPrincipalMatch || 'Nenhum artigo ou problema principal identificado.');
+
+  if (variables.customVariables) {
+    for (const [key, value] of Object.entries(variables.customVariables)) {
+      const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+      result = result.replace(regex, value);
+    }
+  }
 
   return result;
 }

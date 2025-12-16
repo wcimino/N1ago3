@@ -242,15 +242,6 @@ export class TopicClassificationAgent {
     subjectsJson: string
   ): Promise<Map<string, string>> {
     const questionsText = questions.map((q, i) => `${i + 1}. ${q}`).join("\n");
-    
-    const promptTemplate = config.promptSystem || config.promptTemplate;
-    let promptUser = promptTemplate
-      .replace("{{PERGUNTAS}}", questionsText)
-      .replace("{{PRODUTO_SUBPRODUTO_ASSUNTO}}", subjectsJson);
-
-    if (config.responseFormat) {
-      promptUser += "\n\n" + config.responseFormat;
-    }
 
     try {
       const result = await runAgent(CONFIG_KEY, {
@@ -258,14 +249,11 @@ export class TopicClassificationAgent {
         externalConversationId: "report-question-topics",
         lastEventId: 0,
         summary: null,
-        messages: [{
-          authorType: "system",
-          authorName: "TopicClassification",
-          contentText: promptUser,
-          occurredAt: new Date(),
-          eventSubtype: null,
-          contentPayload: null,
-        }],
+        messages: [],
+        customVariables: {
+          PERGUNTAS: questionsText,
+          PRODUTO_SUBPRODUTO_ASSUNTO: subjectsJson,
+        },
       });
 
       if (!result.success || !result.responseContent) {
