@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3, Users, AlertTriangle } from "lucide-react";
+import { BarChart3, Users, AlertTriangle, MessageSquareText } from "lucide-react";
+import { useLocation } from "wouter";
 import { useReportData, PeriodFilter } from "../hooks/useReportData";
 import { PeriodFilter as PeriodFilterComponent } from "../components/PeriodFilter";
 import { ReportTable, Column } from "../components/ReportTable";
@@ -35,11 +36,12 @@ interface CustomerConversationCount {
   conversationCount: number;
 }
 
-type ReportTab = "product-problem" | "customer-conversations";
+type ReportTab = "product-problem" | "customer-conversations" | "question-topics";
 
 const tabs = [
   { id: "product-problem", label: "Problemas", icon: <AlertTriangle className="w-4 h-4" /> },
   { id: "customer-conversations", label: "Conversas por Cliente", icon: <Users className="w-4 h-4" /> },
+  { id: "question-topics", label: "Temas das Perguntas", icon: <MessageSquareText className="w-4 h-4" /> },
 ];
 
 const customerConversationColumns: Column<CustomerConversationCount>[] = [
@@ -53,8 +55,17 @@ const customerConversationColumns: Column<CustomerConversationCount>[] = [
 ];
 
 export function ReportsPage() {
+  const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<ReportTab>("product-problem");
   const [period, setPeriod] = useState<PeriodFilter>("24h");
+
+  const handleTabChange = (tabId: string) => {
+    if (tabId === "question-topics") {
+      navigate("/reports/question-topics");
+    } else {
+      setActiveTab(tabId as ReportTab);
+    }
+  };
 
   const hierarchicalProblemQuery = useQuery<HierarchicalProblemData>({
     queryKey: ["problem-hierarchy", period],
@@ -101,7 +112,7 @@ export function ReportsPage() {
       <SegmentedTabs
         tabs={tabs}
         activeTab={activeTab}
-        onChange={(tabId) => setActiveTab(tabId as ReportTab)}
+        onChange={handleTabChange}
       />
 
       {activeTab === "product-problem" && (

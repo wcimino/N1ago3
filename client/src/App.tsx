@@ -10,7 +10,7 @@ import { AtendimentosPage, UserConversationsPage } from "./features/conversation
 import { CadastroPage, UserStandardDetailPage, OrganizationStandardDetailPage } from "./features/cadastro";
 import { ExportPage } from "./features/export";
 import { KnowledgeBasePage } from "./features/knowledge";
-import { ReportsPage } from "./features/reports";
+import { ReportsPage, QuestionTopicsPage } from "./features/reports";
 import { RoutingRulesPage } from "./features/routing";
 import { LandingPage, LoadingPage, UnauthorizedPage, HomePage } from "./shared/pages";
 
@@ -96,6 +96,7 @@ function AuthenticatedApp() {
           <Route path="/settings/maintenance/export/:rest*" component={ExportPage} />
           <Route path="/knowledge-base" component={KnowledgeBasePage} />
           <Route path="/reports" component={ReportsPage} />
+          <Route path="/reports/question-topics" component={QuestionTopicsPage} />
           <Route path="/routing-rules" component={RoutingRulesPage} />
           <Route path="/settings">{() => <Redirect to="/settings/access" />}</Route>
           <Route path="/settings/access">{() => <SettingsPage activeTab="access" />}</Route>
