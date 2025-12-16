@@ -52,7 +52,12 @@ interface ProductSubjectMap {
   [product: string]: string[];
 }
 
-async function getSubjectsByProduct(): Promise<ProductSubjectMap> {
+async function getSubjectsByProduct(productFilter?: string): Promise<ProductSubjectMap> {
+  // Build product filter clause
+  const productClause = productFilter 
+    ? `WHERE pc.produto = '${productFilter.replace(/'/g, "''")}'`
+    : "";
+    
   const results = await db.execute(sql.raw(`
     SELECT 
       COALESCE(pc.produto, 'Geral') as produto,
@@ -60,6 +65,7 @@ async function getSubjectsByProduct(): Promise<ProductSubjectMap> {
       ks.name as subject
     FROM knowledge_subjects ks
     LEFT JOIN products_catalog pc ON ks.product_catalog_id = pc.id
+    ${productClause}
     ORDER BY pc.produto, pc.subproduto, ks.name
   `));
 
@@ -177,7 +183,7 @@ async function getQuestionsByProduct(product?: string, subproduct?: string, peri
   }));
 }
 
-async function classifyQuestionsWithAI(questions: string[]): Promise<Map<string, string>> {
+async function classifyQuestionsWithAI(questions: string[], productFilter?: string): Promise<Map<string, string>> {
   const config = await storage.getOpenaiApiConfig("topic_classification");
   
   if (!config || !config.enabled) {
@@ -186,9 +192,11 @@ async function classifyQuestionsWithAI(questions: string[]): Promise<Map<string,
 
   const questionsText = questions.map((q, i) => `${i + 1}. ${q}`).join("\n");
   
-  // Fetch available subjects grouped by product
-  const subjectsByProduct = await getSubjectsByProduct();
+  // Fetch available subjects filtered by selected product
+  const subjectsByProduct = await getSubjectsByProduct(productFilter);
   const subjectsJson = JSON.stringify(subjectsByProduct, null, 2);
+  
+  console.log(`[TopicClassification] Using subjects for product: ${productFilter || 'all'}`);
   
   // Replace template variables
   let promptUser = config.promptTemplate
@@ -270,7 +278,7 @@ export async function getQuestionTopics(product?: string, subproduct?: string, p
   }
 
   const uniqueQuestions = [...new Set(questions.map(q => q.question.trim()))];
-  const classificationMap = await classifyQuestionsWithAI(uniqueQuestions);
+  const classificationMap = await classifyQuestionsWithAI(uniqueQuestions, product);
 
   const questionsWithThemes = questions.map(q => ({
     ...q,
