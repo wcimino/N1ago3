@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, Puzzle, ChevronDown, ChevronUp, HelpCircle, Plus } from "lucide-react";
+import { AlertCircle, Puzzle, ChevronDown, ChevronUp, HelpCircle, Plus, X } from "lucide-react";
 import { FormField } from "../../../shared/components/crud";
 import { FormActions } from "../../../shared/components/ui";
 

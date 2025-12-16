@@ -1,12 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { Tag, MessageSquare, CheckCircle, Plus, Trash2 } from "lucide-react";
-import { ModernSelect, FormActions } from "@/shared/components/ui";
+import { FormActions } from "@/shared/components/ui";
+import { ProductHierarchySelects, ProductHierarchyDisplay } from "@/shared/components/forms/ProductHierarchySelects";
+import { useProductHierarchySelects } from "@/shared/hooks";
 import { InlineEnrichmentPanel } from "./InlineEnrichmentPanel";
-import type { KnowledgeSubject, KnowledgeIntent, ProductCatalogItem } from "../../../types";
 import type { KnowledgeBaseArticle, KnowledgeBaseFormData } from "../hooks/useKnowledgeBase";
-
-type CatalogProduct = ProductCatalogItem;
 
 interface PrefilledArticleData {
   productId: number;
@@ -37,75 +35,27 @@ export function KnowledgeBaseForm({
     answer: "",
     keywords: "",
     questionVariation: [] as string[],
-    productId: null as number | null,
-    subjectId: null as number | null,
-    intentId: null as number | null,
   });
   const [newVariation, setNewVariation] = useState("");
   const [initializedForId, setInitializedForId] = useState<number | null>(null);
 
-  const { data: catalogProducts = [], isSuccess: catalogLoaded } = useQuery<CatalogProduct[]>({
-    queryKey: ["/api/product-catalog"],
-    queryFn: async () => {
-      const res = await fetch("/api/product-catalog");
-      return res.json();
-    },
+  const hierarchy = useProductHierarchySelects({
+    initialValues: initialData 
+      ? { productId: initialData.productId, subjectId: initialData.subjectId, intentId: initialData.intentId }
+      : prefilledData
+        ? { productId: prefilledData.productId, subjectId: prefilledData.subjectId, intentId: prefilledData.intentId }
+        : undefined,
   });
-
-  const { data: allSubjects = [], isSuccess: subjectsLoaded } = useQuery<KnowledgeSubject[]>({
-    queryKey: ["/api/knowledge/subjects", { withProduct: true }],
-    queryFn: async () => {
-      const res = await fetch("/api/knowledge/subjects?withProduct=true");
-      return res.json();
-    },
-  });
-
-  const { data: allIntents = [], isSuccess: intentsLoaded } = useQuery<KnowledgeIntent[]>({
-    queryKey: ["/api/knowledge/intents", { withSubject: true }],
-    queryFn: async () => {
-      const res = await fetch("/api/knowledge/intents?withSubject=true");
-      return res.json();
-    },
-  });
-
-  const dataReady = catalogLoaded && subjectsLoaded && intentsLoaded;
-
-  const uniqueProducts = useMemo(() => {
-    const seen = new Set<string>();
-    return catalogProducts.filter(p => {
-      if (seen.has(p.produto)) return false;
-      seen.add(p.produto);
-      return true;
-    });
-  }, [catalogProducts]);
-
-  const filteredSubjects = useMemo(() => {
-    if (!formData.productId) return [];
-    const product = catalogProducts.find(p => p.id === formData.productId);
-    if (!product) return [];
-    const productCatalogIds = catalogProducts
-      .filter(p => p.produto === product.produto)
-      .map(p => p.id);
-    return allSubjects.filter(s => productCatalogIds.includes(s.productCatalogId));
-  }, [formData.productId, catalogProducts, allSubjects]);
-  
-  const filteredIntents = useMemo(() => {
-    if (!formData.subjectId) return [];
-    return allIntents.filter(i => i.subjectId === formData.subjectId);
-  }, [formData.subjectId, allIntents]);
 
   const isInitialized = initialData ? initializedForId === initialData.id : initializedForId === 0;
 
   useEffect(() => {
-    if (initialData && dataReady && initializedForId !== initialData.id) {
+    if (initialData && hierarchy.isReady && initializedForId !== initialData.id) {
       setFormData({
         question: initialData.question || "",
         answer: initialData.answer || "",
         keywords: initialData.keywords || "",
         questionVariation: initialData.questionVariation || [],
-        productId: initialData.productId,
-        subjectId: initialData.subjectId,
-        intentId: initialData.intentId,
       });
       setInitializedForId(initialData.id);
     } else if (prefilledData && !initialData && initializedForId !== -1) {
@@ -114,9 +64,6 @@ export function KnowledgeBaseForm({
         answer: "",
         keywords: "",
         questionVariation: [],
-        productId: prefilledData.productId,
-        subjectId: prefilledData.subjectId,
-        intentId: prefilledData.intentId,
       });
       setInitializedForId(-1);
     } else if (!initialData && !prefilledData && initializedForId !== 0) {
@@ -125,35 +72,10 @@ export function KnowledgeBaseForm({
         answer: "",
         keywords: "",
         questionVariation: [],
-        productId: null,
-        subjectId: null,
-        intentId: null,
       });
       setInitializedForId(0);
     }
-  }, [initialData, prefilledData, dataReady, initializedForId]);
-
-  const handleSelectChange = (name: string) => (value: string) => {
-    if (name === "productId") {
-      const numValue = value ? parseInt(value, 10) : null;
-      setFormData((prev) => ({
-        ...prev,
-        productId: numValue,
-        subjectId: null,
-        intentId: null,
-      }));
-    } else if (name === "subjectId") {
-      const numValue = value ? parseInt(value, 10) : null;
-      setFormData((prev) => ({
-        ...prev,
-        subjectId: numValue,
-        intentId: null,
-      }));
-    } else if (name === "intentId") {
-      const numValue = value ? parseInt(value, 10) : null;
-      setFormData((prev) => ({ ...prev, intentId: numValue }));
-    }
-  };
+  }, [initialData, prefilledData, hierarchy.isReady, initializedForId]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -187,9 +109,9 @@ export function KnowledgeBaseForm({
       answer: formData.answer,
       keywords: formData.keywords || null,
       questionVariation: formData.questionVariation.length > 0 ? formData.questionVariation : null,
-      productId: prefilledData?.productId || formData.productId,
-      subjectId: prefilledData?.subjectId || formData.subjectId,
-      intentId: prefilledData?.intentId || formData.intentId,
+      productId: prefilledData?.productId || hierarchy.selection.productId,
+      subjectId: prefilledData?.subjectId || hierarchy.selection.subjectId,
+      intentId: prefilledData?.intentId || hierarchy.selection.intentId,
     });
   };
 
@@ -198,8 +120,23 @@ export function KnowledgeBaseForm({
   const getProductName = () => {
     if (prefilledData) return prefilledData.productName;
     if (initialData?.productId) {
-      const product = catalogProducts.find(p => p.id === initialData.productId);
-      return product?.produto || "";
+      return hierarchy.getProductName(initialData.productId);
+    }
+    return "";
+  };
+
+  const getSubjectName = () => {
+    if (prefilledData) return prefilledData.subjectName;
+    if (initialData?.subjectId) {
+      return hierarchy.getSubjectName(initialData.subjectId);
+    }
+    return "";
+  };
+
+  const getIntentName = () => {
+    if (prefilledData) return prefilledData.intentName;
+    if (initialData?.intentId) {
+      return hierarchy.getIntentName(initialData.intentId);
     }
     return "";
   };
@@ -220,50 +157,25 @@ export function KnowledgeBaseForm({
           Classificação
         </label>
         {prefilledData || initialData ? (
-          <div className="flex items-center gap-1.5 flex-wrap py-1.5">
-            <span className="px-2 py-1 text-xs bg-gray-100 rounded border border-gray-200 text-gray-700 font-medium">
-              {getProductName()}
-            </span>
-            {(prefilledData?.subjectName || (initialData?.subjectId && allSubjects.find(s => s.id === initialData.subjectId)?.name)) && (
-              <>
-                <span className="text-gray-300">/</span>
-                <span className="px-2 py-1 text-xs bg-blue-50 rounded border border-blue-200 text-blue-700 font-medium">
-                  {prefilledData?.subjectName || allSubjects.find(s => s.id === initialData?.subjectId)?.name}
-                </span>
-              </>
-            )}
-            {(prefilledData?.intentName || (initialData?.intentId && allIntents.find(i => i.id === initialData.intentId)?.name)) && (
-              <>
-                <span className="text-gray-300">/</span>
-                <span className="px-2 py-1 text-xs bg-green-50 rounded border border-green-200 text-green-700 font-medium">
-                  {prefilledData?.intentName || allIntents.find(i => i.id === initialData?.intentId)?.name}
-                </span>
-              </>
-            )}
-          </div>
+          <ProductHierarchyDisplay
+            productName={getProductName()}
+            subjectName={getSubjectName()}
+            intentName={getIntentName()}
+          />
         ) : (
-          <div className="flex gap-2">
-            <ModernSelect
-              value={formData.productId?.toString() || ""}
-              onValueChange={handleSelectChange("productId")}
-              options={uniqueProducts.map((p) => ({ value: p.id.toString(), label: p.produto }))}
-              placeholder="Produto *"
-            />
-            <ModernSelect
-              value={formData.subjectId?.toString() || ""}
-              onValueChange={handleSelectChange("subjectId")}
-              options={filteredSubjects.map((s) => ({ value: s.id.toString(), label: s.name }))}
-              placeholder="Assunto"
-              disabled={!formData.productId || filteredSubjects.length === 0}
-            />
-            <ModernSelect
-              value={formData.intentId?.toString() || ""}
-              onValueChange={handleSelectChange("intentId")}
-              options={filteredIntents.map((i) => ({ value: i.id.toString(), label: i.name }))}
-              placeholder="Intenção"
-              disabled={!formData.subjectId || filteredIntents.length === 0}
-            />
-          </div>
+          <ProductHierarchySelects
+            productId={hierarchy.selection.productId}
+            subjectId={hierarchy.selection.subjectId}
+            intentId={hierarchy.selection.intentId}
+            onProductChange={hierarchy.setProductId}
+            onSubjectChange={hierarchy.setSubjectId}
+            onIntentChange={hierarchy.setIntentId}
+            products={hierarchy.products}
+            subjects={hierarchy.subjects}
+            intents={hierarchy.intents}
+            showLabel={false}
+            required
+          />
         )}
       </div>
 
@@ -367,7 +279,7 @@ export function KnowledgeBaseForm({
       </div>
 
       <InlineEnrichmentPanel
-        intentId={formData.intentId}
+        intentId={hierarchy.selection.intentId}
         articleId={initialData?.id || null}
         currentData={{
           question: formData.question,

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { FormField } from "../../../shared/components/crud";
 import { FormActions } from "../../../shared/components/ui";
 import {
