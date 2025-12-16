@@ -243,6 +243,9 @@ export class TopicClassificationAgent {
   ): Promise<Map<string, string>> {
     const questionsText = questions.map((q, i) => `${i + 1}. ${q}`).join("\n");
 
+    console.log(`[TopicClassificationAgent] classifyBatch starting with ${questions.length} questions`);
+    console.log(`[TopicClassificationAgent] customVariables: PERGUNTAS length=${questionsText.length}, PRODUTO_SUBPRODUTO_ASSUNTO length=${subjectsJson.length}`);
+
     try {
       const result = await runAgent(CONFIG_KEY, {
         conversationId: 0,
@@ -256,8 +259,11 @@ export class TopicClassificationAgent {
         },
       });
 
+      console.log(`[TopicClassificationAgent] runAgent result: success=${result.success}, logId=${result.logId}, hasContent=${!!result.responseContent}`);
+
       if (!result.success || !result.responseContent) {
         console.error("[TopicClassificationAgent] Error classifying batch:", result.error);
+        console.error("[TopicClassificationAgent] Full result:", JSON.stringify(result, null, 2));
         return new Map();
       }
 
@@ -288,11 +294,19 @@ export class TopicClassificationAgent {
       
       const batchMap = new Map<string, string>();
       if (parsed.classifications && Array.isArray(parsed.classifications)) {
+        console.log(`[TopicClassificationAgent] Parsed ${parsed.classifications.length} classifications from AI response`);
         for (const item of parsed.classifications) {
           if (item.question && item.theme) {
             batchMap.set(item.question.trim(), item.theme);
           }
         }
+        const themeCounts = new Map<string, number>();
+        for (const theme of batchMap.values()) {
+          themeCounts.set(theme, (themeCounts.get(theme) || 0) + 1);
+        }
+        console.log(`[TopicClassificationAgent] Themes distribution:`, Object.fromEntries(themeCounts));
+      } else {
+        console.error(`[TopicClassificationAgent] No classifications array in parsed response:`, JSON.stringify(parsed).substring(0, 500));
       }
       return batchMap;
     } catch (error) {
