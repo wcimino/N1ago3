@@ -7,56 +7,122 @@ export interface QuestionTopic {
   produto: string;
   subproduto: string | null;
   question: string;
+  problema: string | null;
   count: number;
+  topScore: number | null;
   theme?: string;
 }
 
 export interface ThemeSummary {
   theme: string;
   count: number;
+  avgScore: number | null;
+  coverage: "good" | "medium" | "low" | "unknown";
   questions: Array<{
     question: string;
     count: number;
     subproduto: string | null;
+    topScore: number | null;
   }>;
+}
+
+export interface CoverageSummary {
+  total: number;
+  goodCoverage: number;
+  mediumCoverage: number;
+  lowCoverage: number;
+  noCoverage: number;
 }
 
 export interface QuestionTopicsResult {
   questions: QuestionTopic[];
   themes: ThemeSummary[];
   total: number;
+  coverage: CoverageSummary;
+}
+
+function getCoverageLevel(score: number | null): "good" | "medium" | "low" | "unknown" {
+  if (score === null) return "unknown";
+  if (score >= 70) return "good";
+  if (score >= 50) return "medium";
+  return "low";
 }
 
 async function getQuestionsByProduct(product?: string): Promise<QuestionTopic[]> {
-  let whereClause = `WHERE cs.client_request_versions->>'clientRequestQuestionVersion' IS NOT NULL`;
+  let productFilter = "";
   if (product) {
-    whereClause += ` AND pc.produto = '${product.replace(/'/g, "''")}'`;
+    productFilter = `WHERE produto = '${product.replace(/'/g, "''")}'`;
   }
 
   const results = await db.execute(sql.raw(`
+    WITH latest_summary AS (
+      SELECT DISTINCT ON (context_id)
+        context_id,
+        substring(response_raw->'choices'->0->'message'->>'content' from '"clientRequestQuestionVersion":\\s*"([^"]+)"') as pergunta,
+        substring(response_raw->'choices'->0->'message'->>'content' from '"clientRequestProblemVersion":\\s*"([^"]+)"') as problema,
+        created_at
+      FROM openai_api_logs 
+      WHERE request_type = 'summary'
+      ORDER BY context_id, created_at DESC
+    ),
+    latest_classification AS (
+      SELECT DISTINCT ON (context_id)
+        context_id,
+        substring(response_raw->'choices'->0->'message'->>'content' from '"product":\\s*"([^"]+)"') as produto,
+        substring(response_raw->'choices'->0->'message'->>'content' from '"subproduct":\\s*"([^"]+)"') as subproduto
+      FROM openai_api_logs 
+      WHERE request_type = 'classification'
+      ORDER BY context_id, created_at DESC
+    ),
+    latest_articles AS (
+      SELECT DISTINCT ON (context_id)
+        context_id,
+        (regexp_matches(
+          response_raw->'choices'->0->'message'->>'content',
+          '"matchScore":\\s*(\\d+\\.?\\d*)'
+        ))[1]::numeric as top_score
+      FROM openai_api_logs 
+      WHERE request_type = 'articles_and_solutions'
+        AND response_raw->'choices'->0->'message'->>'content' NOT LIKE '%\`%'
+      ORDER BY context_id, created_at DESC
+    ),
+    combined_data AS (
+      SELECT 
+        s.context_id,
+        s.pergunta,
+        s.problema,
+        c.produto,
+        c.subproduto,
+        a.top_score
+      FROM latest_summary s
+      LEFT JOIN latest_classification c ON c.context_id = s.context_id
+      LEFT JOIN latest_articles a ON a.context_id = s.context_id
+      WHERE s.pergunta IS NOT NULL
+    ),
+    filtered_data AS (
+      SELECT * FROM combined_data
+      ${productFilter}
+    )
     SELECT 
-      pc.produto AS produto,
-      pc.subproduto AS subproduto,
-      cs.client_request_versions->>'clientRequestQuestionVersion' AS question,
-      COUNT(*) AS count
-    FROM openai_api_logs oal
-    JOIN conversations c ON c.external_conversation_id = oal.context_id
-    JOIN conversations_summary cs ON cs.conversation_id = c.id
-    JOIN products_catalog pc ON pc.id = cs.product_id
-    ${whereClause}
-    GROUP BY 
-      pc.produto,
-      pc.subproduto,
-      cs.client_request_versions->>'clientRequestQuestionVersion'
+      COALESCE(produto, 'Não identificado') as produto,
+      subproduto,
+      pergunta as question,
+      problema,
+      COUNT(*) as count,
+      ROUND(AVG(top_score), 1) as avg_score
+    FROM filtered_data
+    GROUP BY produto, subproduto, pergunta, problema
     ORDER BY COUNT(*) DESC
-    LIMIT 100
+    LIMIT 200
   `));
 
   return results.rows.map((row: any) => ({
     produto: row.produto || "Não identificado",
     subproduto: row.subproduto || null,
     question: row.question,
+    problema: row.problema || null,
     count: parseInt(row.count, 10),
+    topScore: row.avg_score ? parseFloat(row.avg_score) : null,
   }));
 }
 
@@ -107,7 +173,12 @@ export async function getQuestionTopics(product?: string): Promise<QuestionTopic
   const questions = await getQuestionsByProduct(product);
   
   if (questions.length === 0) {
-    return { questions: [], themes: [], total: 0 };
+    return { 
+      questions: [], 
+      themes: [], 
+      total: 0,
+      coverage: { total: 0, goodCoverage: 0, mediumCoverage: 0, lowCoverage: 0, noCoverage: 0 }
+    };
   }
 
   const uniqueQuestions = [...new Set(questions.map(q => q.question))];
@@ -120,13 +191,30 @@ export async function getQuestionTopics(product?: string): Promise<QuestionTopic
 
   const themeMap = new Map<string, ThemeSummary>();
   let total = 0;
+  let totalQuestions = questionsWithThemes.length;
+  let goodCoverage = 0;
+  let mediumCoverage = 0;
+  let lowCoverage = 0;
+  let noCoverage = 0;
 
   for (const q of questionsWithThemes) {
     total += q.count;
     const theme = q.theme || "Outros";
     
+    const coverageLevel = getCoverageLevel(q.topScore);
+    if (coverageLevel === "good") goodCoverage++;
+    else if (coverageLevel === "medium") mediumCoverage++;
+    else if (coverageLevel === "low") lowCoverage++;
+    else noCoverage++;
+    
     if (!themeMap.has(theme)) {
-      themeMap.set(theme, { theme, count: 0, questions: [] });
+      themeMap.set(theme, { 
+        theme, 
+        count: 0, 
+        avgScore: null,
+        coverage: "unknown",
+        questions: [] 
+      });
     }
     
     const themeSummary = themeMap.get(theme)!;
@@ -135,7 +223,21 @@ export async function getQuestionTopics(product?: string): Promise<QuestionTopic
       question: q.question,
       count: q.count,
       subproduto: q.subproduto,
+      topScore: q.topScore,
     });
+  }
+
+  for (const [, themeSummary] of themeMap) {
+    const scoresWithValue = themeSummary.questions
+      .filter(q => q.topScore !== null)
+      .map(q => ({ score: q.topScore!, count: q.count }));
+    
+    if (scoresWithValue.length > 0) {
+      const totalWeighted = scoresWithValue.reduce((sum, q) => sum + q.score * q.count, 0);
+      const totalCount = scoresWithValue.reduce((sum, q) => sum + q.count, 0);
+      themeSummary.avgScore = Math.round((totalWeighted / totalCount) * 10) / 10;
+      themeSummary.coverage = getCoverageLevel(themeSummary.avgScore);
+    }
   }
 
   const themes = Array.from(themeMap.values())
@@ -145,16 +247,27 @@ export async function getQuestionTopics(product?: string): Promise<QuestionTopic
       questions: t.questions.sort((a, b) => b.count - a.count),
     }));
 
-  return { questions: questionsWithThemes, themes, total };
+  return { 
+    questions: questionsWithThemes, 
+    themes, 
+    total,
+    coverage: { total: totalQuestions, goodCoverage, mediumCoverage, lowCoverage, noCoverage }
+  };
 }
 
 export async function getAvailableProducts(): Promise<string[]> {
   const results = await db.execute(sql.raw(`
-    SELECT DISTINCT pc.produto
-    FROM conversations_summary cs
-    JOIN products_catalog pc ON pc.id = cs.product_id
-    WHERE cs.client_request_versions->>'clientRequestQuestionVersion' IS NOT NULL
-    ORDER BY pc.produto
+    SELECT DISTINCT produto
+    FROM (
+      SELECT DISTINCT ON (context_id)
+        context_id,
+        substring(response_raw->'choices'->0->'message'->>'content' from '"product":\\s*"([^"]+)"') as produto
+      FROM openai_api_logs 
+      WHERE request_type = 'classification'
+      ORDER BY context_id, created_at DESC
+    ) lc
+    WHERE produto IS NOT NULL
+    ORDER BY produto
   `));
 
   return results.rows.map((row: any) => row.produto);
