@@ -48,6 +48,39 @@ function getCoverageLevel(score: number | null): "good" | "medium" | "low" | "un
   return "low";
 }
 
+interface ProductSubjectMap {
+  [product: string]: string[];
+}
+
+async function getSubjectsByProduct(): Promise<ProductSubjectMap> {
+  const results = await db.execute(sql.raw(`
+    SELECT 
+      COALESCE(pc.produto, 'Geral') as produto,
+      pc.subproduto,
+      ks.name as subject
+    FROM knowledge_subjects ks
+    LEFT JOIN products_catalog pc ON ks.product_catalog_id = pc.id
+    ORDER BY pc.produto, pc.subproduto, ks.name
+  `));
+
+  const subjectMap: ProductSubjectMap = {};
+  
+  for (const row of results.rows as any[]) {
+    const key = row.subproduto 
+      ? `${row.produto} > ${row.subproduto}` 
+      : row.produto;
+    
+    if (!subjectMap[key]) {
+      subjectMap[key] = [];
+    }
+    if (row.subject && !subjectMap[key].includes(row.subject)) {
+      subjectMap[key].push(row.subject);
+    }
+  }
+  
+  return subjectMap;
+}
+
 export type PeriodFilter = "last_hour" | "last_24h" | "all";
 
 function getPeriodClause(period: PeriodFilter): string {
@@ -155,7 +188,15 @@ async function classifyQuestionsWithAI(questions: string[]): Promise<Map<string,
   }
 
   const questionsText = questions.map((q, i) => `${i + 1}. ${q}`).join("\n");
-  const promptUser = config.promptTemplate.replace("{{PERGUNTAS}}", questionsText);
+  
+  // Fetch available subjects grouped by product
+  const subjectsByProduct = await getSubjectsByProduct();
+  const subjectsJson = JSON.stringify(subjectsByProduct, null, 2);
+  
+  // Replace template variables
+  let promptUser = config.promptTemplate
+    .replace("{{PERGUNTAS}}", questionsText)
+    .replace("{{PRODUTO_SUBPRODUTO_ASSUNTO}}", subjectsJson);
 
   try {
     const result = await callOpenAI({
