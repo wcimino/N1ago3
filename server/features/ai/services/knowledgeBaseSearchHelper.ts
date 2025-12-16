@@ -78,20 +78,20 @@ function applyKeywordsBoost(
       questionVariationsStr
     ].join(" "));
 
-    let keywordBoost = 0;
+    let keywordMultiplier = 1.0;
     const matchedKeywords: string[] = [];
 
     for (const term of searchTerms) {
       const normalizedTerm = normalizeText(term);
       if (articleContent.includes(normalizedTerm)) {
-        keywordBoost += 5;
+        keywordMultiplier *= 1.02;
         matchedKeywords.push(term);
       }
     }
 
-    const boostedScore = Math.min(100, article.relevanceScore + keywordBoost);
+    const boostedScore = Math.min(100, article.relevanceScore * keywordMultiplier);
     const matchReason = matchedKeywords.length > 0
-      ? `${article.matchReason} + keywords: ${matchedKeywords.join(", ")}`
+      ? `${article.matchReason} + keywords(x${keywordMultiplier.toFixed(2)}): ${matchedKeywords.join(", ")}`
       : article.matchReason;
 
     return {

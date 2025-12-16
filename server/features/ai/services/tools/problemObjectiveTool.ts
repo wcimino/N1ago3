@@ -57,20 +57,20 @@ function applyKeywordsBoostToProblems(
       ...problem.products
     ].join(" "));
 
-    let keywordBoost = 0;
+    let keywordMultiplier = 1.0;
     const matchedKeywords: string[] = [];
 
     for (const term of searchTerms) {
       const normalizedTerm = normalizeText(term);
       if (problemContent.includes(normalizedTerm)) {
-        keywordBoost += 5;
+        keywordMultiplier *= 1.02;
         matchedKeywords.push(term);
       }
     }
 
-    const boostedScore = Math.min(100, problem.matchScore + keywordBoost);
+    const boostedScore = Math.min(100, problem.matchScore * keywordMultiplier);
     const matchReason = matchedKeywords.length > 0
-      ? `${problem.matchReason} + keywords: ${matchedKeywords.join(", ")}`
+      ? `${problem.matchReason} + keywords(x${keywordMultiplier.toFixed(2)}): ${matchedKeywords.join(", ")}`
       : problem.matchReason;
 
     return {
