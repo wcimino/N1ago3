@@ -1,4 +1,4 @@
-export type AgentConfigType = "summary" | "classification" | "response" | "learning" | "enrichment" | "demand_finder" | "solution_provider" | "articles_and_solutions";
+export type AgentConfigType = "summary" | "classification" | "response" | "learning" | "enrichment" | "demand_finder" | "solution_provider" | "articles_and_solutions" | "topic_classification";
 
 export interface AgentToolsConfig {
   showKnowledgeBaseTool?: boolean;
@@ -122,6 +122,18 @@ export const agentConfigMetadata: Record<AgentConfigType, AgentConfigMetadata> =
     enabledLabel: "Ativar Artigos e Soluções",
     enabledDescription: "Quando ativado, o sistema busca e avalia artigos/problemas usando IA para melhor relevância",
     promptRows: 20,
+    responseFormatRows: 8,
+    recommendedModel: "gpt-4o-mini",
+    tools: {},
+  },
+
+  topic_classification: {
+    configType: "topic_classification",
+    title: "Classificação de Temas",
+    description: "Configure o agente que classifica perguntas dos clientes em temas para análise de relatórios",
+    enabledLabel: "Ativar Classificação de Temas",
+    enabledDescription: "Quando ativado, o sistema classifica perguntas em temas para relatórios analíticos",
+    promptRows: 16,
     responseFormatRows: 8,
     recommendedModel: "gpt-4o-mini",
     tools: {},

@@ -4,3 +4,4 @@ export { ClassificationConfigPage } from "./ClassificationConfigPage";
 export { ResponseConfigPage } from "./ResponseConfigPage";
 export { EnrichmentConfigPage } from "./EnrichmentConfigPage";
 export { ArticlesAndSolutionsConfigPage } from "./ArticlesAndSolutionsConfigPage";
+export { TopicClassificationConfigPage } from "./TopicClassificationConfigPage";

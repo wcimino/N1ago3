@@ -10,10 +10,11 @@ import { EnrichmentConfigPage } from "./EnrichmentConfigPage";
 import { DemandFinderConfigPage } from "./DemandFinderConfigPage";
 import { SolutionProviderConfigPage } from "./SolutionProviderConfigPage";
 import { ArticlesAndSolutionsConfigPage } from "./ArticlesAndSolutionsConfigPage";
+import { TopicClassificationConfigPage } from "./TopicClassificationConfigPage";
 import { ToolsPage } from "./ToolsPage";
 import { GeneralSettingsPage } from "./GeneralSettingsPage";
 
-import { BookOpen } from "lucide-react";
+import { BookOpen, BarChart3 } from "lucide-react";
 
 const agentTabs = [
   { id: "summary", label: "Resumo", icon: <FileText className="w-4 h-4" /> },
@@ -24,6 +25,7 @@ const agentTabs = [
   { id: "demand_finder", label: "Demand Finder", icon: <Search className="w-4 h-4" /> },
   { id: "solution_provider", label: "Solution Provider", icon: <Zap className="w-4 h-4" /> },
   { id: "articles_and_solutions", label: "Artigos e Soluções", icon: <BookOpen className="w-4 h-4" /> },
+  { id: "topic_classification", label: "Temas", icon: <BarChart3 className="w-4 h-4" /> },
 ];
 
 const utilityTabs = [
@@ -42,6 +44,7 @@ export function AIPage() {
 
   const getActiveTab = () => {
     if (location.includes("/general")) return "general";
+    if (location.includes("/topic_classification")) return "topic_classification";
     if (location.includes("/classification")) return "classification";
     if (location.includes("/response")) return "response";
     if (location.includes("/learning")) return "learning";
@@ -84,6 +87,7 @@ export function AIPage() {
         {activeTab === "demand_finder" && <DemandFinderConfigPage />}
         {activeTab === "solution_provider" && <SolutionProviderConfigPage />}
         {activeTab === "articles_and_solutions" && <ArticlesAndSolutionsConfigPage />}
+        {activeTab === "topic_classification" && <TopicClassificationConfigPage />}
         {activeTab === "tools" && <ToolsPage />}
       </div>
     </div>

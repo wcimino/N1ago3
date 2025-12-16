@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { reportsService } from "../services/reportsService.js";
 import { validatePeriod } from "../utils/dateFilter.js";
+import { getQuestionTopics, getAvailableProducts } from "../services/topicClassificationService.js";
 
 const router = Router();
 
@@ -42,6 +43,27 @@ router.get("/api/reports/problem-hierarchy", async (req, res) => {
   } catch (error) {
     console.error("Error fetching hierarchical problem data:", error);
     res.status(500).json({ error: "Falha ao gerar relatório" });
+  }
+});
+
+router.get("/api/reports/question-topics", async (req, res) => {
+  try {
+    const product = req.query.product as string | undefined;
+    const results = await getQuestionTopics(product);
+    res.json(results);
+  } catch (error) {
+    console.error("Error fetching question topics:", error);
+    res.status(500).json({ error: "Falha ao gerar relatório de temas" });
+  }
+});
+
+router.get("/api/reports/question-topics/products", async (req, res) => {
+  try {
+    const products = await getAvailableProducts();
+    res.json(products);
+  } catch (error) {
+    console.error("Error fetching available products:", error);
+    res.status(500).json({ error: "Falha ao buscar produtos" });
   }
 });
 
