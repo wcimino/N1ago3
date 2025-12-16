@@ -6,3 +6,5 @@ export * from "./layout";
 export * from "./icons";
 export * from "./detail";
 export * from "./dashboard";
+export * from "./forms";
+export * from "./crud";
