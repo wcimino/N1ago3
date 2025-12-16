@@ -13,7 +13,7 @@ function getAppId(): string {
 
 interface ApiCallOptions {
   endpoint: string;
-  method: "GET" | "POST" | "PUT" | "DELETE";
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   body?: Record<string, unknown>;
   conversationId?: string;
   requestType: string;
@@ -290,12 +290,45 @@ export function getAnswerBotIntegrationId(): string {
   return id;
 }
 
+interface UpdateConversationResponse {
+  conversation: {
+    id: string;
+    metadata?: Record<string, unknown>;
+  };
+}
+
+export async function addConversationTags(
+  conversationId: string,
+  tags: string[],
+  contextType?: string,
+  contextId?: string
+): Promise<ApiCallResult<UpdateConversationResponse>> {
+  console.log(`[ZendeskApiService] Adding tags to conversation ${conversationId}:`, tags);
+  
+  return makeApiCall<UpdateConversationResponse>({
+    endpoint: `/v2/apps/${getAppId()}/conversations/${conversationId}`,
+    method: "PATCH",
+    body: {
+      conversation: {
+        metadata: {
+          tags,
+        },
+      },
+    },
+    conversationId,
+    requestType: "addConversationTags",
+    contextType,
+    contextId,
+  });
+}
+
 export const ZendeskApiService = {
   sendMessage,
   passControl,
   offerControl,
   acceptControl,
   releaseControl,
+  addConversationTags,
   getAgentWorkspaceIntegrationId,
   getN1agoIntegrationId,
   getAnswerBotIntegrationId,

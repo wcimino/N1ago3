@@ -50,6 +50,17 @@ router.post("/api/conversations/:conversationId/transfer", isAuthenticated, requ
       });
     }
 
+    const tagResult = await ZendeskApiService.addConversationTags(
+      externalConversationId,
+      ["teste_n1ago"],
+      "manual_transfer",
+      `conversation:${conversationId}`
+    );
+
+    if (!tagResult.success) {
+      console.warn(`[TransferRoutes] Failed to add tag to conversation ${conversationId}:`, tagResult.error);
+    }
+
     const handlerName = TargetResolver.getHandlerName(target);
 
     const updateData: Record<string, any> = { 
