@@ -75,7 +75,7 @@ async function handleReceivedControl(context: HandoffContext): Promise<void> {
   
   console.log(`[HandoffOrchestrator] Control received via passControl for conversation ${context.conversationId} - no acceptControl needed`);
 
-  const welcomeMessage = "Olá! Sou a assistente virtual da N1. Como posso ajudar você hoje?";
+  const welcomeMessage = "Olá! Sou o Niago, assistente virtual do iFood Pago. Como posso ajudar você hoje?";
   
   const result = await ZendeskApiService.sendMessage(
     context.conversationId,
