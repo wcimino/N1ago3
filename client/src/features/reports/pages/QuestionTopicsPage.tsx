@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3, RefreshCw, Filter } from "lucide-react";
+import { BarChart3, RefreshCw, Filter, ArrowLeft, Inbox } from "lucide-react";
+import { Link } from "wouter";
 import { fetchApi } from "../../../lib/queryClient";
 import { Card } from "../../../shared/components/ui/Card";
 import { Button } from "../../../shared/components/ui/Button";
@@ -56,6 +57,9 @@ export function QuestionTopicsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
+          <Link href="/reports" className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
+          </Link>
           <BarChart3 className="w-8 h-8 text-blue-600" />
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Temas das Perguntas</h1>
@@ -106,7 +110,19 @@ export function QuestionTopicsPage() {
         </Card>
       )}
 
-      {topicsQuery.data && (
+      {topicsQuery.data && topicsQuery.data.questions.length === 0 && (
+        <Card className="p-12 text-center">
+          <Inbox className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma pergunta encontrada</h3>
+          <p className="text-gray-500 max-w-md mx-auto">
+            Não foram encontradas perguntas para o período selecionado
+            {selectedProduct && ` no produto "${selectedProduct}"`}.
+            Tente ajustar os filtros ou aguarde novas conversas.
+          </p>
+        </Card>
+      )}
+
+      {topicsQuery.data && topicsQuery.data.questions.length > 0 && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card className="p-4">
