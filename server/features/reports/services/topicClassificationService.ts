@@ -134,7 +134,7 @@ async function getQuestionsByProduct(product?: string, subproduct?: string, peri
     FROM filtered_data
     GROUP BY produto, subproduto, pergunta, problema
     ORDER BY COUNT(*) DESC
-    LIMIT 200
+    LIMIT 100
   `));
 
   return results.rows.map((row: any) => ({
@@ -178,17 +178,40 @@ async function classifyQuestionsWithAI(questions: string[]): Promise<Map<string,
       jsonContent = jsonContent.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
     }
     
-    const parsed = JSON.parse(jsonContent);
+    // Try to fix truncated JSON by completing it
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonContent);
+    } catch (parseError) {
+      // Try to fix truncated JSON - add closing brackets
+      let fixedJson = jsonContent;
+      if (!fixedJson.endsWith("}")) {
+        // Find the last complete object and close the array/object
+        const lastCompleteObject = fixedJson.lastIndexOf("},");
+        if (lastCompleteObject > 0) {
+          fixedJson = fixedJson.substring(0, lastCompleteObject + 1) + "]}";
+        }
+      }
+      try {
+        parsed = JSON.parse(fixedJson);
+        console.log(`[TopicClassification] Fixed truncated JSON, recovered partial data`);
+      } catch {
+        console.error("[TopicClassification] Could not parse or fix JSON response");
+        return new Map();
+      }
+    }
+    
     const classificationMap = new Map<string, string>();
 
     if (parsed.classifications && Array.isArray(parsed.classifications)) {
       for (const item of parsed.classifications) {
         if (item.question && item.theme) {
-          classificationMap.set(item.question, item.theme);
+          classificationMap.set(item.question.trim(), item.theme);
         }
       }
     }
 
+    console.log(`[TopicClassification] Classified ${classificationMap.size} questions into themes`);
     return classificationMap;
   } catch (error) {
     console.error("Error calling OpenAI for topic classification:", error);
@@ -208,12 +231,12 @@ export async function getQuestionTopics(product?: string, subproduct?: string, p
     };
   }
 
-  const uniqueQuestions = [...new Set(questions.map(q => q.question))];
+  const uniqueQuestions = [...new Set(questions.map(q => q.question.trim()))];
   const classificationMap = await classifyQuestionsWithAI(uniqueQuestions);
 
   const questionsWithThemes = questions.map(q => ({
     ...q,
-    theme: classificationMap.get(q.question) || "Outros",
+    theme: classificationMap.get(q.question.trim()) || "Outros",
   }));
 
   const themeMap = new Map<string, ThemeSummary>();
