@@ -308,15 +308,7 @@ export async function getQuestionTopics(product?: string, subproduct?: string, p
 export async function getAvailableProducts(): Promise<string[]> {
   const results = await db.execute(sql.raw(`
     SELECT DISTINCT produto
-    FROM (
-      SELECT DISTINCT ON (context_id)
-        context_id,
-        substring(response_raw->'choices'->0->'message'->>'content' from '"product":\\s*"([^"]+)"') as produto
-      FROM openai_api_logs 
-      WHERE request_type = 'classification'
-        AND created_at >= NOW() - INTERVAL '30 days'
-      ORDER BY context_id, created_at DESC
-    ) lc
+    FROM products_catalog
     WHERE produto IS NOT NULL
     ORDER BY produto
   `));
@@ -327,23 +319,14 @@ export async function getAvailableProducts(): Promise<string[]> {
 export async function getAvailableSubproducts(product?: string): Promise<string[]> {
   let productFilter = "";
   if (product) {
-    productFilter = `AND produto = '${product.replace(/'/g, "''")}'`;
+    productFilter = `WHERE produto = '${product.replace(/'/g, "''")}'`;
   }
 
   const results = await db.execute(sql.raw(`
     SELECT DISTINCT subproduto
-    FROM (
-      SELECT DISTINCT ON (context_id)
-        context_id,
-        substring(response_raw->'choices'->0->'message'->>'content' from '"product":\\s*"([^"]+)"') as produto,
-        substring(response_raw->'choices'->0->'message'->>'content' from '"subproduct":\\s*"([^"]+)"') as subproduto
-      FROM openai_api_logs 
-      WHERE request_type = 'classification'
-        AND created_at >= NOW() - INTERVAL '30 days'
-      ORDER BY context_id, created_at DESC
-    ) lc
-    WHERE subproduto IS NOT NULL
+    FROM products_catalog
     ${productFilter}
+    ${productFilter ? "AND" : "WHERE"} subproduto IS NOT NULL
     ORDER BY subproduto
   `));
 
