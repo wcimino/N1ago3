@@ -16,4 +16,6 @@ export const AVAILABLE_VARIABLES: PromptVariable[] = [
   { name: '{{ARTIGOS_PROBLEMAS_LISTA_TOP_10}}', description: 'Top 10 artigos e problemas da base de conhecimento' },
   { name: '{{PRODUTO_E_SUBPRODUTO_MATCH}}', description: 'Produto e Subproduto identificados com match na base' },
   { name: '{{TIPO_DE_DEMANDA_MATCH}}', description: 'Tipo de demanda identificado com match' },
+  { name: '{{PRODUTO_SUBPRODUTO_ASSUNTO}}', description: 'JSON de assuntos agrupados por produto/subproduto (da knowledge_subjects)' },
+  { name: '{{PERGUNTAS}}', description: 'Lista de perguntas para classificação de temas' },
 ];
