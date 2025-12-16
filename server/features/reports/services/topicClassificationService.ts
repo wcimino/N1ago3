@@ -158,23 +158,20 @@ async function getQuestionsByProduct(product?: string, subproduct?: string, peri
       ${productFilter}
     )
     SELECT 
-      COALESCE(produto, 'Não identificado') as produto,
-      subproduto,
       pergunta as question,
-      problema,
       COUNT(*) as count,
       ROUND(AVG(top_score), 1) as avg_score
     FROM filtered_data
-    GROUP BY produto, subproduto, pergunta, problema
+    GROUP BY pergunta
     ORDER BY COUNT(*) DESC
     LIMIT 100
   `));
 
   return results.rows.map((row: any) => ({
-    produto: row.produto || "Não identificado",
-    subproduto: row.subproduto || null,
+    produto: product || "Não identificado",
+    subproduto: subproduct || null,
     question: row.question,
-    problema: row.problema || null,
+    problema: null,
     count: parseInt(row.count, 10),
     topScore: row.avg_score ? parseFloat(row.avg_score) : null,
   }));
