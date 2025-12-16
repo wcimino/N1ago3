@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { reportsService } from "../services/reportsService.js";
 import { validatePeriod } from "../utils/dateFilter.js";
-import { getQuestionTopics, getAvailableProducts } from "../services/topicClassificationService.js";
+import { getQuestionTopics, getAvailableProducts, type PeriodFilter } from "../services/topicClassificationService.js";
 
 const router = Router();
 
@@ -49,7 +49,11 @@ router.get("/api/reports/problem-hierarchy", async (req, res) => {
 router.get("/api/reports/question-topics", async (req, res) => {
   try {
     const product = req.query.product as string | undefined;
-    const results = await getQuestionTopics(product);
+    const periodParam = req.query.period as string | undefined;
+    const period: PeriodFilter = (periodParam === "last_hour" || periodParam === "last_24h" || periodParam === "all") 
+      ? periodParam 
+      : "all";
+    const results = await getQuestionTopics(product, period);
     res.json(results);
   } catch (error) {
     console.error("Error fetching question topics:", error);

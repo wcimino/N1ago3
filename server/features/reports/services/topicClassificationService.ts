@@ -48,11 +48,27 @@ function getCoverageLevel(score: number | null): "good" | "medium" | "low" | "un
   return "low";
 }
 
-async function getQuestionsByProduct(product?: string): Promise<QuestionTopic[]> {
+export type PeriodFilter = "last_hour" | "last_24h" | "all";
+
+function getPeriodClause(period: PeriodFilter): string {
+  switch (period) {
+    case "last_hour":
+      return "AND created_at >= NOW() - INTERVAL '1 hour'";
+    case "last_24h":
+      return "AND created_at >= NOW() - INTERVAL '24 hours'";
+    case "all":
+    default:
+      return "";
+  }
+}
+
+async function getQuestionsByProduct(product?: string, period: PeriodFilter = "all"): Promise<QuestionTopic[]> {
   let productFilter = "";
   if (product) {
     productFilter = `WHERE produto = '${product.replace(/'/g, "''")}'`;
   }
+
+  const periodClause = getPeriodClause(period);
 
   const results = await db.execute(sql.raw(`
     WITH latest_summary AS (
@@ -63,6 +79,7 @@ async function getQuestionsByProduct(product?: string): Promise<QuestionTopic[]>
         created_at
       FROM openai_api_logs 
       WHERE request_type = 'summary'
+        ${periodClause}
       ORDER BY context_id, created_at DESC
     ),
     latest_classification AS (
@@ -169,8 +186,8 @@ async function classifyQuestionsWithAI(questions: string[]): Promise<Map<string,
   }
 }
 
-export async function getQuestionTopics(product?: string): Promise<QuestionTopicsResult> {
-  const questions = await getQuestionsByProduct(product);
+export async function getQuestionTopics(product?: string, period: PeriodFilter = "all"): Promise<QuestionTopicsResult> {
+  const questions = await getQuestionsByProduct(product, period);
   
   if (questions.length === 0) {
     return { 
