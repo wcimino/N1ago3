@@ -192,7 +192,8 @@ async function classifyBatch(
 ): Promise<Map<string, string>> {
   const questionsText = questions.map((q, i) => `${i + 1}. ${q}`).join("\n");
   
-  let promptUser = config.promptTemplate
+  const promptTemplate = config.promptSystem || config.promptTemplate;
+  let promptUser = promptTemplate
     .replace("{{PERGUNTAS}}", questionsText)
     .replace("{{PRODUTO_SUBPRODUTO_ASSUNTO}}", subjectsJson);
 
