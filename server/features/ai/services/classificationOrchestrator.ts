@@ -130,7 +130,10 @@ export async function classifyConversationProduct(event: EventStandard): Promise
     const parsed = parseClassificationResult(result.responseContent);
 
     if (!parsed) {
-      console.error(`[Classification Orchestrator] Failed to parse classification response for conversation ${event.conversationId}`);
+      const preview = result.responseContent.length > 200 
+        ? result.responseContent.substring(0, 200) + '...' 
+        : result.responseContent;
+      console.error(`[Classification Orchestrator] Failed to parse classification response for conversation ${event.conversationId}. Response preview: ${preview}`);
       return;
     }
 

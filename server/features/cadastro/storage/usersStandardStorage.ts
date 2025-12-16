@@ -13,71 +13,70 @@ export const usersStandardStorage = {
       .where(eq(usersStandard.email, user.email))
       .limit(1);
 
-    if (existingUser.length === 0) {
-      const [newUser] = await db.insert(usersStandard)
-        .values({
-          email: user.email,
-          source: user.source,
-          sourceUserId: user.sourceUserId || null,
-          externalId: user.externalId || null,
-          name: user.name || null,
-          cpf: user.cpf || null,
-          phone: user.phone || null,
-          locale: user.locale || null,
-          signedUpAt: user.signedUpAt || null,
-          metadata: user.metadata || null,
-        })
-        .returning();
-      return newUser;
-    }
+    const previousState = existingUser.length > 0 ? existingUser[0] : null;
 
-    const current = existingUser[0];
-    const changes: Array<{ field: string; oldValue: string | null; newValue: string | null }> = [];
-
-    const getValue = (val: string | null | undefined): string | null => {
-      if (val === null || val === undefined || val === "") return null;
-      return val;
-    };
-
-    for (const field of TRACKED_FIELDS) {
-      const oldVal = getValue(current[field] as string | null);
-      const newVal = getValue(user[field] as string | undefined);
-      
-      if (newVal !== null && newVal !== oldVal) {
-        changes.push({ field, oldValue: oldVal, newValue: newVal });
-      }
-    }
-
-    if (changes.length > 0) {
-      for (const change of changes) {
-        await db.insert(usersStandardHistory).values({
-          userEmail: user.email,
-          fieldName: change.field,
-          oldValue: change.oldValue,
-          newValue: change.newValue,
-          source: user.source,
-        });
-      }
-    }
-
-    const [updatedUser] = await db.update(usersStandard)
-      .set({
+    const [result] = await db.insert(usersStandard)
+      .values({
+        email: user.email,
         source: user.source,
-        sourceUserId: sql`COALESCE(NULLIF(${user.sourceUserId || ""}, ''), ${usersStandard.sourceUserId})`,
-        externalId: sql`COALESCE(NULLIF(${user.externalId || ""}, ''), ${usersStandard.externalId})`,
-        name: sql`COALESCE(NULLIF(${user.name || ""}, ''), ${usersStandard.name})`,
-        cpf: sql`COALESCE(NULLIF(${user.cpf || ""}, ''), ${usersStandard.cpf})`,
-        phone: sql`COALESCE(NULLIF(${user.phone || ""}, ''), ${usersStandard.phone})`,
-        locale: sql`COALESCE(NULLIF(${user.locale || ""}, ''), ${usersStandard.locale})`,
-        signedUpAt: user.signedUpAt || current.signedUpAt,
-        metadata: user.metadata || current.metadata,
-        lastSeenAt: new Date(),
-        updatedAt: new Date(),
+        sourceUserId: user.sourceUserId || null,
+        externalId: user.externalId || null,
+        name: user.name || null,
+        cpf: user.cpf || null,
+        phone: user.phone || null,
+        locale: user.locale || null,
+        signedUpAt: user.signedUpAt || null,
+        metadata: user.metadata || null,
       })
-      .where(eq(usersStandard.email, user.email))
+      .onConflictDoUpdate({
+        target: usersStandard.email,
+        set: {
+          source: user.source,
+          sourceUserId: sql`COALESCE(NULLIF(${user.sourceUserId || ""}, ''), ${usersStandard.sourceUserId})`,
+          externalId: sql`COALESCE(NULLIF(${user.externalId || ""}, ''), ${usersStandard.externalId})`,
+          name: sql`COALESCE(NULLIF(${user.name || ""}, ''), ${usersStandard.name})`,
+          cpf: sql`COALESCE(NULLIF(${user.cpf || ""}, ''), ${usersStandard.cpf})`,
+          phone: sql`COALESCE(NULLIF(${user.phone || ""}, ''), ${usersStandard.phone})`,
+          locale: sql`COALESCE(NULLIF(${user.locale || ""}, ''), ${usersStandard.locale})`,
+          signedUpAt: sql`COALESCE(${user.signedUpAt || null}, ${usersStandard.signedUpAt})`,
+          metadata: sql`COALESCE(${user.metadata ? JSON.stringify(user.metadata) : null}::jsonb, ${usersStandard.metadata})`,
+          lastSeenAt: new Date(),
+          updatedAt: new Date(),
+        },
+      })
       .returning();
 
-    return updatedUser;
+    if (previousState) {
+      const changes: Array<{ field: string; oldValue: string | null; newValue: string | null }> = [];
+
+      const getValue = (val: string | null | undefined): string | null => {
+        if (val === null || val === undefined || val === "") return null;
+        return val;
+      };
+
+      for (const field of TRACKED_FIELDS) {
+        const oldVal = getValue(previousState[field] as string | null);
+        const newVal = getValue(user[field] as string | undefined);
+        
+        if (newVal !== null && newVal !== oldVal) {
+          changes.push({ field, oldValue: oldVal, newValue: newVal });
+        }
+      }
+
+      if (changes.length > 0) {
+        for (const change of changes) {
+          await db.insert(usersStandardHistory).values({
+            userEmail: user.email,
+            fieldName: change.field,
+            oldValue: change.oldValue,
+            newValue: change.newValue,
+            source: user.source,
+          });
+        }
+      }
+    }
+
+    return result;
   },
 
   async getStandardUserByEmail(email: string): Promise<UserStandard | null> {
