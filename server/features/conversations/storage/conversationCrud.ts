@@ -391,4 +391,48 @@ export const conversationCrud = {
     
     return result[0]?.orchestratorStatus || null;
   },
+
+  async incrementDemandFinderInteractionCount(conversationId: number): Promise<number> {
+    const result = await db.update(conversationsSummary)
+      .set({
+        demandFinderInteractionCount: sql`${conversationsSummary.demandFinderInteractionCount} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(conversationsSummary.conversationId, conversationId))
+      .returning({ count: conversationsSummary.demandFinderInteractionCount });
+    
+    if (result[0]) {
+      return result[0].count;
+    }
+    
+    const now = new Date();
+    const insertResult = await db.insert(conversationsSummary)
+      .values({
+        conversationId,
+        summary: "",
+        demandFinderInteractionCount: 1,
+        generatedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: conversationsSummary.conversationId,
+        set: { 
+          demandFinderInteractionCount: sql`${conversationsSummary.demandFinderInteractionCount} + 1`,
+          updatedAt: now 
+        },
+      })
+      .returning({ count: conversationsSummary.demandFinderInteractionCount });
+    
+    return insertResult[0]?.count || 1;
+  },
+
+  async getDemandFinderInteractionCount(conversationId: number): Promise<number> {
+    const result = await db.select({ count: conversationsSummary.demandFinderInteractionCount })
+      .from(conversationsSummary)
+      .where(eq(conversationsSummary.conversationId, conversationId))
+      .limit(1);
+    
+    return result[0]?.count || 0;
+  },
 };

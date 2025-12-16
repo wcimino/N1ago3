@@ -4,7 +4,10 @@ import { SummaryAgent, ClassificationAgent, DemandFinderAgent, SolutionProviderA
 import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext } from "./types.js";
 import { StatusController } from "./statusController.js";
 import { AutoPilotService } from "../../../autoPilot/services/autoPilotService.js";
+import { ZendeskApiService } from "../../../external-sources/zendesk/services/zendeskApiService.js";
 import type { EventStandard } from "../../../../../shared/schema.js";
+
+const MAX_DEMAND_FINDER_INTERACTIONS = 5;
 
 export class ConversationOrchestrator {
   static async processMessageEvent(event: EventStandard): Promise<void> {
@@ -54,6 +57,13 @@ export class ConversationOrchestrator {
     await this.step3_SearchArticlesAndProblems(context);
 
     await this.step4_DecideStatus(context);
+
+    if (context.currentStatus === ORCHESTRATOR_STATUS.TEMP_DEMAND_UNDERSTOOD || 
+        context.currentStatus === ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD) {
+      await this.step7_TransferToHuman(context);
+      console.log(`[ConversationOrchestrator] Pipeline completed for conversation ${conversationId}, transferred to human`);
+      return;
+    }
 
     const agentResult = await this.step5_RouteToAgent(context);
 
@@ -130,14 +140,21 @@ export class ConversationOrchestrator {
       context.currentStatus = ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING;
       console.log(`[ConversationOrchestrator] Step 4: Status updated to DEMAND_UNDERSTANDING`);
     } else if (currentStatus === ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING) {
+      const interactionCount = await conversationStorage.incrementDemandFinderInteractionCount(conversationId);
+      console.log(`[ConversationOrchestrator] Step 4: Interaction count incremented to ${interactionCount}`);
+
       const evaluation = await StatusController.evaluateDemandUnderstood(conversationId);
       
       if (evaluation.canTransition) {
         await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.TEMP_DEMAND_UNDERSTOOD);
         context.currentStatus = ORCHESTRATOR_STATUS.TEMP_DEMAND_UNDERSTOOD;
         console.log(`[ConversationOrchestrator] Step 4: Status updated to TEMP_DEMAND_UNDERSTOOD - ${evaluation.reason}`);
+      } else if (interactionCount >= MAX_DEMAND_FINDER_INTERACTIONS) {
+        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD);
+        context.currentStatus = ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD;
+        console.log(`[ConversationOrchestrator] Step 4: Status updated to TEMP_DEMAND_NOT_UNDERSTOOD - max interactions reached (${interactionCount})`);
       } else {
-        console.log(`[ConversationOrchestrator] Step 4: Status remains DEMAND_UNDERSTANDING - ${evaluation.reason}`);
+        console.log(`[ConversationOrchestrator] Step 4: Status remains DEMAND_UNDERSTANDING - ${evaluation.reason} (interaction ${interactionCount}/${MAX_DEMAND_FINDER_INTERACTIONS})`);
       }
     } else {
       console.log(`[ConversationOrchestrator] Step 4: Status remains ${currentStatus}`);
@@ -179,6 +196,49 @@ export class ConversationOrchestrator {
     console.log(`[ConversationOrchestrator] Step 6: Processing suggestion ${suggestionId} via AutoPilot`);
     const result = await AutoPilotService.processSuggestion(suggestionId);
     console.log(`[ConversationOrchestrator] Step 6: AutoPilot result - action=${result.action}, reason=${result.reason}`);
+  }
+
+  private static async step7_TransferToHuman(context: OrchestratorContext): Promise<void> {
+    const { conversationId, event } = context;
+    console.log(`[ConversationOrchestrator] Step 7: Transferring conversation ${conversationId} to human agent`);
+
+    const externalConversationId = event.externalConversationId;
+    if (!externalConversationId) {
+      console.error(`[ConversationOrchestrator] Step 7: Missing externalConversationId for conversation ${conversationId}`);
+      return;
+    }
+
+    const transferMessage = "Ok, vou te transferir para um especialista agora";
+    
+    const messageResult = await ZendeskApiService.sendMessage(
+      externalConversationId,
+      transferMessage,
+      "transfer",
+      `transfer:${conversationId}`
+    );
+
+    if (messageResult.success) {
+      console.log(`[ConversationOrchestrator] Step 7: Transfer message sent successfully`);
+    } else {
+      console.error(`[ConversationOrchestrator] Step 7: Failed to send transfer message: ${messageResult.error}`);
+    }
+
+    const agentWorkspaceId = ZendeskApiService.getAgentWorkspaceIntegrationId();
+    const passControlResult = await ZendeskApiService.passControl(
+      externalConversationId,
+      agentWorkspaceId,
+      { reason: context.currentStatus },
+      "transfer",
+      `transfer:${conversationId}`
+    );
+
+    if (passControlResult.success) {
+      await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
+      context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
+      console.log(`[ConversationOrchestrator] Step 7: Control passed to agent workspace successfully`);
+    } else {
+      console.error(`[ConversationOrchestrator] Step 7: Failed to pass control: ${passControlResult.error}`);
+    }
   }
 
   private static async escalate(context: OrchestratorContext, reason: string): Promise<void> {
