@@ -62,11 +62,15 @@ function getPeriodClause(period: PeriodFilter): string {
   }
 }
 
-async function getQuestionsByProduct(product?: string, period: PeriodFilter = "all"): Promise<QuestionTopic[]> {
-  let productFilter = "";
+async function getQuestionsByProduct(product?: string, subproduct?: string, period: PeriodFilter = "all"): Promise<QuestionTopic[]> {
+  const filters: string[] = [];
   if (product) {
-    productFilter = `WHERE produto = '${product.replace(/'/g, "''")}'`;
+    filters.push(`produto = '${product.replace(/'/g, "''")}'`);
   }
+  if (subproduct) {
+    filters.push(`subproduto = '${subproduct.replace(/'/g, "''")}'`);
+  }
+  const productFilter = filters.length > 0 ? `WHERE ${filters.join(" AND ")}` : "";
 
   const periodClause = getPeriodClause(period);
 
@@ -168,7 +172,13 @@ async function classifyQuestionsWithAI(questions: string[]): Promise<Map<string,
       return new Map();
     }
 
-    const parsed = JSON.parse(result.responseContent);
+    // Remove markdown code fence if present (```json ... ```)
+    let jsonContent = result.responseContent.trim();
+    if (jsonContent.startsWith("```")) {
+      jsonContent = jsonContent.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
+    }
+    
+    const parsed = JSON.parse(jsonContent);
     const classificationMap = new Map<string, string>();
 
     if (parsed.classifications && Array.isArray(parsed.classifications)) {
@@ -186,8 +196,8 @@ async function classifyQuestionsWithAI(questions: string[]): Promise<Map<string,
   }
 }
 
-export async function getQuestionTopics(product?: string, period: PeriodFilter = "all"): Promise<QuestionTopicsResult> {
-  const questions = await getQuestionsByProduct(product, period);
+export async function getQuestionTopics(product?: string, subproduct?: string, period: PeriodFilter = "all"): Promise<QuestionTopicsResult> {
+  const questions = await getQuestionsByProduct(product, subproduct, period);
   
   if (questions.length === 0) {
     return { 
@@ -281,6 +291,7 @@ export async function getAvailableProducts(): Promise<string[]> {
         substring(response_raw->'choices'->0->'message'->>'content' from '"product":\\s*"([^"]+)"') as produto
       FROM openai_api_logs 
       WHERE request_type = 'classification'
+        AND created_at >= NOW() - INTERVAL '30 days'
       ORDER BY context_id, created_at DESC
     ) lc
     WHERE produto IS NOT NULL
@@ -288,4 +299,30 @@ export async function getAvailableProducts(): Promise<string[]> {
   `));
 
   return results.rows.map((row: any) => row.produto);
+}
+
+export async function getAvailableSubproducts(product?: string): Promise<string[]> {
+  let productFilter = "";
+  if (product) {
+    productFilter = `AND produto = '${product.replace(/'/g, "''")}'`;
+  }
+
+  const results = await db.execute(sql.raw(`
+    SELECT DISTINCT subproduto
+    FROM (
+      SELECT DISTINCT ON (context_id)
+        context_id,
+        substring(response_raw->'choices'->0->'message'->>'content' from '"product":\\s*"([^"]+)"') as produto,
+        substring(response_raw->'choices'->0->'message'->>'content' from '"subproduct":\\s*"([^"]+)"') as subproduto
+      FROM openai_api_logs 
+      WHERE request_type = 'classification'
+        AND created_at >= NOW() - INTERVAL '30 days'
+      ORDER BY context_id, created_at DESC
+    ) lc
+    WHERE subproduto IS NOT NULL
+    ${productFilter}
+    ORDER BY subproduto
+  `));
+
+  return results.rows.map((row: any) => row.subproduto);
 }

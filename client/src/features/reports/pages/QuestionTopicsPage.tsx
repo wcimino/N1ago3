@@ -163,6 +163,7 @@ function ThemeCard({ theme, isExpanded, onToggle }: {
 export function QuestionTopicsPage() {
   const queryClient = useQueryClient();
   const [selectedProduct, setSelectedProduct] = useState<string>("");
+  const [selectedSubproduct, setSelectedSubproduct] = useState<string>("");
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodFilter>("last_24h");
   const [coverageFilter, setCoverageFilter] = useState<CoverageFilter>("all");
   const [shouldFetch, setShouldFetch] = useState(false);
@@ -170,18 +171,30 @@ export function QuestionTopicsPage() {
   const [filtersChanged, setFiltersChanged] = useState(false);
   const [expandedThemes, setExpandedThemes] = useState<Set<string>>(new Set());
   
-  const lastFetchedFilters = useRef({ product: "", period: "last_24h" as PeriodFilter });
+  const lastFetchedFilters = useRef({ product: "", subproduct: "", period: "last_24h" as PeriodFilter });
 
   const productsQuery = useQuery<string[]>({
     queryKey: ["question-topics-products"],
     queryFn: () => fetchApi<string[]>("/api/reports/question-topics/products"),
+    staleTime: 5 * 60 * 1000,
   });
 
-  const topicsQuery = useQuery<QuestionTopicsResult>({
-    queryKey: ["question-topics", selectedProduct, selectedPeriod],
+  const subproductsQuery = useQuery<string[]>({
+    queryKey: ["question-topics-subproducts", selectedProduct],
     queryFn: () => {
       const params = new URLSearchParams();
       if (selectedProduct) params.set("product", selectedProduct);
+      return fetchApi<string[]>(`/api/reports/question-topics/subproducts?${params.toString()}`);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const topicsQuery = useQuery<QuestionTopicsResult>({
+    queryKey: ["question-topics", selectedProduct, selectedSubproduct, selectedPeriod],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (selectedProduct) params.set("product", selectedProduct);
+      if (selectedSubproduct) params.set("subproduct", selectedSubproduct);
       params.set("period", selectedPeriod);
       const url = `/api/reports/question-topics?${params.toString()}`;
       return fetchApi<QuestionTopicsResult>(url);
@@ -192,17 +205,22 @@ export function QuestionTopicsPage() {
   useEffect(() => {
     if (hasGeneratedOnce) {
       const changed = selectedProduct !== lastFetchedFilters.current.product || 
+                      selectedSubproduct !== lastFetchedFilters.current.subproduct ||
                       selectedPeriod !== lastFetchedFilters.current.period;
       setFiltersChanged(changed);
     }
-  }, [selectedProduct, selectedPeriod, hasGeneratedOnce]);
+  }, [selectedProduct, selectedSubproduct, selectedPeriod, hasGeneratedOnce]);
+
+  useEffect(() => {
+    setSelectedSubproduct("");
+  }, [selectedProduct]);
 
   const handleGenerateReport = () => {
     setShouldFetch(true);
     setHasGeneratedOnce(true);
     setFiltersChanged(false);
-    lastFetchedFilters.current = { product: selectedProduct, period: selectedPeriod };
-    queryClient.invalidateQueries({ queryKey: ["question-topics", selectedProduct, selectedPeriod] });
+    lastFetchedFilters.current = { product: selectedProduct, subproduct: selectedSubproduct, period: selectedPeriod };
+    queryClient.invalidateQueries({ queryKey: ["question-topics", selectedProduct, selectedSubproduct, selectedPeriod] });
   };
 
   const toggleTheme = (theme: string) => {
@@ -294,12 +312,31 @@ export function QuestionTopicsPage() {
                 setSelectedProduct(e.target.value);
                 setShouldFetch(false);
               }}
-              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[180px]"
             >
               <option value="">Todos os produtos</option>
               {productsQuery.data?.map((product) => (
                 <option key={product} value={product}>
                   {product}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-gray-700">Subproduto (opcional)</label>
+            <select
+              value={selectedSubproduct}
+              onChange={(e) => {
+                setSelectedSubproduct(e.target.value);
+                setShouldFetch(false);
+              }}
+              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[180px]"
+            >
+              <option value="">Todos os subprodutos</option>
+              {subproductsQuery.data?.map((subproduct) => (
+                <option key={subproduct} value={subproduct}>
+                  {subproduct}
                 </option>
               ))}
             </select>
@@ -367,7 +404,8 @@ export function QuestionTopicsPage() {
           <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma pergunta encontrada</h3>
           <p className="text-gray-500 max-w-md mx-auto">
             Não foram encontradas perguntas para {periodLabels[lastFetchedFilters.current.period].toLowerCase()}
-            {lastFetchedFilters.current.product && ` no produto "${lastFetchedFilters.current.product}"`}.
+            {lastFetchedFilters.current.product && ` no produto "${lastFetchedFilters.current.product}"`}
+            {lastFetchedFilters.current.subproduct && ` no subproduto "${lastFetchedFilters.current.subproduct}"`}.
             Tente ajustar os filtros ou selecione um período maior.
           </p>
         </Card>

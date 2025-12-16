@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { reportsService } from "../services/reportsService.js";
 import { validatePeriod } from "../utils/dateFilter.js";
-import { getQuestionTopics, getAvailableProducts, type PeriodFilter } from "../services/topicClassificationService.js";
+import { getQuestionTopics, getAvailableProducts, getAvailableSubproducts, type PeriodFilter } from "../services/topicClassificationService.js";
 
 const router = Router();
 
@@ -49,11 +49,12 @@ router.get("/api/reports/problem-hierarchy", async (req, res) => {
 router.get("/api/reports/question-topics", async (req, res) => {
   try {
     const product = req.query.product as string | undefined;
+    const subproduct = req.query.subproduct as string | undefined;
     const periodParam = req.query.period as string | undefined;
     const period: PeriodFilter = (periodParam === "last_hour" || periodParam === "last_24h" || periodParam === "all") 
       ? periodParam 
       : "all";
-    const results = await getQuestionTopics(product, period);
+    const results = await getQuestionTopics(product, subproduct, period);
     res.json(results);
   } catch (error) {
     console.error("Error fetching question topics:", error);
@@ -68,6 +69,17 @@ router.get("/api/reports/question-topics/products", async (req, res) => {
   } catch (error) {
     console.error("Error fetching available products:", error);
     res.status(500).json({ error: "Falha ao buscar produtos" });
+  }
+});
+
+router.get("/api/reports/question-topics/subproducts", async (req, res) => {
+  try {
+    const product = req.query.product as string | undefined;
+    const subproducts = await getAvailableSubproducts(product);
+    res.json(subproducts);
+  } catch (error) {
+    console.error("Error fetching available subproducts:", error);
+    res.status(500).json({ error: "Falha ao buscar subprodutos" });
   }
 });
 
