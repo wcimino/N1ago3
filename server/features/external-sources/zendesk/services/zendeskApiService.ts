@@ -129,6 +129,23 @@ async function makeApiCall<T = unknown>(options: ApiCallOptions): Promise<ApiCal
       error: response.ok ? undefined : `HTTP ${response.status}: ${response.statusText}`,
     };
     
+    // Log API response for debugging
+    if (!response.ok) {
+      console.error(`[ZendeskApiService] API ERROR - ${options.requestType}`, {
+        endpoint: options.endpoint,
+        status: response.status,
+        statusText: response.statusText,
+        responseBody: data,
+        conversationId: options.conversationId,
+      });
+    } else {
+      console.log(`[ZendeskApiService] API SUCCESS - ${options.requestType}`, {
+        endpoint: options.endpoint,
+        status: response.status,
+        conversationId: options.conversationId,
+      });
+    }
+    
     await logApiCall(options, result as ApiCallResult, durationMs);
     
     return result;
