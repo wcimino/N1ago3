@@ -42,6 +42,8 @@ The React frontend provides a real-time dashboard, administrative interfaces, an
 *   **File Structure:** Organized by feature for both frontend and backend.
 *   **Shared Types Architecture:** Centralized type definitions in `shared/types/`. Frontend re-exports via `client/src/types/`.
 *   **Shared Constants Architecture:** Centralized UI constants in `client/src/shared/constants/` including `emotionConfig`, `intentConfig`, `severityConfig`, and filter options like `EMOTION_OPTIONS`.
+*   **Shared Hooks Architecture:** Reusable hooks in `client/src/shared/hooks/` including `useProductHierarchySelects` (cascading product→subject→intent with ID-based filtering), `useModalState` (modal state with clear method), and `useCrudFormOperations` (CRUD mutations with callbacks).
+*   **Shared Form Components:** Reusable form components in `client/src/shared/components/forms/` including `ProductHierarchySelects` (cascading selects) and `ProductHierarchyDisplay` (read-only taxonomy badges). Also includes modals in `ui/` like `ConfirmModal` and `InputModal`.
 *   **Backend Feature Architecture:** Each feature module includes `routes/`, `storage/`, and `services/`. Event adapters are in `server/features/events/adapters/`.
 *   **External API Services:** Zendesk API service is in `server/features/external-sources/zendesk/services/zendeskApiService.ts`.
 *   **Idempotent Event Creation:** Ensures unique event processing.
