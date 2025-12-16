@@ -1,0 +1,18 @@
+[
+  {
+    "id": 695738,
+    "event_type": "switchboard:passControl",
+    "event_subtype": null,
+    "author_type": "system",
+    "occurred_at": "2025-12-16T22:51:40.035Z",
+    "metadata": "{\"originalEvent\":{\"id\":\"6941e27ba97c2c04f267562d\",\"createdAt\":\"2025-12-16T22:51:39.815Z\",\"type\":\"switchboard:passControl\",\"payload\":{\"conversation\":{\"id\":\"6941e2424257f0dfe9005bfa\",\"type\":\"personal\",\"brandId\":\"360002152332\",\"activeSwitchboardIntegration\":{\"id\":\"5fbcf90112addf000c227bb2\",\"name\":\"zd-agentWorkspace\",\"integrationId\":\"5fbcf8ffe2059d2c998dd53a\",\"integrationType\":\"zd:agentWorkspace\"},\"metadata\":{\"zen:ticket_field:17571836276877\":\"39b9c675-aa82-4d7e-bdec-d64c5b8a43b7\",\"zen:ticket_field:17571791563533\":\"a6f10dd8-a669-4025-a3ab-136c01b8de9a\",\"zen:ticket_field:17571800295309\":\"90d23a9a-32da-4346-a6a3-8c21ed1c6d05\",\"zen:ticket_field:360034870572\":\"33287821000100\"}},\"metadata\":{\"reason\":\"temp_demand_understood\"},\"previousActiveSwitchboardIntegration\":{\"id\":\"693577c73ef61062218d9705\",\"name\":\"n1ago-prod\",\"integrationId\":\"693249c8e4ca9754f520a88e\",\"integrationType\":\"custom\"},\"source\":{\"type\":\"api\"}}}}"
+  },
+  {
+    "id": 695647,
+    "event_type": "switchboard:passControl",
+    "event_subtype": null,
+    "author_type": "system",
+    "occurred_at": "2025-12-16T22:50:57.497Z",
+    "metadata": "{\"originalEvent\":{\"id\":\"6941e25176a1282c1bd6acf7\",\"createdAt\":\"2025-12-16T22:50:57.264Z\",\"type\":\"switchboard:passControl\",\"payload\":{\"conversation\":{\"id\":\"6941e2424257f0dfe9005bfa\",\"type\":\"personal\",\"brandId\":\"360002152332\",\"activeSwitchboardIntegration\":{\"id\":\"693577c73ef61062218d9705\",\"name\":\"n1ago-prod\",\"integrationId\":\"693249c8e4ca9754f520a88e\",\"integrationType\":\"custom\"},\"metadata\":{\"zen:ticket_field:17571836276877\":\"39b9c675-aa82-4d7e-bdec-d64c5b8a43b7\",\"zen:ticket_field:17571791563533\":\"a6f10dd8-a669-4025-a3ab-136c01b8de9a\",\"zen:ticket_field:17571800295309\":\"90d23a9a-32da-4346-a6a3-8c21ed1c6d05\",\"zen:ticket_field:360034870572\":\"33287821000100\"}},\"metadata\":{\"source\":\"routing_rule\",\"ruleId\":23,\"ruleType\":\"transfer_ongoing\"},\"previousActiveSwitchboardIntegration\":{\"id\":\"64d65d81a40bc6cf30ebfbb1\",\"name\":\"zd-answerBot\",\"integrationId\":\"5fbcf900e2059d2c998df19b\",\"integrationType\":\"zd:answerBot\"},\"source\":{\"type\":\"api\"}}}}"
+  }
+]
