@@ -183,22 +183,15 @@ async function getQuestionsByProduct(product?: string, subproduct?: string, peri
   }));
 }
 
-async function classifyQuestionsWithAI(questions: string[], productFilter?: string): Promise<Map<string, string>> {
-  const config = await storage.getOpenaiApiConfig("topic_classification");
-  
-  if (!config || !config.enabled) {
-    return new Map();
-  }
+const BATCH_SIZE = 25;
 
+async function classifyBatch(
+  questions: string[], 
+  config: any, 
+  subjectsJson: string
+): Promise<Map<string, string>> {
   const questionsText = questions.map((q, i) => `${i + 1}. ${q}`).join("\n");
   
-  // Fetch available subjects filtered by selected product
-  const subjectsByProduct = await getSubjectsByProduct(productFilter);
-  const subjectsJson = JSON.stringify(subjectsByProduct, null, 2);
-  
-  console.log(`[TopicClassification] Using subjects for product: ${productFilter || 'all'}`);
-  
-  // Replace template variables
   let promptUser = config.promptTemplate
     .replace("{{PERGUNTAS}}", questionsText)
     .replace("{{PRODUTO_SUBPRODUTO_ASSUNTO}}", subjectsJson);
@@ -214,25 +207,21 @@ async function classifyQuestionsWithAI(questions: string[], productFilter?: stri
     });
 
     if (!result.success || !result.responseContent) {
-      console.error("Error classifying questions:", result.error);
+      console.error("[TopicClassification] Error classifying batch:", result.error);
       return new Map();
     }
 
-    // Remove markdown code fence if present (```json ... ```)
     let jsonContent = result.responseContent.trim();
     if (jsonContent.startsWith("```")) {
       jsonContent = jsonContent.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
     }
     
-    // Try to fix truncated JSON by completing it
     let parsed;
     try {
       parsed = JSON.parse(jsonContent);
     } catch (parseError) {
-      // Try to fix truncated JSON - add closing brackets
       let fixedJson = jsonContent;
       if (!fixedJson.endsWith("}")) {
-        // Find the last complete object and close the array/object
         const lastCompleteObject = fixedJson.lastIndexOf("},");
         if (lastCompleteObject > 0) {
           fixedJson = fixedJson.substring(0, lastCompleteObject + 1) + "]}";
@@ -247,22 +236,57 @@ async function classifyQuestionsWithAI(questions: string[], productFilter?: stri
       }
     }
     
-    const classificationMap = new Map<string, string>();
-
+    const batchMap = new Map<string, string>();
     if (parsed.classifications && Array.isArray(parsed.classifications)) {
       for (const item of parsed.classifications) {
         if (item.question && item.theme) {
-          classificationMap.set(item.question.trim(), item.theme);
+          batchMap.set(item.question.trim(), item.theme);
         }
       }
     }
-
-    console.log(`[TopicClassification] Classified ${classificationMap.size} questions into themes`);
-    return classificationMap;
+    return batchMap;
   } catch (error) {
-    console.error("Error calling OpenAI for topic classification:", error);
+    console.error("[TopicClassification] Error calling OpenAI:", error);
     return new Map();
   }
+}
+
+async function classifyQuestionsWithAI(questions: string[], productFilter?: string): Promise<Map<string, string>> {
+  const config = await storage.getOpenaiApiConfig("topic_classification");
+  
+  if (!config || !config.enabled) {
+    return new Map();
+  }
+
+  const subjectsByProduct = await getSubjectsByProduct(productFilter);
+  const subjectsJson = JSON.stringify(subjectsByProduct, null, 2);
+  
+  console.log(`[TopicClassification] Using subjects for product: ${productFilter || 'all'}, total questions: ${questions.length}`);
+  
+  const classificationMap = new Map<string, string>();
+  
+  const batches: string[][] = [];
+  for (let i = 0; i < questions.length; i += BATCH_SIZE) {
+    batches.push(questions.slice(i, i + BATCH_SIZE));
+  }
+  
+  console.log(`[TopicClassification] Processing ${batches.length} batches of up to ${BATCH_SIZE} questions each`);
+  
+  for (let i = 0; i < batches.length; i++) {
+    const batch = batches[i];
+    console.log(`[TopicClassification] Processing batch ${i + 1}/${batches.length} (${batch.length} questions)`);
+    
+    const batchResult = await classifyBatch(batch, config, subjectsJson);
+    
+    for (const [question, theme] of batchResult) {
+      classificationMap.set(question, theme);
+    }
+    
+    console.log(`[TopicClassification] Batch ${i + 1} classified ${batchResult.size} questions`);
+  }
+
+  console.log(`[TopicClassification] Total classified: ${classificationMap.size}/${questions.length} questions`);
+  return classificationMap;
 }
 
 export async function getQuestionTopics(product?: string, subproduct?: string, period: PeriodFilter = "all"): Promise<QuestionTopicsResult> {
