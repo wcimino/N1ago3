@@ -15,7 +15,7 @@ export const knowledgeBaseSearch = {
       onlyActive?: boolean;
     } = {}
   ): Promise<SearchArticleResult[]> {
-    const { productId, subjectId, intentId, limit = 5, onlyActive = true } = options;
+    const { productId, subjectId, intentId, limit = 5, onlyActive = false } = options;
     const searchTerms = parseSearchTerms(keywords);
     
     if (searchTerms.length === 0) {
@@ -88,7 +88,7 @@ export const knowledgeBaseSearch = {
       onlyActive?: boolean;
     } = {}
   ): Promise<SemanticSearchResult[]> {
-    const { limit = 5, onlyActive = true } = options;
+    const { limit = 5, onlyActive = false } = options;
     
     const embeddingString = `[${queryEmbedding.join(',')}]`;
     
