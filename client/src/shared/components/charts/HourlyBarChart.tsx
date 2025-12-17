@@ -76,7 +76,7 @@ export function HourlyBarChart({ data, isLoading }: HourlyBarChartProps) {
                 <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap">
                   <div>{point.hour}h</div>
                   <div>Hoje: {formatNumber(point.todayCount)}</div>
-                  <div>Sem. Passada: {formatNumber(point.lastWeekCount)}</div>
+                  <div>Semana passada: {formatNumber(point.lastWeekCount)}</div>
                 </div>
               </div>
             </div>
@@ -92,7 +92,7 @@ export function HourlyBarChart({ data, isLoading }: HourlyBarChartProps) {
       <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-sm bg-gray-300"></div>
-          <span>Sem. Passada</span>
+          <span>Semana passada</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-sm bg-blue-300"></div>
