@@ -334,22 +334,41 @@ export class ConversationOrchestrator {
 
   private static async step7_SendResponse(context: OrchestratorContext, response: string, suggestionId: number): Promise<void> {
     const { conversationId, currentStatus } = context;
-    console.log(`[ConversationOrchestrator] Step 7: Sending response for conversation ${conversationId}`);
-    console.log(`[ConversationOrchestrator] Step 7: Response: "${response.substring(0, 100)}..."`);
+    console.log(`[ConversationOrchestrator] Step 7: Response generated for conversation ${conversationId}`);
+    console.log(`[ConversationOrchestrator] Step 7: Response preview: "${response.substring(0, 100)}..."`);
     
     if (currentStatus !== ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING) {
-      console.log(`[ConversationOrchestrator] Step 7: Skipping send - status is ${currentStatus}, not demand_understanding`);
+      console.log(`[ConversationOrchestrator] Step 7: Send skipped - status is ${currentStatus}, not demand_understanding`);
       return;
     }
     
-    console.log(`[ConversationOrchestrator] Step 7: Processing suggestion ${suggestionId} via AutoPilot`);
+    // Early exit if N1ago is not the handler (avoid unnecessary AutoPilot call)
+    const canAct = await canTakeAction(conversationId, "Step 7");
+    if (!canAct) {
+      console.log(`[ConversationOrchestrator] Step 7: Response saved but not sent (observation-only mode)`);
+      return;
+    }
+    
+    console.log(`[ConversationOrchestrator] Step 7: Attempting to send suggestion ${suggestionId} via AutoPilot`);
     const result = await AutoPilotService.processSuggestion(suggestionId);
-    console.log(`[ConversationOrchestrator] Step 7: AutoPilot result - action=${result.action}, reason=${result.reason}`);
+    
+    if (result.action === "sent") {
+      console.log(`[ConversationOrchestrator] Step 7: Response sent successfully`);
+    } else {
+      console.log(`[ConversationOrchestrator] Step 7: Response not sent - action=${result.action}, reason=${result.reason}`);
+    }
   }
 
   private static async step8_TransferToHuman(context: OrchestratorContext): Promise<void> {
     const { conversationId, event } = context;
-    console.log(`[ConversationOrchestrator] Step 8: Transferring conversation ${conversationId} to human agent`);
+    console.log(`[ConversationOrchestrator] Step 8: Transfer requested for conversation ${conversationId}`);
+
+    // Only transfer if N1ago is the handler (can take action)
+    const canAct = await canTakeAction(conversationId, "Step 8");
+    if (!canAct) {
+      console.log(`[ConversationOrchestrator] Step 8: Transfer skipped - another handler owns this conversation`);
+      return;
+    }
 
     const externalConversationId = event.externalConversationId;
     if (!externalConversationId) {
