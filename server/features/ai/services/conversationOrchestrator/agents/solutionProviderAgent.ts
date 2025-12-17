@@ -173,6 +173,10 @@ export class SolutionProviderAgent {
     };
   }
 
+  private static escapeRegexKey(key: string): string {
+    return key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
   private static async executeInformCustomerAction(
     caseSolution: CaseSolutionWithDetails,
     action: CaseActionWithDetails,
@@ -180,21 +184,24 @@ export class SolutionProviderAgent {
   ): Promise<Omit<SolutionProviderAgentResult, "success">> {
     console.log(`[SolutionProviderAgent] Executing INFORM_CUSTOMER action ${action.actionId} for case solution ${caseSolution.id}`);
 
+    await caseSolutionStorage.updateStatus(caseSolution.id, "executing");
     await caseActionsStorage.startAction(action.id, allInputs);
 
     const messageTemplate = action.action?.messageTemplate;
     if (!messageTemplate) {
       await caseActionsStorage.failAction(action.id, "Message template not configured");
+      await caseSolutionStorage.updateStatus(caseSolution.id, "error");
       console.log(`[SolutionProviderAgent] No message template for action ${action.actionId}`);
       return {
         resolved: false,
-        needsEscalation: false,
+        needsEscalation: true,
       };
     }
 
     let message = messageTemplate;
     for (const [key, value] of Object.entries(allInputs)) {
-      message = message.replace(new RegExp(`\\{${key}\\}`, "g"), String(value));
+      const escapedKey = this.escapeRegexKey(key);
+      message = message.replace(new RegExp(`\\{${escapedKey}\\}`, "g"), String(value));
     }
 
     await caseActionsStorage.completeAction(action.id, { 
