@@ -68,7 +68,7 @@ export const caseActionsStorage = {
       .from(caseActions)
       .where(and(
         eq(caseActions.caseSolutionId, caseSolutionId),
-        eq(caseActions.status, "pending")
+        eq(caseActions.status, "not_started")
       ))
       .orderBy(asc(caseActions.actionSequence))
       .limit(1);
@@ -98,7 +98,7 @@ export const caseActionsStorage = {
     
     if (status === "in_progress") {
       updates.startedAt = new Date();
-    } else if (status === "completed" || status === "failed") {
+    } else if (status === "done" || status === "error") {
       updates.completedAt = new Date();
     }
 
@@ -132,7 +132,7 @@ export const caseActionsStorage = {
   async completeAction(id: number, output: Record<string, unknown>): Promise<CaseAction | null> {
     const [result] = await db.update(caseActions)
       .set({
-        status: "completed",
+        status: "done",
         output,
         completedAt: new Date(),
       })
@@ -144,7 +144,7 @@ export const caseActionsStorage = {
   async failAction(id: number, errorMessage: string): Promise<CaseAction | null> {
     const [result] = await db.update(caseActions)
       .set({
-        status: "failed",
+        status: "error",
         errorMessage,
         completedAt: new Date(),
       })

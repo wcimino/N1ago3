@@ -5,6 +5,7 @@ import { caseActionsStorage } from "../../../storage/caseActionsStorage.js";
 import type { SolutionProviderAgentResult, OrchestratorContext } from "../types.js";
 import type { CaseSolutionWithDetails } from "../../../storage/caseSolutionStorage.js";
 import type { CaseActionWithDetails } from "../../../storage/caseActionsStorage.js";
+import { ACTION_TYPE_VALUES } from "@shared/constants/actionTypes";
 
 const CONFIG_KEY = "solution_provider";
 
@@ -134,6 +135,12 @@ export class SolutionProviderAgent {
     }
 
     const allInputs = this.getAllInputs(caseSolution);
+    const actionType = nextAction.action?.actionType;
+
+    if (actionType === ACTION_TYPE_VALUES.INFORM_CUSTOMER) {
+      return await this.executeInformCustomerAction(caseSolution, nextAction, allInputs);
+    }
+
     const missingInputs = this.getMissingInputs(nextAction, allInputs);
 
     if (missingInputs.length > 0) {
@@ -163,6 +170,44 @@ export class SolutionProviderAgent {
       resolved: false,
       needsEscalation: false,
       suggestedResponse: response,
+    };
+  }
+
+  private static async executeInformCustomerAction(
+    caseSolution: CaseSolutionWithDetails,
+    action: CaseActionWithDetails,
+    allInputs: Record<string, unknown>
+  ): Promise<Omit<SolutionProviderAgentResult, "success">> {
+    console.log(`[SolutionProviderAgent] Executing INFORM_CUSTOMER action ${action.actionId} for case solution ${caseSolution.id}`);
+
+    await caseActionsStorage.startAction(action.id, allInputs);
+
+    const messageTemplate = action.action?.messageTemplate;
+    if (!messageTemplate) {
+      await caseActionsStorage.failAction(action.id, "Message template not configured");
+      console.log(`[SolutionProviderAgent] No message template for action ${action.actionId}`);
+      return {
+        resolved: false,
+        needsEscalation: false,
+      };
+    }
+
+    let message = messageTemplate;
+    for (const [key, value] of Object.entries(allInputs)) {
+      message = message.replace(new RegExp(`\\{${key}\\}`, "g"), String(value));
+    }
+
+    await caseActionsStorage.completeAction(action.id, { 
+      executedAt: new Date().toISOString(),
+      messageSent: message,
+    });
+
+    console.log(`[SolutionProviderAgent] INFORM_CUSTOMER action ${action.actionId} completed, message: ${message.substring(0, 100)}...`);
+
+    return {
+      resolved: false,
+      needsEscalation: false,
+      suggestedResponse: message,
     };
   }
 
