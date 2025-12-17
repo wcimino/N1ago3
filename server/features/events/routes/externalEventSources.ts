@@ -23,6 +23,7 @@ router.get("/api/external-event-sources", isAuthenticated, requireAuthorizedUser
         created_at: s.createdAt?.toISOString(),
         updated_at: s.updatedAt?.toISOString(),
         created_by: s.createdBy,
+        last_rotated_at: s.lastRotatedAt?.toISOString(),
       })),
     });
   } catch (error: any) {

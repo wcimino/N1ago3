@@ -239,10 +239,11 @@ X-API-Key: nes_sua_chave_aqui
 | Código | Significado |
 |--------|-------------|
 | 201 | Evento criado com sucesso |
-| 200 | Lote processado (verifique `results` para status individual) |
-| 400 | Payload inválido - verifique os campos obrigatórios e formatos |
+| 200 | Lote processado (verifique `results` para status individual) ou evento duplicado |
+| 400 | Payload inválido - verifique os campos obrigatórios, formatos e limites de tamanho |
 | 401 | API key não fornecida no header |
-| 403 | API key inválida, inativa, ou source não autorizado |
+| 403 | API key inválida, inativa, source ou channel_type não autorizado |
+| 429 | Rate limit excedido - aguarde o período indicado em `retry_after` |
 | 500 | Erro interno do servidor |
 
 ## Idempotência
@@ -258,11 +259,59 @@ Se você fornecer o campo `source_event_id`, o sistema garantirá que o mesmo ev
 }
 ```
 
-## Limites
+## Limites e Rate Limiting
 
-- **Lote máximo:** 100 eventos por requisição
-- **Tamanho do payload:** 1MB por requisição
-- **Rate limit:** Não há limite definido atualmente, mas use com moderação
+### Rate Limiting
+
+A API possui limites de requisições por API key para garantir estabilidade:
+
+| Limite | Valor |
+|--------|-------|
+| Por minuto | 60 requisições |
+| Por hora | 600 requisições |
+
+Para requisições em lote, cada evento conta como uma requisição para fins de rate limiting.
+
+Headers de resposta incluem informações sobre o rate limit:
+
+```
+X-RateLimit-Limit-Minute: 60
+X-RateLimit-Limit-Hour: 600
+X-RateLimit-Remaining-Minute: 45
+X-RateLimit-Remaining-Hour: 580
+X-RateLimit-Reset-Minute: 1705312800
+X-RateLimit-Reset-Hour: 1705316400
+```
+
+Se o limite for excedido, a API retorna erro 429:
+
+```json
+{
+  "error": "Rate limit excedido",
+  "details": "Limite: 60 requisições/minuto, 600 requisições/hora",
+  "retry_after": 45
+}
+```
+
+### Limites de Tamanho
+
+| Campo | Limite |
+|-------|--------|
+| Payload total | 256 KB |
+| Campos de texto (event_type, source, etc.) | 128 caracteres |
+| content_text | 10.000 caracteres |
+| Eventos por lote | 100 eventos |
+| Janela de datas (occurred_at) | ±30 dias |
+
+### Validação de Datas
+
+O campo `occurred_at` deve estar dentro de uma janela de ±30 dias em relação à data atual. Eventos com datas muito antigas ou no futuro distante serão rejeitados.
+
+### Segurança
+
+- **Rotação de chaves:** Recomendamos regenerar as chaves de API a cada 90 dias
+- **Auditoria:** Todas as requisições são registradas para fins de auditoria
+- **content_payload:** Deve ser um objeto JSON válido
 
 ## Exemplos de Código
 

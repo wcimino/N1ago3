@@ -136,6 +136,7 @@ export const externalEventSources = pgTable("external_event_sources", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   createdBy: text("created_by"),
+  lastRotatedAt: timestamp("last_rotated_at"),
 }, (table) => ({
   sourceIdx: uniqueIndex("idx_external_event_sources_source").on(table.source),
   apiKeyIdx: index("idx_external_event_sources_api_key").on(table.apiKey),
@@ -143,3 +144,27 @@ export const externalEventSources = pgTable("external_event_sources", {
 
 export type ExternalEventSource = typeof externalEventSources.$inferSelect;
 export type InsertExternalEventSource = Omit<typeof externalEventSources.$inferInsert, "id" | "createdAt" | "updatedAt">;
+
+export const externalEventAuditLogs = pgTable("external_event_audit_logs", {
+  id: serial("id").primaryKey(),
+  sourceId: integer("source_id"),
+  apiKeyPrefix: text("api_key_prefix"),
+  action: text("action").notNull(),
+  endpoint: text("endpoint").notNull(),
+  eventCount: integer("event_count").default(1).notNull(),
+  statusCode: integer("status_code").notNull(),
+  errorMessage: text("error_message"),
+  requestSource: text("request_source"),
+  requestChannelType: text("request_channel_type"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  durationMs: integer("duration_ms"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  sourceIdIdx: index("idx_external_event_audit_logs_source_id").on(table.sourceId),
+  actionIdx: index("idx_external_event_audit_logs_action").on(table.action),
+  createdAtIdx: index("idx_external_event_audit_logs_created_at").on(table.createdAt.desc()),
+}));
+
+export type ExternalEventAuditLog = typeof externalEventAuditLogs.$inferSelect;
+export type InsertExternalEventAuditLog = Omit<typeof externalEventAuditLogs.$inferInsert, "id" | "createdAt">;

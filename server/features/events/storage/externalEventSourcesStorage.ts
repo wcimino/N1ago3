@@ -60,10 +60,12 @@ export const externalEventSourcesStorage = {
 
   async regenerateApiKey(id: number): Promise<ExternalEventSource | null> {
     const newApiKey = generateApiKey();
+    const now = new Date();
     const [source] = await db.update(externalEventSources)
       .set({
         apiKey: newApiKey,
-        updatedAt: new Date(),
+        updatedAt: now,
+        lastRotatedAt: now,
       })
       .where(eq(externalEventSources.id, id))
       .returning();
@@ -76,7 +78,7 @@ export const externalEventSourcesStorage = {
     return (result.rowCount ?? 0) > 0;
   },
 
-  async validateApiKeyAndSource(apiKey: string, source: string, channelType?: string): Promise<{ valid: boolean; reason?: string }> {
+  async validateApiKeyAndSource(apiKey: string, source: string, channelType?: string): Promise<{ valid: boolean; reason?: string; sourceId?: number }> {
     const externalSource = await this.getByApiKey(apiKey);
     
     if (!externalSource) {
@@ -95,6 +97,6 @@ export const externalEventSourcesStorage = {
       return { valid: false, reason: `Channel type '${channelType}' não corresponde ao cadastrado ('${externalSource.channelType}')` };
     }
     
-    return { valid: true };
+    return { valid: true, sourceId: externalSource.id };
   },
 };

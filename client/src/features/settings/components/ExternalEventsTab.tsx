@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, ChevronDown, ChevronRight, Webhook, Copy, RefreshCw, ToggleLeft, ToggleRight, Download, Pencil } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronRight, Webhook, Copy, RefreshCw, ToggleLeft, ToggleRight, Download, Pencil, AlertTriangle } from "lucide-react";
 import { apiRequest, fetchApi } from "../../../lib/queryClient";
 import { LoadingState, EmptyState, Button } from "../../../shared/components";
 import { useDateFormatters } from "../../../shared/hooks";
+
+const ROTATION_WARNING_DAYS = 90;
 
 interface ExternalEventSource {
   id: number;
@@ -16,6 +18,7 @@ interface ExternalEventSource {
   created_at: string;
   updated_at?: string;
   created_by?: string;
+  last_rotated_at?: string;
 }
 
 interface ExternalEventSourcesResponse {
@@ -174,6 +177,23 @@ export function ExternalEventsTab() {
 
   const hasNewKey = (id: number): boolean => {
     return newlyCreatedKeys.has(id);
+  };
+
+  const needsRotation = (source: ExternalEventSource): boolean => {
+    const referenceDate = source.last_rotated_at || source.created_at;
+    if (!referenceDate) return false;
+    const date = new Date(referenceDate);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    return diffDays >= ROTATION_WARNING_DAYS;
+  };
+
+  const getDaysSinceRotation = (source: ExternalEventSource): number => {
+    const referenceDate = source.last_rotated_at || source.created_at;
+    if (!referenceDate) return 0;
+    const date = new Date(referenceDate);
+    const now = new Date();
+    return Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
   };
 
   return (
@@ -347,6 +367,14 @@ export function ExternalEventsTab() {
                       Criado em {formatShortDateTime(source.created_at)}
                       {source.created_by && ` por ${source.created_by}`}
                     </p>
+                    {needsRotation(source) && (
+                      <div className="flex items-center gap-1.5 mt-2 text-amber-600 bg-amber-50 px-2 py-1 rounded text-xs">
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        <span>
+                          Chave sem rotação há {getDaysSinceRotation(source)} dias. Recomendamos regenerar.
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 ml-4">
                     <button
