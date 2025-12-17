@@ -3,6 +3,18 @@ import { caseDemand } from "../../../../shared/schema.js";
 import { eq } from "drizzle-orm";
 import type { CaseDemand, InsertCaseDemand } from "../../../../shared/schema.js";
 
+type ArticleOrProblem = { source: "article" | "problem"; id: number; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; matchedTerms?: string[]; products?: string[] };
+
+function calculateTopMatch(items: ArticleOrProblem[]): ArticleOrProblem | null {
+  if (!items || items.length === 0) return null;
+  
+  return items.reduce((best, current) => {
+    const currentScore = current.matchScore ?? 0;
+    const bestScore = best.matchScore ?? 0;
+    return currentScore > bestScore ? current : best;
+  }, items[0]);
+}
+
 export const caseDemandStorage = {
   async getByConversationId(conversationId: number): Promise<CaseDemand[]> {
     return db.select()
@@ -27,14 +39,16 @@ export const caseDemandStorage = {
 
   async updateArticlesAndProblems(
     conversationId: number,
-    articlesAndObjectiveProblems: Array<{ source: "article" | "problem"; id: number; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; matchedTerms?: string[]; products?: string[] }>
+    articlesAndObjectiveProblems: ArticleOrProblem[]
   ): Promise<{ created: boolean; updated: boolean }> {
     const existing = await this.getFirstByConversationId(conversationId);
+    const topMatch = calculateTopMatch(articlesAndObjectiveProblems);
     
     if (existing) {
       await db.update(caseDemand)
         .set({
           articlesAndObjectiveProblems,
+          topMatch,
           updatedAt: new Date(),
         })
         .where(eq(caseDemand.id, existing.id));
@@ -44,6 +58,7 @@ export const caseDemandStorage = {
         .values({
           conversationId,
           articlesAndObjectiveProblems,
+          topMatch,
         });
       return { created: true, updated: false };
     }
