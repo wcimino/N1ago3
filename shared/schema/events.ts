@@ -125,3 +125,20 @@ export type ConversationSummary = typeof conversationsSummary.$inferSelect;
 export type InsertConversationSummary = Omit<typeof conversationsSummary.$inferInsert, "id" | "createdAt" | "updatedAt" | "generatedAt">;
 export type SuggestedResponse = typeof responsesSuggested.$inferSelect;
 export type InsertSuggestedResponse = Omit<typeof responsesSuggested.$inferInsert, "id" | "createdAt">;
+
+export const externalEventSources = pgTable("external_event_sources", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  source: text("source").notNull().unique(),
+  apiKey: text("api_key").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdBy: text("created_by"),
+}, (table) => ({
+  sourceIdx: uniqueIndex("idx_external_event_sources_source").on(table.source),
+  apiKeyIdx: index("idx_external_event_sources_api_key").on(table.apiKey),
+}));
+
+export type ExternalEventSource = typeof externalEventSources.$inferSelect;
+export type InsertExternalEventSource = Omit<typeof externalEventSources.$inferInsert, "id" | "createdAt" | "updatedAt">;

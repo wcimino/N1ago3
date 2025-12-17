@@ -1,13 +1,14 @@
 import { useLocation } from "wouter";
-import { Users, Settings, Wrench, FileEdit, Database } from "lucide-react";
+import { Users, Settings, Wrench, FileEdit, Database, Webhook } from "lucide-react";
 import { SegmentedTabs } from "../../../shared/components/ui";
 import { AccessControlTab } from "../components/AccessControlTab";
 import { GeneralSettingsTab } from "../components/GeneralSettingsTab";
 import { MaintenanceTab } from "../components/MaintenanceTab";
 import { CatalogTab } from "../components/CatalogTab";
 import { ExternalDataTab } from "../components/ExternalDataTab";
+import { ExternalEventsTab } from "../components/ExternalEventsTab";
 
-type TabId = "access" | "general" | "catalog" | "maintenance" | "external-data";
+type TabId = "access" | "general" | "catalog" | "maintenance" | "external-data" | "external-events";
 
 const tabs = [
   { id: "access", label: "Acessos", icon: <Users className="w-4 h-4" /> },
@@ -15,6 +16,7 @@ const tabs = [
   { id: "catalog", label: "Cadastro", icon: <FileEdit className="w-4 h-4" /> },
   { id: "maintenance", label: "Manutenção", icon: <Wrench className="w-4 h-4" /> },
   { id: "external-data", label: "Dados externos", icon: <Database className="w-4 h-4" /> },
+  { id: "external-events", label: "Eventos externos", icon: <Webhook className="w-4 h-4" /> },
 ];
 
 const tabPaths: Record<TabId, string> = {
@@ -23,6 +25,7 @@ const tabPaths: Record<TabId, string> = {
   catalog: "/settings/catalog",
   maintenance: "/settings/maintenance",
   "external-data": "/settings/external-data",
+  "external-events": "/settings/external-events",
 };
 
 interface SettingsPageProps {
@@ -52,6 +55,7 @@ export function SettingsPage({ activeTab = "access" }: SettingsPageProps) {
         {activeTab === "catalog" && <CatalogTab />}
         {activeTab === "maintenance" && <MaintenanceTab />}
         {activeTab === "external-data" && <ExternalDataTab />}
+        {activeTab === "external-events" && <ExternalEventsTab />}
       </div>
     </div>
   );
