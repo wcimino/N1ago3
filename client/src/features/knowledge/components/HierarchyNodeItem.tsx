@@ -79,6 +79,9 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                   <span className="text-gray-500">{parentName} &gt; </span>
                 )}
                 {node.name}
+                {isIntencao && node.articles.length > 0 && node.articles[0].question && (
+                  <span className="text-gray-500 font-normal">: {node.articles[0].question}</span>
+                )}
               </span>
 
               {(isProduct || isSubproduct) && (
