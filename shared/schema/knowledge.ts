@@ -365,7 +365,7 @@ export const caseActions = pgTable("case_actions", {
   caseSolutionId: integer("case_solution_id").notNull().references(() => caseSolutions.id, { onDelete: "cascade" }),
   actionId: integer("action_id").notNull().references(() => knowledgeBaseActions.id),
   actionSequence: integer("action_sequence").notNull(),
-  status: text("status").default("pending").notNull(),
+  status: text("status").default("not_started").notNull(),
   inputUsed: json("input_used").$type<Record<string, unknown>>().default({}),
   output: json("output").$type<Record<string, unknown>>(),
   errorMessage: text("error_message"),
