@@ -50,15 +50,19 @@ router.post("/api/conversations/:conversationId/transfer", isAuthenticated, requ
       });
     }
 
-    const tagResult = await ZendeskApiService.addConversationTags(
-      externalConversationId,
-      ["teste_n1ago"],
-      "manual_transfer",
-      `conversation:${conversationId}`
-    );
+    if (TargetResolver.isN1ago(target)) {
+      const tagResult = await ZendeskApiService.addConversationTags(
+        externalConversationId,
+        ["teste_n1ago"],
+        "manual_transfer",
+        `conversation:${conversationId}`
+      );
 
-    if (!tagResult.success) {
-      console.warn(`[TransferRoutes] Failed to add tag to conversation ${conversationId}:`, tagResult.error);
+      if (tagResult.success) {
+        console.log(`[TransferRoutes] Tag 'teste_n1ago' added successfully to conversation ${conversationId}`);
+      } else {
+        console.error(`[TransferRoutes] Failed to add tag 'teste_n1ago' to conversation ${conversationId}:`, tagResult.error);
+      }
     }
 
     const handlerName = TargetResolver.getHandlerName(target);

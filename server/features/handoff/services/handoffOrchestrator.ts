@@ -61,6 +61,19 @@ export async function processHandoffEvent(event: EventStandard): Promise<void> {
 
   console.log(`[HandoffOrchestrator] n1ago received control for conversation ${conversationExternalId}`);
 
+  const tagResult = await ZendeskApiService.addConversationTags(
+    conversationExternalId,
+    ["teste_n1ago"],
+    "handoff",
+    `passControl:${conversationExternalId}`
+  );
+
+  if (tagResult.success) {
+    console.log(`[HandoffOrchestrator] Tag 'teste_n1ago' added successfully to conversation ${conversationExternalId}`);
+  } else {
+    console.error(`[HandoffOrchestrator] Failed to add tag 'teste_n1ago' to conversation ${conversationExternalId}:`, tagResult.error);
+  }
+
   const context: HandoffContext = {
     conversationId: conversationExternalId,
     previousIntegration: metadata?.previousIntegration as string | undefined,

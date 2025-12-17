@@ -77,6 +77,8 @@ async function executeRoutingWithRollback(
       return { success: false, error: `passControl failed: ${passControlResult.error}` };
     }
 
+    console.log(`[Routing] Rule ${rule.id}: passControl SUCCESS, adding tag 'teste_n1ago' to conversation ${externalConversationId}...`);
+
     const tagResult = await ZendeskApiService.addConversationTags(
       externalConversationId,
       ["teste_n1ago"],
@@ -84,11 +86,13 @@ async function executeRoutingWithRollback(
       `rule:${rule.id}`
     );
 
-    if (!tagResult.success) {
-      console.warn(`[Routing] Rule ${rule.id}: Failed to add tag to conversation:`, tagResult.error);
+    if (tagResult.success) {
+      console.log(`[Routing] Rule ${rule.id}: Tag 'teste_n1ago' added successfully (status: ${tagResult.status})`);
+    } else {
+      console.error(`[Routing] Rule ${rule.id}: FAILED to add tag 'teste_n1ago' - error: ${tagResult.error}, status: ${tagResult.status}`);
     }
 
-    console.log(`[Routing] Rule ${rule.id}: passControl SUCCESS, marking as processed...`);
+    console.log(`[Routing] Rule ${rule.id}: Marking as processed...`);
 
     await routingTrackingStorage.markConversationProcessed(
       externalConversationId,

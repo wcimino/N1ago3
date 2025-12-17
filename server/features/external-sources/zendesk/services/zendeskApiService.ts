@@ -303,9 +303,9 @@ export async function addConversationTags(
   contextType?: string,
   contextId?: string
 ): Promise<ApiCallResult<UpdateConversationResponse>> {
-  console.log(`[ZendeskApiService] Adding tags to conversation ${conversationId}:`, tags);
+  console.log(`[ZendeskApiService] Adding tags to conversation ${conversationId}: [${tags.join(", ")}] (context: ${contextType}/${contextId})`);
   
-  return makeApiCall<UpdateConversationResponse>({
+  const result = await makeApiCall<UpdateConversationResponse>({
     endpoint: `/v2/apps/${getAppId()}/conversations/${conversationId}`,
     method: "PATCH",
     body: {
@@ -318,6 +318,14 @@ export async function addConversationTags(
     contextType,
     contextId,
   });
+
+  if (result.success) {
+    console.log(`[ZendeskApiService] Tags added successfully to ${conversationId}: [${tags.join(", ")}]`);
+  } else {
+    console.error(`[ZendeskApiService] FAILED to add tags to ${conversationId}: [${tags.join(", ")}] - Error: ${result.error}, Status: ${result.status}`);
+  }
+
+  return result;
 }
 
 export const ZendeskApiService = {
