@@ -63,18 +63,24 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-500 min-w-[110px]">Fase de análise:</span>
                 <span className={`px-2 py-0.5 rounded text-sm font-medium ${
-                  summary.orchestrator_status === 'temp_demand_understood' 
+                  summary.orchestrator_status === 'providing_solution' 
+                    ? 'bg-green-100 text-green-700' 
+                    : summary.orchestrator_status === 'temp_demand_understood' 
                     ? 'bg-green-100 text-green-700' 
                     : summary.orchestrator_status === 'demand_understanding'
                     ? 'bg-yellow-100 text-yellow-700'
                     : summary.orchestrator_status === 'escalated'
                     ? 'bg-red-100 text-red-700'
+                    : summary.orchestrator_status === 'temp_demand_not_understood'
+                    ? 'bg-orange-100 text-orange-700'
                     : 'bg-gray-100 text-gray-500'
                 }`}>
                   {summary.orchestrator_status === 'new' && 'Nova'}
                   {summary.orchestrator_status === 'demand_understanding' && 'Entendendo demanda'}
                   {summary.orchestrator_status === 'temp_demand_understood' && 'Demanda identificada'}
+                  {summary.orchestrator_status === 'providing_solution' && 'Provendo solução'}
                   {summary.orchestrator_status === 'demand_resolving' && 'Resolvendo'}
+                  {summary.orchestrator_status === 'temp_demand_not_understood' && 'Demanda não compreendida'}
                   {summary.orchestrator_status === 'escalated' && 'Escalado'}
                   {summary.orchestrator_status === 'closed' && 'Fechado'}
                   {!summary.orchestrator_status && '(vazio)'}
