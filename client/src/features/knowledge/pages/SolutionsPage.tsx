@@ -13,6 +13,8 @@ const emptyForm: SolutionFormData = {
   description: "",
   productId: null,
   isActive: true,
+  isFallback: false,
+  isArticleDefault: false,
   selectedActionIds: [],
 };
 
@@ -33,12 +35,16 @@ export function SolutionsPage() {
       description: data.description || null,
       productId: data.productId,
       isActive: data.isActive,
+      isFallback: data.isFallback,
+      isArticleDefault: data.isArticleDefault,
     }),
     transformUpdateData: (data) => ({
       name: data.name,
       description: data.description || null,
       productId: data.productId,
       isActive: data.isActive,
+      isFallback: data.isFallback,
+      isArticleDefault: data.isArticleDefault,
     }),
     onDeleteSuccess: (deletedId) => {
       if (expandedSolutionId === deletedId) {
@@ -153,6 +159,8 @@ export function SolutionsPage() {
       description: solution.description || "",
       productId: solution.productId,
       isActive: solution.isActive,
+      isFallback: solution.isFallback ?? false,
+      isArticleDefault: solution.isArticleDefault ?? false,
       selectedActionIds: actionIds,
     });
   };

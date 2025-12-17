@@ -56,6 +56,8 @@ export interface KnowledgeBaseSolution {
   description: string | null;
   productId: number | null;
   isActive: boolean;
+  isFallback: boolean;
+  isArticleDefault: boolean;
   createdAt: string;
   updatedAt: string;
 }

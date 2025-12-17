@@ -27,6 +27,8 @@ export interface SolutionFormData {
   description: string;
   productId: number | null;
   isActive: boolean;
+  isFallback: boolean;
+  isArticleDefault: boolean;
   selectedActionIds: number[];
 }
 
@@ -197,14 +199,32 @@ export function SolutionForm({
             placeholder="Nome da solução..."
           />
 
-          <FormField
-            type="checkbox"
-            label="Ativo"
-            id="isActive"
-            checked={formData.isActive}
-            onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-            className="flex items-center"
-          />
+          <div className="flex items-center gap-6 pt-6">
+            <FormField
+              type="checkbox"
+              label="Ativo"
+              id="isActive"
+              checked={formData.isActive}
+              onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+              className="flex items-center"
+            />
+            <FormField
+              type="checkbox"
+              label="Fallback"
+              id="isFallback"
+              checked={formData.isFallback}
+              onChange={(e) => setFormData(prev => ({ ...prev, isFallback: e.target.checked }))}
+              className="flex items-center"
+            />
+            <FormField
+              type="checkbox"
+              label="Padrão para Artigos"
+              id="isArticleDefault"
+              checked={formData.isArticleDefault}
+              onChange={(e) => setFormData(prev => ({ ...prev, isArticleDefault: e.target.checked }))}
+              className="flex items-center"
+            />
+          </div>
         </div>
 
         <FormField
