@@ -1,6 +1,7 @@
 import { db } from "../../../db.js";
 import { conversations, eventsStandard, conversationsSummary } from "../../../../shared/schema.js";
 import { eq, desc, sql, and, lt, ne } from "drizzle-orm";
+import { caseDemandStorage } from "../../ai/storage/caseDemandStorage.js";
 import type { ExtractedConversation } from "../../events/adapters/types.js";
 import { CONVERSATION_RULES, type ClosedReason } from "../../../config/conversationRules.js";
 import { saveAndDispatchEvent } from "../../events/services/eventDispatcher.js";
@@ -393,46 +394,13 @@ export const conversationCrud = {
   },
 
   async incrementDemandFinderInteractionCount(conversationId: number): Promise<number> {
-    const result = await db.update(conversationsSummary)
-      .set({
-        demandFinderInteractionCount: sql`${conversationsSummary.demandFinderInteractionCount} + 1`,
-        updatedAt: new Date(),
-      })
-      .where(eq(conversationsSummary.conversationId, conversationId))
-      .returning({ count: conversationsSummary.demandFinderInteractionCount });
-    
-    if (result[0]) {
-      return result[0].count;
-    }
-    
-    const now = new Date();
-    const insertResult = await db.insert(conversationsSummary)
-      .values({
-        conversationId,
-        summary: "",
-        demandFinderInteractionCount: 1,
-        generatedAt: now,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .onConflictDoUpdate({
-        target: conversationsSummary.conversationId,
-        set: { 
-          demandFinderInteractionCount: sql`${conversationsSummary.demandFinderInteractionCount} + 1`,
-          updatedAt: now 
-        },
-      })
-      .returning({ count: conversationsSummary.demandFinderInteractionCount });
-    
-    return insertResult[0]?.count || 1;
+    await caseDemandStorage.incrementInteractionCount(conversationId);
+    const demand = await caseDemandStorage.getFirstByConversationId(conversationId);
+    return demand?.interactionCount || 1;
   },
 
   async getDemandFinderInteractionCount(conversationId: number): Promise<number> {
-    const result = await db.select({ count: conversationsSummary.demandFinderInteractionCount })
-      .from(conversationsSummary)
-      .where(eq(conversationsSummary.conversationId, conversationId))
-      .limit(1);
-    
-    return result[0]?.count || 0;
+    const demand = await caseDemandStorage.getFirstByConversationId(conversationId);
+    return demand?.interactionCount || 0;
   },
 };

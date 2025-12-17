@@ -88,15 +88,24 @@ export const conversationsSummary = pgTable("conversations_summary", {
   customerRequestTypeConfidence: integer("customer_request_type_confidence"),
   customerRequestTypeReason: text("customer_request_type_reason"),
   objectiveProblems: json("objective_problems").$type<Array<{ id: number; name: string; matchScore?: number; matchedTerms?: string[] }>>(),
-  articlesAndObjectiveProblems: json("articles_and_objective_problems").$type<Array<{ source: "article" | "problem"; id: number; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; matchedTerms?: string[]; products?: string[] }>>(),
   clientRequestVersions: json("client_request_versions").$type<{ clientRequestStandardVersion?: string; clientRequestQuestionVersion?: string; clientRequestProblemVersion?: string }>(),
-  demandFinderInteractionCount: integer("demand_finder_interaction_count").default(0).notNull(),
-  demandFinderStatus: text("demand_finder_status").default("not_started"),
   generatedAt: timestamp("generated_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   conversationIdIdx: uniqueIndex("idx_conversations_summary_conversation_id").on(table.conversationId),
+}));
+
+export const caseDemand = pgTable("case_demand", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull().references(() => conversations.id),
+  articlesAndObjectiveProblems: json("articles_and_objective_problems").$type<Array<{ source: "article" | "problem"; id: number; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; matchedTerms?: string[]; products?: string[] }>>(),
+  interactionCount: integer("interaction_count").default(0).notNull(),
+  status: text("status").default("not_started"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  conversationIdUnique: uniqueIndex("idx_case_demand_conversation_id").on(table.conversationId),
 }));
 
 export const responsesSuggested = pgTable("responses_suggested", {
@@ -124,6 +133,8 @@ export type EventTypeMapping = typeof eventTypeMappings.$inferSelect;
 export type InsertEventTypeMapping = Omit<typeof eventTypeMappings.$inferInsert, "id" | "createdAt" | "updatedAt">;
 export type ConversationSummary = typeof conversationsSummary.$inferSelect;
 export type InsertConversationSummary = Omit<typeof conversationsSummary.$inferInsert, "id" | "createdAt" | "updatedAt" | "generatedAt">;
+export type CaseDemand = typeof caseDemand.$inferSelect;
+export type InsertCaseDemand = Omit<typeof caseDemand.$inferInsert, "id" | "createdAt" | "updatedAt">;
 export type SuggestedResponse = typeof responsesSuggested.$inferSelect;
 export type InsertSuggestedResponse = Omit<typeof responsesSuggested.$inferInsert, "id" | "createdAt">;
 

@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { storage } from "../../../storage.js";
 import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
+import { caseDemandStorage } from "../../ai/storage/caseDemandStorage.js";
 import type { Triage } from "../../../../shared/types/index.js";
 
 async function getProductNames(productId: number | null | undefined): Promise<{ product: string | null; subproduct: string | null }> {
@@ -145,9 +146,10 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
 
   const conversationsWithSummary = await Promise.all(
     result.map(async (item) => {
-      const [summary, suggestedResponses] = await Promise.all([
+      const [summary, suggestedResponses, caseDemandData] = await Promise.all([
         storage.getConversationSummary(item.conversation.id),
         storage.getAllSuggestedResponses(item.conversation.id),
+        caseDemandStorage.getFirstByConversationId(item.conversation.id),
       ]);
       const productNames = summary ? await getProductNames(summary.productId) : { product: null, subproduct: null };
       return {
@@ -184,10 +186,10 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
           customer_request_type_confidence: summary.customerRequestTypeConfidence,
           customer_request_type_reason: summary.customerRequestTypeReason,
           objective_problems: summary.objectiveProblems || null,
-          articles_and_objective_problems: summary.articlesAndObjectiveProblems || null,
+          articles_and_objective_problems: caseDemandData?.articlesAndObjectiveProblems || null,
           triage: extractTriageFromSummary(summary.summary),
           orchestrator_status: summary.orchestratorStatus || null,
-          demand_finder_status: summary.demandFinderStatus || null,
+          demand_finder_status: caseDemandData?.status || null,
         } : null,
         suggested_responses: suggestedResponses.map(sr => ({
           text: sr.suggestedResponse,
@@ -214,7 +216,10 @@ router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedU
     return res.status(400).json({ error: "Invalid conversation ID" });
   }
 
-  const summary = await storage.getConversationSummary(id);
+  const [summary, caseDemandData] = await Promise.all([
+    storage.getConversationSummary(id),
+    caseDemandStorage.getFirstByConversationId(id),
+  ]);
 
   if (!summary) {
     return res.json({ 
@@ -239,7 +244,7 @@ router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedU
     product_confidence: summary.productConfidence,
     product_confidence_reason: summary.productConfidenceReason,
     objective_problems: summary.objectiveProblems || null,
-    articles_and_objective_problems: summary.articlesAndObjectiveProblems || null,
+    articles_and_objective_problems: caseDemandData?.articlesAndObjectiveProblems || null,
     customer_request_type: summary.customerRequestType,
     customer_request_type_confidence: summary.customerRequestTypeConfidence,
     customer_request_type_reason: summary.customerRequestTypeReason,
@@ -250,7 +255,7 @@ router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedU
     important_info: summary.importantInfo,
     customer_emotion_level: summary.customerEmotionLevel,
     orchestrator_status: summary.orchestratorStatus || null,
-    demand_finder_status: summary.demandFinderStatus || null,
+    demand_finder_status: caseDemandData?.status || null,
   });
 });
 

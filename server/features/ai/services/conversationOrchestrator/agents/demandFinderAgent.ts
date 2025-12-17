@@ -1,6 +1,6 @@
 import { runAgentAndSaveSuggestion, buildAgentContextFromEvent } from "../../agentFramework.js";
 import { runCombinedKnowledgeSearch } from "../../tools/combinedKnowledgeSearchTool.js";
-import { summaryStorage } from "../../../storage/summaryStorage.js";
+import { caseDemandStorage } from "../../../storage/caseDemandStorage.js";
 import { getClientRequestVersions, buildCleanSearchContext, buildResolvedClassification } from "../../helpers/index.js";
 import type { DemandFinderAgentResult, OrchestratorContext } from "../types.js";
 
@@ -104,7 +104,7 @@ export class DemandFinderAgent {
       products: r.products,
     }));
 
-    await summaryStorage.updateArticlesAndProblems(conversationId, resultsForStorage);
+    await caseDemandStorage.updateArticlesAndProblems(conversationId, resultsForStorage);
     console.log(`[DemandFinderAgent] Saved ${resultsForStorage.length} articles/problems for conversation ${conversationId}`);
 
     return resultsForStorage;

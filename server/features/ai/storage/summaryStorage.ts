@@ -36,10 +36,6 @@ export const summaryStorage = {
       updatedAt: new Date(),
     };
 
-    if (data.articlesAndObjectiveProblems !== undefined) {
-      updateSet.articlesAndObjectiveProblems = data.articlesAndObjectiveProblems;
-    }
-
     const [summary] = await db.insert(conversationsSummary)
       .values({
         ...data,
@@ -51,47 +47,6 @@ export const summaryStorage = {
       })
       .returning();
     return summary;
-  },
-
-  async updateArticlesAndProblems(
-    conversationId: number,
-    articlesAndObjectiveProblems: Array<{ source: "article" | "problem"; id: number; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; matchedTerms?: string[]; products?: string[] }>
-  ): Promise<{ created: boolean; updated: boolean }> {
-    const existing = await db.select({ id: conversationsSummary.id })
-      .from(conversationsSummary)
-      .where(eq(conversationsSummary.conversationId, conversationId))
-      .limit(1);
-    
-    if (existing.length > 0) {
-      await db.update(conversationsSummary)
-        .set({
-          articlesAndObjectiveProblems,
-          updatedAt: new Date(),
-        })
-        .where(eq(conversationsSummary.conversationId, conversationId));
-      return { created: false, updated: true };
-    } else {
-      await db.insert(conversationsSummary)
-        .values({
-          conversationId,
-          summary: "",
-          articlesAndObjectiveProblems,
-          generatedAt: new Date(),
-        });
-      return { created: true, updated: false };
-    }
-  },
-
-  async updateDemandFinderStatus(
-    conversationId: number,
-    status: "not_started" | "in_progress" | "demand_found" | "demand_not_found" | "error"
-  ): Promise<void> {
-    await db.update(conversationsSummary)
-      .set({
-        demandFinderStatus: status,
-        updatedAt: new Date(),
-      })
-      .where(eq(conversationsSummary.conversationId, conversationId));
   },
 
   async getSummariesForExport(filters: {

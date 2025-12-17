@@ -6,7 +6,7 @@ import { StatusController } from "./statusController.js";
 import { AutoPilotService } from "../../../autoPilot/services/autoPilotService.js";
 import { ZendeskApiService } from "../../../external-sources/zendesk/services/zendeskApiService.js";
 import type { EventStandard } from "../../../../../shared/schema.js";
-import { summaryStorage } from "../../storage/summaryStorage.js";
+import { caseDemandStorage } from "../../storage/caseDemandStorage.js";
 
 type DemandFinderStatus = "not_started" | "in_progress" | "demand_found" | "demand_not_found" | "error";
 
@@ -177,7 +177,7 @@ export class ConversationOrchestrator {
 
   private static async updateDemandFinderStatus(conversationId: number, status: DemandFinderStatus): Promise<void> {
     try {
-      await summaryStorage.updateDemandFinderStatus(conversationId, status);
+      await caseDemandStorage.updateStatus(conversationId, status);
       console.log(`[ConversationOrchestrator] Updated demand_finder_status to: ${status}`);
     } catch (error) {
       console.error(`[ConversationOrchestrator] Error updating demand_finder_status:`, error);

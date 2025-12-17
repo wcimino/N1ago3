@@ -2,7 +2,7 @@ import { runKnowledgeBaseSearch } from "../knowledgeBaseSearchHelper.js";
 import { runProblemObjectiveSearch } from "./problemObjectiveTool.js";
 import { productCatalogStorage } from "../../../products/storage/productCatalogStorage.js";
 import type { ToolDefinition } from "../openaiApiService.js";
-import { summaryStorage } from "../../storage/summaryStorage.js";
+import { caseDemandStorage } from "../../storage/caseDemandStorage.js";
 
 export interface CombinedSearchResult {
   source: "article" | "problem";
@@ -163,11 +163,11 @@ export function createCombinedKnowledgeSearchToolWithContext(conversationId?: nu
             matchedTerms: r.matchedTerms,
             products: r.products,
           }));
-          const saveResult = await summaryStorage.updateArticlesAndProblems(conversationId, resultsForStorage);
+          const saveResult = await caseDemandStorage.updateArticlesAndProblems(conversationId, resultsForStorage);
           if (saveResult.created) {
-            console.log(`[Combined Knowledge Search Tool] Created summary with ${result.articleCount} articles and ${result.problemCount} problems for conversation ${conversationId}`);
+            console.log(`[Combined Knowledge Search Tool] Created case_demand with ${result.articleCount} articles and ${result.problemCount} problems for conversation ${conversationId}`);
           } else if (saveResult.updated) {
-            console.log(`[Combined Knowledge Search Tool] Updated summary with ${result.articleCount} articles and ${result.problemCount} problems for conversation ${conversationId}`);
+            console.log(`[Combined Knowledge Search Tool] Updated case_demand with ${result.articleCount} articles and ${result.problemCount} problems for conversation ${conversationId}`);
           }
         } catch (error) {
           console.error(`[Combined Knowledge Search Tool] Error saving results for conversation ${conversationId}:`, error);

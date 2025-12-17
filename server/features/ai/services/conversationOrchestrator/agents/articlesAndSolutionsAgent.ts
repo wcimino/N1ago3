@@ -1,6 +1,6 @@
 import { runAgent, buildAgentContextFromEvent } from "../../agentFramework.js";
 import { runCombinedKnowledgeSearch } from "../../tools/combinedKnowledgeSearchTool.js";
-import { summaryStorage } from "../../../storage/summaryStorage.js";
+import { caseDemandStorage } from "../../../storage/caseDemandStorage.js";
 import { getClientRequestVersions, buildCleanSearchContext, buildResolvedClassification } from "../../helpers/index.js";
 import type { ArticlesAndSolutionsAgentResult, OrchestratorContext } from "../types.js";
 
@@ -153,7 +153,7 @@ export class ArticlesAndSolutionsAgent {
       products: r.products,
     }));
 
-    await summaryStorage.updateArticlesAndProblems(conversationId, resultsForStorage);
+    await caseDemandStorage.updateArticlesAndProblems(conversationId, resultsForStorage);
     console.log(`[ArticlesAndSolutionsAgent] Saved ${resultsForStorage.length} articles/problems for conversation ${conversationId}`);
   }
 }

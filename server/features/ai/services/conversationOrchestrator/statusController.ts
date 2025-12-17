@@ -1,4 +1,5 @@
 import { storage } from "../../../../storage/index.js";
+import { caseDemandStorage } from "../../storage/caseDemandStorage.js";
 
 export interface StatusEvaluationResult {
   canTransition: boolean;
@@ -12,7 +13,10 @@ export interface StatusEvaluationResult {
 
 export class StatusController {
   static async evaluateDemandUnderstood(conversationId: number): Promise<StatusEvaluationResult> {
-    const summary = await storage.getConversationSummary(conversationId);
+    const [summary, caseDemandData] = await Promise.all([
+      storage.getConversationSummary(conversationId),
+      caseDemandStorage.getFirstByConversationId(conversationId),
+    ]);
 
     if (!summary) {
       return {
@@ -29,7 +33,7 @@ export class StatusController {
     const productConfidence = summary.productConfidence ?? null;
     const customerRequestTypeConfidence = summary.customerRequestTypeConfidence ?? null;
 
-    const articles = summary.articlesAndObjectiveProblems || [];
+    const articles = caseDemandData?.articlesAndObjectiveProblems || [];
     const bestArticleMatchScore = articles.length > 0
       ? Math.max(...articles.map(a => a.matchScore || 0))
       : 0;
