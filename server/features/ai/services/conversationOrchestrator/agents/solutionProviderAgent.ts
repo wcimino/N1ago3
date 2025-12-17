@@ -2,7 +2,9 @@ import { runAgentAndSaveSuggestion, buildAgentContextFromEvent } from "../../age
 import { buildResolvedClassification } from "../../helpers/index.js";
 import { caseSolutionStorage } from "../../../storage/caseSolutionStorage.js";
 import { caseActionsStorage } from "../../../storage/caseActionsStorage.js";
-import type { SolutionProviderAgentResult, OrchestratorContext } from "../types.js";
+import { SolutionResolverService } from "../../solutionResolverService.js";
+import { conversationStorage } from "../../../../conversations/storage/index.js";
+import { ORCHESTRATOR_STATUS, type SolutionProviderAgentResult, type OrchestratorContext } from "../types.js";
 import type { CaseSolutionWithDetails } from "../../../storage/caseSolutionStorage.js";
 import type { CaseActionWithDetails } from "../../../storage/caseActionsStorage.js";
 import { ACTION_TYPE_VALUES } from "@shared/constants/actionTypes";
@@ -11,18 +13,26 @@ const CONFIG_KEY = "solution_provider";
 
 export class SolutionProviderAgent {
   static async process(context: OrchestratorContext): Promise<SolutionProviderAgentResult> {
-    const { event, conversationId, summary, classification, demand, searchResults, rootCauseId, providedInputs } = context;
+    const { event, conversationId, summary, classification, demand, searchResults, rootCauseId, providedInputs, demandFound } = context;
 
     try {
       console.log(`[SolutionProviderAgent] Processing conversation ${conversationId}`);
-      console.log(`[SolutionProviderAgent] rootCauseId: ${rootCauseId}, providedInputs: ${JSON.stringify(providedInputs)}`);
+      console.log(`[SolutionProviderAgent] demandFound: ${demandFound}, rootCauseId: ${rootCauseId}, caseSolutionId: ${context.caseSolutionId}`);
 
       let caseSolution = await caseSolutionStorage.getActiveByConversationId(conversationId);
 
-      if (!caseSolution && rootCauseId) {
-        caseSolution = await this.createCaseSolution(context);
-        console.log(`[SolutionProviderAgent] Created case solution ${caseSolution.id}`);
-        context.caseSolutionId = caseSolution.id;
+      // Create case_solution if demand was found but no solution exists yet
+      if (!caseSolution && (demandFound || rootCauseId)) {
+        caseSolution = await this.createCaseSolutionFromDemand(context);
+        if (caseSolution) {
+          console.log(`[SolutionProviderAgent] Created case solution ${caseSolution.id}`);
+          context.caseSolutionId = caseSolution.id;
+          
+          // Update orchestrator status to PROVIDING_SOLUTION (using storage directly to avoid circular dependency)
+          await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.PROVIDING_SOLUTION);
+          context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
+          console.log(`[SolutionProviderAgent] Updated status to PROVIDING_SOLUTION`);
+        }
       }
 
       if (caseSolution) {
@@ -103,21 +113,34 @@ export class SolutionProviderAgent {
     }
   }
 
-  private static async createCaseSolution(context: OrchestratorContext): Promise<CaseSolutionWithDetails> {
+  private static async createCaseSolutionFromDemand(context: OrchestratorContext): Promise<CaseSolutionWithDetails | null> {
     const { conversationId, rootCauseId, providedInputs } = context;
 
-    const caseSolution = await caseSolutionStorage.createWithActions({
-      conversationId,
-      rootCauseId: rootCauseId || null,
-      solutionId: null,
-      status: "pending_info",
-      providedInputs: providedInputs || {},
-      collectedInputsCustomer: {},
-      collectedInputsSystems: {},
-      pendingInputs: [],
-    });
+    try {
+      // Use SolutionResolverService to resolve the best solution based on context
+      const resolvedSolution = await SolutionResolverService.resolveSolutionForConversation(
+        conversationId,
+        rootCauseId
+      );
 
-    return caseSolution;
+      if (!resolvedSolution) {
+        console.log(`[SolutionProviderAgent] No solution resolved for conversation ${conversationId}`);
+        return null;
+      }
+
+      // Create case_solution with actions
+      const caseSolution = await SolutionResolverService.createCaseSolutionWithActions(
+        conversationId,
+        resolvedSolution,
+        providedInputs
+      );
+
+      console.log(`[SolutionProviderAgent] Created case_solution ${caseSolution.id} with solution type: ${resolvedSolution.solutionType}`);
+      return caseSolution;
+    } catch (error) {
+      console.error(`[SolutionProviderAgent] Error creating case_solution:`, error);
+      return null;
+    }
   }
 
   private static async analyzeAndProgress(caseSolution: CaseSolutionWithDetails): Promise<Omit<SolutionProviderAgentResult, "success">> {

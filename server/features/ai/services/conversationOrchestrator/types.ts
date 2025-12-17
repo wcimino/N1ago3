@@ -97,4 +97,5 @@ export interface OrchestratorContext {
   rootCauseId?: number;
   providedInputs?: Record<string, unknown>;
   caseSolutionId?: number;
+  demandFound?: boolean;
 }
