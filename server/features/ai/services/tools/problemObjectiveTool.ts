@@ -7,7 +7,7 @@ import {
 } from "../../../knowledge/storage/objectiveProblemsStorage.js";
 import { generateEmbedding } from "../../../../shared/embeddings/index.js";
 import type { ToolDefinition } from "../openaiApiService.js";
-import { normalizeText, extractMatchedTerms } from "../../../../shared/utils/matchScoring.js";
+import { extractMatchedTerms } from "../../../../shared/utils/matchScoring.js";
 
 export interface ProblemSearchResult {
   source: "problem";
@@ -32,93 +32,6 @@ export interface ProblemSearchParams {
   keywords?: string;
   conversationContext?: string;
   limit?: number;
-}
-
-function applyKeywordsBoostToProblems(
-  problems: ProblemSearchResult[],
-  keywordsStr: string,
-  limit: number
-): ProblemSearchResult[] {
-  const searchTerms = keywordsStr
-    .split(/\s+/)
-    .filter(t => t.length >= 2);
-
-  if (searchTerms.length === 0) {
-    return problems.slice(0, limit);
-  }
-
-  const boostedProblems = problems.map(problem => {
-    // Normalize problem content to match normalized keywords (accent-insensitive)
-    const problemContent = normalizeText([
-      problem.name,
-      problem.description || "",
-      ...problem.synonyms,
-      ...problem.examples,
-      ...problem.products
-    ].join(" "));
-
-    let keywordMultiplier = 1.0;
-    const matchedKeywords: string[] = [];
-
-    for (const term of searchTerms) {
-      const normalizedTerm = normalizeText(term);
-      if (problemContent.includes(normalizedTerm)) {
-        keywordMultiplier *= 1.02;
-        matchedKeywords.push(term);
-      }
-    }
-
-    const boostedScore = Math.min(100, problem.matchScore * keywordMultiplier);
-    const matchReason = matchedKeywords.length > 0
-      ? `${problem.matchReason} + keywords(x${keywordMultiplier.toFixed(2)}): ${matchedKeywords.join(", ")}`
-      : problem.matchReason;
-
-    return {
-      ...problem,
-      matchScore: boostedScore,
-      matchReason
-    };
-  });
-
-  return boostedProblems
-    .sort((a, b) => b.matchScore - a.matchScore)
-    .slice(0, limit);
-}
-
-function applyProductMismatchPenalty(
-  problems: ProblemSearchResult[],
-  productContext?: string
-): ProblemSearchResult[] {
-  if (!productContext || problems.length === 0) {
-    return problems;
-  }
-
-  const normalizedProductContext = productContext.toLowerCase();
-
-  return problems.map(problem => {
-    if (!problem.products || problem.products.length === 0) {
-      return problem;
-    }
-
-    const hasMatchingProduct = problem.products.some(p => {
-      const normalizedProduct = p.toLowerCase();
-      return normalizedProduct.includes(normalizedProductContext) || 
-             normalizedProductContext.includes(normalizedProduct);
-    });
-
-    if (hasMatchingProduct) {
-      return problem;
-    }
-
-    const penalizedScore = problem.matchScore * 0.90;
-    console.log(`[ProblemObjectiveSearch] Product mismatch penalty: [${problem.products.join(", ")}] vs "${productContext}" - score ${problem.matchScore.toFixed(1)} -> ${penalizedScore.toFixed(1)}`);
-    
-    return {
-      ...problem,
-      matchScore: penalizedScore,
-      matchReason: `${problem.matchReason} [produto diferente: -10%]`
-    };
-  });
 }
 
 export async function runProblemObjectiveSearch(params: ProblemSearchParams): Promise<ProblemSearchResponse> {
@@ -175,13 +88,6 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
       };
     });
 
-    // Apply keywords as boost/filter if provided
-    if (params.keywords && params.keywords.trim().length > 0) {
-      problems = applyKeywordsBoostToProblems(problems, params.keywords, limit);
-      console.log(`[ProblemObjectiveSearch] After keywords boost/filter: ${problems.length} problems`);
-    }
-
-    problems = applyProductMismatchPenalty(problems, productContext);
     problems = problems
       .sort((a, b) => b.matchScore - a.matchScore)
       .slice(0, limit);
@@ -235,7 +141,6 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
       };
     });
 
-    problems = applyProductMismatchPenalty(problems, productContext);
     problems = problems
       .sort((a, b) => b.matchScore - a.matchScore)
       .slice(0, limit);
@@ -281,7 +186,6 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
     };
   });
 
-  problems = applyProductMismatchPenalty(problems, productContext);
   problems = problems
     .sort((a, b) => b.matchScore - a.matchScore)
     .slice(0, limit);

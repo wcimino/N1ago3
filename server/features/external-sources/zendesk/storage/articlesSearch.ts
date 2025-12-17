@@ -96,8 +96,6 @@ export async function searchArticlesWithRelevance(
   
   const whereClause = and(...conditions);
   
-  const firstTerm = searchTerms[0] || '';
-  
   const results = await db
     .select({
       id: zendeskArticles.id,
@@ -123,24 +121,15 @@ export async function searchArticlesWithRelevance(
       syncedAt: zendeskArticles.syncedAt,
       createdAt: zendeskArticles.createdAt,
       updatedAt: zendeskArticles.updatedAt,
-      relevanceScore: sql<number>`LEAST(ROUND((
+      relevanceScore: sql<number>`LEAST(ROUND(
         COALESCE(
           ts_rank_cd(
             setweight(to_tsvector('portuguese', COALESCE(${zendeskArticles.title}, '')), 'A') ||
             setweight(to_tsvector('portuguese', COALESCE(${zendeskArticles.body}, '')), 'B'),
             plainto_tsquery('portuguese', ${normalizedSearch})
           ), 0
-        ) * 10 +
-        CASE WHEN LOWER(${zendeskArticles.title}) ILIKE ${'%' + firstTerm + '%'} THEN 5 ELSE 0 END +
-        CASE WHEN ${zendeskArticles.promoted} = true THEN 2 ELSE 0 END +
-        COALESCE(${zendeskArticles.voteSum}, 0) * 0.1 +
-        CASE 
-          WHEN ${zendeskArticles.zendeskUpdatedAt} > NOW() - INTERVAL '30 days' THEN 3
-          WHEN ${zendeskArticles.zendeskUpdatedAt} > NOW() - INTERVAL '90 days' THEN 2
-          WHEN ${zendeskArticles.zendeskUpdatedAt} > NOW() - INTERVAL '180 days' THEN 1
-          ELSE 0
-        END
-      ) * 100.0 / 30.0), 100)`.as('relevance_score'),
+        ) * 100
+      ), 100)`.as('relevance_score'),
     })
     .from(zendeskArticles)
     .where(whereClause)
