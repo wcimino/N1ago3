@@ -30,6 +30,14 @@ async function getDemandFinderStatus(conversationId: number): Promise<string | n
   return caseDemands[0]?.status || null;
 }
 
+async function canTakeAction(conversationId: number, stepName: string): Promise<boolean> {
+  const isN1ago = await isN1agoHandler(conversationId);
+  if (!isN1ago) {
+    console.log(`[ConversationOrchestrator] ${stepName}: Action skipped - handler is not N1ago (observation-only mode)`);
+  }
+  return isN1ago;
+}
+
 export class ConversationOrchestrator {
   static async processMessageEvent(event: EventStandard): Promise<void> {
     if (!event.conversationId) {
@@ -207,16 +215,16 @@ export class ConversationOrchestrator {
       const isHandlerN1ago = await isN1agoHandler(conversationId);
       const demandFinderStatus = await getDemandFinderStatus(conversationId);
       
-      const shouldCountInteraction = isHandlerN1ago && demandFinderStatus === "in_progress";
-      
-      if (!shouldCountInteraction) {
-        console.log(`[ConversationOrchestrator] Step 4: Skipping evaluation - isN1ago: ${isHandlerN1ago}, demandFinderStatus: ${demandFinderStatus}`);
-        return { demandFound: false, hasCaseSolution: false };
+      // Only count interactions when N1ago is the handler (real AI-led interactions)
+      let interactionCount = 0;
+      if (isHandlerN1ago && demandFinderStatus === "in_progress") {
+        interactionCount = await conversationStorage.incrementDemandFinderInteractionCount(conversationId);
+        console.log(`[ConversationOrchestrator] Step 4: Interaction count: ${interactionCount} (N1ago active)`);
+      } else {
+        console.log(`[ConversationOrchestrator] Step 4: Observation-only mode - isN1ago: ${isHandlerN1ago}, demandFinderStatus: ${demandFinderStatus}`);
       }
-      
-      const interactionCount = await conversationStorage.incrementDemandFinderInteractionCount(conversationId);
-      console.log(`[ConversationOrchestrator] Step 4: Interaction count: ${interactionCount}`);
 
+      // Always evaluate demand (for visibility in panel)
       const evaluation = await StatusController.evaluateDemandUnderstood(conversationId);
       
       if (evaluation.canTransition) {
@@ -226,17 +234,17 @@ export class ConversationOrchestrator {
         return { demandFound: true, hasCaseSolution: false };
       } 
       
-      if (interactionCount >= MAX_DEMAND_FINDER_INTERACTIONS) {
+      // Only escalate on max interactions if N1ago is handler (not in observation mode)
+      if (isHandlerN1ago && interactionCount >= MAX_DEMAND_FINDER_INTERACTIONS) {
         await this.updateDemandFinderStatus(conversationId, "demand_not_found");
         console.log(`[ConversationOrchestrator] Step 4: Max interactions reached (${interactionCount}), will try fallback`);
         
-        // Trigger fallback to human if no solution can be found
         await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD);
         context.currentStatus = ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD;
         return { demandFound: false, hasCaseSolution: false };
       }
       
-      console.log(`[ConversationOrchestrator] Step 4: Demand not yet found - ${evaluation.reason} (interaction ${interactionCount}/${MAX_DEMAND_FINDER_INTERACTIONS})`);
+      console.log(`[ConversationOrchestrator] Step 4: Demand not yet found - ${evaluation.reason}`);
       return { demandFound: false, hasCaseSolution: false };
     }
 
