@@ -233,11 +233,15 @@ export const knowledgeBaseSolutions = pgTable("knowledge_base_solutions", {
   productId: integer("product_id").references(() => productsCatalog.id),
   conditions: json("conditions").$type<Record<string, unknown>>(),
   isActive: boolean("is_active").default(true).notNull(),
+  isFallback: boolean("is_fallback").default(false).notNull(),
+  isArticleDefault: boolean("is_article_default").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   productIdx: index("idx_kb_solutions_product").on(table.productId),
   isActiveIdx: index("idx_kb_solutions_is_active").on(table.isActive),
+  isFallbackIdx: index("idx_kb_solutions_is_fallback").on(table.isFallback),
+  isArticleDefaultIdx: index("idx_kb_solutions_is_article_default").on(table.isArticleDefault),
 }));
 
 export const knowledgeBaseSolutionsHasKnowledgeBaseActions = pgTable("knowledge_base_solutions_has_knowledge_base_actions", {

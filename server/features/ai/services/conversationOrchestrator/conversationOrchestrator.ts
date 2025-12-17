@@ -8,6 +8,8 @@ import { ZendeskApiService } from "../../../external-sources/zendesk/services/ze
 import { SendMessageService } from "../../../send-message/index.js";
 import type { EventStandard } from "../../../../../shared/schema.js";
 import { caseDemandStorage } from "../../storage/caseDemandStorage.js";
+import { SolutionResolverService } from "../solutionResolverService.js";
+import { caseSolutionStorage } from "../../storage/caseSolutionStorage.js";
 
 type DemandFinderStatus = "not_started" | "in_progress" | "demand_found" | "demand_not_found" | "error";
 
@@ -85,6 +87,11 @@ export class ConversationOrchestrator {
       return;
     }
 
+    if (context.currentStatus === ORCHESTRATOR_STATUS.PROVIDING_SOLUTION) {
+      console.log(`[ConversationOrchestrator] Pipeline completed for conversation ${conversationId}, solution created (caseSolutionId: ${context.caseSolutionId})`);
+      return;
+    }
+
     const demandResult = await this.step5_IdentifyDemand(context);
 
     const solutionResult = await this.step6_ProvideSolution(context);
@@ -159,6 +166,17 @@ export class ConversationOrchestrator {
     const { conversationId, currentStatus } = context;
     console.log(`[ConversationOrchestrator] Step 4: Deciding status for conversation ${conversationId}, current: ${currentStatus}`);
 
+    if (currentStatus === ORCHESTRATOR_STATUS.PROVIDING_SOLUTION) {
+      const existingSolution = await caseSolutionStorage.getActiveByConversationId(conversationId);
+      if (existingSolution) {
+        context.caseSolutionId = existingSolution.id;
+        console.log(`[ConversationOrchestrator] Step 4: Already in PROVIDING_SOLUTION, caseSolutionId: ${existingSolution.id}`);
+      } else {
+        console.log(`[ConversationOrchestrator] Step 4: In PROVIDING_SOLUTION but no active solution found`);
+      }
+      return;
+    }
+
     if (currentStatus === ORCHESTRATOR_STATUS.NEW) {
       await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING);
       context.currentStatus = ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING;
@@ -181,15 +199,15 @@ export class ConversationOrchestrator {
       const evaluation = await StatusController.evaluateDemandUnderstood(conversationId);
       
       if (evaluation.canTransition) {
-        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.TEMP_DEMAND_UNDERSTOOD);
-        context.currentStatus = ORCHESTRATOR_STATUS.TEMP_DEMAND_UNDERSTOOD;
         await this.updateDemandFinderStatus(conversationId, "demand_found");
-        console.log(`[ConversationOrchestrator] Step 4: Status updated to TEMP_DEMAND_UNDERSTOOD, demand_finder_status: demand_found - ${evaluation.reason}`);
+        console.log(`[ConversationOrchestrator] Step 4: Demand found - ${evaluation.reason}`);
+        
+        await this.createSolutionForDemand(context);
       } else if (interactionCount >= MAX_DEMAND_FINDER_INTERACTIONS) {
-        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD);
-        context.currentStatus = ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD;
         await this.updateDemandFinderStatus(conversationId, "demand_not_found");
-        console.log(`[ConversationOrchestrator] Step 4: Status updated to TEMP_DEMAND_NOT_UNDERSTOOD, demand_finder_status: demand_not_found - max interactions reached (${interactionCount})`);
+        console.log(`[ConversationOrchestrator] Step 4: Demand not found - max interactions reached (${interactionCount})`);
+        
+        await this.createFallbackSolution(context);
       } else {
         console.log(`[ConversationOrchestrator] Step 4: Status remains DEMAND_UNDERSTANDING - ${evaluation.reason} (interaction ${interactionCount}/${MAX_DEMAND_FINDER_INTERACTIONS})`);
       }
@@ -204,6 +222,87 @@ export class ConversationOrchestrator {
       console.log(`[ConversationOrchestrator] Updated demand_finder_status to: ${status}`);
     } catch (error) {
       console.error(`[ConversationOrchestrator] Error updating demand_finder_status:`, error);
+    }
+  }
+
+  private static async createSolutionForDemand(context: OrchestratorContext): Promise<void> {
+    const { conversationId } = context;
+    console.log(`[ConversationOrchestrator] Creating solution for demand, conversation ${conversationId}`);
+
+    try {
+      const existingActiveSolution = await caseSolutionStorage.getActiveByConversationId(conversationId);
+      if (existingActiveSolution) {
+        console.log(`[ConversationOrchestrator] Active case_solution already exists (id: ${existingActiveSolution.id}), skipping creation`);
+        context.caseSolutionId = existingActiveSolution.id;
+        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.PROVIDING_SOLUTION);
+        context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
+        return;
+      }
+
+      const resolvedSolution = await SolutionResolverService.resolveSolutionForConversation(
+        conversationId,
+        context.rootCauseId
+      );
+
+      if (!resolvedSolution) {
+        console.log(`[ConversationOrchestrator] No solution resolved, keeping status as DEMAND_UNDERSTANDING`);
+        return;
+      }
+
+      const caseSolution = await SolutionResolverService.createCaseSolutionWithActions(
+        conversationId,
+        resolvedSolution,
+        context.providedInputs
+      );
+
+      context.caseSolutionId = caseSolution.id;
+
+      await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.PROVIDING_SOLUTION);
+      context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
+      console.log(`[ConversationOrchestrator] Status updated to PROVIDING_SOLUTION, caseSolutionId: ${caseSolution.id}, type: ${resolvedSolution.solutionType}`);
+    } catch (error) {
+      console.error(`[ConversationOrchestrator] Error creating solution:`, error);
+    }
+  }
+
+  private static async createFallbackSolution(context: OrchestratorContext): Promise<void> {
+    const { conversationId } = context;
+    console.log(`[ConversationOrchestrator] Creating fallback solution for conversation ${conversationId}`);
+
+    try {
+      const existingActiveSolution = await caseSolutionStorage.getActiveByConversationId(conversationId);
+      if (existingActiveSolution) {
+        console.log(`[ConversationOrchestrator] Active case_solution already exists (id: ${existingActiveSolution.id}), skipping fallback creation`);
+        context.caseSolutionId = existingActiveSolution.id;
+        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.PROVIDING_SOLUTION);
+        context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
+        return;
+      }
+
+      const resolvedSolution = await SolutionResolverService.resolveSolutionForConversation(conversationId);
+
+      if (!resolvedSolution) {
+        console.log(`[ConversationOrchestrator] No fallback solution found, transferring to human`);
+        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD);
+        context.currentStatus = ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD;
+        return;
+      }
+
+      const caseSolution = await SolutionResolverService.createCaseSolutionWithActions(
+        conversationId,
+        resolvedSolution,
+        context.providedInputs
+      );
+
+      context.caseSolutionId = caseSolution.id;
+
+      await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.PROVIDING_SOLUTION);
+      context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
+      console.log(`[ConversationOrchestrator] Status updated to PROVIDING_SOLUTION (fallback), caseSolutionId: ${caseSolution.id}`);
+    } catch (error) {
+      console.error(`[ConversationOrchestrator] Error creating fallback solution:`, error);
+      await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD);
+      context.currentStatus = ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD;
     }
   }
 

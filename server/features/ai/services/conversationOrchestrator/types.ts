@@ -5,6 +5,7 @@ export const ORCHESTRATOR_STATUS = {
   DEMAND_UNDERSTANDING: "demand_understanding",
   TEMP_DEMAND_UNDERSTOOD: "temp_demand_understood",
   TEMP_DEMAND_NOT_UNDERSTOOD: "temp_demand_not_understood",
+  PROVIDING_SOLUTION: "providing_solution",
   DEMAND_RESOLVING: "demand_resolving",
   ESCALATED: "escalated",
   CLOSED: "closed",
