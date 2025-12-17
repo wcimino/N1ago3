@@ -201,6 +201,19 @@ export class ConversationOrchestrator {
       return { demandFound: true, hasCaseSolution: true };
     }
 
+    // Check if demand was previously found (persisted in case_demand)
+    const demandFinderStatus = await getDemandFinderStatus(conversationId);
+    if (demandFinderStatus === "demand_found") {
+      // Ensure conversation is in the correct status for response delivery
+      if (currentStatus !== ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING) {
+        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING);
+        context.currentStatus = ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING;
+      }
+      context.demandFound = true;
+      console.log(`[ConversationOrchestrator] Step 4: Demand previously identified (case_demand.status=demand_found)`);
+      return { demandFound: true, hasCaseSolution: false };
+    }
+
     // Handle NEW status - transition to DEMAND_UNDERSTANDING
     if (currentStatus === ORCHESTRATOR_STATUS.NEW) {
       await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING);
