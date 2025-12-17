@@ -27,11 +27,6 @@ export class SolutionProviderAgent {
         if (caseSolution) {
           console.log(`[SolutionProviderAgent] Created case solution ${caseSolution.id}`);
           context.caseSolutionId = caseSolution.id;
-          
-          // Update orchestrator status to PROVIDING_SOLUTION (using storage directly to avoid circular dependency)
-          await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.PROVIDING_SOLUTION);
-          context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
-          console.log(`[SolutionProviderAgent] Updated status to PROVIDING_SOLUTION`);
         }
       }
 

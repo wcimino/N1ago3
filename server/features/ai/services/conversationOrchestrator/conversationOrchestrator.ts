@@ -1,11 +1,10 @@
 import { storage } from "../../../../storage/index.js";
 import { conversationStorage } from "../../../conversations/storage/index.js";
 import { SummaryAgent, ClassificationAgent, DemandFinderAgent, SolutionProviderAgent, ArticlesAndSolutionsAgent } from "./agents/index.js";
-import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext } from "./types.js";
+import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext, type OrchestratorAction } from "./types.js";
 import { StatusController } from "./statusController.js";
-import { AutoPilotService } from "../../../autoPilot/services/autoPilotService.js";
+import { ActionExecutor } from "./actionExecutor.js";
 import { ZendeskApiService } from "../../../external-sources/zendesk/services/zendeskApiService.js";
-import { SendMessageService } from "../../../send-message/index.js";
 import type { EventStandard } from "../../../../../shared/schema.js";
 import { caseDemandStorage } from "../../storage/caseDemandStorage.js";
 import { caseSolutionStorage } from "../../storage/caseSolutionStorage.js";
@@ -30,13 +29,6 @@ async function getDemandFinderStatus(conversationId: number): Promise<string | n
   return caseDemands[0]?.status || null;
 }
 
-async function canTakeAction(conversationId: number, stepName: string): Promise<boolean> {
-  const isN1ago = await isN1agoHandler(conversationId);
-  if (!isN1ago) {
-    console.log(`[ConversationOrchestrator] ${stepName}: Action skipped - handler is not N1ago (observation-only mode)`);
-  }
-  return isN1ago;
-}
 
 export class ConversationOrchestrator {
   static async processMessageEvent(event: EventStandard): Promise<void> {
@@ -95,10 +87,13 @@ export class ConversationOrchestrator {
     
     const evaluation = await this.step4_Evaluate(context);
 
-    // Check for escalation conditions
+    // Check for escalation conditions - actions are already queued by step4
     if (context.currentStatus === ORCHESTRATOR_STATUS.TEMP_DEMAND_UNDERSTOOD || 
         context.currentStatus === ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD) {
-      await this.step8_TransferToHuman(context);
+      // Execute transfer action if queued
+      if (context.actions && context.actions.length > 0) {
+        await ActionExecutor.execute(context, context.actions);
+      }
       console.log(`[ConversationOrchestrator] Pipeline completed for conversation ${conversationId}, transferred to human`);
       return;
     }
@@ -121,12 +116,23 @@ export class ConversationOrchestrator {
     }
 
     // ============================================
-    // PHASE 4: RESPONSE (send best available response)
+    // PHASE 4: ACTIONS (execute pending actions)
     // ============================================
-    console.log(`[ConversationOrchestrator] Phase 4: Response`);
+    console.log(`[ConversationOrchestrator] Phase 4: Actions`);
 
+    // Build action from response if available
     if (response.response && response.suggestionId) {
-      await this.step7_SendResponse(context, response.response, response.suggestionId);
+      const sendAction: OrchestratorAction = {
+        type: "SEND_MESSAGE",
+        payload: { suggestionId: response.suggestionId, responsePreview: response.response }
+      };
+      context.actions = context.actions || [];
+      context.actions.push(sendAction);
+    }
+
+    // Execute all actions
+    if (context.actions && context.actions.length > 0) {
+      await ActionExecutor.execute(context, context.actions);
     }
 
     console.log(`[ConversationOrchestrator] Pipeline completed for conversation ${conversationId}, final status: ${context.currentStatus}`);
@@ -193,28 +199,44 @@ export class ConversationOrchestrator {
     const { conversationId, currentStatus } = context;
     console.log(`[ConversationOrchestrator] Step 4: Evaluating conversation ${conversationId}, current status: ${currentStatus}`);
 
-    // Check for existing case_solution
+    // Initialize actions array
+    context.actions = [];
+
+    // ===========================================
+    // STATUS EVALUATION (Step 4 is the ONLY status controller)
+    // ===========================================
+
+    // 1. Check for existing case_solution - means we're in PROVIDING_SOLUTION phase
     const existingSolution = await caseSolutionStorage.getActiveByConversationId(conversationId);
     if (existingSolution) {
       context.caseSolutionId = existingSolution.id;
+      
+      // Ensure status is PROVIDING_SOLUTION when case_solution exists
+      if (currentStatus !== ORCHESTRATOR_STATUS.PROVIDING_SOLUTION) {
+        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.PROVIDING_SOLUTION);
+        context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
+        console.log(`[ConversationOrchestrator] Step 4: Status updated to PROVIDING_SOLUTION (case_solution exists)`);
+      }
+      
       console.log(`[ConversationOrchestrator] Step 4: Found active case_solution (id: ${existingSolution.id})`);
       return { demandFound: true, hasCaseSolution: true };
     }
 
-    // Check if demand was previously found (persisted in case_demand)
+    // 2. Check if demand was previously found (persisted in case_demand)
     const demandFinderStatus = await getDemandFinderStatus(conversationId);
     if (demandFinderStatus === "demand_found") {
-      // Ensure conversation is in the correct status for response delivery
-      if (currentStatus !== ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING) {
-        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING);
-        context.currentStatus = ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING;
+      // Ensure status is PROVIDING_SOLUTION when demand was found
+      if (currentStatus !== ORCHESTRATOR_STATUS.PROVIDING_SOLUTION) {
+        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.PROVIDING_SOLUTION);
+        context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
+        console.log(`[ConversationOrchestrator] Step 4: Status updated to PROVIDING_SOLUTION (demand previously found)`);
       }
       context.demandFound = true;
       console.log(`[ConversationOrchestrator] Step 4: Demand previously identified (case_demand.status=demand_found)`);
       return { demandFound: true, hasCaseSolution: false };
     }
 
-    // Handle NEW status - transition to DEMAND_UNDERSTANDING
+    // 3. Handle NEW status - transition to DEMAND_UNDERSTANDING
     if (currentStatus === ORCHESTRATOR_STATUS.NEW) {
       await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING);
       context.currentStatus = ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING;
@@ -223,37 +245,46 @@ export class ConversationOrchestrator {
       return { demandFound: false, hasCaseSolution: false };
     }
 
-    // Handle DEMAND_UNDERSTANDING status - evaluate if demand is found
+    // 4. Handle DEMAND_UNDERSTANDING status - evaluate if demand is found
     if (currentStatus === ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING) {
       const isHandlerN1ago = await isN1agoHandler(conversationId);
-      const demandFinderStatus = await getDemandFinderStatus(conversationId);
+      const currentDemandStatus = await getDemandFinderStatus(conversationId);
       
       // Only count interactions when N1ago is the handler (real AI-led interactions)
       let interactionCount = 0;
-      if (isHandlerN1ago && demandFinderStatus === "in_progress") {
+      if (isHandlerN1ago && currentDemandStatus === "in_progress") {
         interactionCount = await conversationStorage.incrementDemandFinderInteractionCount(conversationId);
         console.log(`[ConversationOrchestrator] Step 4: Interaction count: ${interactionCount} (N1ago active)`);
       } else {
-        console.log(`[ConversationOrchestrator] Step 4: Observation-only mode - isN1ago: ${isHandlerN1ago}, demandFinderStatus: ${demandFinderStatus}`);
+        console.log(`[ConversationOrchestrator] Step 4: Observation-only mode - isN1ago: ${isHandlerN1ago}, demandFinderStatus: ${currentDemandStatus}`);
       }
 
       // Always evaluate demand (for visibility in panel)
       const evaluation = await StatusController.evaluateDemandUnderstood(conversationId);
       
       if (evaluation.canTransition) {
+        // Demand found! Update status to PROVIDING_SOLUTION
         await this.updateDemandFinderStatus(conversationId, "demand_found");
+        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.PROVIDING_SOLUTION);
+        context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
         context.demandFound = true;
-        console.log(`[ConversationOrchestrator] Step 4: Demand found - ${evaluation.reason}`);
+        console.log(`[ConversationOrchestrator] Step 4: Demand found - ${evaluation.reason}, status updated to PROVIDING_SOLUTION`);
         return { demandFound: true, hasCaseSolution: false };
       } 
       
       // Only escalate on max interactions if N1ago is handler (not in observation mode)
       if (isHandlerN1ago && interactionCount >= MAX_DEMAND_FINDER_INTERACTIONS) {
         await this.updateDemandFinderStatus(conversationId, "demand_not_found");
-        console.log(`[ConversationOrchestrator] Step 4: Max interactions reached (${interactionCount}), will try fallback`);
-        
         await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD);
         context.currentStatus = ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD;
+        
+        // Add transfer action
+        context.actions.push({
+          type: "TRANSFER_TO_HUMAN",
+          payload: { reason: "max_interactions_reached", message: "Ok, vou te transferir para um especialista agora" }
+        });
+        
+        console.log(`[ConversationOrchestrator] Step 4: Max interactions reached (${interactionCount}), will transfer`);
         return { demandFound: false, hasCaseSolution: false };
       }
       
@@ -343,94 +374,6 @@ export class ConversationOrchestrator {
       console.error(`[ConversationOrchestrator] Step 6: SolutionProvider error:`, error);
       return { response: null };
     }
-  }
-
-  private static async step7_SendResponse(context: OrchestratorContext, response: string, suggestionId: number): Promise<void> {
-    const { conversationId, currentStatus } = context;
-    console.log(`[ConversationOrchestrator] Step 7: Response generated for conversation ${conversationId}`);
-    console.log(`[ConversationOrchestrator] Step 7: Response preview: "${response.substring(0, 100)}..."`);
-    
-    if (currentStatus !== ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING) {
-      console.log(`[ConversationOrchestrator] Step 7: Send skipped - status is ${currentStatus}, not demand_understanding`);
-      return;
-    }
-    
-    // Early exit if N1ago is not the handler (avoid unnecessary AutoPilot call)
-    const canAct = await canTakeAction(conversationId, "Step 7");
-    if (!canAct) {
-      console.log(`[ConversationOrchestrator] Step 7: Response saved but not sent (observation-only mode)`);
-      return;
-    }
-    
-    console.log(`[ConversationOrchestrator] Step 7: Attempting to send suggestion ${suggestionId} via AutoPilot`);
-    const result = await AutoPilotService.processSuggestion(suggestionId);
-    
-    if (result.action === "sent") {
-      console.log(`[ConversationOrchestrator] Step 7: Response sent successfully`);
-    } else {
-      console.log(`[ConversationOrchestrator] Step 7: Response not sent - action=${result.action}, reason=${result.reason}`);
-    }
-  }
-
-  private static async step8_TransferToHuman(context: OrchestratorContext): Promise<void> {
-    const { conversationId, event } = context;
-    console.log(`[ConversationOrchestrator] Step 8: Transfer requested for conversation ${conversationId}`);
-
-    // Only transfer if N1ago is the handler (can take action)
-    const canAct = await canTakeAction(conversationId, "Step 8");
-    if (!canAct) {
-      console.log(`[ConversationOrchestrator] Step 8: Transfer skipped - another handler owns this conversation`);
-      return;
-    }
-
-    const externalConversationId = event.externalConversationId;
-    if (!externalConversationId) {
-      console.error(`[ConversationOrchestrator] Step 8: Missing externalConversationId for conversation ${conversationId}`);
-      return;
-    }
-
-    await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
-    context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
-    console.log(`[ConversationOrchestrator] Step 8: Status updated to ESCALATED (before sending message)`);
-
-    const transferMessage = "Ok, vou te transferir para um especialista agora";
-    
-    const sendResult = await SendMessageService.send({
-      conversationId,
-      externalConversationId,
-      message: transferMessage,
-      type: "transfer",
-      source: "orchestrator",
-    });
-
-    if (sendResult.sent) {
-      console.log(`[ConversationOrchestrator] Step 8: Transfer message sent successfully`);
-    } else {
-      console.log(`[ConversationOrchestrator] Step 8: Transfer message not sent: ${sendResult.reason}`);
-    }
-
-    const agentWorkspaceId = ZendeskApiService.getAgentWorkspaceIntegrationId();
-    const passControlResult = await ZendeskApiService.passControl(
-      externalConversationId,
-      agentWorkspaceId,
-      { reason: "escalated" },
-      "transfer",
-      `transfer:${conversationId}`
-    );
-
-    if (passControlResult.success) {
-      console.log(`[ConversationOrchestrator] Step 8: Control passed to agent workspace successfully`);
-    } else {
-      console.error(`[ConversationOrchestrator] Step 8: Failed to pass control: ${passControlResult.error}`);
-    }
-  }
-
-  private static async escalate(context: OrchestratorContext, reason: string): Promise<void> {
-    const { conversationId } = context;
-    console.log(`[ConversationOrchestrator] Escalating conversation ${conversationId}: ${reason}`);
-
-    await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
-    context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
   }
 
   static async getConversationStatus(conversationId: number): Promise<OrchestratorStatus> {

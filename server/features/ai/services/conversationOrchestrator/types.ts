@@ -98,4 +98,9 @@ export interface OrchestratorContext {
   providedInputs?: Record<string, unknown>;
   caseSolutionId?: number;
   demandFound?: boolean;
+  actions?: OrchestratorAction[];
 }
+
+export type OrchestratorAction = 
+  | { type: "SEND_MESSAGE"; payload: { suggestionId: number; responsePreview: string } }
+  | { type: "TRANSFER_TO_HUMAN"; payload: { reason: string; message: string } };
