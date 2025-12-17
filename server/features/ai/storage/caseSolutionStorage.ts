@@ -1,5 +1,5 @@
 import { db } from "../../../db.js";
-import { caseSolutions, caseActions, knowledgeBaseSolutions, knowledgeBaseRootCauses, knowledgeBaseActions, knowledgeBaseSolutionsHasKnowledgeBaseActions } from "../../../../shared/schema.js";
+import { caseSolutions, caseActions, knowledgeBaseSolutions, knowledgeBaseRootCauses, knowledgeBaseActions, knowledgeBaseSolutionsHasKnowledgeBaseActions, knowledgeBase, caseDemand } from "../../../../shared/schema.js";
 import { eq, desc, and, sql } from "drizzle-orm";
 import type { CaseSolution, InsertCaseSolution, CaseAction, InsertCaseAction } from "../../../../shared/schema.js";
 
@@ -146,6 +146,45 @@ export const caseSolutionStorage = {
     const caseSolution = await this.create(data);
 
     if (caseSolution.solutionId) {
+      const [solutionDetails] = await db.select({
+        isArticleDefault: knowledgeBaseSolutions.isArticleDefault,
+      })
+        .from(knowledgeBaseSolutions)
+        .where(eq(knowledgeBaseSolutions.id, caseSolution.solutionId));
+
+      let articleMessageTemplate: string | null = null;
+      let sourceArticleId: number | null = null;
+
+      if (solutionDetails?.isArticleDefault) {
+        const [demand] = await db.select({
+          topMatch: caseDemand.articlesAndObjectiveProblemsTopMatch,
+        })
+          .from(caseDemand)
+          .where(eq(caseDemand.conversationId, caseSolution.conversationId))
+          .orderBy(desc(caseDemand.updatedAt))
+          .limit(1);
+
+        const topMatch = demand?.topMatch as { source: string; id: number } | null;
+        if (topMatch?.source === "article" && topMatch.id) {
+          const [article] = await db.select({
+            id: knowledgeBase.id,
+            answer: knowledgeBase.answer,
+          })
+            .from(knowledgeBase)
+            .where(eq(knowledgeBase.id, topMatch.id));
+
+          if (article?.answer) {
+            articleMessageTemplate = article.answer;
+            sourceArticleId = article.id;
+            console.log(`[CaseSolutionStorage] isArticleDefault solution: using article ${sourceArticleId} answer as messageTemplate`);
+          } else {
+            console.log(`[CaseSolutionStorage] isArticleDefault solution: article ${topMatch.id} found but has no answer`);
+          }
+        } else {
+          console.log(`[CaseSolutionStorage] isArticleDefault solution: no article top match found for conversation ${caseSolution.conversationId}`);
+        }
+      }
+
       const solutionActions = await db.select({
         actionId: knowledgeBaseSolutionsHasKnowledgeBaseActions.actionId,
         actionSequence: knowledgeBaseSolutionsHasKnowledgeBaseActions.actionSequence,
@@ -155,12 +194,19 @@ export const caseSolutionStorage = {
         .orderBy(knowledgeBaseSolutionsHasKnowledgeBaseActions.actionSequence);
 
       for (const sa of solutionActions) {
+        const inputUsed: Record<string, unknown> = {};
+        if (articleMessageTemplate) {
+          inputUsed.messageTemplate = articleMessageTemplate;
+          inputUsed.sourceArticleId = sourceArticleId;
+        }
+
         await db.insert(caseActions)
           .values({
             caseSolutionId: caseSolution.id,
             actionId: sa.actionId,
             actionSequence: sa.actionSequence,
-            status: "pending",
+            status: "not_started",
+            inputUsed: Object.keys(inputUsed).length > 0 ? inputUsed : {},
           });
       }
     }

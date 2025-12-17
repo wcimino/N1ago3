@@ -187,7 +187,11 @@ export class SolutionProviderAgent {
     await caseSolutionStorage.updateStatus(caseSolution.id, "executing");
     await caseActionsStorage.startAction(action.id, allInputs);
 
-    const messageTemplate = action.action?.messageTemplate;
+    const inputUsed = action.inputUsed as Record<string, unknown> | null;
+    const messageTemplateFromInput = inputUsed?.messageTemplate as string | undefined;
+    const messageTemplateFromAction = action.action?.messageTemplate;
+    const messageTemplate = messageTemplateFromInput || messageTemplateFromAction;
+
     if (!messageTemplate) {
       await caseActionsStorage.failAction(action.id, "Message template not configured");
       await caseSolutionStorage.updateStatus(caseSolution.id, "error");
@@ -198,6 +202,9 @@ export class SolutionProviderAgent {
       };
     }
 
+    const templateSource = messageTemplateFromInput ? "inputUsed (article)" : "action";
+    console.log(`[SolutionProviderAgent] Using messageTemplate from ${templateSource}`);
+
     let message = messageTemplate;
     for (const [key, value] of Object.entries(allInputs)) {
       const escapedKey = this.escapeRegexKey(key);
@@ -207,6 +214,7 @@ export class SolutionProviderAgent {
     await caseActionsStorage.completeAction(action.id, { 
       executedAt: new Date().toISOString(),
       messageSent: message,
+      templateSource,
     });
 
     console.log(`[SolutionProviderAgent] INFORM_CUSTOMER action ${action.actionId} completed, message: ${message.substring(0, 100)}...`);
