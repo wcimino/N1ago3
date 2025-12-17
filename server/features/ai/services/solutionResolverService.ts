@@ -1,5 +1,5 @@
 import { db } from "../../../db.js";
-import { knowledgeBaseSolutions, knowledgeBaseRootCauseHasKnowledgeBaseSolutions } from "../../../../shared/schema.js";
+import { knowledgeBaseSolutions, knowledgeBaseRootCauseHasKnowledgeBaseSolutions, knowledgeBase } from "../../../../shared/schema.js";
 import { eq, and } from "drizzle-orm";
 import { caseDemandStorage } from "../storage/caseDemandStorage.js";
 import { caseSolutionStorage } from "../storage/caseSolutionStorage.js";
@@ -50,16 +50,22 @@ export class SolutionResolverService {
     }
 
     if (topMatch?.source === "article") {
-      const articleDefaultSolution = await this.getArticleDefaultSolution();
-      if (articleDefaultSolution) {
-        console.log(`[SolutionResolver] Using article_default solution for article ${topMatch.id}`);
-        return {
-          solutionId: articleDefaultSolution.id,
-          solutionName: articleDefaultSolution.name,
-          solutionType: "article_default",
-          articleId: topMatch.id,
-          articleContent: topMatch.description + (topMatch.resolution ? `\n\nResolução: ${topMatch.resolution}` : ""),
-        };
+      const isArticleActive = await this.isArticleActive(topMatch.id);
+      
+      if (!isArticleActive) {
+        console.log(`[SolutionResolver] Article ${topMatch.id} is inactive, skipping article_default solution`);
+      } else {
+        const articleDefaultSolution = await this.getArticleDefaultSolution();
+        if (articleDefaultSolution) {
+          console.log(`[SolutionResolver] Using article_default solution for article ${topMatch.id}`);
+          return {
+            solutionId: articleDefaultSolution.id,
+            solutionName: articleDefaultSolution.name,
+            solutionType: "article_default",
+            articleId: topMatch.id,
+            articleContent: topMatch.description + (topMatch.resolution ? `\n\nResolução: ${topMatch.resolution}` : ""),
+          };
+        }
       }
     }
 
@@ -124,6 +130,17 @@ export class SolutionResolverService {
       .limit(1);
 
     return result || null;
+  }
+
+  private static async isArticleActive(articleId: number): Promise<boolean> {
+    const [article] = await db.select({
+      isActive: knowledgeBase.isActive,
+    })
+      .from(knowledgeBase)
+      .where(eq(knowledgeBase.id, articleId))
+      .limit(1);
+
+    return article?.isActive ?? false;
   }
 
   static async createCaseSolutionWithActions(
