@@ -130,6 +130,7 @@ export const externalEventSources = pgTable("external_event_sources", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   source: text("source").notNull().unique(),
+  channelType: text("channel_type").notNull(),
   apiKey: text("api_key").notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

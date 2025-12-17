@@ -23,7 +23,7 @@ const eventIngestSchema = z.object({
     message: "occurred_at deve ser uma data válida em formato ISO 8601",
   }),
   metadata: z.any().optional(),
-  channel_type: z.string().optional(),
+  channel_type: z.string().min(1, "channel_type é obrigatório"),
 });
 
 router.post("/api/events/ingest", async (req: Request, res: Response) => {
@@ -52,7 +52,7 @@ router.post("/api/events/ingest", async (req: Request, res: Response) => {
 
     const eventData = parseResult.data;
 
-    const validation = await externalEventSourcesStorage.validateApiKeyAndSource(apiKey, eventData.source);
+    const validation = await externalEventSourcesStorage.validateApiKeyAndSource(apiKey, eventData.source, eventData.channel_type);
     
     if (!validation.valid) {
       return res.status(403).json({ 
@@ -136,7 +136,7 @@ router.post("/api/events/ingest/batch", async (req: Request, res: Response) => {
 
       const eventData = parseResult.data;
 
-      const validation = await externalEventSourcesStorage.validateApiKeyAndSource(apiKey, eventData.source);
+      const validation = await externalEventSourcesStorage.validateApiKeyAndSource(apiKey, eventData.source, eventData.channel_type);
       if (!validation.valid) {
         results.push({
           index: i,

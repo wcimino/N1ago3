@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, ChevronDown, ChevronRight, Webhook, Copy, RefreshCw, ToggleLeft, ToggleRight, Download } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronRight, Webhook, Copy, RefreshCw, ToggleLeft, ToggleRight, Download, Pencil } from "lucide-react";
 import { apiRequest, fetchApi } from "../../../lib/queryClient";
 import { LoadingState, EmptyState, Button } from "../../../shared/components";
 import { useDateFormatters } from "../../../shared/hooks";
@@ -9,6 +9,7 @@ interface ExternalEventSource {
   id: number;
   name: string;
   source: string;
+  channel_type: string;
   api_key?: string;
   api_key_masked?: string;
   is_active: boolean;
@@ -25,9 +26,14 @@ export function ExternalEventsTab() {
   const [showForm, setShowForm] = useState(false);
   const [newName, setNewName] = useState("");
   const [newSource, setNewSource] = useState("");
+  const [newChannelType, setNewChannelType] = useState("");
   const [error, setError] = useState("");
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [newlyCreatedKeys, setNewlyCreatedKeys] = useState<Map<number, string>>(new Map());
+  const [editingSource, setEditingSource] = useState<ExternalEventSource | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editChannelType, setEditChannelType] = useState("");
+  const [editError, setEditError] = useState("");
   const queryClient = useQueryClient();
   const { formatShortDateTime } = useDateFormatters();
 
@@ -39,8 +45,8 @@ export function ExternalEventsTab() {
   const sources = data?.sources || [];
 
   const addMutation = useMutation({
-    mutationFn: async ({ name, source }: { name: string; source: string }) => {
-      const res = await apiRequest("POST", "/api/external-event-sources", { name, source });
+    mutationFn: async ({ name, source, channel_type }: { name: string; source: string; channel_type: string }) => {
+      const res = await apiRequest("POST", "/api/external-event-sources", { name, source, channel_type });
       return res.json();
     },
     onSuccess: (data) => {
@@ -50,11 +56,29 @@ export function ExternalEventsTab() {
       }
       setNewName("");
       setNewSource("");
+      setNewChannelType("");
       setError("");
       setShowForm(false);
     },
     onError: (err: any) => {
       setError(err.message || "Erro ao adicionar sistema");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, name, channel_type }: { id: number; name: string; channel_type: string }) => {
+      const res = await apiRequest("PUT", `/api/external-event-sources/${id}`, { name, channel_type });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["external-event-sources"] });
+      setEditingSource(null);
+      setEditName("");
+      setEditChannelType("");
+      setEditError("");
+    },
+    onError: (err: any) => {
+      setEditError(err.message || "Erro ao atualizar sistema");
     },
   });
 
@@ -104,7 +128,36 @@ export function ExternalEventsTab() {
       return;
     }
 
-    addMutation.mutate({ name: newName.trim(), source: newSource.trim() });
+    if (!newChannelType.trim()) {
+      setError("Channel type é obrigatório");
+      return;
+    }
+
+    addMutation.mutate({ name: newName.trim(), source: newSource.trim(), channel_type: newChannelType.trim() });
+  };
+
+  const handleEdit = (source: ExternalEventSource) => {
+    setEditingSource(source);
+    setEditName(source.name);
+    setEditChannelType(source.channel_type);
+    setEditError("");
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSource) return;
+
+    if (!editName.trim()) {
+      setEditError("Nome é obrigatório");
+      return;
+    }
+
+    if (!editChannelType.trim()) {
+      setEditError("Channel type é obrigatório");
+      return;
+    }
+
+    updateMutation.mutate({ id: editingSource.id, name: editName.trim(), channel_type: editChannelType.trim() });
   };
 
   const copyToClipboard = async (text: string, id: number) => {
@@ -171,7 +224,7 @@ export function ExternalEventsTab() {
         {showForm && (
           <div className="px-4 pb-4 border-t border-gray-200 pt-4">
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
                   <input
@@ -194,7 +247,21 @@ export function ExternalEventsTab() {
                     required
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Identificador único (será convertido para minúsculas)
+                    Identificador único
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Channel Type *</label>
+                  <input
+                    type="text"
+                    value={newChannelType}
+                    onChange={(e) => setNewChannelType(e.target.value)}
+                    placeholder="Ex: whatsapp"
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Tipo de canal (ex: whatsapp, email, chat)
                   </p>
                 </div>
               </div>
@@ -244,9 +311,12 @@ export function ExternalEventsTab() {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">
+                    <p className="text-sm text-gray-600 mb-2 flex flex-wrap gap-2">
                       <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">
                         source: {source.source}
+                      </span>
+                      <span className="font-mono bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">
+                        channel: {source.channel_type}
                       </span>
                     </p>
                     <div className="flex items-center gap-2 mb-2">
@@ -279,6 +349,14 @@ export function ExternalEventsTab() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(source)}
+                      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      title="Editar"
+                    >
+                      <Pencil className="w-5 h-5" />
+                    </button>
                     <button
                       type="button"
                       onClick={() => toggleMutation.mutate({ id: source.id, is_active: !source.is_active })}
@@ -329,6 +407,63 @@ export function ExternalEventsTab() {
           </div>
         )}
       </div>
+
+      {editingSource && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4">Editar Sistema Externo</h3>
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Source</label>
+                <input
+                  type="text"
+                  value={editingSource.source}
+                  disabled
+                  className="w-full px-3 py-2 border rounded-lg bg-gray-100 text-gray-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">O source não pode ser alterado</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Channel Type *</label>
+                <input
+                  type="text"
+                  value={editChannelType}
+                  onChange={(e) => setEditChannelType(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              {editError && <p className="text-sm text-red-600">{editError}</p>}
+              <div className="flex justify-end gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditingSource(null)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={updateMutation.isPending}
+                  isLoading={updateMutation.isPending}
+                >
+                  Salvar
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

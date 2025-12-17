@@ -16,7 +16,7 @@ X-API-Key: nes_sua_chave_aqui
 
 As chaves de API são geradas e gerenciadas na interface do N1ago em **Configurações → Eventos externos**.
 
-**Importante:** Cada chave de API está vinculada a um `source` específico. O campo `source` no payload deve corresponder exatamente ao source cadastrado para a chave.
+**Importante:** Cada chave de API está vinculada a um `source` e um `channel_type` específicos. Ambos os campos no payload devem corresponder exatamente aos valores cadastrados para a chave.
 
 ## Endpoints
 
@@ -46,6 +46,7 @@ X-API-Key: nes_sua_chave_aqui
 | `source` | string | Identificador do sistema de origem. Deve corresponder ao source cadastrado para a API key |
 | `author_type` | string | Tipo do autor. Valores: `customer`, `agent`, `bot`, `system` |
 | `occurred_at` | string (ISO 8601) | Data/hora do evento. Exemplo: `2025-01-15T10:30:00Z` |
+| `channel_type` | string | Tipo de canal. Deve corresponder ao channel_type cadastrado para a API key (ex: whatsapp, email, chat) |
 
 ### Campos Opcionais
 
@@ -60,7 +61,6 @@ X-API-Key: nes_sua_chave_aqui
 | `content_text` | string | Conteúdo textual do evento (mensagem, nota, etc.) |
 | `content_payload` | object | Payload estruturado adicional (JSON livre) |
 | `metadata` | object | Metadados adicionais (JSON livre) |
-| `channel_type` | string | Tipo de canal (whatsapp, email, chat, etc.) |
 
 ## Exemplos
 
@@ -209,7 +209,16 @@ X-API-Key: nes_sua_chave_aqui
 ```json
 {
   "error": "Acesso negado",
-  "details": "Esta API key não está autorizada para o source 'outro-sistema'"
+  "details": "Source 'outro-sistema' não corresponde ao cadastrado para esta API key"
+}
+```
+
+### Erro - Channel Type Não Autorizado (403 Forbidden)
+
+```json
+{
+  "error": "Acesso negado",
+  "details": "Channel type 'email' não corresponde ao cadastrado ('whatsapp')"
 }
 ```
 
@@ -354,7 +363,7 @@ Se você é um agente de IA integrando com o N1ago:
 
 1. **Obtenha suas credenciais:** Solicite ao administrador do N1ago que cadastre seu sistema em Configurações → Eventos externos
 2. **Armazene a API key com segurança:** A chave só é exibida uma vez na criação
-3. **Use o source correto:** O campo `source` deve corresponder exatamente ao cadastrado
+3. **Use o source e channel_type corretos:** Ambos os campos devem corresponder exatamente ao cadastrado
 4. **Forneça source_event_id:** Para garantir idempotência e evitar duplicatas
 5. **Use timestamps UTC:** Sempre envie `occurred_at` em formato ISO 8601 com timezone UTC (Z)
 6. **Estruture content_payload:** Para eventos customizados, use o campo `content_payload` para dados estruturados

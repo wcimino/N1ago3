@@ -17,6 +17,7 @@ router.get("/api/external-event-sources", isAuthenticated, requireAuthorizedUser
         id: s.id,
         name: s.name,
         source: s.source,
+        channel_type: s.channelType,
         api_key_masked: maskApiKey(s.apiKey),
         is_active: s.isActive,
         created_at: s.createdAt?.toISOString(),
@@ -32,7 +33,7 @@ router.get("/api/external-event-sources", isAuthenticated, requireAuthorizedUser
 
 router.post("/api/external-event-sources", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
-    const { name, source } = req.body;
+    const { name, source, channel_type } = req.body;
     const user = (req as any).user;
 
     if (!name || !name.trim()) {
@@ -43,7 +44,12 @@ router.post("/api/external-event-sources", isAuthenticated, requireAuthorizedUse
       return res.status(400).json({ error: "Source é obrigatório" });
     }
 
+    if (!channel_type || !channel_type.trim()) {
+      return res.status(400).json({ error: "Channel type é obrigatório" });
+    }
+
     const sourceSlug = source.trim().toLowerCase().replace(/\s+/g, "_");
+    const channelTypeSlug = channel_type.trim().toLowerCase().replace(/\s+/g, "_");
 
     const existing = await externalEventSourcesStorage.getBySource(sourceSlug);
     if (existing) {
@@ -53,6 +59,7 @@ router.post("/api/external-event-sources", isAuthenticated, requireAuthorizedUse
     const created = await externalEventSourcesStorage.create({
       name: name.trim(),
       source: sourceSlug,
+      channelType: channelTypeSlug,
       isActive: true,
       createdBy: user?.claims?.email || null,
     });
@@ -61,6 +68,7 @@ router.post("/api/external-event-sources", isAuthenticated, requireAuthorizedUse
       id: created.id,
       name: created.name,
       source: created.source,
+      channel_type: created.channelType,
       api_key: created.apiKey,
       is_active: created.isActive,
       created_at: created.createdAt?.toISOString(),
@@ -75,7 +83,7 @@ router.post("/api/external-event-sources", isAuthenticated, requireAuthorizedUse
 router.put("/api/external-event-sources/:id", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
-    const { name, is_active } = req.body;
+    const { name, channel_type, is_active } = req.body;
 
     if (isNaN(id)) {
       return res.status(400).json({ error: "ID inválido" });
@@ -94,6 +102,13 @@ router.put("/api/external-event-sources/:id", isAuthenticated, requireAuthorized
       }
       updateData.name = trimmedName;
     }
+    if (channel_type !== undefined) {
+      const trimmedChannelType = channel_type.trim();
+      if (!trimmedChannelType) {
+        return res.status(400).json({ error: "Channel type não pode ser vazio" });
+      }
+      updateData.channelType = trimmedChannelType.toLowerCase().replace(/\s+/g, "_");
+    }
     if (is_active !== undefined) updateData.isActive = is_active;
 
     const updated = await externalEventSourcesStorage.update(id, updateData);
@@ -102,6 +117,7 @@ router.put("/api/external-event-sources/:id", isAuthenticated, requireAuthorized
       id: updated!.id,
       name: updated!.name,
       source: updated!.source,
+      channel_type: updated!.channelType,
       api_key_masked: maskApiKey(updated!.apiKey),
       is_active: updated!.isActive,
       created_at: updated!.createdAt?.toISOString(),

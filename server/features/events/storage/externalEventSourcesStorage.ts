@@ -47,7 +47,7 @@ export const externalEventSourcesStorage = {
     return source;
   },
 
-  async update(id: number, data: Partial<Pick<InsertExternalEventSource, "name" | "isActive">>): Promise<ExternalEventSource | null> {
+  async update(id: number, data: Partial<Pick<InsertExternalEventSource, "name" | "channelType" | "isActive">>): Promise<ExternalEventSource | null> {
     const [source] = await db.update(externalEventSources)
       .set({
         ...data,
@@ -76,7 +76,7 @@ export const externalEventSourcesStorage = {
     return (result.rowCount ?? 0) > 0;
   },
 
-  async validateApiKeyAndSource(apiKey: string, source: string): Promise<{ valid: boolean; reason?: string }> {
+  async validateApiKeyAndSource(apiKey: string, source: string, channelType?: string): Promise<{ valid: boolean; reason?: string }> {
     const externalSource = await this.getByApiKey(apiKey);
     
     if (!externalSource) {
@@ -89,6 +89,10 @@ export const externalEventSourcesStorage = {
     
     if (externalSource.source !== source) {
       return { valid: false, reason: `Source '${source}' não corresponde ao cadastrado para esta API key` };
+    }
+    
+    if (channelType && externalSource.channelType !== channelType) {
+      return { valid: false, reason: `Channel type '${channelType}' não corresponde ao cadastrado ('${externalSource.channelType}')` };
     }
     
     return { valid: true };
