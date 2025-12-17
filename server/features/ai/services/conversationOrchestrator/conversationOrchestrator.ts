@@ -276,10 +276,9 @@ export class ConversationOrchestrator {
       return;
     }
 
-    // Update status to ESCALATED FIRST to prevent duplicate messages from concurrent events
     await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
     context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
-    console.log(`[ConversationOrchestrator] Step 7: Status updated to ESCALATED (before sending message)`);
+    console.log(`[ConversationOrchestrator] Step 8: Status updated to ESCALATED (before sending message)`);
 
     const transferMessage = "Ok, vou te transferir para um especialista agora";
     
@@ -291,9 +290,9 @@ export class ConversationOrchestrator {
     );
 
     if (messageResult.success) {
-      console.log(`[ConversationOrchestrator] Step 7: Transfer message sent successfully`);
+      console.log(`[ConversationOrchestrator] Step 8: Transfer message sent successfully`);
     } else {
-      console.error(`[ConversationOrchestrator] Step 7: Failed to send transfer message: ${messageResult.error}`);
+      console.error(`[ConversationOrchestrator] Step 8: Failed to send transfer message: ${messageResult.error}`);
     }
 
     const agentWorkspaceId = ZendeskApiService.getAgentWorkspaceIntegrationId();
@@ -306,9 +305,9 @@ export class ConversationOrchestrator {
     );
 
     if (passControlResult.success) {
-      console.log(`[ConversationOrchestrator] Step 7: Control passed to agent workspace successfully`);
+      console.log(`[ConversationOrchestrator] Step 8: Control passed to agent workspace successfully`);
     } else {
-      console.error(`[ConversationOrchestrator] Step 7: Failed to pass control: ${passControlResult.error}`);
+      console.error(`[ConversationOrchestrator] Step 8: Failed to pass control: ${passControlResult.error}`);
     }
   }
 
