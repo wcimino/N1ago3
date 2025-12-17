@@ -5,6 +5,7 @@ import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext 
 import { StatusController } from "./statusController.js";
 import { AutoPilotService } from "../../../autoPilot/services/autoPilotService.js";
 import { ZendeskApiService } from "../../../external-sources/zendesk/services/zendeskApiService.js";
+import { SendMessageService } from "../../../send-message/index.js";
 import type { EventStandard } from "../../../../../shared/schema.js";
 import { caseDemandStorage } from "../../storage/caseDemandStorage.js";
 
@@ -306,25 +307,20 @@ export class ConversationOrchestrator {
     context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
     console.log(`[ConversationOrchestrator] Step 8: Status updated to ESCALATED (before sending message)`);
 
-    const isHandlerN1ago = await isN1agoHandler(conversationId);
+    const transferMessage = "Ok, vou te transferir para um especialista agora";
     
-    if (isHandlerN1ago) {
-      const transferMessage = "Ok, vou te transferir para um especialista agora";
-      
-      const messageResult = await ZendeskApiService.sendMessage(
-        externalConversationId,
-        transferMessage,
-        "transfer",
-        `transfer:${conversationId}`
-      );
+    const sendResult = await SendMessageService.send({
+      conversationId,
+      externalConversationId,
+      message: transferMessage,
+      type: "transfer",
+      source: "orchestrator",
+    });
 
-      if (messageResult.success) {
-        console.log(`[ConversationOrchestrator] Step 8: Transfer message sent successfully`);
-      } else {
-        console.error(`[ConversationOrchestrator] Step 8: Failed to send transfer message: ${messageResult.error}`);
-      }
+    if (sendResult.sent) {
+      console.log(`[ConversationOrchestrator] Step 8: Transfer message sent successfully`);
     } else {
-      console.log(`[ConversationOrchestrator] Step 8: Skipping transfer message - handler is not N1ago`);
+      console.log(`[ConversationOrchestrator] Step 8: Transfer message not sent: ${sendResult.reason}`);
     }
 
     const agentWorkspaceId = ZendeskApiService.getAgentWorkspaceIntegrationId();
