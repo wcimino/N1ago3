@@ -88,12 +88,8 @@ export class ConversationOrchestrator {
 
     const solutionResult = await this.step6_ProvideSolution(context);
 
-    if (solutionResult.response) {
-      if (solutionResult.suggestionId) {
-        await this.step7_SendResponse(context, solutionResult.response, solutionResult.suggestionId);
-      } else {
-        await this.step7_SendDirectResponse(context, solutionResult.response);
-      }
+    if (solutionResult.response && solutionResult.suggestionId) {
+      await this.step7_SendResponse(context, solutionResult.response, solutionResult.suggestionId);
     } else if (demandResult.response && demandResult.suggestionId) {
       await this.step7_SendResponse(context, demandResult.response, demandResult.suggestionId);
     }
@@ -294,36 +290,6 @@ export class ConversationOrchestrator {
     console.log(`[ConversationOrchestrator] Step 7: Processing suggestion ${suggestionId} via AutoPilot`);
     const result = await AutoPilotService.processSuggestion(suggestionId);
     console.log(`[ConversationOrchestrator] Step 7: AutoPilot result - action=${result.action}, reason=${result.reason}`);
-  }
-
-  private static async step7_SendDirectResponse(context: OrchestratorContext, response: string): Promise<void> {
-    const { conversationId, currentStatus, event } = context;
-    console.log(`[ConversationOrchestrator] Step 7: Sending direct response for conversation ${conversationId}`);
-    console.log(`[ConversationOrchestrator] Step 7: Response: "${response.substring(0, 100)}..."`);
-    
-    if (currentStatus !== ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING) {
-      console.log(`[ConversationOrchestrator] Step 7: Skipping send - status is ${currentStatus}, not demand_understanding`);
-      return;
-    }
-
-    const externalConversationId = event.externalConversationId;
-    if (!externalConversationId) {
-      console.error(`[ConversationOrchestrator] Step 7: Missing externalConversationId for conversation ${conversationId}`);
-      return;
-    }
-
-    const messageResult = await ZendeskApiService.sendMessage(
-      externalConversationId,
-      response,
-      "solution_provider",
-      `solution:${conversationId}`
-    );
-
-    if (messageResult.success) {
-      console.log(`[ConversationOrchestrator] Step 7: Direct response sent successfully`);
-    } else {
-      console.error(`[ConversationOrchestrator] Step 7: Failed to send direct response: ${messageResult.error}`);
-    }
   }
 
   private static async step8_TransferToHuman(context: OrchestratorContext): Promise<void> {
