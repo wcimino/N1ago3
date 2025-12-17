@@ -47,8 +47,8 @@ export interface TopicClassificationAgentResult extends AgentResult {
 
 export type PeriodFilter = "last_hour" | "last_24h" | "all";
 
-interface ProductSubjectMap {
-  [product: string]: string[];
+interface SubjectProductMap {
+  [subject: string]: string;
 }
 
 export class TopicClassificationAgent {
@@ -205,10 +205,10 @@ export class TopicClassificationAgent {
       return new Map();
     }
 
-    const subjectsByProduct = await this.getSubjectsByProduct(productFilter);
-    const subjectsJson = JSON.stringify(subjectsByProduct, null, 2);
+    const subjectsMap = await this.getSubjectsByProduct(productFilter);
+    const subjectsJson = JSON.stringify(subjectsMap, null, 2);
     
-    console.log(`[TopicClassificationAgent] Using subjects for product: ${productFilter || 'all'}, total questions: ${questions.length}`);
+    console.log(`[TopicClassificationAgent] Using ${Object.keys(subjectsMap).length} subjects for product: ${productFilter || 'all'}, total questions: ${questions.length}`);
     
     const classificationMap = new Map<string, string>();
     
@@ -315,7 +315,7 @@ export class TopicClassificationAgent {
     }
   }
 
-  private static async getSubjectsByProduct(productFilter?: string): Promise<ProductSubjectMap> {
+  private static async getSubjectsByProduct(productFilter?: string): Promise<SubjectProductMap> {
     const productClause = productFilter 
       ? `WHERE pc.produto = '${productFilter.replace(/'/g, "''")}'`
       : "";
@@ -328,21 +328,17 @@ export class TopicClassificationAgent {
       FROM knowledge_subjects ks
       LEFT JOIN products_catalog pc ON ks.product_catalog_id = pc.id
       ${productClause}
-      ORDER BY pc.produto, pc.subproduto, ks.name
+      ORDER BY ks.name
     `));
 
-    const subjectMap: ProductSubjectMap = {};
+    const subjectMap: SubjectProductMap = {};
     
     for (const row of results.rows as any[]) {
-      const key = row.subproduto 
-        ? `${row.produto} > ${row.subproduto}` 
-        : row.produto;
-      
-      if (!subjectMap[key]) {
-        subjectMap[key] = [];
-      }
-      if (row.subject && !subjectMap[key].includes(row.subject)) {
-        subjectMap[key].push(row.subject);
+      if (row.subject && !subjectMap[row.subject]) {
+        const productPath = row.subproduto 
+          ? `${row.produto} > ${row.subproduto}` 
+          : row.produto;
+        subjectMap[row.subject] = productPath;
       }
     }
     
