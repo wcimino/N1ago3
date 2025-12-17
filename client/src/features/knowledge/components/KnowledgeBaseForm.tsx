@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Tag, MessageSquare, CheckCircle, Plus, Trash2 } from "lucide-react";
+import { Tag, MessageSquare, CheckCircle, Plus, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
 import { FormActions } from "@/shared/components/ui";
 import { ProductHierarchySelects, ProductHierarchyDisplay } from "@/shared/components/forms/ProductHierarchySelects";
 import { useProductHierarchySelects } from "@/shared/hooks";
@@ -35,6 +35,7 @@ export function KnowledgeBaseForm({
     answer: "",
     keywords: "",
     questionVariation: [] as string[],
+    isActive: false,
   });
   const [newVariation, setNewVariation] = useState("");
   const [initializedForId, setInitializedForId] = useState<number | null>(null);
@@ -56,6 +57,7 @@ export function KnowledgeBaseForm({
         answer: initialData.answer || "",
         keywords: initialData.keywords || "",
         questionVariation: initialData.questionVariation || [],
+        isActive: initialData.isActive,
       });
       setInitializedForId(initialData.id);
     } else if (prefilledData && !initialData && initializedForId !== -1) {
@@ -64,6 +66,7 @@ export function KnowledgeBaseForm({
         answer: "",
         keywords: "",
         questionVariation: [],
+        isActive: false,
       });
       setInitializedForId(-1);
     } else if (!initialData && !prefilledData && initializedForId !== 0) {
@@ -72,6 +75,7 @@ export function KnowledgeBaseForm({
         answer: "",
         keywords: "",
         questionVariation: [],
+        isActive: false,
       });
       setInitializedForId(0);
     }
@@ -112,6 +116,7 @@ export function KnowledgeBaseForm({
       productId: prefilledData?.productId || hierarchy.selection.productId,
       subjectId: prefilledData?.subjectId || hierarchy.selection.subjectId,
       intentId: prefilledData?.intentId || hierarchy.selection.intentId,
+      isActive: formData.isActive,
     });
   };
 
@@ -297,6 +302,39 @@ export function KnowledgeBaseForm({
           }));
         }}
       />
+
+      <div className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="flex items-center gap-2">
+          {formData.isActive ? (
+            <ToggleRight className="w-5 h-5 text-green-600" />
+          ) : (
+            <ToggleLeft className="w-5 h-5 text-gray-400" />
+          )}
+          <div>
+            <span className={`text-sm font-medium ${formData.isActive ? 'text-green-700' : 'text-gray-600'}`}>
+              {formData.isActive ? 'Ativo' : 'Inativo'}
+            </span>
+            <p className="text-xs text-gray-500">
+              {formData.isActive 
+                ? 'Este artigo será usado nas buscas do chatbot' 
+                : 'Este artigo não será usado nas buscas do chatbot'}
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setFormData(prev => ({ ...prev, isActive: !prev.isActive }))}
+          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+            formData.isActive ? 'bg-green-500' : 'bg-gray-300'
+          }`}
+        >
+          <span
+            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+              formData.isActive ? 'translate-x-5' : 'translate-x-0'
+            }`}
+          />
+        </button>
+      </div>
 
       <FormActions
         isLoading={isLoading}

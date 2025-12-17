@@ -12,6 +12,7 @@ export interface KnowledgeBaseArticle {
   productId: number | null;
   subjectId: number | null;
   intentId: number | null;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }

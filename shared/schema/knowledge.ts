@@ -21,12 +21,14 @@ export const knowledgeBase = pgTable("knowledge_base", {
   productId: integer("product_id").references(() => productsCatalog.id, { onDelete: "set null" }),
   subjectId: integer("subject_id"),
   intentId: integer("intent_id"),
+  isActive: boolean("is_active").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   productIdIdx: index("idx_knowledge_base_product_id").on(table.productId),
   subjectIdx: index("idx_knowledge_base_subject").on(table.subjectId),
   intentIdIdx: index("idx_knowledge_base_intent_id").on(table.intentId),
+  isActiveIdx: index("idx_knowledge_base_is_active").on(table.isActive),
 }));
 
 export const knowledgeBaseEmbeddings = pgTable("knowledge_base_embeddings", {

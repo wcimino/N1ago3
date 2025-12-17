@@ -12,9 +12,10 @@ export const knowledgeBaseSearch = {
       subjectId?: number;
       intentId?: number;
       limit?: number;
+      onlyActive?: boolean;
     } = {}
   ): Promise<SearchArticleResult[]> {
-    const { productId, subjectId, intentId, limit = 5 } = options;
+    const { productId, subjectId, intentId, limit = 5, onlyActive = true } = options;
     const searchTerms = parseSearchTerms(keywords);
     
     if (searchTerms.length === 0) {
@@ -22,6 +23,10 @@ export const knowledgeBaseSearch = {
     }
     
     const conditions: SQL[] = [];
+    
+    if (onlyActive) {
+      conditions.push(eq(knowledgeBase.isActive, true));
+    }
     
     if (productId) {
       conditions.push(eq(knowledgeBase.productId, productId));
@@ -80,14 +85,19 @@ export const knowledgeBaseSearch = {
       subjectId?: number;
       intentId?: number;
       limit?: number;
+      onlyActive?: boolean;
     } = {}
   ): Promise<SemanticSearchResult[]> {
-    const { limit = 5 } = options;
+    const { limit = 5, onlyActive = true } = options;
     
     const embeddingString = `[${queryEmbedding.join(',')}]`;
     
     const conditions: SQL[] = [];
     conditions.push(sql`e.embedding_vector IS NOT NULL`);
+    
+    if (onlyActive) {
+      conditions.push(sql`a.is_active = true`);
+    }
     
     if (options.productId) {
       conditions.push(sql`a.product_id = ${options.productId}`);
@@ -111,6 +121,7 @@ export const knowledgeBaseSearch = {
         a.product_id as "productId",
         a.subject_id as "subjectId",
         a.intent_id as "intentId",
+        a.is_active as "isActive",
         a.created_at as "createdAt",
         a.updated_at as "updatedAt",
         ROUND((1 - (e.embedding_vector::vector <=> ${embeddingString}::vector)) * 100) as similarity
@@ -130,6 +141,7 @@ export const knowledgeBaseSearch = {
       productId: row.productId,
       subjectId: row.subjectId,
       intentId: row.intentId,
+      isActive: row.isActive,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       similarity: Number(row.similarity),

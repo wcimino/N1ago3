@@ -9,6 +9,7 @@ export interface KnowledgeBaseFormData {
   productId: number | null;
   subjectId: number | null;
   intentId: number | null;
+  isActive: boolean;
 }
 
 interface UseKnowledgeMutationsOptions {
