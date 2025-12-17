@@ -42,13 +42,13 @@ export const caseDemandStorage = {
     articlesAndObjectiveProblems: ArticleOrProblem[]
   ): Promise<{ created: boolean; updated: boolean }> {
     const existing = await this.getFirstByConversationId(conversationId);
-    const topMatch = calculateTopMatch(articlesAndObjectiveProblems);
+    const articlesAndObjectiveProblemsTopMatch = calculateTopMatch(articlesAndObjectiveProblems);
     
     if (existing) {
       await db.update(caseDemand)
         .set({
           articlesAndObjectiveProblems,
-          topMatch,
+          articlesAndObjectiveProblemsTopMatch,
           updatedAt: new Date(),
         })
         .where(eq(caseDemand.id, existing.id));
@@ -58,7 +58,7 @@ export const caseDemandStorage = {
         .values({
           conversationId,
           articlesAndObjectiveProblems,
-          topMatch,
+          articlesAndObjectiveProblemsTopMatch,
         });
       return { created: true, updated: false };
     }
