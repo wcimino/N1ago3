@@ -305,13 +305,16 @@ export async function addConversationTags(
 ): Promise<ApiCallResult<UpdateConversationResponse>> {
   console.log(`[ZendeskApiService] Adding tags to conversation ${conversationId}: [${tags.join(", ")}] (context: ${contextType}/${contextId})`);
   
+  const metadataObject: Record<string, string | boolean> = {};
+  for (const tag of tags) {
+    metadataObject[tag] = true;
+  }
+  
   const result = await makeApiCall<UpdateConversationResponse>({
     endpoint: `/v2/apps/${getAppId()}/conversations/${conversationId}`,
     method: "PATCH",
     body: {
-      metadata: {
-        tags,
-      },
+      metadata: metadataObject,
     },
     conversationId,
     requestType: "addConversationTags",
