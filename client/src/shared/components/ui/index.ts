@@ -1,9 +1,12 @@
 export { Badge } from "./Badge";
 export type { BadgeVariant, BadgeSize } from "./Badge";
+export { BaseModal } from "./BaseModal";
+export type { BaseModalProps } from "./BaseModal";
 export { Button } from "./Button";
 export { Card, CardHeader, CardContent, CardFooter } from "./Card";
 export { CheckboxListItem } from "./CheckboxListItem";
 export { CollapsibleSection } from "./CollapsibleSection";
+export { ConfirmModal } from "./ConfirmModal";
 export { DataTable } from "./DataTable";
 export type { Column } from "./DataTable";
 export { Drawer } from "./Drawer";
