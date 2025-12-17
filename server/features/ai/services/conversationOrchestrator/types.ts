@@ -53,6 +53,8 @@ export interface DemandFinderAgentResult extends AgentResult {
   }>;
   suggestedResponse?: string;
   suggestionId?: number;
+  rootCauseId?: number;
+  providedInputs?: Record<string, unknown>;
 }
 
 export interface SolutionProviderAgentResult extends AgentResult {
@@ -91,4 +93,7 @@ export interface OrchestratorContext {
   };
   demand?: string;
   searchResults?: DemandFinderAgentResult["searchResults"];
+  rootCauseId?: number;
+  providedInputs?: Record<string, unknown>;
+  caseSolutionId?: number;
 }

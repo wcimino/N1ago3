@@ -63,15 +63,19 @@ export class ConversationOrchestrator {
 
     if (context.currentStatus === ORCHESTRATOR_STATUS.TEMP_DEMAND_UNDERSTOOD || 
         context.currentStatus === ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD) {
-      await this.step7_TransferToHuman(context);
+      await this.step8_TransferToHuman(context);
       console.log(`[ConversationOrchestrator] Pipeline completed for conversation ${conversationId}, transferred to human`);
       return;
     }
 
-    const agentResult = await this.step5_RouteToAgent(context);
+    const demandResult = await this.step5_IdentifyDemand(context);
 
-    if (agentResult.response && agentResult.suggestionId) {
-      await this.step6_SendResponse(context, agentResult.response, agentResult.suggestionId);
+    const solutionResult = await this.step6_ProvideSolution(context);
+
+    if (solutionResult.response && solutionResult.suggestionId) {
+      await this.step7_SendResponse(context, solutionResult.response, solutionResult.suggestionId);
+    } else if (demandResult.response && demandResult.suggestionId) {
+      await this.step7_SendResponse(context, demandResult.response, demandResult.suggestionId);
     }
 
     console.log(`[ConversationOrchestrator] Pipeline completed for conversation ${conversationId}, final status: ${context.currentStatus}`);
@@ -176,7 +180,7 @@ export class ConversationOrchestrator {
     }
   }
 
-  private static async step5_RouteToAgent(context: OrchestratorContext): Promise<{ response: string | null; suggestionId?: number }> {
+  private static async step5_IdentifyDemand(context: OrchestratorContext): Promise<{ response: string | null; suggestionId?: number }> {
     const { conversationId } = context;
     console.log(`[ConversationOrchestrator] Step 5: Running DemandFinder agent for conversation ${conversationId}`);
 
@@ -187,6 +191,16 @@ export class ConversationOrchestrator {
         console.log(`[ConversationOrchestrator] Step 5: DemandFinder failed: ${agentResult.error}`);
         await this.updateDemandFinderStatus(conversationId, "error");
         return { response: null };
+      }
+
+      if (agentResult.rootCauseId) {
+        context.rootCauseId = agentResult.rootCauseId;
+        console.log(`[ConversationOrchestrator] Step 5: DemandFinder identified rootCauseId: ${agentResult.rootCauseId}`);
+      }
+
+      if (agentResult.providedInputs) {
+        context.providedInputs = agentResult.providedInputs;
+        console.log(`[ConversationOrchestrator] Step 5: DemandFinder collected inputs: ${JSON.stringify(agentResult.providedInputs)}`);
       }
 
       const response = agentResult.suggestedResponse || null;
@@ -205,28 +219,60 @@ export class ConversationOrchestrator {
     }
   }
 
-  private static async step6_SendResponse(context: OrchestratorContext, response: string, suggestionId: number): Promise<void> {
+  private static async step6_ProvideSolution(context: OrchestratorContext): Promise<{ response: string | null; suggestionId?: number }> {
+    const { conversationId } = context;
+    console.log(`[ConversationOrchestrator] Step 6: Running SolutionProvider for conversation ${conversationId}`);
+
+    try {
+      const result = await SolutionProviderAgent.process(context);
+
+      if (!result.success) {
+        console.log(`[ConversationOrchestrator] Step 6: SolutionProvider failed: ${result.error}`);
+        return { response: null };
+      }
+
+      if (result.needsEscalation) {
+        console.log(`[ConversationOrchestrator] Step 6: SolutionProvider needs escalation: ${result.escalationReason}`);
+        return { response: null };
+      }
+
+      const response = result.suggestedResponse || null;
+
+      if (response) {
+        console.log(`[ConversationOrchestrator] Step 6: SolutionProvider generated response, suggestionId: ${result.suggestionId}`);
+      } else {
+        console.log(`[ConversationOrchestrator] Step 6: SolutionProvider completed without response`);
+      }
+
+      return { response, suggestionId: result.suggestionId };
+    } catch (error: any) {
+      console.error(`[ConversationOrchestrator] Step 6: SolutionProvider error:`, error);
+      return { response: null };
+    }
+  }
+
+  private static async step7_SendResponse(context: OrchestratorContext, response: string, suggestionId: number): Promise<void> {
     const { conversationId, currentStatus } = context;
-    console.log(`[ConversationOrchestrator] Step 6: Sending response for conversation ${conversationId}`);
-    console.log(`[ConversationOrchestrator] Step 6: Response: "${response.substring(0, 100)}..."`);
+    console.log(`[ConversationOrchestrator] Step 7: Sending response for conversation ${conversationId}`);
+    console.log(`[ConversationOrchestrator] Step 7: Response: "${response.substring(0, 100)}..."`);
     
     if (currentStatus !== ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING) {
-      console.log(`[ConversationOrchestrator] Step 6: Skipping send - status is ${currentStatus}, not demand_understanding`);
+      console.log(`[ConversationOrchestrator] Step 7: Skipping send - status is ${currentStatus}, not demand_understanding`);
       return;
     }
     
-    console.log(`[ConversationOrchestrator] Step 6: Processing suggestion ${suggestionId} via AutoPilot`);
+    console.log(`[ConversationOrchestrator] Step 7: Processing suggestion ${suggestionId} via AutoPilot`);
     const result = await AutoPilotService.processSuggestion(suggestionId);
-    console.log(`[ConversationOrchestrator] Step 6: AutoPilot result - action=${result.action}, reason=${result.reason}`);
+    console.log(`[ConversationOrchestrator] Step 7: AutoPilot result - action=${result.action}, reason=${result.reason}`);
   }
 
-  private static async step7_TransferToHuman(context: OrchestratorContext): Promise<void> {
+  private static async step8_TransferToHuman(context: OrchestratorContext): Promise<void> {
     const { conversationId, event } = context;
-    console.log(`[ConversationOrchestrator] Step 7: Transferring conversation ${conversationId} to human agent`);
+    console.log(`[ConversationOrchestrator] Step 8: Transferring conversation ${conversationId} to human agent`);
 
     const externalConversationId = event.externalConversationId;
     if (!externalConversationId) {
-      console.error(`[ConversationOrchestrator] Step 7: Missing externalConversationId for conversation ${conversationId}`);
+      console.error(`[ConversationOrchestrator] Step 8: Missing externalConversationId for conversation ${conversationId}`);
       return;
     }
 
