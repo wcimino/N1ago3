@@ -12,6 +12,7 @@ import exportRoutes from "../features/export/routes/export.js";
 import eventsRoutes from "../features/events/routes/events.js";
 import externalEventSourcesRoutes from "../features/events/routes/externalEventSources.js";
 import eventIngestRoutes from "../features/events/routes/eventIngest.js";
+import docsDownloadRoutes from "../features/events/routes/docsDownload.js";
 
 import usersStandardRoutes from "../features/cadastro/routes/usersStandard.js";
 import organizationsStandardRoutes from "../features/cadastro/routes/organizationsStandard.js";
@@ -47,6 +48,7 @@ export function registerRoutes(app: Express) {
   app.use(eventsRoutes);
   app.use(externalEventSourcesRoutes);
   app.use(eventIngestRoutes);
+  app.use(docsDownloadRoutes);
   app.use(openaiConfigRoutes);
   app.use(generalSettingsRoutes);
   app.use(openaiLogsRoutes);
