@@ -1,4 +1,4 @@
-import { runAgentAndSaveSuggestion, buildAgentContextFromEvent } from "../../agentFramework.js";
+import { runAgentAndSaveSuggestion, buildAgentContextFromEvent, saveSuggestedResponse } from "../../agentFramework.js";
 import { buildResolvedClassification } from "../../helpers/index.js";
 import { caseSolutionStorage } from "../../../storage/caseSolutionStorage.js";
 import { caseActionsStorage } from "../../../storage/caseActionsStorage.js";
@@ -7,7 +7,7 @@ import { conversationStorage } from "../../../../conversations/storage/index.js"
 import { ORCHESTRATOR_STATUS, type SolutionProviderAgentResult, type OrchestratorContext } from "../types.js";
 import type { CaseSolutionWithDetails } from "../../../storage/caseSolutionStorage.js";
 import type { CaseActionWithDetails } from "../../../storage/caseActionsStorage.js";
-import { ACTION_TYPE_VALUES } from "@shared/constants/actionTypes";
+import { ACTION_TYPE_VALUES } from "../../../../../../shared/constants/actionTypes.js";
 
 const CONFIG_KEY = "solution_provider";
 
@@ -38,7 +38,7 @@ export class SolutionProviderAgent {
 
         const caseSolutionWithDetails = await caseSolutionStorage.getByIdWithDetails(caseSolution.id);
         if (caseSolutionWithDetails) {
-          const analysisResult = await this.analyzeAndProgress(caseSolutionWithDetails);
+          const analysisResult = await this.analyzeAndProgress(caseSolutionWithDetails, context);
           if (analysisResult.suggestedResponse) {
             return {
               success: true,
@@ -138,17 +138,36 @@ export class SolutionProviderAgent {
     }
   }
 
-  private static async analyzeAndProgress(caseSolution: CaseSolutionWithDetails): Promise<Omit<SolutionProviderAgentResult, "success">> {
+  private static async analyzeAndProgress(
+    caseSolution: CaseSolutionWithDetails, 
+    context: OrchestratorContext
+  ): Promise<Omit<SolutionProviderAgentResult, "success">> {
+    const { conversationId, event } = context;
     const nextAction = await caseActionsStorage.getNextPendingAction(caseSolution.id);
 
     if (!nextAction) {
       await caseSolutionStorage.updateStatus(caseSolution.id, "completed");
       console.log(`[SolutionProviderAgent] All actions completed for case solution ${caseSolution.id}`);
+      const completionMessage = "Sua solicitacao foi processada com sucesso!";
+      
+      const savedSuggestion = await saveSuggestedResponse(conversationId, completionMessage, {
+        lastEventId: event.id,
+        externalConversationId: event.externalConversationId || null,
+        inResponseTo: String(event.id),
+      });
+      
+      if (!savedSuggestion) {
+        console.error(`[SolutionProviderAgent] Failed to save suggestion for conversation ${conversationId} (completion)`);
+      } else {
+        console.log(`[SolutionProviderAgent] Saved suggestion ${savedSuggestion.id} for conversation ${conversationId}`);
+      }
+      
       return {
         resolved: true,
         solution: caseSolution.solution?.name,
         needsEscalation: false,
-        suggestedResponse: "Sua solicitacao foi processada com sucesso!",
+        suggestedResponse: completionMessage,
+        suggestionId: savedSuggestion?.id,
       };
     }
 
@@ -156,7 +175,7 @@ export class SolutionProviderAgent {
     const actionType = nextAction.action?.actionType;
 
     if (actionType === ACTION_TYPE_VALUES.INFORM_CUSTOMER) {
-      return await this.executeInformCustomerAction(caseSolution, nextAction, allInputs);
+      return await this.executeInformCustomerAction(caseSolution, nextAction, allInputs, context);
     }
 
     const missingInputs = this.getMissingInputs(nextAction, allInputs);
@@ -168,10 +187,23 @@ export class SolutionProviderAgent {
       const question = this.buildInputQuestion(missingInputs[0], nextAction);
       console.log(`[SolutionProviderAgent] Missing inputs for action ${nextAction.actionId}: ${missingInputs.map(i => i.key).join(", ")}`);
       
+      const savedSuggestion = await saveSuggestedResponse(conversationId, question, {
+        lastEventId: event.id,
+        externalConversationId: event.externalConversationId || null,
+        inResponseTo: String(event.id),
+      });
+      
+      if (!savedSuggestion) {
+        console.error(`[SolutionProviderAgent] Failed to save suggestion for conversation ${conversationId} (missing inputs)`);
+      } else {
+        console.log(`[SolutionProviderAgent] Saved suggestion ${savedSuggestion.id} for conversation ${conversationId}`);
+      }
+      
       return {
         resolved: false,
         needsEscalation: false,
         suggestedResponse: question,
+        suggestionId: savedSuggestion?.id,
       };
     }
 
@@ -184,10 +216,23 @@ export class SolutionProviderAgent {
     
     await caseActionsStorage.completeAction(nextAction.id, { executedAt: new Date().toISOString() });
 
+    const savedSuggestion = await saveSuggestedResponse(conversationId, response, {
+      lastEventId: event.id,
+      externalConversationId: event.externalConversationId || null,
+      inResponseTo: String(event.id),
+    });
+
+    if (!savedSuggestion) {
+      console.error(`[SolutionProviderAgent] Failed to save suggestion for conversation ${conversationId} (action response)`);
+    } else {
+      console.log(`[SolutionProviderAgent] Saved suggestion ${savedSuggestion.id} for conversation ${conversationId}`);
+    }
+
     return {
       resolved: false,
       needsEscalation: false,
       suggestedResponse: response,
+      suggestionId: savedSuggestion?.id,
     };
   }
 
@@ -198,8 +243,10 @@ export class SolutionProviderAgent {
   private static async executeInformCustomerAction(
     caseSolution: CaseSolutionWithDetails,
     action: CaseActionWithDetails,
-    allInputs: Record<string, unknown>
+    allInputs: Record<string, unknown>,
+    context: OrchestratorContext
   ): Promise<Omit<SolutionProviderAgentResult, "success">> {
+    const { conversationId, event } = context;
     console.log(`[SolutionProviderAgent] Executing INFORM_CUSTOMER action ${action.actionId} for case solution ${caseSolution.id}`);
 
     await caseSolutionStorage.updateStatus(caseSolution.id, "executing");
@@ -237,10 +284,23 @@ export class SolutionProviderAgent {
 
     console.log(`[SolutionProviderAgent] INFORM_CUSTOMER action ${action.actionId} completed, message: ${message.substring(0, 100)}...`);
 
+    const savedSuggestion = await saveSuggestedResponse(conversationId, message, {
+      lastEventId: event.id,
+      externalConversationId: event.externalConversationId || null,
+      inResponseTo: String(event.id),
+    });
+
+    if (!savedSuggestion) {
+      console.error(`[SolutionProviderAgent] Failed to save suggestion for conversation ${conversationId} (INFORM_CUSTOMER)`);
+    } else {
+      console.log(`[SolutionProviderAgent] Saved suggestion ${savedSuggestion.id} for conversation ${conversationId}`);
+    }
+
     return {
       resolved: false,
       needsEscalation: false,
       suggestedResponse: message,
+      suggestionId: savedSuggestion?.id,
     };
   }
 
