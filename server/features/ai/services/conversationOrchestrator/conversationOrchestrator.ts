@@ -12,6 +12,22 @@ type DemandFinderStatus = "not_started" | "in_progress" | "demand_found" | "dema
 
 const MAX_DEMAND_FINDER_INTERACTIONS = 5;
 
+async function isN1agoHandler(conversationId: number): Promise<boolean> {
+  const conversation = await conversationStorage.getById(conversationId);
+  if (!conversation) {
+    return false;
+  }
+  
+  const n1agoIntegrationId = ZendeskApiService.getN1agoIntegrationId();
+  return conversation.currentHandler === n1agoIntegrationId || 
+    conversation.currentHandlerName?.startsWith("n1ago") || false;
+}
+
+async function getDemandFinderStatus(conversationId: number): Promise<string | null> {
+  const caseDemands = await caseDemandStorage.getByConversationId(conversationId);
+  return caseDemands[0]?.status || null;
+}
+
 export class ConversationOrchestrator {
   static async processMessageEvent(event: EventStandard): Promise<void> {
     if (!event.conversationId) {
@@ -152,6 +168,16 @@ export class ConversationOrchestrator {
       await this.updateDemandFinderStatus(conversationId, "in_progress");
       console.log(`[ConversationOrchestrator] Step 4: Status updated to DEMAND_UNDERSTANDING, demand_finder_status: in_progress`);
     } else if (currentStatus === ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING) {
+      const isHandlerN1ago = await isN1agoHandler(conversationId);
+      const demandFinderStatus = await getDemandFinderStatus(conversationId);
+      
+      const shouldCountInteraction = isHandlerN1ago && demandFinderStatus === "in_progress";
+      
+      if (!shouldCountInteraction) {
+        console.log(`[ConversationOrchestrator] Step 4: Skipping interaction count - isN1ago: ${isHandlerN1ago}, demandFinderStatus: ${demandFinderStatus}`);
+        return;
+      }
+      
       const interactionCount = await conversationStorage.incrementDemandFinderInteractionCount(conversationId);
       console.log(`[ConversationOrchestrator] Step 4: Interaction count incremented to ${interactionCount}`);
 
@@ -314,19 +340,25 @@ export class ConversationOrchestrator {
     context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
     console.log(`[ConversationOrchestrator] Step 8: Status updated to ESCALATED (before sending message)`);
 
-    const transferMessage = "Ok, vou te transferir para um especialista agora";
+    const isHandlerN1ago = await isN1agoHandler(conversationId);
     
-    const messageResult = await ZendeskApiService.sendMessage(
-      externalConversationId,
-      transferMessage,
-      "transfer",
-      `transfer:${conversationId}`
-    );
+    if (isHandlerN1ago) {
+      const transferMessage = "Ok, vou te transferir para um especialista agora";
+      
+      const messageResult = await ZendeskApiService.sendMessage(
+        externalConversationId,
+        transferMessage,
+        "transfer",
+        `transfer:${conversationId}`
+      );
 
-    if (messageResult.success) {
-      console.log(`[ConversationOrchestrator] Step 8: Transfer message sent successfully`);
+      if (messageResult.success) {
+        console.log(`[ConversationOrchestrator] Step 8: Transfer message sent successfully`);
+      } else {
+        console.error(`[ConversationOrchestrator] Step 8: Failed to send transfer message: ${messageResult.error}`);
+      }
     } else {
-      console.error(`[ConversationOrchestrator] Step 8: Failed to send transfer message: ${messageResult.error}`);
+      console.log(`[ConversationOrchestrator] Step 8: Skipping transfer message - handler is not N1ago`);
     }
 
     const agentWorkspaceId = ZendeskApiService.getAgentWorkspaceIntegrationId();
