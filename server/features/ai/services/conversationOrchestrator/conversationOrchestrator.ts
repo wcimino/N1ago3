@@ -6,6 +6,9 @@ import { StatusController } from "./statusController.js";
 import { AutoPilotService } from "../../../autoPilot/services/autoPilotService.js";
 import { ZendeskApiService } from "../../../external-sources/zendesk/services/zendeskApiService.js";
 import type { EventStandard } from "../../../../../shared/schema.js";
+import { summaryStorage } from "../../storage/summaryStorage.js";
+
+type DemandFinderStatus = "not_started" | "in_progress" | "demand_found" | "demand_not_found" | "error";
 
 const MAX_DEMAND_FINDER_INTERACTIONS = 5;
 
@@ -138,7 +141,8 @@ export class ConversationOrchestrator {
     if (currentStatus === ORCHESTRATOR_STATUS.NEW) {
       await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING);
       context.currentStatus = ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING;
-      console.log(`[ConversationOrchestrator] Step 4: Status updated to DEMAND_UNDERSTANDING`);
+      await this.updateDemandFinderStatus(conversationId, "in_progress");
+      console.log(`[ConversationOrchestrator] Step 4: Status updated to DEMAND_UNDERSTANDING, demand_finder_status: in_progress`);
     } else if (currentStatus === ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING) {
       const interactionCount = await conversationStorage.incrementDemandFinderInteractionCount(conversationId);
       console.log(`[ConversationOrchestrator] Step 4: Interaction count incremented to ${interactionCount}`);
@@ -148,11 +152,13 @@ export class ConversationOrchestrator {
       if (evaluation.canTransition) {
         await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.TEMP_DEMAND_UNDERSTOOD);
         context.currentStatus = ORCHESTRATOR_STATUS.TEMP_DEMAND_UNDERSTOOD;
-        console.log(`[ConversationOrchestrator] Step 4: Status updated to TEMP_DEMAND_UNDERSTOOD - ${evaluation.reason}`);
+        await this.updateDemandFinderStatus(conversationId, "demand_found");
+        console.log(`[ConversationOrchestrator] Step 4: Status updated to TEMP_DEMAND_UNDERSTOOD, demand_finder_status: demand_found - ${evaluation.reason}`);
       } else if (interactionCount >= MAX_DEMAND_FINDER_INTERACTIONS) {
         await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD);
         context.currentStatus = ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD;
-        console.log(`[ConversationOrchestrator] Step 4: Status updated to TEMP_DEMAND_NOT_UNDERSTOOD - max interactions reached (${interactionCount})`);
+        await this.updateDemandFinderStatus(conversationId, "demand_not_found");
+        console.log(`[ConversationOrchestrator] Step 4: Status updated to TEMP_DEMAND_NOT_UNDERSTOOD, demand_finder_status: demand_not_found - max interactions reached (${interactionCount})`);
       } else {
         console.log(`[ConversationOrchestrator] Step 4: Status remains DEMAND_UNDERSTANDING - ${evaluation.reason} (interaction ${interactionCount}/${MAX_DEMAND_FINDER_INTERACTIONS})`);
       }
@@ -161,26 +167,42 @@ export class ConversationOrchestrator {
     }
   }
 
+  private static async updateDemandFinderStatus(conversationId: number, status: DemandFinderStatus): Promise<void> {
+    try {
+      await summaryStorage.updateDemandFinderStatus(conversationId, status);
+      console.log(`[ConversationOrchestrator] Updated demand_finder_status to: ${status}`);
+    } catch (error) {
+      console.error(`[ConversationOrchestrator] Error updating demand_finder_status:`, error);
+    }
+  }
+
   private static async step5_RouteToAgent(context: OrchestratorContext): Promise<{ response: string | null; suggestionId?: number }> {
     const { conversationId } = context;
     console.log(`[ConversationOrchestrator] Step 5: Running DemandFinder agent for conversation ${conversationId}`);
 
-    const agentResult = await DemandFinderAgent.generateResponseOnly(context);
+    try {
+      const agentResult = await DemandFinderAgent.generateResponseOnly(context);
 
-    if (!agentResult.success) {
-      console.log(`[ConversationOrchestrator] Step 5: DemandFinder failed: ${agentResult.error}`);
+      if (!agentResult.success) {
+        console.log(`[ConversationOrchestrator] Step 5: DemandFinder failed: ${agentResult.error}`);
+        await this.updateDemandFinderStatus(conversationId, "error");
+        return { response: null };
+      }
+
+      const response = agentResult.suggestedResponse || null;
+      
+      if (response) {
+        console.log(`[ConversationOrchestrator] Step 5: DemandFinder generated response, suggestionId: ${agentResult.suggestionId}`);
+      } else {
+        console.log(`[ConversationOrchestrator] Step 5: DemandFinder completed without response`);
+      }
+
+      return { response, suggestionId: agentResult.suggestionId };
+    } catch (error: any) {
+      console.error(`[ConversationOrchestrator] Step 5: DemandFinder error:`, error);
+      await this.updateDemandFinderStatus(conversationId, "error");
       return { response: null };
     }
-
-    const response = agentResult.suggestedResponse || null;
-    
-    if (response) {
-      console.log(`[ConversationOrchestrator] Step 5: DemandFinder generated response, suggestionId: ${agentResult.suggestionId}`);
-    } else {
-      console.log(`[ConversationOrchestrator] Step 5: DemandFinder completed without response`);
-    }
-
-    return { response, suggestionId: agentResult.suggestionId };
   }
 
   private static async step6_SendResponse(context: OrchestratorContext, response: string, suggestionId: number): Promise<void> {

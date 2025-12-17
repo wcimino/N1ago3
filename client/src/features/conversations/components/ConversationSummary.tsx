@@ -80,6 +80,28 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
                   {!summary.orchestrator_status && '(vazio)'}
                 </span>
               </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500 min-w-[110px]">Demand Finder:</span>
+                <span className={`px-2 py-0.5 rounded text-sm font-medium ${
+                  summary.demand_finder_status === 'demand_found' 
+                    ? 'bg-green-100 text-green-700' 
+                    : summary.demand_finder_status === 'in_progress'
+                    ? 'bg-yellow-100 text-yellow-700'
+                    : summary.demand_finder_status === 'demand_not_found'
+                    ? 'bg-blue-100 text-blue-700'
+                    : summary.demand_finder_status === 'error'
+                    ? 'bg-red-100 text-red-700'
+                    : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {summary.demand_finder_status === 'not_started' && 'Não iniciado'}
+                  {summary.demand_finder_status === 'in_progress' && 'Em progresso'}
+                  {summary.demand_finder_status === 'demand_found' && 'Demanda encontrada'}
+                  {summary.demand_finder_status === 'demand_not_found' && 'Demanda não encontrada'}
+                  {summary.demand_finder_status === 'error' && 'Erro'}
+                  {!summary.demand_finder_status && 'Não iniciado'}
+                </span>
+              </div>
             </div>
 
             <div className="flex flex-col gap-3">

@@ -82,6 +82,18 @@ export const summaryStorage = {
     }
   },
 
+  async updateDemandFinderStatus(
+    conversationId: number,
+    status: "not_started" | "in_progress" | "demand_found" | "demand_not_found" | "error"
+  ): Promise<void> {
+    await db.update(conversationsSummary)
+      .set({
+        demandFinderStatus: status,
+        updatedAt: new Date(),
+      })
+      .where(eq(conversationsSummary.conversationId, conversationId));
+  },
+
   async getSummariesForExport(filters: {
     dateFrom?: Date;
     dateTo?: Date;

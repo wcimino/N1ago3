@@ -187,6 +187,7 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
           articles_and_objective_problems: summary.articlesAndObjectiveProblems || null,
           triage: extractTriageFromSummary(summary.summary),
           orchestrator_status: summary.orchestratorStatus || null,
+          demand_finder_status: summary.demandFinderStatus || null,
         } : null,
         suggested_responses: suggestedResponses.map(sr => ({
           text: sr.suggestedResponse,
@@ -249,6 +250,7 @@ router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedU
     important_info: summary.importantInfo,
     customer_emotion_level: summary.customerEmotionLevel,
     orchestrator_status: summary.orchestratorStatus || null,
+    demand_finder_status: summary.demandFinderStatus || null,
   });
 });
 

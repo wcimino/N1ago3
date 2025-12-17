@@ -91,6 +91,7 @@ export const conversationsSummary = pgTable("conversations_summary", {
   articlesAndObjectiveProblems: json("articles_and_objective_problems").$type<Array<{ source: "article" | "problem"; id: number; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; matchedTerms?: string[]; products?: string[] }>>(),
   clientRequestVersions: json("client_request_versions").$type<{ clientRequestStandardVersion?: string; clientRequestQuestionVersion?: string; clientRequestProblemVersion?: string }>(),
   demandFinderInteractionCount: integer("demand_finder_interaction_count").default(0).notNull(),
+  demandFinderStatus: text("demand_finder_status").default("not_started"),
   generatedAt: timestamp("generated_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
