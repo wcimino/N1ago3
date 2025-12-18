@@ -1,6 +1,7 @@
 import { conversationStorage } from "../../../conversations/storage/index.js";
 import { DemandFinderAgent } from "./agents/demandFinderAgent.js";
 import { SolutionProviderAgent } from "./agents/solutionProviderAgent.js";
+import { CloserAgent } from "./agents/closerAgent.js";
 import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext, type OrchestratorAction } from "./types.js";
 import { ActionExecutor } from "./actionExecutor.js";
 import { ZendeskApiService } from "../../../external-sources/zendesk/services/zendeskApiService.js";
@@ -69,6 +70,10 @@ export class ConversationOrchestrator {
       case ORCHESTRATOR_STATUS.DEMAND_CONFIRMED:
       case ORCHESTRATOR_STATUS.PROVIDING_SOLUTION:
         await this.handleSolutionProvider(context);
+        break;
+
+      case ORCHESTRATOR_STATUS.FINALIZING:
+        await this.handleCloser(context);
         break;
 
       default:
@@ -157,8 +162,11 @@ export class ConversationOrchestrator {
     }
 
     if (result.resolved) {
-      console.log(`[ConversationOrchestrator] Solution resolved, marking as completed`);
-      await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.COMPLETED);
+      console.log(`[ConversationOrchestrator] Solution resolved, moving to finalizing`);
+      await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.FINALIZING);
+      context.currentStatus = ORCHESTRATOR_STATUS.FINALIZING;
+      await this.handleCloser(context);
+      return;
     }
 
     if (result.suggestedResponse && result.suggestionId) {
@@ -170,6 +178,40 @@ export class ConversationOrchestrator {
         };
         await ActionExecutor.execute(context, [action]);
       }
+    }
+  }
+
+  private static async handleCloser(context: OrchestratorContext): Promise<void> {
+    const { conversationId } = context;
+
+    console.log(`[ConversationOrchestrator] Closer handling conversation ${conversationId}`);
+
+    const result = await CloserAgent.process(context);
+
+    if (!result.success) {
+      console.log(`[ConversationOrchestrator] Closer failed: ${result.error}`);
+      return;
+    }
+
+    if (result.newDemandCreated) {
+      console.log(`[ConversationOrchestrator] New demand created, restarting demand finder`);
+      await this.handleDemandFinder(context);
+      return;
+    }
+
+    if (result.suggestedResponse && result.suggestionId) {
+      const isN1ago = await isN1agoHandler(conversationId);
+      if (isN1ago) {
+        const action: OrchestratorAction = {
+          type: "SEND_MESSAGE",
+          payload: { suggestionId: result.suggestionId, responsePreview: result.suggestedResponse }
+        };
+        await ActionExecutor.execute(context, [action]);
+      }
+    }
+
+    if (result.conversationClosed) {
+      console.log(`[ConversationOrchestrator] Conversation ${conversationId} closed by Closer`);
     }
   }
 

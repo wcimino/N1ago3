@@ -6,6 +6,7 @@ export const ORCHESTRATOR_STATUS = {
   AWAITING_CUSTOMER_REPLY: "awaiting_customer_reply",
   DEMAND_CONFIRMED: "demand_confirmed",
   PROVIDING_SOLUTION: "providing_solution",
+  FINALIZING: "finalizing",
   COMPLETED: "completed",
   ESCALATED: "escalated",
   CLOSED: "closed",
@@ -64,6 +65,14 @@ export interface SolutionProviderAgentResult extends AgentResult {
   confidence?: number;
   needsEscalation: boolean;
   escalationReason?: string;
+  suggestedResponse?: string;
+  suggestionId?: number;
+}
+
+export interface CloserAgentResult extends AgentResult {
+  wantsMoreHelp: boolean;
+  newDemandCreated: boolean;
+  conversationClosed: boolean;
   suggestedResponse?: string;
   suggestionId?: number;
 }

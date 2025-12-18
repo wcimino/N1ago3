@@ -11,10 +11,11 @@ import { DemandFinderConfigPage } from "./DemandFinderConfigPage";
 import { SolutionProviderConfigPage } from "./SolutionProviderConfigPage";
 import { ArticlesAndSolutionsConfigPage } from "./ArticlesAndSolutionsConfigPage";
 import { TopicClassificationConfigPage } from "./TopicClassificationConfigPage";
+import { CloserConfigPage } from "./CloserConfigPage";
 import { ToolsPage } from "./ToolsPage";
 import { GeneralSettingsPage } from "./GeneralSettingsPage";
 
-import { BookOpen, BarChart3 } from "lucide-react";
+import { BookOpen, BarChart3, CheckCircle } from "lucide-react";
 
 const agentTabs = [
   { id: "summary", label: "Resumo", icon: <FileText className="w-4 h-4" /> },
@@ -24,6 +25,7 @@ const agentTabs = [
   { id: "enrichment", label: "Enriquecimento", icon: <Lightbulb className="w-4 h-4" /> },
   { id: "demand_finder", label: "Demand Finder", icon: <Search className="w-4 h-4" /> },
   { id: "solution_provider", label: "Solution Provider", icon: <Zap className="w-4 h-4" /> },
+  { id: "closer", label: "Closer", icon: <CheckCircle className="w-4 h-4" /> },
   { id: "articles_and_solutions", label: "Artigos e Soluções", icon: <BookOpen className="w-4 h-4" /> },
   { id: "topic_classification", label: "Temas", icon: <BarChart3 className="w-4 h-4" /> },
 ];
@@ -51,6 +53,7 @@ export function AIPage() {
     if (location.includes("/enrichment")) return "enrichment";
     if (location.includes("/demand_finder")) return "demand_finder";
     if (location.includes("/solution_provider")) return "solution_provider";
+    if (location.includes("/closer")) return "closer";
     if (location.includes("/articles_and_solutions")) return "articles_and_solutions";
     if (location.includes("/tools")) return "tools";
     if (location.includes("/summary")) return "summary";
@@ -86,6 +89,7 @@ export function AIPage() {
         {activeTab === "enrichment" && <EnrichmentConfigPage />}
         {activeTab === "demand_finder" && <DemandFinderConfigPage />}
         {activeTab === "solution_provider" && <SolutionProviderConfigPage />}
+        {activeTab === "closer" && <CloserConfigPage />}
         {activeTab === "articles_and_solutions" && <ArticlesAndSolutionsConfigPage />}
         {activeTab === "topic_classification" && <TopicClassificationConfigPage />}
         {activeTab === "tools" && <ToolsPage />}

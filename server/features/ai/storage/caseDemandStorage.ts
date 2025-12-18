@@ -1,6 +1,6 @@
 import { db } from "../../../db.js";
 import { caseDemand } from "../../../../shared/schema.js";
-import { eq } from "drizzle-orm";
+import { eq, and, ne, desc } from "drizzle-orm";
 import type { CaseDemand, InsertCaseDemand } from "../../../../shared/schema.js";
 
 type ArticleOrProblem = { source: "article" | "problem"; id: number; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; matchedTerms?: string[]; products?: string[] };
@@ -30,6 +30,40 @@ export const caseDemandStorage = {
     return demand || null;
   },
 
+  async getActiveByConversationId(conversationId: number): Promise<CaseDemand | null> {
+    const [demand] = await db.select()
+      .from(caseDemand)
+      .where(
+        and(
+          eq(caseDemand.conversationId, conversationId),
+          ne(caseDemand.status, "completed")
+        )
+      )
+      .orderBy(desc(caseDemand.createdAt))
+      .limit(1);
+    return demand || null;
+  },
+
+  async createNewDemand(conversationId: number): Promise<CaseDemand> {
+    const [demand] = await db.insert(caseDemand)
+      .values({
+        conversationId,
+        status: "not_started",
+        interactionCount: 0,
+      })
+      .returning();
+    return demand;
+  },
+
+  async markAsCompleted(demandId: number): Promise<void> {
+    await db.update(caseDemand)
+      .set({
+        status: "completed",
+        updatedAt: new Date(),
+      })
+      .where(eq(caseDemand.id, demandId));
+  },
+
   async create(data: InsertCaseDemand): Promise<CaseDemand> {
     const [demand] = await db.insert(caseDemand)
       .values(data)
@@ -41,7 +75,7 @@ export const caseDemandStorage = {
     conversationId: number,
     articlesAndObjectiveProblems: ArticleOrProblem[]
   ): Promise<{ created: boolean; updated: boolean }> {
-    const existing = await this.getFirstByConversationId(conversationId);
+    const existing = await this.getActiveByConversationId(conversationId);
     const articlesAndObjectiveProblemsTopMatch = calculateTopMatch(articlesAndObjectiveProblems);
     
     if (existing) {
@@ -66,9 +100,9 @@ export const caseDemandStorage = {
 
   async updateStatus(
     conversationId: number,
-    status: "not_started" | "in_progress" | "demand_found" | "demand_not_found" | "error"
+    status: "not_started" | "in_progress" | "demand_found" | "demand_not_found" | "error" | "completed"
   ): Promise<void> {
-    const existing = await this.getFirstByConversationId(conversationId);
+    const existing = await this.getActiveByConversationId(conversationId);
     
     if (existing) {
       await db.update(caseDemand)
@@ -87,7 +121,7 @@ export const caseDemandStorage = {
   },
 
   async incrementInteractionCount(conversationId: number): Promise<void> {
-    const existing = await this.getFirstByConversationId(conversationId);
+    const existing = await this.getActiveByConversationId(conversationId);
     
     if (existing) {
       await db.update(caseDemand)

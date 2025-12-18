@@ -1,4 +1,4 @@
-export type AgentConfigType = "summary" | "classification" | "response" | "learning" | "enrichment" | "demand_finder" | "solution_provider" | "articles_and_solutions" | "topic_classification";
+export type AgentConfigType = "summary" | "classification" | "response" | "learning" | "enrichment" | "demand_finder" | "solution_provider" | "articles_and_solutions" | "topic_classification" | "closer";
 
 export interface AgentToolsConfig {
   showKnowledgeBaseTool?: boolean;
@@ -133,6 +133,18 @@ export const agentConfigMetadata: Record<AgentConfigType, AgentConfigMetadata> =
     description: "Configure o agente que classifica perguntas dos clientes em temas para análise de relatórios",
     enabledLabel: "Ativar Classificação de Temas",
     enabledDescription: "Quando ativado, o sistema classifica perguntas em temas para relatórios analíticos",
+    promptRows: 16,
+    responseFormatRows: 8,
+    recommendedModel: "gpt-4o-mini",
+    tools: {},
+  },
+
+  closer: {
+    configType: "closer",
+    title: "Configuração do Closer (Finalizador)",
+    description: "Configure o agente que finaliza atendimentos, perguntando se o cliente precisa de mais ajuda e encerrando ou abrindo nova demanda",
+    enabledLabel: "Ativar Closer",
+    enabledDescription: "Quando ativado, o sistema pergunta se pode ajudar em mais alguma coisa após resolver uma demanda",
     promptRows: 16,
     responseFormatRows: 8,
     recommendedModel: "gpt-4o-mini",
