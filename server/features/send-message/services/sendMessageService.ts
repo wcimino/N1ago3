@@ -2,9 +2,10 @@ import { db } from "../../../db.js";
 import { conversations, eventsStandard } from "../../../../shared/schema.js";
 import { eq, desc, and, gt } from "drizzle-orm";
 import * as ZendeskApiService from "../../external-sources/zendesk/services/zendeskApiService.js";
+import { ResponseFormatterService } from "./responseFormatterService.js";
 
 export type MessageType = "response" | "transfer";
-export type MessageSource = "autopilot" | "orchestrator" | "solution_provider";
+export type MessageSource = "autopilot" | "orchestrator" | "solution_provider" | "response_formatter";
 
 export interface SendMessageRequest {
   conversationId: number;
@@ -14,11 +15,14 @@ export interface SendMessageRequest {
   source: MessageSource;
   lastEventId?: number;
   inResponseTo?: string;
+  skipFormatting?: boolean;
 }
 
 export interface SendMessageResult {
   sent: boolean;
   reason: string;
+  wasFormatted?: boolean;
+  formattingLogId?: number;
 }
 
 async function getConversationById(conversationId: number) {
@@ -126,7 +130,7 @@ async function validateMessage(request: SendMessageRequest): Promise<SendMessage
 }
 
 export async function send(request: SendMessageRequest): Promise<SendMessageResult> {
-  const { conversationId, externalConversationId, message, type, source } = request;
+  const { conversationId, externalConversationId, message, type, source, skipFormatting } = request;
   
   console.log(`[SendMessageService] Processing ${type} message for conversation ${conversationId}, source: ${source}`);
 
@@ -137,14 +141,34 @@ export async function send(request: SendMessageRequest): Promise<SendMessageResu
     return validation;
   }
 
+  let finalMessage = message;
+  let wasFormatted = false;
+  let formattingLogId: number | undefined;
+  
+  if (type !== "transfer" && !skipFormatting) {
+    const formatResult = await ResponseFormatterService.formatMessage({
+      message,
+      conversationId,
+      externalConversationId,
+    });
+    
+    if (formatResult.wasFormatted) {
+      console.log(`[SendMessageService] Message formatted by ResponseFormatterService, logId: ${formatResult.logId}`);
+      finalMessage = formatResult.formattedMessage;
+      wasFormatted = true;
+      formattingLogId = formatResult.logId;
+    }
+  }
+
+  const effectiveSource = wasFormatted ? "response_formatter" : source;
   const contextId = type === "transfer" 
     ? `transfer:${conversationId}` 
-    : `${source}:${conversationId}`;
+    : `${effectiveSource}:${conversationId}`;
 
   const sendResult = await ZendeskApiService.sendMessage(
     externalConversationId,
-    message,
-    source,
+    finalMessage,
+    effectiveSource,
     contextId
   );
 
@@ -153,8 +177,8 @@ export async function send(request: SendMessageRequest): Promise<SendMessageResu
     return { sent: false, reason: `send_failed: ${sendResult.error}` };
   }
 
-  console.log(`[SendMessageService] Message sent successfully`);
-  return { sent: true, reason: "message_sent" };
+  console.log(`[SendMessageService] Message sent successfully, formatted: ${wasFormatted}`);
+  return { sent: true, reason: "message_sent", wasFormatted, formattingLogId };
 }
 
 export const SendMessageService = {

@@ -58,9 +58,9 @@ export const agentConfigMetadata: Record<AgentConfigType, AgentConfigMetadata> =
   response: {
     configType: "response",
     title: "Configuração de Sugestão de Resposta",
-    description: "Configure a geração automática de sugestões de resposta para os atendentes",
+    description: "Configure a geração automática de sugestões de resposta e o ajuste de tom de voz para mensagens enviadas ao cliente",
     enabledLabel: "Ativar sugestão de resposta",
-    enabledDescription: "Quando ativado, respostas serão sugeridas automaticamente",
+    enabledDescription: "Quando ativado, respostas serão sugeridas automaticamente e mensagens serão formatadas com o tom de voz configurado antes de enviar ao cliente",
     promptRows: 20,
     responseFormatRows: 4,
     recommendedModel: "gpt-4o-mini",

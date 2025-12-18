@@ -42,6 +42,7 @@ The React frontend provides a real-time dashboard, administrative interfaces, an
 *   **Automatic Routing Rules:** Unified routing system for conversation allocation (`n1ago`, `human`, `bot`) with detailed logging and Zendesk Switchboard API integration.
 *   **AutoPilot:** Automatically sends suggested responses based on conditions.
 *   **SendMessageService:** Centralized message sending controller (`server/features/send-message/`). All outbound messages to customers must go through this service. Validates: handler=N1ago, autopilotEnabled (for responses), lastEventId, no newer messages, lastMessage from customer, inResponseTo match. Transfer messages only require handler=N1ago check.
+*   **ResponseFormatterService:** Tone of voice adjustment layer (`server/features/send-message/services/responseFormatterService.ts`). Automatically formats outbound messages before sending to customers using the Response agent's configuration (promptSystem, promptTemplate, responseFormat). Enabled/disabled via the Response agent toggle. Skipped for transfer messages or when `skipFormatting: true` is passed. Logs formatting with `response_formatting` request type. Returns `wasFormatted` and `formattingLogId` in SendMessageResult for auditing.
 *   **Objective Problems Catalog:** Normalized catalog of evidence-based problems in `knowledge_base_objective_problems`.
 
 **System Design Choices:**
