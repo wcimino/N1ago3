@@ -20,7 +20,6 @@ export type DemandType = "suporte" | "informacoes" | "contratar" | string;
 export interface CombinedSearchParams {
   productId?: number;
   productContext?: string;
-  keywords?: string;
   conversationContext?: string;
   articleContext?: string;
   problemContext?: string;
@@ -93,7 +92,7 @@ export interface CombinedSearchResponse {
 }
 
 export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): Promise<CombinedSearchResponse> {
-  const { productId, keywords, conversationContext, articleContext, problemContext, limit = 5, demandType } = params;
+  const { productId, conversationContext, articleContext, problemContext, limit = 5, demandType } = params;
   
   let productContext = params.productContext;
   if (!productContext && productId) {
@@ -107,13 +106,11 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
     runKnowledgeBaseSearch({
       productContext,
       conversationContext: effectiveArticleContext,
-      keywords,
       limit
     }),
     runProblemObjectiveSearch({
       productContext,
       conversationContext: effectiveProblemContext,
-      keywords,
       limit
     })
   ]);
@@ -189,15 +186,11 @@ export function createCombinedKnowledgeSearchToolWithContext(conversationId?: nu
         subproduct: {
           type: "string",
           description: "Nome do subproduto (opcional). Ex: 'PIX', 'TED', 'Crédito'"
-        },
-        keywords: {
-          type: "string",
-          description: "Palavras-chave opcionais para filtrar/priorizar os resultados. Usado como boost sobre os resultados semânticos."
         }
       },
       required: ["conversationContext", "product"]
     },
-    handler: async (args: { product: string; subproduct?: string; conversationContext?: string; keywords?: string }) => {
+    handler: async (args: { product: string; subproduct?: string; conversationContext?: string }) => {
       const productContext = args.subproduct 
         ? `${args.product} > ${args.subproduct}`
         : args.product;
@@ -207,7 +200,6 @@ export function createCombinedKnowledgeSearchToolWithContext(conversationId?: nu
       const result = await runCombinedKnowledgeSearch({
         productContext,
         conversationContext: args.conversationContext,
-        keywords: args.keywords,
         limit: 5
       });
       
