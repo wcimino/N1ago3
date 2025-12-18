@@ -259,17 +259,6 @@ router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedU
   });
 });
 
-router.get("/api/users/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  const stats = await storage.getUsersStats();
-  res.json(stats);
-});
-
-router.get("/api/conversations/hourly-stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  const timezone = (req.query.timezone as string) || 'America/Sao_Paulo';
-  const stats = await storage.getHourlyAttendances(timezone);
-  res.json(stats);
-});
-
 router.patch("/api/conversations/:id/autopilot", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
   

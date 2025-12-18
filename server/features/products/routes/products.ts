@@ -4,57 +4,6 @@ import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth
 
 const router = Router();
 
-router.get("/api/products/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  try {
-    const [lastHour, last24Hours] = await Promise.all([
-      storage.getTopProductsByPeriod("lastHour"),
-      storage.getTopProductsByPeriod("last24Hours"),
-    ]);
-
-    res.json({
-      last_hour: lastHour,
-      today: last24Hours,
-    });
-  } catch (error: any) {
-    console.error("[Products Stats] Error:", error.message);
-    res.status(500).json({ error: "Failed to fetch product stats" });
-  }
-});
-
-router.get("/api/emotions/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  try {
-    const [lastHour, last24Hours] = await Promise.all([
-      storage.getEmotionStatsByPeriod("lastHour"),
-      storage.getEmotionStatsByPeriod("last24Hours"),
-    ]);
-
-    res.json({
-      last_hour: lastHour,
-      today: last24Hours,
-    });
-  } catch (error: any) {
-    console.error("[Emotions Stats] Error:", error.message);
-    res.status(500).json({ error: "Failed to fetch emotion stats" });
-  }
-});
-
-router.get("/api/problems/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  try {
-    const [lastHour, last24Hours] = await Promise.all([
-      storage.getObjectiveProblemStatsByPeriod("lastHour"),
-      storage.getObjectiveProblemStatsByPeriod("last24Hours"),
-    ]);
-
-    res.json({
-      last_hour: lastHour,
-      today: last24Hours,
-    });
-  } catch (error: any) {
-    console.error("[Problems Stats] Error:", error.message);
-    res.status(500).json({ error: "Failed to fetch problem stats" });
-  }
-});
-
 router.get("/api/product-standards", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
     const products = await storage.getProductStandards();

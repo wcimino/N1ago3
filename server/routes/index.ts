@@ -39,6 +39,7 @@ import routingRulesRoutes from "../features/routing/routes/routing.js";
 import transferRoutes from "../features/routing/routes/transfer.js";
 import favoritesRoutes from "../features/favorites/routes/favorites.js";
 import reportsRoutes from "../features/reports/routes/reports.js";
+import dashboardRoutes from "../features/dashboard/routes/dashboardRoutes.js";
 
 export function registerRoutes(app: Express) {
   app.use(webhooksRoutes);
@@ -76,4 +77,5 @@ export function registerRoutes(app: Express) {
   app.use(transferRoutes);
   app.use(favoritesRoutes);
   app.use(reportsRoutes);
+  app.use("/api/dashboard", dashboardRoutes);
 }

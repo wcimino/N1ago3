@@ -8,3 +8,4 @@ export * from "./config.js";
 export * from "./products.js";
 export * from "./adapters.js";
 export * from "./knowledge.js";
+export * from "./dashboard.js";

@@ -5,15 +5,15 @@ import { DonutChart, HourlyBarChart, StatsCard } from "../components";
 import { useTimezone } from "../../contexts/TimezoneContext";
 import { ProductsCard, EmotionsCard, ProblemsCard, OpenAIStatsCard, formatNumber } from "./home";
 import type { OpenAIStatsResponse } from "./home";
-import type { UsersStatsResponse, StatsResponse, ProductStatsResponse, EmotionStatsResponse, ProblemStatsResponse } from "../../types";
+import type { StatsResponse, DashboardAnalyticsResponse } from "../../types";
 
 export function HomePage() {
   const { timezone } = useTimezone();
   
-  const { data: usersStats } = useQuery<UsersStatsResponse>({
-    queryKey: ["users-stats"],
-    queryFn: () => fetchApi<UsersStatsResponse>("/api/users/stats"),
-    refetchInterval: 5000,
+  const { data: dashboardData, isLoading: dashboardLoading } = useQuery<DashboardAnalyticsResponse>({
+    queryKey: ["dashboard-analytics", timezone],
+    queryFn: () => fetchApi<DashboardAnalyticsResponse>(`/api/dashboard/analytics?period=last24Hours&timezone=${encodeURIComponent(timezone)}`),
+    refetchInterval: 30000,
   });
 
   const { data: eventsStats } = useQuery<StatsResponse>({
@@ -22,35 +22,17 @@ export function HomePage() {
     refetchInterval: 5000,
   });
 
-  const { data: productStats } = useQuery<ProductStatsResponse>({
-    queryKey: ["products-stats"],
-    queryFn: () => fetchApi<ProductStatsResponse>("/api/products/stats"),
-    refetchInterval: 30000,
-  });
-
-  const { data: emotionStats } = useQuery<EmotionStatsResponse>({
-    queryKey: ["emotions-stats"],
-    queryFn: () => fetchApi<EmotionStatsResponse>("/api/emotions/stats"),
-    refetchInterval: 30000,
-  });
-
-  const { data: problemStats } = useQuery<ProblemStatsResponse>({
-    queryKey: ["problems-stats"],
-    queryFn: () => fetchApi<ProblemStatsResponse>("/api/problems/stats"),
-    refetchInterval: 30000,
-  });
-
   const { data: openaiStats } = useQuery<OpenAIStatsResponse>({
     queryKey: ["openai-stats", timezone],
     queryFn: () => fetchApi<OpenAIStatsResponse>(`/api/openai/stats?timezone=${encodeURIComponent(timezone)}`),
     refetchInterval: 30000,
   });
 
-  const { data: hourlyStats, isLoading: hourlyLoading } = useQuery<{ hour: number; isCurrentHour: boolean; isPast: boolean; todayCount: number; lastWeekCount: number }[]>({
-    queryKey: ["hourly-stats", timezone],
-    queryFn: () => fetchApi<{ hour: number; isCurrentHour: boolean; isPast: boolean; todayCount: number; lastWeekCount: number }[]>(`/api/conversations/hourly-stats?timezone=${encodeURIComponent(timezone)}`),
-    refetchInterval: 60000,
-  });
+  const productStats = dashboardData ? { items: dashboardData.products.items, total: dashboardData.products.total } : undefined;
+  const emotionStats = dashboardData ? { items: dashboardData.emotions.items, total: dashboardData.emotions.total } : undefined;
+  const problemStats = dashboardData ? { items: dashboardData.problems.items, total: dashboardData.problems.total } : undefined;
+  const usersStats = dashboardData?.users;
+  const hourlyStats = dashboardData?.hourly;
 
   return (
     <div className="space-y-6">
@@ -96,7 +78,7 @@ export function HomePage() {
           title="Atendimentos por Hora"
           icon={<Clock className="w-4 h-4 text-cyan-600" />}
         >
-          <HourlyBarChart data={hourlyStats || []} isLoading={hourlyLoading} />
+          <HourlyBarChart data={hourlyStats || []} isLoading={dashboardLoading} />
         </StatsCard>
 
         <StatsCard
