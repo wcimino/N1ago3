@@ -1,5 +1,5 @@
-import { storage } from "../../../../storage/index.js";
 import { caseDemandStorage } from "../../storage/caseDemandStorage.js";
+import type { OrchestratorContext } from "./types.js";
 
 export interface StatusEvaluationResult {
   canTransition: boolean;
@@ -12,26 +12,11 @@ export interface StatusEvaluationResult {
 }
 
 export class StatusController {
-  static async evaluateDemandUnderstood(conversationId: number): Promise<StatusEvaluationResult> {
-    const [summary, caseDemandData] = await Promise.all([
-      storage.getConversationSummary(conversationId),
-      caseDemandStorage.getFirstByConversationId(conversationId),
-    ]);
+  static async evaluateDemandUnderstood(conversationId: number, context?: OrchestratorContext): Promise<StatusEvaluationResult> {
+    const caseDemandData = await caseDemandStorage.getFirstByConversationId(conversationId);
 
-    if (!summary) {
-      return {
-        canTransition: false,
-        reason: "No summary found",
-        details: {
-          productConfidence: null,
-          customerRequestTypeConfidence: null,
-          bestArticleMatchScore: 0,
-        },
-      };
-    }
-
-    const productConfidence = summary.productConfidence ?? null;
-    const customerRequestTypeConfidence = summary.customerRequestTypeConfidence ?? null;
+    const productConfidence = context?.classification?.productConfidence ?? null;
+    const customerRequestTypeConfidence = context?.classification?.customerRequestTypeConfidence ?? null;
 
     const articles = caseDemandData?.articlesAndObjectiveProblems || [];
     const bestArticleMatchScore = articles.length > 0

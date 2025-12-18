@@ -1,17 +1,10 @@
-import { storage } from "../../../../storage/index.js";
 import { conversationStorage } from "../../../conversations/storage/index.js";
-import { SummaryAgent, ClassificationAgent, DemandFinderAgent, SolutionProviderAgent, ArticlesAndSolutionsAgent } from "./agents/index.js";
+import { DemandFinderAgent } from "./agents/demandFinderAgent.js";
+import { SolutionProviderAgent } from "./agents/solutionProviderAgent.js";
 import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext, type OrchestratorAction } from "./types.js";
-import { StatusController } from "./statusController.js";
 import { ActionExecutor } from "./actionExecutor.js";
 import { ZendeskApiService } from "../../../external-sources/zendesk/services/zendeskApiService.js";
 import type { EventStandard } from "../../../../../shared/schema.js";
-import { caseDemandStorage } from "../../storage/caseDemandStorage.js";
-import { caseSolutionStorage } from "../../storage/caseSolutionStorage.js";
-
-type DemandFinderStatus = "not_started" | "in_progress" | "demand_found" | "demand_not_found" | "error";
-
-const MAX_DEMAND_FINDER_INTERACTIONS = 5;
 
 async function isN1agoHandler(conversationId: number): Promise<boolean> {
   const conversation = await conversationStorage.getById(conversationId);
@@ -23,12 +16,6 @@ async function isN1agoHandler(conversationId: number): Promise<boolean> {
   return conversation.currentHandler === n1agoIntegrationId || 
     conversation.currentHandlerName?.startsWith("n1ago") || false;
 }
-
-async function getDemandFinderStatus(conversationId: number): Promise<string | null> {
-  const caseDemands = await caseDemandStorage.getByConversationId(conversationId);
-  return caseDemands[0]?.status || null;
-}
-
 
 export class ConversationOrchestrator {
   static async processMessageEvent(event: EventStandard): Promise<void> {
@@ -47,13 +34,8 @@ export class ConversationOrchestrator {
 
     console.log(`[ConversationOrchestrator] Processing event ${event.id} for conversation ${conversationId}, status: ${currentStatus}`);
 
-    if (currentStatus === ORCHESTRATOR_STATUS.ESCALATED) {
-      console.log(`[ConversationOrchestrator] Conversation ${conversationId} is escalated, skipping`);
-      return;
-    }
-
-    if (currentStatus === ORCHESTRATOR_STATUS.CLOSED) {
-      console.log(`[ConversationOrchestrator] Conversation ${conversationId} is closed, skipping`);
+    if (this.isTerminalStatus(currentStatus)) {
+      console.log(`[ConversationOrchestrator] Conversation ${conversationId} is in terminal status ${currentStatus}, skipping`);
       return;
     }
 
@@ -63,316 +45,131 @@ export class ConversationOrchestrator {
       currentStatus,
     };
 
-    await this.processSyncPipeline(context);
+    await this.dispatchToAgent(context);
   }
 
-  private static async processSyncPipeline(context: OrchestratorContext): Promise<void> {
-    const { conversationId } = context;
+  private static isTerminalStatus(status: OrchestratorStatus): boolean {
+    return status === ORCHESTRATOR_STATUS.COMPLETED || 
+           status === ORCHESTRATOR_STATUS.ESCALATED || 
+           status === ORCHESTRATOR_STATUS.CLOSED;
+  }
 
-    console.log(`[ConversationOrchestrator] Starting sync pipeline for conversation ${conversationId}`);
+  private static async dispatchToAgent(context: OrchestratorContext): Promise<void> {
+    const { conversationId, currentStatus } = context;
 
-    // ============================================
-    // PHASE 1: ENRICHMENT (always runs)
-    // ============================================
-    console.log(`[ConversationOrchestrator] Phase 1: Enrichment`);
-    
-    await this.step1_GenerateSummary(context);
-    await this.step2_Classify(context);
-    await this.step3_SearchArticlesAndProblems(context);
+    console.log(`[ConversationOrchestrator] Dispatching conversation ${conversationId} with status: ${currentStatus}`);
 
-    // ============================================
-    // PHASE 2: EVALUATION (always runs)
-    // ============================================
-    console.log(`[ConversationOrchestrator] Phase 2: Evaluation`);
-    
-    const evaluation = await this.step4_Evaluate(context);
+    switch (currentStatus) {
+      case ORCHESTRATOR_STATUS.NEW:
+      case ORCHESTRATOR_STATUS.FINDING_DEMAND:
+      case ORCHESTRATOR_STATUS.AWAITING_CUSTOMER_REPLY:
+        await this.handleDemandFinder(context);
+        break;
 
-    // Check for escalation conditions - actions are already queued by step4
-    if (context.currentStatus === ORCHESTRATOR_STATUS.TEMP_DEMAND_UNDERSTOOD || 
-        context.currentStatus === ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD) {
-      // Execute transfer action if queued
-      if (context.actions && context.actions.length > 0) {
-        await ActionExecutor.execute(context, context.actions);
-      }
-      console.log(`[ConversationOrchestrator] Pipeline completed for conversation ${conversationId}, transferred to human`);
+      case ORCHESTRATOR_STATUS.DEMAND_CONFIRMED:
+      case ORCHESTRATOR_STATUS.PROVIDING_SOLUTION:
+        await this.handleSolutionProvider(context);
+        break;
+
+      default:
+        console.log(`[ConversationOrchestrator] Unknown status ${currentStatus}, defaulting to DemandFinder`);
+        await this.handleDemandFinder(context);
+    }
+
+    console.log(`[ConversationOrchestrator] Dispatch completed for conversation ${conversationId}`);
+  }
+
+  private static async handleDemandFinder(context: OrchestratorContext): Promise<void> {
+    const { conversationId, currentStatus } = context;
+
+    console.log(`[ConversationOrchestrator] DemandFinder handling conversation ${conversationId}`);
+
+    if (currentStatus === ORCHESTRATOR_STATUS.NEW || currentStatus === ORCHESTRATOR_STATUS.AWAITING_CUSTOMER_REPLY) {
+      await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.FINDING_DEMAND);
+      context.currentStatus = ORCHESTRATOR_STATUS.FINDING_DEMAND;
+    }
+
+    const result = await DemandFinderAgent.process(context);
+
+    if (!result.success) {
+      console.log(`[ConversationOrchestrator] DemandFinder failed: ${result.error}`);
       return;
     }
 
-    // ============================================
-    // PHASE 3: ACTION (based on evaluation)
-    // ============================================
-    console.log(`[ConversationOrchestrator] Phase 3: Action (demandFound: ${evaluation.demandFound}, hasCaseSolution: ${evaluation.hasCaseSolution})`);
-
-    let response: { response: string | null; suggestionId?: number } = { response: null };
-
-    if (evaluation.hasCaseSolution || evaluation.demandFound) {
-      // SolutionProvider handles: creating case_solution (if needed) AND generating response
-      response = await this.step6_ProvideSolution(context);
-    }
-    
-    // If SolutionProvider didn't generate a response, try DemandFinder for clarification
-    if (!response.response) {
-      response = await this.step5_IdentifyDemand(context);
+    if (result.demandConfirmed) {
+      console.log(`[ConversationOrchestrator] Demand confirmed, proceeding to SolutionProvider`);
+      context.currentStatus = ORCHESTRATOR_STATUS.DEMAND_CONFIRMED;
+      await this.handleSolutionProvider(context);
+      return;
     }
 
-    // ============================================
-    // PHASE 4: ACTIONS (execute pending actions)
-    // ============================================
-    console.log(`[ConversationOrchestrator] Phase 4: Actions`);
-
-    // Build action from response if available
-    if (response.response && response.suggestionId) {
-      const sendAction: OrchestratorAction = {
-        type: "SEND_MESSAGE",
-        payload: { suggestionId: response.suggestionId, responsePreview: response.response }
-      };
-      context.actions = context.actions || [];
-      context.actions.push(sendAction);
-    }
-
-    // Execute all actions
-    if (context.actions && context.actions.length > 0) {
-      await ActionExecutor.execute(context, context.actions);
-    }
-
-    console.log(`[ConversationOrchestrator] Pipeline completed for conversation ${conversationId}, final status: ${context.currentStatus}`);
-  }
-
-  private static async step1_GenerateSummary(context: OrchestratorContext): Promise<void> {
-    const { conversationId } = context;
-    console.log(`[ConversationOrchestrator] Step 1: Generating summary for conversation ${conversationId}`);
-
-    const summaryResult = await SummaryAgent.process(context);
-    
-    if (summaryResult.success && summaryResult.summary) {
-      context.summary = summaryResult.summary;
-      console.log(`[ConversationOrchestrator] Step 1: Summary generated and saved`);
-    } else {
-      const existingSummary = await storage.getConversationSummary(conversationId);
-      if (existingSummary) {
-        context.summary = existingSummary.summary;
-        context.classification = {
-          productId: existingSummary.productId || undefined,
-          customerRequestType: existingSummary.customerRequestType || undefined,
-          productConfidence: existingSummary.productConfidence || undefined,
-          customerRequestTypeConfidence: existingSummary.customerRequestTypeConfidence || undefined,
-        };
-        console.log(`[ConversationOrchestrator] Step 1: Using existing summary`);
-      }
-    }
-  }
-
-  private static async step2_Classify(context: OrchestratorContext): Promise<void> {
-    const { conversationId } = context;
-    console.log(`[ConversationOrchestrator] Step 2: Classifying conversation ${conversationId}`);
-
-    const classificationResult = await ClassificationAgent.process(context);
-    
-    if (classificationResult.success) {
-      context.classification = {
-        productId: classificationResult.productId || context.classification?.productId,
-        customerRequestType: classificationResult.customerRequestType || context.classification?.customerRequestType,
-        productConfidence: classificationResult.productConfidence || context.classification?.productConfidence,
-        customerRequestTypeConfidence: classificationResult.customerRequestTypeConfidence || context.classification?.customerRequestTypeConfidence,
-      };
-      console.log(`[ConversationOrchestrator] Step 2: Classification successful - productId: ${context.classification.productId}, requestType: ${context.classification.customerRequestType}, productConfidence: ${context.classification.productConfidence}, requestTypeConfidence: ${context.classification.customerRequestTypeConfidence}`);
-    } else {
-      console.log(`[ConversationOrchestrator] Step 2: Classification failed or skipped, keeping existing`);
-    }
-  }
-
-  private static async step3_SearchArticlesAndProblems(context: OrchestratorContext): Promise<void> {
-    const { conversationId } = context;
-    console.log(`[ConversationOrchestrator] Step 3: Searching articles and problems for conversation ${conversationId}`);
-
-    const result = await ArticlesAndSolutionsAgent.process(context);
-
-    if (result.success && result.searchResults && result.searchResults.length > 0) {
-      context.searchResults = result.searchResults;
-      console.log(`[ConversationOrchestrator] Step 3: Found ${result.searchResults.length} articles/problems (AI reranked)`);
-    } else {
-      console.log(`[ConversationOrchestrator] Step 3: No articles/problems found`);
-    }
-  }
-
-  private static async step4_Evaluate(context: OrchestratorContext): Promise<{ demandFound: boolean; hasCaseSolution: boolean }> {
-    const { conversationId, currentStatus } = context;
-    console.log(`[ConversationOrchestrator] Step 4: Evaluating conversation ${conversationId}, current status: ${currentStatus}`);
-
-    // Initialize actions array
-    context.actions = [];
-
-    // ===========================================
-    // STATUS EVALUATION (Step 4 is the ONLY status controller)
-    // ===========================================
-
-    // 1. Check for existing case_solution - means we're in PROVIDING_SOLUTION phase
-    const existingSolution = await caseSolutionStorage.getActiveByConversationId(conversationId);
-    if (existingSolution) {
-      context.caseSolutionId = existingSolution.id;
+    if (result.maxInteractionsReached) {
+      console.log(`[ConversationOrchestrator] Max interactions reached, escalating`);
       
-      // Ensure status is PROVIDING_SOLUTION when case_solution exists
-      if (currentStatus !== ORCHESTRATOR_STATUS.PROVIDING_SOLUTION) {
-        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.PROVIDING_SOLUTION);
-        context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
-        console.log(`[ConversationOrchestrator] Step 4: Status updated to PROVIDING_SOLUTION (case_solution exists)`);
-      }
-      
-      console.log(`[ConversationOrchestrator] Step 4: Found active case_solution (id: ${existingSolution.id})`);
-      return { demandFound: true, hasCaseSolution: true };
-    }
-
-    // 2. Check if demand was previously found (persisted in case_demand)
-    const demandFinderStatus = await getDemandFinderStatus(conversationId);
-    if (demandFinderStatus === "demand_found") {
-      // Ensure status is PROVIDING_SOLUTION when demand was found
-      if (currentStatus !== ORCHESTRATOR_STATUS.PROVIDING_SOLUTION) {
-        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.PROVIDING_SOLUTION);
-        context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
-        console.log(`[ConversationOrchestrator] Step 4: Status updated to PROVIDING_SOLUTION (demand previously found)`);
-      }
-      context.demandFound = true;
-      console.log(`[ConversationOrchestrator] Step 4: Demand previously identified (case_demand.status=demand_found)`);
-      return { demandFound: true, hasCaseSolution: false };
-    }
-
-    // 3. Handle NEW status - transition to DEMAND_UNDERSTANDING
-    if (currentStatus === ORCHESTRATOR_STATUS.NEW) {
-      await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING);
-      context.currentStatus = ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING;
-      await this.updateDemandFinderStatus(conversationId, "in_progress");
-      console.log(`[ConversationOrchestrator] Step 4: Status updated to DEMAND_UNDERSTANDING`);
-      return { demandFound: false, hasCaseSolution: false };
-    }
-
-    // 4. Handle DEMAND_UNDERSTANDING status - evaluate if demand is found
-    if (currentStatus === ORCHESTRATOR_STATUS.DEMAND_UNDERSTANDING) {
-      const isHandlerN1ago = await isN1agoHandler(conversationId);
-      const currentDemandStatus = await getDemandFinderStatus(conversationId);
-      
-      // Only count interactions when N1ago is the handler (real AI-led interactions)
-      let interactionCount = 0;
-      if (isHandlerN1ago && currentDemandStatus === "in_progress") {
-        interactionCount = await conversationStorage.incrementDemandFinderInteractionCount(conversationId);
-        console.log(`[ConversationOrchestrator] Step 4: Interaction count: ${interactionCount} (N1ago active)`);
-      } else {
-        console.log(`[ConversationOrchestrator] Step 4: Observation-only mode - isN1ago: ${isHandlerN1ago}, demandFinderStatus: ${currentDemandStatus}`);
-      }
-
-      // Always evaluate demand (for visibility in panel)
-      const evaluation = await StatusController.evaluateDemandUnderstood(conversationId);
-      
-      if (evaluation.canTransition) {
-        // Demand found! Update status to PROVIDING_SOLUTION
-        await this.updateDemandFinderStatus(conversationId, "demand_found");
-        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.PROVIDING_SOLUTION);
-        context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
-        context.demandFound = true;
-        console.log(`[ConversationOrchestrator] Step 4: Demand found - ${evaluation.reason}, status updated to PROVIDING_SOLUTION`);
-        return { demandFound: true, hasCaseSolution: false };
-      } 
-      
-      // Only escalate on max interactions if N1ago is handler (not in observation mode)
-      if (isHandlerN1ago && interactionCount >= MAX_DEMAND_FINDER_INTERACTIONS) {
-        await this.updateDemandFinderStatus(conversationId, "demand_not_found");
-        await this.updateStatus(conversationId, ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD);
-        context.currentStatus = ORCHESTRATOR_STATUS.TEMP_DEMAND_NOT_UNDERSTOOD;
-        
-        // Add transfer action
-        context.actions.push({
+      const isN1ago = await isN1agoHandler(conversationId);
+      if (isN1ago && result.suggestedResponse) {
+        const action: OrchestratorAction = {
           type: "TRANSFER_TO_HUMAN",
-          payload: { reason: "max_interactions_reached", message: "Ok, vou te transferir para um especialista agora" }
-        });
-        
-        console.log(`[ConversationOrchestrator] Step 4: Max interactions reached (${interactionCount}), will transfer`);
-        return { demandFound: false, hasCaseSolution: false };
+          payload: { reason: "max_interactions_reached", message: result.suggestedResponse }
+        };
+        await ActionExecutor.execute(context, [action]);
       }
+      return;
+    }
+
+    if (result.needsClarification && result.suggestedResponse && result.suggestionId) {
+      console.log(`[ConversationOrchestrator] Sending clarification question`);
       
-      console.log(`[ConversationOrchestrator] Step 4: Demand not yet found - ${evaluation.reason}`);
-      return { demandFound: false, hasCaseSolution: false };
-    }
-
-    console.log(`[ConversationOrchestrator] Step 4: Status ${currentStatus} - no action needed`);
-    return { demandFound: false, hasCaseSolution: false };
-  }
-
-  private static async updateDemandFinderStatus(conversationId: number, status: DemandFinderStatus): Promise<void> {
-    try {
-      await caseDemandStorage.updateStatus(conversationId, status);
-      console.log(`[ConversationOrchestrator] Updated demand_finder_status to: ${status}`);
-    } catch (error) {
-      console.error(`[ConversationOrchestrator] Error updating demand_finder_status:`, error);
+      const isN1ago = await isN1agoHandler(conversationId);
+      if (isN1ago) {
+        const action: OrchestratorAction = {
+          type: "SEND_MESSAGE",
+          payload: { suggestionId: result.suggestionId, responsePreview: result.suggestedResponse }
+        };
+        await ActionExecutor.execute(context, [action]);
+      }
     }
   }
 
-  private static async step5_IdentifyDemand(context: OrchestratorContext): Promise<{ response: string | null; suggestionId?: number }> {
-    const { conversationId } = context;
-    console.log(`[ConversationOrchestrator] Step 5: Running DemandFinder agent for conversation ${conversationId}`);
+  private static async handleSolutionProvider(context: OrchestratorContext): Promise<void> {
+    const { conversationId, currentStatus } = context;
 
-    try {
-      const agentResult = await DemandFinderAgent.generateResponseOnly(context);
+    console.log(`[ConversationOrchestrator] SolutionProvider handling conversation ${conversationId}`);
 
-      if (!agentResult.success) {
-        console.log(`[ConversationOrchestrator] Step 5: DemandFinder failed: ${agentResult.error}`);
-        await this.updateDemandFinderStatus(conversationId, "error");
-        return { response: null };
-      }
-
-      if (agentResult.rootCauseId) {
-        context.rootCauseId = agentResult.rootCauseId;
-        console.log(`[ConversationOrchestrator] Step 5: DemandFinder identified rootCauseId: ${agentResult.rootCauseId}`);
-      }
-
-      if (agentResult.providedInputs) {
-        context.providedInputs = agentResult.providedInputs;
-        console.log(`[ConversationOrchestrator] Step 5: DemandFinder collected inputs: ${JSON.stringify(agentResult.providedInputs)}`);
-      }
-
-      const response = agentResult.suggestedResponse || null;
-      
-      if (response) {
-        console.log(`[ConversationOrchestrator] Step 5: DemandFinder generated response, suggestionId: ${agentResult.suggestionId}`);
-      } else {
-        console.log(`[ConversationOrchestrator] Step 5: DemandFinder completed without response`);
-      }
-
-      return { response, suggestionId: agentResult.suggestionId };
-    } catch (error: any) {
-      console.error(`[ConversationOrchestrator] Step 5: DemandFinder error:`, error);
-      await this.updateDemandFinderStatus(conversationId, "error");
-      return { response: null };
+    if (currentStatus === ORCHESTRATOR_STATUS.DEMAND_CONFIRMED) {
+      await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.PROVIDING_SOLUTION);
+      context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
     }
-  }
 
-  private static async step6_ProvideSolution(context: OrchestratorContext): Promise<{ response: string | null; suggestionId?: number }> {
-    const { conversationId } = context;
-    console.log(`[ConversationOrchestrator] Step 6: Running SolutionProvider for conversation ${conversationId}`);
+    context.demandFound = true;
 
-    try {
-      const result = await SolutionProviderAgent.process(context);
+    const result = await SolutionProviderAgent.process(context);
 
-      if (!result.success) {
-        console.log(`[ConversationOrchestrator] Step 6: SolutionProvider failed: ${result.error}`);
-        return { response: null };
+    if (!result.success) {
+      console.log(`[ConversationOrchestrator] SolutionProvider failed: ${result.error}`);
+      return;
+    }
+
+    if (result.needsEscalation) {
+      console.log(`[ConversationOrchestrator] SolutionProvider needs escalation: ${result.escalationReason}`);
+      await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
+      return;
+    }
+
+    if (result.resolved) {
+      console.log(`[ConversationOrchestrator] Solution resolved, marking as completed`);
+      await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.COMPLETED);
+    }
+
+    if (result.suggestedResponse && result.suggestionId) {
+      const isN1ago = await isN1agoHandler(conversationId);
+      if (isN1ago) {
+        const action: OrchestratorAction = {
+          type: "SEND_MESSAGE",
+          payload: { suggestionId: result.suggestionId, responsePreview: result.suggestedResponse }
+        };
+        await ActionExecutor.execute(context, [action]);
       }
-
-      if (result.needsEscalation) {
-        console.log(`[ConversationOrchestrator] Step 6: SolutionProvider needs escalation: ${result.escalationReason}`);
-        return { response: null };
-      }
-
-      const response = result.suggestedResponse || null;
-
-      if (response) {
-        console.log(`[ConversationOrchestrator] Step 6: SolutionProvider generated response, suggestionId: ${result.suggestionId}`);
-      } else {
-        console.log(`[ConversationOrchestrator] Step 6: SolutionProvider completed without response`);
-      }
-
-      return { response, suggestionId: result.suggestionId };
-    } catch (error: any) {
-      console.error(`[ConversationOrchestrator] Step 6: SolutionProvider error:`, error);
-      return { response: null };
     }
   }
 
