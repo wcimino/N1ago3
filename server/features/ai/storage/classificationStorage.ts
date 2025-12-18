@@ -65,35 +65,42 @@ export const classificationStorage = {
       since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     }
 
-    // Get total distinct conversations (atendimentos) that had activity in the period
-    const [{ totalConversations }] = await db
-      .select({
-        totalConversations: sql<number>`count(DISTINCT ${conversations.id})::int`,
-      })
-      .from(eventsStandard)
-      .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
-      .where(gte(eventsStandard.occurredAt, since));
+    // Filter only conversations with more than 2 messages (counting only actual messages, not system events)
+    const minMessages = 2;
 
-    // Count distinct conversations (atendimentos) that had activity in the period grouped by productId
-    // Groups by product_id for precise filtering, uses products_catalog for product name display
-    const results = await db
-      .select({
-        productId: conversationsSummary.productId,
-        product: sql<string>`COALESCE(${productsCatalog.produto}, 'Sem classificação')`,
-        count: sql<number>`count(DISTINCT ${conversations.id})::int`,
-      })
-      .from(eventsStandard)
-      .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
-      .leftJoin(conversationsSummary, eq(conversations.id, conversationsSummary.conversationId))
-      .leftJoin(productsCatalog, eq(conversationsSummary.productId, productsCatalog.id))
-      .where(gte(eventsStandard.occurredAt, since))
-      .groupBy(conversationsSummary.productId, sql`COALESCE(${productsCatalog.produto}, 'Sem classificação')`)
-      .orderBy(sql`count(DISTINCT ${conversations.id}) desc`);
+    // Get total and grouped stats in a single query for efficiency
+    // Only count event_type = 'message' for actual messages
+    const results = await db.execute<{ product_id: number | null; product: string; count: number }>(sql`
+      WITH conversation_message_counts AS (
+        SELECT conversation_id, COUNT(*)::int as msg_count
+        FROM ${eventsStandard}
+        WHERE event_type = 'message' AND occurred_at >= ${since}
+        GROUP BY conversation_id
+        HAVING COUNT(*) > ${minMessages}
+      ),
+      active_conversations AS (
+        SELECT DISTINCT c.id as conversation_id
+        FROM ${conversations} c
+        INNER JOIN conversation_message_counts cmc ON c.id = cmc.conversation_id
+      )
+      SELECT 
+        cs.product_id,
+        COALESCE(pc.produto, 'Sem classificação') as product,
+        COUNT(DISTINCT ac.conversation_id)::int as count
+      FROM active_conversations ac
+      LEFT JOIN ${conversationsSummary} cs ON ac.conversation_id = cs.conversation_id
+      LEFT JOIN ${productsCatalog} pc ON cs.product_id = pc.id
+      GROUP BY cs.product_id, COALESCE(pc.produto, 'Sem classificação')
+      ORDER BY count DESC
+    `);
+
+    // Calculate total from all items
+    const totalConversations = results.rows.reduce((sum, r) => sum + r.count, 0);
 
     return { 
-      items: results.map(r => ({
+      items: results.rows.map(r => ({
         product: r.product || 'Sem classificação',
-        productId: r.productId,
+        productId: r.product_id,
         count: r.count,
       })), 
       total: totalConversations || 0 
@@ -144,30 +151,38 @@ export const classificationStorage = {
       since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     }
 
-    // Get total distinct conversations (atendimentos) that had activity in the period
-    const [{ totalConversations }] = await db
-      .select({
-        totalConversations: sql<number>`count(DISTINCT ${conversations.id})::int`,
-      })
-      .from(eventsStandard)
-      .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
-      .where(gte(eventsStandard.occurredAt, since));
+    // Filter only conversations with more than 2 messages (counting only actual messages, not system events)
+    const minMessages = 2;
 
-    // Count distinct conversations (atendimentos) that had activity in the period grouped by emotion level (0 = without classification)
-    const results = await db
-      .select({
-        emotionLevel: sql<number>`COALESCE(${conversationsSummary.customerEmotionLevel}, 0)`,
-        count: sql<number>`count(DISTINCT ${conversations.id})::int`,
-      })
-      .from(eventsStandard)
-      .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
-      .leftJoin(conversationsSummary, eq(conversations.id, conversationsSummary.conversationId))
-      .where(gte(eventsStandard.occurredAt, since))
-      .groupBy(sql`COALESCE(${conversationsSummary.customerEmotionLevel}, 0)`)
-      .orderBy(sql`COALESCE(${conversationsSummary.customerEmotionLevel}, 0)`);
+    // Count distinct conversations grouped by emotion level (0 = without classification)
+    // Only include conversations with more than 2 actual messages in the period
+    const results = await db.execute<{ emotion_level: number; count: number }>(sql`
+      WITH conversation_message_counts AS (
+        SELECT conversation_id, COUNT(*)::int as msg_count
+        FROM ${eventsStandard}
+        WHERE event_type = 'message' AND occurred_at >= ${since}
+        GROUP BY conversation_id
+        HAVING COUNT(*) > ${minMessages}
+      ),
+      active_conversations AS (
+        SELECT DISTINCT c.id as conversation_id
+        FROM ${conversations} c
+        INNER JOIN conversation_message_counts cmc ON c.id = cmc.conversation_id
+      )
+      SELECT 
+        COALESCE(cs.customer_emotion_level, 0) as emotion_level,
+        COUNT(DISTINCT ac.conversation_id)::int as count
+      FROM active_conversations ac
+      LEFT JOIN ${conversationsSummary} cs ON ac.conversation_id = cs.conversation_id
+      GROUP BY COALESCE(cs.customer_emotion_level, 0)
+      ORDER BY emotion_level
+    `);
+
+    // Calculate total from all items
+    const totalConversations = results.rows.reduce((sum, r) => sum + r.count, 0);
 
     return { 
-      items: results as { emotionLevel: number; count: number }[], 
+      items: results.rows.map(r => ({ emotionLevel: r.emotion_level, count: r.count })), 
       total: totalConversations || 0 
     };
   },
@@ -184,14 +199,23 @@ export const classificationStorage = {
       since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     }
 
-    // First get the distinct conversation IDs with activity in the period
-    // Then count problems grouped by name
+    // Filter only conversations with more than 2 messages (counting only actual messages, not system events)
+    const minMessages = 2;
+
+    // Get distinct conversation IDs with activity in the period that have problems
+    // Only include conversations with more than 2 actual messages
     const results = await db.execute<{ problem_name: string; count: number }>(sql`
-      WITH active_conversations AS (
+      WITH conversation_message_counts AS (
+        SELECT conversation_id, COUNT(*)::int as msg_count
+        FROM ${eventsStandard}
+        WHERE event_type = 'message' AND occurred_at >= ${since}
+        GROUP BY conversation_id
+        HAVING COUNT(*) > ${minMessages}
+      ),
+      active_conversations AS (
         SELECT DISTINCT c.id as conversation_id
-        FROM ${eventsStandard} e
-        INNER JOIN ${conversations} c ON e.conversation_id = c.id
-        WHERE e.occurred_at >= ${since}
+        FROM ${conversations} c
+        INNER JOIN conversation_message_counts cmc ON c.id = cmc.conversation_id
       ),
       conversations_with_problems AS (
         SELECT 
@@ -211,13 +235,19 @@ export const classificationStorage = {
       ORDER BY count DESC
     `);
 
-    // Get total distinct conversations with any problem
+    // Get total distinct conversations with any problem from the same CTE results
     const totalResult = await db.execute<{ total: number }>(sql`
-      WITH active_conversations AS (
+      WITH conversation_message_counts AS (
+        SELECT conversation_id, COUNT(*)::int as msg_count
+        FROM ${eventsStandard}
+        WHERE event_type = 'message' AND occurred_at >= ${since}
+        GROUP BY conversation_id
+        HAVING COUNT(*) > ${minMessages}
+      ),
+      active_conversations AS (
         SELECT DISTINCT c.id as conversation_id
-        FROM ${eventsStandard} e
-        INNER JOIN ${conversations} c ON e.conversation_id = c.id
-        WHERE e.occurred_at >= ${since}
+        FROM ${conversations} c
+        INNER JOIN conversation_message_counts cmc ON c.id = cmc.conversation_id
       )
       SELECT COUNT(DISTINCT ac.conversation_id)::int as total
       FROM active_conversations ac
