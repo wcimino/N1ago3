@@ -6,7 +6,7 @@ import { getClientRequestVersions, buildCleanSearchContext, buildResolvedClassif
 import { EnrichmentService } from "../services/enrichmentService.js";
 import { StatusController } from "../statusController.js";
 import { ActionExecutor } from "../actionExecutor.js";
-import { ZendeskApiService } from "../../../../external-sources/zendesk/services/zendeskApiService.js";
+import { isN1agoHandler } from "../helpers.js";
 import { ORCHESTRATOR_STATUS, type DemandFinderAgentResult, type OrchestratorContext, type OrchestratorAction } from "../types.js";
 
 const CONFIG_KEY = "demand_finder";
@@ -22,17 +22,6 @@ export interface DemandFinderProcessResult {
   suggestedResponse?: string;
   suggestionId?: number;
   error?: string;
-}
-
-async function isN1agoHandler(conversationId: number): Promise<boolean> {
-  const conversation = await conversationStorage.getById(conversationId);
-  if (!conversation) {
-    return false;
-  }
-  
-  const n1agoIntegrationId = ZendeskApiService.getN1agoIntegrationId();
-  return conversation.currentHandler === n1agoIntegrationId || 
-    conversation.currentHandlerName?.startsWith("n1ago") || false;
 }
 
 export class DemandFinderAgent {

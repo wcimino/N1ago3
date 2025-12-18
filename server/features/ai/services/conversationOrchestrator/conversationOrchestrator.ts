@@ -5,19 +5,8 @@ import { CloserAgent } from "./agents/closerAgent.js";
 import { caseDemandStorage } from "../../storage/caseDemandStorage.js";
 import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext, type OrchestratorAction } from "./types.js";
 import { ActionExecutor } from "./actionExecutor.js";
-import { ZendeskApiService } from "../../../external-sources/zendesk/services/zendeskApiService.js";
+import { isN1agoHandler } from "./helpers.js";
 import type { EventStandard } from "../../../../../shared/schema.js";
-
-async function isN1agoHandler(conversationId: number): Promise<boolean> {
-  const conversation = await conversationStorage.getById(conversationId);
-  if (!conversation) {
-    return false;
-  }
-  
-  const n1agoIntegrationId = ZendeskApiService.getN1agoIntegrationId();
-  return conversation.currentHandler === n1agoIntegrationId || 
-    conversation.currentHandlerName?.startsWith("n1ago") || false;
-}
 
 export class ConversationOrchestrator {
   static async processMessageEvent(event: EventStandard): Promise<void> {
