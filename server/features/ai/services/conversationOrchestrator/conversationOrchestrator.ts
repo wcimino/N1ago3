@@ -123,17 +123,8 @@ export class ConversationOrchestrator {
       return;
     }
 
-    if (result.needsClarification && result.suggestedResponse && result.suggestionId) {
-      console.log(`[ConversationOrchestrator] Sending clarification question`);
-      
-      const isN1ago = await isN1agoHandler(conversationId);
-      if (isN1ago) {
-        const action: OrchestratorAction = {
-          type: "SEND_MESSAGE",
-          payload: { suggestionId: result.suggestionId, responsePreview: result.suggestedResponse }
-        };
-        await ActionExecutor.execute(context, [action]);
-      }
+    if (result.needsClarification) {
+      console.log(`[ConversationOrchestrator] Clarification handled by DemandFinderAgent, messageSent: ${result.messageSent}`);
     }
   }
 
