@@ -2,19 +2,9 @@ import { conversationStorage } from "../../../conversations/storage/index.js";
 import { AutoPilotService } from "../../../autoPilot/services/autoPilotService.js";
 import { SendMessageService } from "../../../send-message/index.js";
 import { ZendeskApiService } from "../../../external-sources/zendesk/services/zendeskApiService.js";
+import { isN1agoHandler } from "./helpers.js";
 import type { OrchestratorAction, OrchestratorContext } from "./types.js";
 import { ORCHESTRATOR_STATUS } from "./types.js";
-
-async function isN1agoHandler(conversationId: number): Promise<boolean> {
-  const conversation = await conversationStorage.getById(conversationId);
-  if (!conversation) {
-    return false;
-  }
-  
-  const n1agoIntegrationId = ZendeskApiService.getN1agoIntegrationId();
-  return conversation.currentHandler === n1agoIntegrationId || 
-    conversation.currentHandlerName?.startsWith("n1ago") || false;
-}
 
 export class ActionExecutor {
   static async execute(context: OrchestratorContext, actions: OrchestratorAction[]): Promise<void> {

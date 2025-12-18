@@ -6,7 +6,6 @@ import { getClientRequestVersions, buildCleanSearchContext, buildResolvedClassif
 import { EnrichmentService } from "../services/enrichmentService.js";
 import { StatusController } from "../statusController.js";
 import { ActionExecutor } from "../actionExecutor.js";
-import { isN1agoHandler } from "../helpers.js";
 import { ORCHESTRATOR_STATUS, type DemandFinderAgentResult, type OrchestratorContext, type OrchestratorAction } from "../types.js";
 
 const CONFIG_KEY = "demand_finder";
@@ -126,19 +125,14 @@ export class DemandFinderAgent {
       const newInteractionCount = await caseDemandStorage.incrementInteractionCount(conversationId);
       console.log(`[DemandFinderAgent] Incremented interaction count to ${newInteractionCount}/${MAX_INTERACTIONS}`);
 
-      // Step 9: Send the message
-      let messageSent = false;
-      const isN1ago = await isN1agoHandler(conversationId);
-      
-      if (isN1ago) {
-        console.log(`[DemandFinderAgent] Sending clarification question for conversation ${conversationId}`);
-        const action: OrchestratorAction = {
-          type: "SEND_MESSAGE",
-          payload: { suggestionId: clarificationResult.suggestionId, responsePreview: clarificationResult.suggestedResponse }
-        };
-        await ActionExecutor.execute(context, [action]);
-        messageSent = true;
-      }
+      // Step 9: Send the message (ActionExecutor handles isN1agoHandler check)
+      console.log(`[DemandFinderAgent] Sending clarification question for conversation ${conversationId}`);
+      const action: OrchestratorAction = {
+        type: "SEND_MESSAGE",
+        payload: { suggestionId: clarificationResult.suggestionId, responsePreview: clarificationResult.suggestedResponse }
+      };
+      await ActionExecutor.execute(context, [action]);
+      const messageSent = true;
 
       await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.AWAITING_CUSTOMER_REPLY);
       context.currentStatus = ORCHESTRATOR_STATUS.AWAITING_CUSTOMER_REPLY;

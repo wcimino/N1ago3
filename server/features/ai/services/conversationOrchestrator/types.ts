@@ -6,6 +6,7 @@ export const ORCHESTRATOR_STATUS = {
   AWAITING_CUSTOMER_REPLY: "awaiting_customer_reply",
   DEMAND_CONFIRMED: "demand_confirmed",
   PROVIDING_SOLUTION: "providing_solution",
+  AWAITING_SOLUTION_INPUTS: "awaiting_solution_inputs",
   FINALIZING: "finalizing",
   COMPLETED: "completed",
   ESCALATED: "escalated",

@@ -2,11 +2,10 @@ import { conversationStorage } from "../../../conversations/storage/index.js";
 import { DemandFinderAgent } from "./agents/demandFinderAgent.js";
 import { SolutionProviderAgent } from "./agents/solutionProviderAgent.js";
 import { CloserAgent } from "./agents/closerAgent.js";
-import { caseDemandStorage } from "../../storage/caseDemandStorage.js";
-import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext, type OrchestratorAction } from "./types.js";
-import { ActionExecutor } from "./actionExecutor.js";
-import { isN1agoHandler } from "./helpers.js";
+import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext } from "./types.js";
 import type { EventStandard } from "../../../../../shared/schema.js";
+
+const MAX_DISPATCH_ITERATIONS = 5;
 
 export class ConversationOrchestrator {
   static async processMessageEvent(event: EventStandard): Promise<void> {
@@ -21,22 +20,45 @@ export class ConversationOrchestrator {
     }
 
     const conversationId = event.conversationId;
-    const currentStatus = await this.getConversationStatus(conversationId);
+    let iterations = 0;
 
-    console.log(`[ConversationOrchestrator] Processing event ${event.id} for conversation ${conversationId}, status: ${currentStatus}`);
+    console.log(`[ConversationOrchestrator] Starting dispatch loop for conversation ${conversationId}`);
 
-    if (this.isTerminalStatus(currentStatus)) {
-      console.log(`[ConversationOrchestrator] Conversation ${conversationId} is in terminal status ${currentStatus}, skipping`);
-      return;
+    while (iterations < MAX_DISPATCH_ITERATIONS) {
+      const currentStatus = await this.getConversationStatus(conversationId);
+
+      console.log(`[ConversationOrchestrator] Iteration ${iterations + 1}: status = ${currentStatus}`);
+
+      if (this.isTerminalStatus(currentStatus)) {
+        console.log(`[ConversationOrchestrator] Reached terminal status ${currentStatus}, stopping`);
+        break;
+      }
+
+      const context: OrchestratorContext = {
+        event,
+        conversationId,
+        currentStatus,
+      };
+
+      const previousStatus = currentStatus;
+      await this.dispatchToAgent(context);
+
+      const newStatus = await this.getConversationStatus(conversationId);
+
+      if (newStatus === previousStatus) {
+        console.log(`[ConversationOrchestrator] Status unchanged (${newStatus}), stopping loop`);
+        break;
+      }
+
+      console.log(`[ConversationOrchestrator] Status changed: ${previousStatus} -> ${newStatus}`);
+      iterations++;
     }
 
-    const context: OrchestratorContext = {
-      event,
-      conversationId,
-      currentStatus,
-    };
+    if (iterations >= MAX_DISPATCH_ITERATIONS) {
+      console.warn(`[ConversationOrchestrator] Max iterations (${MAX_DISPATCH_ITERATIONS}) reached for conversation ${conversationId}`);
+    }
 
-    await this.dispatchToAgent(context);
+    console.log(`[ConversationOrchestrator] Dispatch loop completed for conversation ${conversationId}`);
   }
 
   private static isTerminalStatus(status: OrchestratorStatus): boolean {
@@ -54,187 +76,22 @@ export class ConversationOrchestrator {
       case ORCHESTRATOR_STATUS.NEW:
       case ORCHESTRATOR_STATUS.FINDING_DEMAND:
       case ORCHESTRATOR_STATUS.AWAITING_CUSTOMER_REPLY:
-        await this.handleDemandFinder(context);
+        await DemandFinderAgent.process(context);
         break;
 
       case ORCHESTRATOR_STATUS.DEMAND_CONFIRMED:
       case ORCHESTRATOR_STATUS.PROVIDING_SOLUTION:
-        await this.handleSolutionProvider(context);
+      case ORCHESTRATOR_STATUS.AWAITING_SOLUTION_INPUTS:
+        await SolutionProviderAgent.process(context);
         break;
 
       case ORCHESTRATOR_STATUS.FINALIZING:
-        await this.handleCloser(context);
+        await CloserAgent.process(context);
         break;
 
       default:
         console.log(`[ConversationOrchestrator] Unknown status ${currentStatus}, defaulting to DemandFinder`);
-        await this.handleDemandFinder(context);
-    }
-
-    console.log(`[ConversationOrchestrator] Dispatch completed for conversation ${conversationId}`);
-  }
-
-  private static async handleDemandFinder(context: OrchestratorContext): Promise<void> {
-    const { conversationId, currentStatus } = context;
-
-    console.log(`[ConversationOrchestrator] DemandFinder handling conversation ${conversationId}`);
-
-    if (currentStatus === ORCHESTRATOR_STATUS.NEW || currentStatus === ORCHESTRATOR_STATUS.AWAITING_CUSTOMER_REPLY) {
-      await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.FINDING_DEMAND);
-      context.currentStatus = ORCHESTRATOR_STATUS.FINDING_DEMAND;
-    }
-
-    const result = await DemandFinderAgent.process(context);
-
-    if (!result.success) {
-      console.log(`[ConversationOrchestrator] DemandFinder failed: ${result.error}`);
-      return;
-    }
-
-    if (result.demandConfirmed) {
-      console.log(`[ConversationOrchestrator] Demand confirmed, proceeding to SolutionProvider`);
-      context.currentStatus = ORCHESTRATOR_STATUS.DEMAND_CONFIRMED;
-      await this.handleSolutionProvider(context);
-      return;
-    }
-
-    if (result.maxInteractionsReached) {
-      console.log(`[ConversationOrchestrator] Max interactions reached, escalating`);
-      
-      const isN1ago = await isN1agoHandler(conversationId);
-      if (isN1ago && result.suggestedResponse) {
-        const action: OrchestratorAction = {
-          type: "TRANSFER_TO_HUMAN",
-          payload: { reason: "max_interactions_reached", message: result.suggestedResponse }
-        };
-        await ActionExecutor.execute(context, [action]);
-      }
-      return;
-    }
-
-    if (result.needsClarification) {
-      console.log(`[ConversationOrchestrator] Clarification handled by DemandFinderAgent, messageSent: ${result.messageSent}`);
-    }
-  }
-
-  private static async handleSolutionProvider(context: OrchestratorContext): Promise<void> {
-    const { conversationId, currentStatus } = context;
-
-    console.log(`[ConversationOrchestrator] SolutionProvider handling conversation ${conversationId}`);
-
-    if (currentStatus === ORCHESTRATOR_STATUS.DEMAND_CONFIRMED) {
-      await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.PROVIDING_SOLUTION);
-      context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
-    }
-
-    context.demandFound = true;
-
-    const result = await SolutionProviderAgent.process(context);
-
-    if (!result.success) {
-      console.log(`[ConversationOrchestrator] SolutionProvider failed: ${result.error}`);
-      return;
-    }
-
-    if (result.needsEscalation) {
-      console.log(`[ConversationOrchestrator] SolutionProvider needs escalation: ${result.escalationReason}`);
-      await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
-      return;
-    }
-
-    if (result.resolved) {
-      console.log(`[ConversationOrchestrator] Solution resolved, moving to finalizing`);
-      await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.FINALIZING);
-      context.currentStatus = ORCHESTRATOR_STATUS.FINALIZING;
-      await this.handleCloser(context);
-      return;
-    }
-
-    if (result.suggestedResponse && result.suggestionId) {
-      const isN1ago = await isN1agoHandler(conversationId);
-      if (isN1ago) {
-        const action: OrchestratorAction = {
-          type: "SEND_MESSAGE",
-          payload: { suggestionId: result.suggestionId, responsePreview: result.suggestedResponse }
-        };
-        await ActionExecutor.execute(context, [action]);
-      }
-    }
-  }
-
-  private static async handleCloser(context: OrchestratorContext): Promise<void> {
-    const { conversationId } = context;
-
-    console.log(`[ConversationOrchestrator] Closer handling conversation ${conversationId}`);
-
-    const result = await CloserAgent.process(context);
-
-    if (!result.success) {
-      console.log(`[ConversationOrchestrator] Closer failed: ${result.error}, closing conversation with fallback`);
-      await this.closeConversation(context);
-      return;
-    }
-
-    if (result.wantsMoreHelp) {
-      console.log(`[ConversationOrchestrator] Customer wants more help, creating new demand`);
-      
-      const activeDemand = await caseDemandStorage.getActiveByConversationId(conversationId);
-      if (activeDemand) {
-        await caseDemandStorage.markAsCompleted(activeDemand.id);
-        console.log(`[ConversationOrchestrator] Marked demand ${activeDemand.id} as completed`);
-      }
-
-      const newDemandRecord = await caseDemandStorage.createNewDemand(conversationId);
-      console.log(`[ConversationOrchestrator] Created new demand ${newDemandRecord.id} for conversation ${conversationId}`);
-
-      await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.FINDING_DEMAND);
-      context.currentStatus = ORCHESTRATOR_STATUS.FINDING_DEMAND;
-
-      if (result.suggestedResponse && result.suggestionId) {
-        const isN1ago = await isN1agoHandler(conversationId);
-        if (isN1ago) {
-          const action: OrchestratorAction = {
-            type: "SEND_MESSAGE",
-            payload: { suggestionId: result.suggestionId, responsePreview: result.suggestedResponse }
-          };
-          await ActionExecutor.execute(context, [action]);
-        }
-      }
-
-      await this.handleDemandFinder(context);
-      return;
-    }
-
-    await this.closeConversation(context, result.suggestedResponse, result.suggestionId);
-  }
-
-  private static async closeConversation(
-    context: OrchestratorContext, 
-    suggestedResponse?: string, 
-    suggestionId?: number
-  ): Promise<void> {
-    const { conversationId } = context;
-
-    const activeDemand = await caseDemandStorage.getActiveByConversationId(conversationId);
-    if (activeDemand) {
-      await caseDemandStorage.markAsCompleted(activeDemand.id);
-      console.log(`[ConversationOrchestrator] Marked demand ${activeDemand.id} as completed (closing)`);
-    }
-
-    await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.CLOSED);
-    context.currentStatus = ORCHESTRATOR_STATUS.CLOSED;
-
-    console.log(`[ConversationOrchestrator] Conversation ${conversationId} closed`);
-
-    if (suggestedResponse && suggestionId) {
-      const isN1ago = await isN1agoHandler(conversationId);
-      if (isN1ago) {
-        const action: OrchestratorAction = {
-          type: "SEND_MESSAGE",
-          payload: { suggestionId: suggestionId, responsePreview: suggestedResponse }
-        };
-        await ActionExecutor.execute(context, [action]);
-      }
+        await DemandFinderAgent.process(context);
     }
   }
 

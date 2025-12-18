@@ -1,6 +1,9 @@
 import { runAgentAndSaveSuggestion, buildAgentContextFromEvent, saveSuggestedResponse } from "../../agentFramework.js";
 import { buildResolvedClassification } from "../../helpers/index.js";
-import { type OrchestratorContext } from "../types.js";
+import { conversationStorage } from "../../../../conversations/storage/index.js";
+import { caseDemandStorage } from "../../../storage/caseDemandStorage.js";
+import { ActionExecutor } from "../actionExecutor.js";
+import { ORCHESTRATOR_STATUS, type OrchestratorContext, type OrchestratorAction } from "../types.js";
 
 const CONFIG_KEY = "closer";
 export const DEFAULT_CLOSING_MESSAGE = "Obrigado por entrar em contato! Tenha um otimo dia!";
@@ -47,6 +50,23 @@ export class CloserAgent {
           inResponseTo: String(event.id),
         });
         
+        // Send fallback message and close conversation
+        if (savedSuggestion?.id) {
+          const action: OrchestratorAction = {
+            type: "SEND_MESSAGE",
+            payload: { suggestionId: savedSuggestion.id, responsePreview: fallbackResponse }
+          };
+          await ActionExecutor.execute(context, [action]);
+        }
+
+        // Mark demand as completed and close
+        const activeDemand = await caseDemandStorage.getActiveByConversationId(conversationId);
+        if (activeDemand) {
+          await caseDemandStorage.markAsCompleted(activeDemand.id);
+        }
+        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.CLOSED);
+        context.currentStatus = ORCHESTRATOR_STATUS.CLOSED;
+        
         return {
           success: true,
           wantsMoreHelp: false,
@@ -74,6 +94,57 @@ export class CloserAgent {
 
       console.log(`[CloserAgent] Analysis complete - wantsMoreHelp: ${wantsMoreHelp}`);
 
+      // Require suggestionId for message sending
+      if (!suggestionId && suggestedResponse) {
+        console.log(`[CloserAgent] Failed to save suggestion (no suggestionId), escalating`);
+        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
+        context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
+        return {
+          success: true,
+          wantsMoreHelp: false,
+          error: "Failed to save suggestion",
+        };
+      }
+
+      // Send message (ActionExecutor handles isN1agoHandler check)
+      if (suggestedResponse && suggestionId) {
+        console.log(`[CloserAgent] Sending response for conversation ${conversationId}`);
+        const action: OrchestratorAction = {
+          type: "SEND_MESSAGE",
+          payload: { suggestionId, responsePreview: suggestedResponse }
+        };
+        await ActionExecutor.execute(context, [action]);
+      }
+
+      if (wantsMoreHelp) {
+        // Customer wants more help - create new demand and go back to FINDING_DEMAND
+        console.log(`[CloserAgent] Customer wants more help, creating new demand`);
+        
+        const activeDemand = await caseDemandStorage.getActiveByConversationId(conversationId);
+        if (activeDemand) {
+          await caseDemandStorage.markAsCompleted(activeDemand.id);
+          console.log(`[CloserAgent] Marked demand ${activeDemand.id} as completed`);
+        }
+
+        const newDemandRecord = await caseDemandStorage.createNewDemand(conversationId);
+        console.log(`[CloserAgent] Created new demand ${newDemandRecord.id} for conversation ${conversationId}`);
+
+        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.FINDING_DEMAND);
+        context.currentStatus = ORCHESTRATOR_STATUS.FINDING_DEMAND;
+      } else {
+        // Customer is done - close the conversation
+        console.log(`[CloserAgent] Closing conversation ${conversationId}`);
+        
+        const activeDemand = await caseDemandStorage.getActiveByConversationId(conversationId);
+        if (activeDemand) {
+          await caseDemandStorage.markAsCompleted(activeDemand.id);
+          console.log(`[CloserAgent] Marked demand ${activeDemand.id} as completed (closing)`);
+        }
+
+        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.CLOSED);
+        context.currentStatus = ORCHESTRATOR_STATUS.CLOSED;
+      }
+
       return {
         success: true,
         wantsMoreHelp,
@@ -90,6 +161,23 @@ export class CloserAgent {
           externalConversationId: event.externalConversationId || null,
           inResponseTo: String(event.id),
         });
+        
+        // Send fallback message and close conversation
+        if (savedSuggestion?.id) {
+          const action: OrchestratorAction = {
+            type: "SEND_MESSAGE",
+            payload: { suggestionId: savedSuggestion.id, responsePreview: DEFAULT_CLOSING_MESSAGE }
+          };
+          await ActionExecutor.execute(context, [action]);
+        }
+
+        // Mark demand as completed and close
+        const activeDemand = await caseDemandStorage.getActiveByConversationId(conversationId);
+        if (activeDemand) {
+          await caseDemandStorage.markAsCompleted(activeDemand.id);
+        }
+        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.CLOSED);
+        context.currentStatus = ORCHESTRATOR_STATUS.CLOSED;
         
         return {
           success: true,
