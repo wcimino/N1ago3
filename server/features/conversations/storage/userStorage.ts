@@ -68,20 +68,33 @@ export const userStorage = {
   async getUsersStats() {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     
-    // Count distinct conversations (atendimentos) that had activity in the last 24h
-    // This matches the same logic used in emotions/products stats for consistency
-    const result = await db
-      .select({
-        total: sql<number>`count(DISTINCT ${conversations.id})::int`,
-        authenticated: sql<number>`count(DISTINCT ${conversations.id}) FILTER (WHERE ${users.authenticated} = true)::int`,
-      })
-      .from(eventsStandard)
-      .innerJoin(conversations, eq(eventsStandard.conversationId, conversations.id))
-      .leftJoin(users, eq(conversations.userId, users.sunshineId))
-      .where(gte(eventsStandard.occurredAt, twentyFourHoursAgo));
+    // Filter only conversations with more than 2 messages (counting only actual messages, not system events)
+    const minMessages = 2;
     
-    const total = result[0]?.total || 0;
-    const authenticated = result[0]?.authenticated || 0;
+    // Count distinct conversations (atendimentos) that had activity in the last 24h
+    // Only include conversations with more than 2 messages for consistency with other panels
+    const result = await db.execute<{ total: number; authenticated: number }>(sql`
+      WITH conversation_message_counts AS (
+        SELECT conversation_id, COUNT(*)::int as msg_count
+        FROM events_standard
+        WHERE event_type = 'message' AND occurred_at >= ${twentyFourHoursAgo}
+        GROUP BY conversation_id
+        HAVING COUNT(*) > ${minMessages}
+      ),
+      active_conversations AS (
+        SELECT DISTINCT c.id as conversation_id, c.user_id as conv_user_id
+        FROM conversations c
+        INNER JOIN conversation_message_counts cmc ON c.id = cmc.conversation_id
+      )
+      SELECT 
+        COUNT(DISTINCT ac.conversation_id)::int as total,
+        COUNT(DISTINCT ac.conversation_id) FILTER (WHERE u.authenticated = true)::int as authenticated
+      FROM active_conversations ac
+      LEFT JOIN users u ON ac.conv_user_id = u.sunshine_id
+    `);
+    
+    const total = result.rows[0]?.total || 0;
+    const authenticated = result.rows[0]?.authenticated || 0;
     
     return {
       total: Number(total),
@@ -142,6 +155,9 @@ export const userStorage = {
   },
 
   async getHourlyAttendances(timezone: string = 'America/Sao_Paulo') {
+    // Filter only conversations with more than 2 messages
+    const minMessages = 2;
+    
     const result = await db.execute(sql`
       WITH tz AS (
         SELECT ${timezone}::text AS name
@@ -167,15 +183,37 @@ export const userStorage = {
       today_end AS (
         SELECT (SELECT ts FROM today_start) + INTERVAL '1 day' AS ts
       ),
+      -- Filter conversations with more than 2 messages for today
+      today_conversation_msg_counts AS (
+        SELECT conversation_id, COUNT(*)::int as msg_count
+        FROM events_standard
+        WHERE event_type = 'message'
+          AND ((occurred_at AT TIME ZONE 'UTC') AT TIME ZONE (SELECT name FROM tz)) >= (SELECT ts FROM today_start)
+          AND ((occurred_at AT TIME ZONE 'UTC') AT TIME ZONE (SELECT name FROM tz)) < (SELECT ts FROM today_end)
+        GROUP BY conversation_id
+        HAVING COUNT(*) > ${minMessages}
+      ),
       today_data AS (
         SELECT 
           EXTRACT(HOUR FROM (e.occurred_at AT TIME ZONE 'UTC') AT TIME ZONE (SELECT name FROM tz))::int AS hour,
           COUNT(DISTINCT c.id) AS count
         FROM events_standard e
         INNER JOIN conversations c ON e.conversation_id = c.id
-        WHERE ((e.occurred_at AT TIME ZONE 'UTC') AT TIME ZONE (SELECT name FROM tz)) >= (SELECT ts FROM today_start)
+        INNER JOIN today_conversation_msg_counts tcmc ON c.id = tcmc.conversation_id
+        WHERE e.event_type = 'message'
+          AND ((e.occurred_at AT TIME ZONE 'UTC') AT TIME ZONE (SELECT name FROM tz)) >= (SELECT ts FROM today_start)
           AND ((e.occurred_at AT TIME ZONE 'UTC') AT TIME ZONE (SELECT name FROM tz)) < (SELECT ts FROM today_end)
         GROUP BY 1
+      ),
+      -- Filter conversations with more than 2 messages for last week
+      last_week_conversation_msg_counts AS (
+        SELECT conversation_id, COUNT(*)::int as msg_count
+        FROM events_standard
+        WHERE event_type = 'message'
+          AND ((occurred_at AT TIME ZONE 'UTC') AT TIME ZONE (SELECT name FROM tz)) >= (SELECT ts FROM last_week_start)
+          AND ((occurred_at AT TIME ZONE 'UTC') AT TIME ZONE (SELECT name FROM tz)) < (SELECT ts FROM last_week_end)
+        GROUP BY conversation_id
+        HAVING COUNT(*) > ${minMessages}
       ),
       last_week_data AS (
         SELECT 
@@ -183,7 +221,9 @@ export const userStorage = {
           COUNT(DISTINCT c.id) AS count
         FROM events_standard e
         INNER JOIN conversations c ON e.conversation_id = c.id
-        WHERE ((e.occurred_at AT TIME ZONE 'UTC') AT TIME ZONE (SELECT name FROM tz)) >= (SELECT ts FROM last_week_start)
+        INNER JOIN last_week_conversation_msg_counts lwcmc ON c.id = lwcmc.conversation_id
+        WHERE e.event_type = 'message'
+          AND ((e.occurred_at AT TIME ZONE 'UTC') AT TIME ZONE (SELECT name FROM tz)) >= (SELECT ts FROM last_week_start)
           AND ((e.occurred_at AT TIME ZONE 'UTC') AT TIME ZONE (SELECT name FROM tz)) < (SELECT ts FROM last_week_end)
         GROUP BY 1
       )
