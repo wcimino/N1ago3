@@ -10,9 +10,15 @@ import type { StatsResponse, DashboardAnalyticsResponse } from "../../types";
 export function HomePage() {
   const { timezone } = useTimezone();
   
-  const { data: dashboardData, isLoading: dashboardLoading } = useQuery<DashboardAnalyticsResponse>({
-    queryKey: ["dashboard-analytics", timezone],
+  const { data: dashboard24h, isLoading: dashboardLoading } = useQuery<DashboardAnalyticsResponse>({
+    queryKey: ["dashboard-analytics-24h", timezone],
     queryFn: () => fetchApi<DashboardAnalyticsResponse>(`/api/dashboard/analytics?period=last24Hours&timezone=${encodeURIComponent(timezone)}`),
+    refetchInterval: 30000,
+  });
+
+  const { data: dashboard1h } = useQuery<DashboardAnalyticsResponse>({
+    queryKey: ["dashboard-analytics-1h", timezone],
+    queryFn: () => fetchApi<DashboardAnalyticsResponse>(`/api/dashboard/analytics?period=lastHour&timezone=${encodeURIComponent(timezone)}`),
     refetchInterval: 30000,
   });
 
@@ -28,11 +34,14 @@ export function HomePage() {
     refetchInterval: 30000,
   });
 
-  const productStats = dashboardData ? { items: dashboardData.products.items, total: dashboardData.products.total } : undefined;
-  const emotionStats = dashboardData ? { items: dashboardData.emotions.items, total: dashboardData.emotions.total } : undefined;
-  const problemStats = dashboardData ? { items: dashboardData.problems.items, total: dashboardData.problems.total } : undefined;
-  const usersStats = dashboardData?.users;
-  const hourlyStats = dashboardData?.hourly;
+  const productStats24h = dashboard24h ? { items: dashboard24h.products.items, total: dashboard24h.products.total } : undefined;
+  const productStats1h = dashboard1h ? { items: dashboard1h.products.items, total: dashboard1h.products.total } : undefined;
+  const emotionStats24h = dashboard24h ? { items: dashboard24h.emotions.items, total: dashboard24h.emotions.total } : undefined;
+  const emotionStats1h = dashboard1h ? { items: dashboard1h.emotions.items, total: dashboard1h.emotions.total } : undefined;
+  const problemStats24h = dashboard24h ? { items: dashboard24h.problems.items, total: dashboard24h.problems.total } : undefined;
+  const problemStats1h = dashboard1h ? { items: dashboard1h.problems.items, total: dashboard1h.problems.total } : undefined;
+  const usersStats = dashboard24h?.users;
+  const hourlyStats = dashboard24h?.hourly;
 
   return (
     <div className="space-y-6">
@@ -42,7 +51,7 @@ export function HomePage() {
             <Package className="w-4 h-4 text-orange-600" />
             Produtos
           </h2>
-          <ProductsCard productStats={productStats} />
+          <ProductsCard productStats24h={productStats24h} productStats1h={productStats1h} />
         </div>
 
         <div className="bg-white rounded-lg shadow p-5">
@@ -50,7 +59,7 @@ export function HomePage() {
             <Heart className="w-4 h-4 text-pink-600" />
             Sentimentos
           </h2>
-          <EmotionsCard emotionStats={emotionStats} />
+          <EmotionsCard emotionStats24h={emotionStats24h} emotionStats1h={emotionStats1h} />
         </div>
 
         <div className="bg-white rounded-lg shadow p-5">
@@ -58,7 +67,7 @@ export function HomePage() {
             <AlertTriangle className="w-4 h-4 text-purple-600" />
             Problemas
           </h2>
-          <ProblemsCard problemStats={problemStats} />
+          <ProblemsCard problemStats24h={problemStats24h} problemStats1h={problemStats1h} />
         </div>
 
         <StatsCard
