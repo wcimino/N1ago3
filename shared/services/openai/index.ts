@@ -1,4 +1,6 @@
-export { chat, chatWithTools, embedding, getOpenAIClient } from "./openaiService.js";
+export { chat, chatWithTools, embedding, getCurrentProvider } from "./aiService.js";
+export { getOpenAIClient } from "./openaiService.js";
+export { getReplitAiClient } from "./replitAiService.js";
 export { logOpenAIRequest } from "./openaiLogger.js";
 export type {
   ChatParams,
@@ -9,3 +11,4 @@ export type {
   ToolDefinition,
   OpenAILogData,
 } from "./types.js";
+export type { AIProvider } from "./aiService.js";

@@ -84,4 +84,5 @@ The React frontend provides a real-time dashboard, administrative interfaces, an
 *   **Lucide React:** Icons.
 *   **date-fns:** Date utilities.
 *   **wouter:** React routing.
-*   **OpenAI API:** AI capabilities (chat, embeddings).
+*   **AI Services (Chat):** Uses Replit AI Integrations by default (no API key required, billed to Replit credits). Can fallback to OpenAI with `AI_CHAT_PROVIDER=openai` environment variable.
+*   **OpenAI API:** Required for embeddings (Replit AI doesn't support embeddings). Uses `OPENAI_API_KEY`.
