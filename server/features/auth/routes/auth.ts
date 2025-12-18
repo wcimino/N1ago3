@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { authStorage } from "../storage/authStorage.js";
-import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
+import { isAuthenticated, requireAuthorizedUser } from "../middleware/authMiddleware.js";
+import { AUTH_CONFIG } from "../types/authTypes.js";
 
 const router = Router();
 
@@ -28,8 +29,8 @@ router.post("/api/authorized-users", isAuthenticated, requireAuthorizedUser, asy
   }
 
   const emailLower = email.toLowerCase();
-  if (!emailLower.endsWith("@ifood.com.br")) {
-    return res.status(400).json({ error: "Email deve ser do domínio @ifood.com.br" });
+  if (!emailLower.endsWith(AUTH_CONFIG.ALLOWED_DOMAIN)) {
+    return res.status(400).json({ error: `Email deve ser do domínio ${AUTH_CONFIG.ALLOWED_DOMAIN}` });
   }
 
   try {

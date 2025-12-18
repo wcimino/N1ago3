@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import { storage } from "../../../storage.js";
-import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 import { caseDemandStorage } from "../../ai/storage/caseDemandStorage.js";
 import type { Triage } from "../../../../shared/types/index.js";

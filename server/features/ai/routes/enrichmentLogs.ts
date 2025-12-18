@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from "express";
-import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
 import { enrichmentLogStorage } from "../storage/enrichmentLogStorage.js";
 
 const router = Router();

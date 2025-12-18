@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import { productCatalogStorage } from "../storage/productCatalogStorage.js";
-import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
 
 const router = Router();
 

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { dashboardAnalyticsStorage, type DashboardAnalyticsParams } from "../storage/dashboardAnalyticsStorage.js";
-import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
 
 const router = Router();
 

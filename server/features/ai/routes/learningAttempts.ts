@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from "express";
-import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
 import { learningAttemptsStorage } from "../storage/learningAttemptsStorage.js";
 import type { LearningAttemptResult } from "../../../../shared/schema.js";
 

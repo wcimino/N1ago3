@@ -3,7 +3,7 @@ import { knowledgeBaseStorage } from "../../../storage/index.js";
 import { runKnowledgeBaseSearch } from "../services/knowledgeBaseSearchHelper.js";
 import { batchGenerateEmbeddings, generateArticleEmbedding, generateContentHash } from "../services/knowledgeBaseEmbeddingService.js";
 import { KnowledgeBaseStatisticsStorage } from "../storage/knowledgeBaseStatisticsStorage.js";
-import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
 import type { InsertKnowledgeBaseArticle } from "../../../../shared/schema.js";
 import { runCombinedKnowledgeSearch } from "../services/tools/combinedKnowledgeSearchTool.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";

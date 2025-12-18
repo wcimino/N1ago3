@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
 import path from "path";
 import fs from "fs";
 

@@ -5,41 +5,32 @@ import { Strategy, type VerifyFunction } from "openid-client/passport";
 import passport from "passport";
 import session from "express-session";
 import type { Express } from "express";
-import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
-import { storage } from "../../../storage.js";
-
-const getOidcConfig = memoize(
-  async () => {
-    return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
-    );
-  },
-  { maxAge: 3600 * 1000 }
-);
+import { getOidcConfig } from "./oidcConfig.js";
+import { authStorage } from "../storage/authStorage.js";
+import { AUTH_CONFIG } from "../types/authTypes.js";
+import "../types/authTypes.js";
 
 export function getSession() {
-  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
     createTableIfMissing: false,
-    ttl: sessionTtl,
+    ttl: AUTH_CONFIG.SESSION_TTL_MS,
     tableName: "sessions",
-    pruneSessionInterval: 60 * 15, // Clean expired sessions every 15 minutes
+    pruneSessionInterval: AUTH_CONFIG.SESSION_PRUNE_INTERVAL_SEC,
   });
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
-    rolling: true, // Reset session expiration on each request (keeps users logged in while active)
+    rolling: true,
     cookie: {
       httpOnly: true,
       secure: true,
-      sameSite: "lax", // Prevents CSRF while allowing normal navigation
-      maxAge: sessionTtl,
+      sameSite: "lax",
+      maxAge: AUTH_CONFIG.SESSION_TTL_MS,
     },
   });
 }
@@ -55,7 +46,7 @@ function updateUserSession(
 }
 
 async function upsertUser(claims: any) {
-  await storage.upsertAuthUser({
+  await authStorage.upsertAuthUser({
     id: claims["sub"],
     email: claims["email"],
     firstName: claims["first_name"],
@@ -90,14 +81,10 @@ export async function setupAuth(app: Express) {
   const registeredStrategies = new Set<string>();
 
   const getCallbackDomain = (req: any): string => {
-    // In production, REPLIT_DOMAINS contains the production domain
-    // In development, REPLIT_DEV_DOMAIN contains the dev domain
-    // Priority: REPLIT_DOMAINS (production) > REPLIT_DEV_DOMAIN (development) > request host
     const replitDomains = process.env.REPLIT_DOMAINS;
     const devDomain = process.env.REPLIT_DEV_DOMAIN;
     
     if (replitDomains) {
-      // Take the first domain if there are multiple (production takes priority)
       return replitDomains.split(',')[0].trim();
     }
     

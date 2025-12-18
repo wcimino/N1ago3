@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import { openaiLogsStorage } from "../storage/openaiLogsStorage.js";
-import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
 
 const router = Router();
 

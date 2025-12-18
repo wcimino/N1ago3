@@ -2,7 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { db } from "../../../db.js";
 import { conversations } from "../../../../shared/schema.js";
 import { eq } from "drizzle-orm";
-import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
 import { ZendeskApiService } from "../../external-sources/zendesk/services/zendeskApiService.js";
 import { TargetResolver } from "../services/targetResolver.js";
 

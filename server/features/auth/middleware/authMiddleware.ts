@@ -1,37 +1,9 @@
 import type { RequestHandler } from "express";
 import * as client from "openid-client";
-import memoize from "memoizee";
-import { storage } from "../storage.js";
-
-declare global {
-  namespace Express {
-    interface User {
-      claims: {
-        sub: string;
-        email?: string;
-        first_name?: string;
-        last_name?: string;
-        profile_image_url?: string;
-        exp?: number;
-      };
-      access_token: string;
-      refresh_token?: string;
-      expires_at?: number;
-    }
-  }
-}
-
-const ALLOWED_DOMAIN = "@ifood.com.br";
-
-const getOidcConfig = memoize(
-  async () => {
-    return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
-    );
-  },
-  { maxAge: 3600 * 1000 }
-);
+import { getOidcConfig } from "../services/oidcConfig.js";
+import { authStorage } from "../storage/authStorage.js";
+import { AUTH_CONFIG } from "../types/authTypes.js";
+import "../types/authTypes.js";
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
   const user = req.user as Express.User | undefined;
@@ -74,21 +46,20 @@ export const requireAuthorizedUser: RequestHandler = async (req, res, next) => {
 
   const email = user.claims.email.toLowerCase();
 
-  if (!email.endsWith(ALLOWED_DOMAIN)) {
+  if (!email.endsWith(AUTH_CONFIG.ALLOWED_DOMAIN)) {
     return res.status(403).json({ 
-      message: `Acesso negado. Apenas usuários do domínio ${ALLOWED_DOMAIN} podem acessar.` 
+      message: `Acesso negado. Apenas usuários do domínio ${AUTH_CONFIG.ALLOWED_DOMAIN} podem acessar.` 
     });
   }
 
-  const isAuthorized = await storage.isUserAuthorized(email);
+  const isAuthorized = await authStorage.isUserAuthorized(email);
   if (!isAuthorized) {
     return res.status(403).json({ 
       message: "Acesso negado. Usuário não cadastrado na lista de autorizados." 
     });
   }
 
-  // Update last access timestamp (fire and forget)
-  storage.updateLastAccess(email).catch(() => {});
+  authStorage.updateLastAccess(email).catch(() => {});
 
   next();
 };

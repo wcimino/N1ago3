@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from "express";
-import { isAuthenticated, requireAuthorizedUser } from "../../../middleware/auth.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
 import { storage } from "../../../storage.js";
 import { generateEnrichmentSuggestions, type EnrichmentConfig } from "../services/enrichment/index.js";
 import { callOpenAIForIntent } from "../services/enrichment/enrichmentOpenAICaller.js";
