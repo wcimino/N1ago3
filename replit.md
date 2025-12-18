@@ -34,7 +34,7 @@ The React frontend provides a real-time dashboard, administrative interfaces, an
 
 *   **Webhook Ingestion & Conversation Storage:** Receives, logs, processes, and stores conversation data and events.
 *   **External Events Ingestion:** API endpoint (`POST /api/events/ingest`) allows external systems to send events directly to `events_standard`. Authentication via API keys managed in Settings → Eventos externos. Supports single and batch ingestion with validation. Each external system has a mandatory `channel_type` that is validated against incoming events. Systems can be edited to update name and channel_type. Security features include: rate limiting (60/min, 600/hour per API key), field size validation (128 chars), date window validation (±30 days), audit logging to `external_event_audit_logs`, and key rotation tracking with 90-day warning.
-*   **Real-time Dashboard:** Live view of events, metrics, and user/webhook management.
+*   **Real-time Dashboard:** Live view of events, metrics, and user/webhook management. Uses a consolidated `/api/dashboard/analytics` endpoint that returns all 5 panel data (Products, Sentiments, Problems, Atendimentos donut chart, and Hourly chart) in a single SQL query for efficiency and consistency. All panels filter conversations with >2 actual messages (event_type='message').
 *   **Atendimentos Listing:** Displays individual conversations with filtering and pagination.
 *   **User Management:** Secure authentication and authorization.
 *   **AI Integrations:** Includes Conversation Summaries, Product Classification, API Logging, and Configurable Triggers.
