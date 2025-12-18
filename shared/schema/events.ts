@@ -107,7 +107,7 @@ export const caseDemand = pgTable("case_demand", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
-  conversationIdUnique: uniqueIndex("idx_case_demand_conversation_id").on(table.conversationId),
+  conversationIdIdx: index("idx_case_demand_conversation_id").on(table.conversationId),
 }));
 
 export const responsesSuggested = pgTable("responses_suggested", {

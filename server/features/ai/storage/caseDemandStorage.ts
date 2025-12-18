@@ -1,7 +1,10 @@
 import { db } from "../../../db.js";
 import { caseDemand } from "../../../../shared/schema.js";
-import { eq, and, ne, desc } from "drizzle-orm";
+import { eq, and, notInArray, desc } from "drizzle-orm";
 import type { CaseDemand, InsertCaseDemand } from "../../../../shared/schema.js";
+
+// Terminal statuses - demand cycle is finished
+const TERMINAL_DEMAND_STATUSES = ["demand_found", "demand_not_found", "completed"] as const;
 
 type ArticleOrProblem = { source: "article" | "problem"; id: number; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; matchedTerms?: string[]; products?: string[] };
 
@@ -36,9 +39,18 @@ export const caseDemandStorage = {
       .where(
         and(
           eq(caseDemand.conversationId, conversationId),
-          ne(caseDemand.status, "completed")
+          notInArray(caseDemand.status, TERMINAL_DEMAND_STATUSES as unknown as string[])
         )
       )
+      .orderBy(desc(caseDemand.createdAt))
+      .limit(1);
+    return demand || null;
+  },
+
+  async getLatestByConversationId(conversationId: number): Promise<CaseDemand | null> {
+    const [demand] = await db.select()
+      .from(caseDemand)
+      .where(eq(caseDemand.conversationId, conversationId))
       .orderBy(desc(caseDemand.createdAt))
       .limit(1);
     return demand || null;
@@ -61,15 +73,6 @@ export const caseDemandStorage = {
       return existing;
     }
     return this.createNewDemand(conversationId);
-  },
-
-  async markAsCompleted(demandId: number): Promise<void> {
-    await db.update(caseDemand)
-      .set({
-        status: "completed",
-        updatedAt: new Date(),
-      })
-      .where(eq(caseDemand.id, demandId));
   },
 
   async create(data: InsertCaseDemand): Promise<CaseDemand> {
@@ -108,7 +111,7 @@ export const caseDemandStorage = {
 
   async updateStatus(
     conversationId: number,
-    status: "not_started" | "in_progress" | "demand_found" | "demand_not_found" | "error" | "completed"
+    status: "not_started" | "in_progress" | "demand_found" | "demand_not_found" | "error"
   ): Promise<void> {
     const existing = await this.getActiveByConversationId(conversationId);
     

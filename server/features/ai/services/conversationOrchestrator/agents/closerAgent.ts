@@ -59,12 +59,6 @@ export class CloserAgent {
           await ActionExecutor.execute(context, [action]);
         }
 
-        // Finalize demand cycle before closing
-        const activeDemand = await caseDemandStorage.getActiveByConversationId(conversationId);
-        if (activeDemand) {
-          await caseDemandStorage.markAsCompleted(activeDemand.id);
-        }
-
         await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.CLOSED);
         context.currentStatus = ORCHESTRATOR_STATUS.CLOSED;
         
@@ -118,13 +112,8 @@ export class CloserAgent {
       }
 
       if (wantsMoreHelp) {
-        // Customer wants more help - finalize current demand and start new cycle
+        // Customer wants more help - start new demand cycle
         console.log(`[CloserAgent] Customer wants more help, creating new demand`);
-        
-        const activeDemand = await caseDemandStorage.getActiveByConversationId(conversationId);
-        if (activeDemand) {
-          await caseDemandStorage.markAsCompleted(activeDemand.id);
-        }
 
         const newDemandRecord = await caseDemandStorage.createNewDemand(conversationId);
         console.log(`[CloserAgent] Created new demand ${newDemandRecord.id} for conversation ${conversationId}`);
@@ -132,13 +121,8 @@ export class CloserAgent {
         await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.FINDING_DEMAND);
         context.currentStatus = ORCHESTRATOR_STATUS.FINDING_DEMAND;
       } else {
-        // Customer is done - finalize demand and close conversation
+        // Customer is done - close conversation (demand already finalized with demand_found/demand_not_found)
         console.log(`[CloserAgent] Closing conversation ${conversationId}`);
-        
-        const activeDemand = await caseDemandStorage.getActiveByConversationId(conversationId);
-        if (activeDemand) {
-          await caseDemandStorage.markAsCompleted(activeDemand.id);
-        }
 
         await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.CLOSED);
         context.currentStatus = ORCHESTRATOR_STATUS.CLOSED;
@@ -168,12 +152,6 @@ export class CloserAgent {
             payload: { suggestionId: savedSuggestion.id, responsePreview: DEFAULT_CLOSING_MESSAGE }
           };
           await ActionExecutor.execute(context, [action]);
-        }
-
-        // Finalize demand cycle before closing
-        const activeDemand = await caseDemandStorage.getActiveByConversationId(conversationId);
-        if (activeDemand) {
-          await caseDemandStorage.markAsCompleted(activeDemand.id);
         }
 
         await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.CLOSED);
