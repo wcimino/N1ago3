@@ -12,7 +12,7 @@ export function ProductsCard({ productStats24h, productStats1h }: ProductsCardPr
   const total24h = productStats24h?.total || 0;
   const total1h = productStats1h?.total || 0;
   
-  const items1hMap = new Map((productStats1h?.items || []).map(i => [i.productId ?? i.product, i.count]));
+  const items1hMap = new Map((productStats1h?.items || []).map(i => [i.product, i.count]));
   
   if (items24h.length === 0) {
     return <p className="text-sm text-gray-400 italic">Nenhum produto ainda</p>;
@@ -22,7 +22,7 @@ export function ProductsCard({ productStats24h, productStats1h }: ProductsCardPr
   const top5 = sortedItems.slice(0, 5);
   const others = sortedItems.slice(5);
   const othersCount24h = others.reduce((sum, item) => sum + item.count, 0);
-  const othersCount1h = others.reduce((sum, item) => sum + (items1hMap.get(item.productId ?? item.product) || 0), 0);
+  const othersCount1h = others.reduce((sum, item) => sum + (items1hMap.get(item.product) || 0), 0);
   
   return (
     <div>
@@ -42,14 +42,11 @@ export function ProductsCard({ productStats24h, productStats1h }: ProductsCardPr
       </div>
       <div className="space-y-1 mt-2">
         {top5.map((item) => {
-          const key = item.productId ?? item.product;
-          const count1h = items1hMap.get(key) || 0;
-          const linkTo = item.productId !== null 
-            ? `/atendimentos?productId=${item.productId}`
-            : `/atendimentos?productStandard=${encodeURIComponent(item.product)}`;
+          const count1h = items1hMap.get(item.product) || 0;
+          const linkTo = `/atendimentos?productStandard=${encodeURIComponent(item.product)}`;
           
           return (
-            <div key={key} className="flex items-center justify-between py-1 text-sm">
+            <div key={item.product} className="flex items-center justify-between py-1 text-sm">
               <Link href={linkTo} className="text-gray-700 hover:text-orange-600 truncate flex-1">
                 {item.product}
               </Link>

@@ -86,13 +86,12 @@ export const dashboardAnalyticsStorage = {
         ),
         products_agg AS (
           SELECT 
-            cs.product_id,
             COALESCE(pc.produto, 'Sem classificação') as product,
             COUNT(DISTINCT ac.conversation_id)::int as count
           FROM active_conversations ac
           LEFT JOIN conversations_summary cs ON ac.conversation_id = cs.conversation_id
           LEFT JOIN products_catalog pc ON cs.product_id = pc.id
-          GROUP BY cs.product_id, COALESCE(pc.produto, 'Sem classificação')
+          GROUP BY COALESCE(pc.produto, 'Sem classificação')
           ORDER BY count DESC
         ),
         emotions_agg AS (
@@ -134,7 +133,7 @@ export const dashboardAnalyticsStorage = {
           LEFT JOIN users u ON ac.conv_user_id = u.sunshine_id
         )
         SELECT 
-          (SELECT json_agg(json_build_object('productId', product_id, 'product', product, 'count', count)) FROM products_agg) as products_json,
+          (SELECT json_agg(json_build_object('product', product, 'count', count)) FROM products_agg) as products_json,
           (SELECT json_agg(json_build_object('emotionLevel', emotion_level, 'count', count)) FROM emotions_agg) as emotions_json,
           (SELECT json_agg(json_build_object('problemName', problem_name, 'count', count)) FROM problems_agg) as problems_json,
           (SELECT total FROM problems_total) as problems_total,
