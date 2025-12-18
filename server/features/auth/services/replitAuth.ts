@@ -85,7 +85,15 @@ export async function setupAuth(app: Express) {
     const devDomain = process.env.REPLIT_DEV_DOMAIN;
     
     if (replitDomains) {
-      return replitDomains.split(',')[0].trim();
+      try {
+        const domains = JSON.parse(replitDomains);
+        if (Array.isArray(domains) && domains.length > 0) {
+          return domains[0];
+        }
+      } catch {
+        // Fallback: if not valid JSON, try comma-separated
+        return replitDomains.split(',')[0].trim();
+      }
     }
     
     if (devDomain) {
