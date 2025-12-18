@@ -30,10 +30,22 @@ export function OpenAIStatsCard({ openaiStats }: OpenAIStatsCardProps) {
     ? [...mainItems, { request_type: 'others', cost: othersCost, calls: 0, percentage: othersPercentage }]
     : mainItems;
   
+  const byProvider = stats.by_provider;
+  
   return (
     <div className="flex flex-col items-center text-center">
       <p className="text-sm text-gray-500">Custo (USD)</p>
       <p className="text-3xl font-bold text-gray-900 mt-2">${stats.estimated_cost.toFixed(2)}</p>
+      {byProvider && (byProvider.openai > 0 || byProvider.replit > 0) && (
+        <div className="mt-2 flex gap-3 text-xs">
+          {byProvider.openai > 0 && (
+            <span className="text-emerald-600">OpenAI: ${byProvider.openai.toFixed(2)}</span>
+          )}
+          {byProvider.replit > 0 && (
+            <span className="text-blue-600">Replit: ${byProvider.replit.toFixed(2)}</span>
+          )}
+        </div>
+      )}
       <div className="mt-4 pt-4 border-t border-gray-100 w-full grid grid-cols-2 gap-4">
         <div>
           <p className="text-xs text-gray-500">Chamadas</p>

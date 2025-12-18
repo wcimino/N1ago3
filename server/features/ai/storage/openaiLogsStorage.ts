@@ -130,6 +130,7 @@ export const openaiLogsStorage = {
       total_tokens: number; 
       estimated_cost: number;
       breakdown: Array<{ request_type: string; calls: number; cost: number }>;
+      by_provider: { openai: number; replit: number };
     };
   }> {
     const now = new Date();
@@ -156,6 +157,8 @@ export const openaiLogsStorage = {
     function calculateStats(logs: { modelName: string; requestType: string; tokensPrompt: number | null; tokensCompletion: number | null }[]) {
       let totalTokens = 0;
       let estimatedCost = 0;
+      let openaiCost = 0;
+      let replitCost = 0;
       const breakdownMap: Record<string, { calls: number; cost: number }> = {};
 
       for (const log of logs) {
@@ -166,6 +169,13 @@ export const openaiLogsStorage = {
         const pricing = MODEL_PRICING[log.modelName] || MODEL_PRICING['gpt-4o-mini'];
         const logCost = (prompt * pricing.input) + (completion * pricing.output);
         estimatedCost += logCost;
+
+        const isReplit = log.modelName.startsWith('replit-ai:');
+        if (isReplit) {
+          replitCost += logCost;
+        } else {
+          openaiCost += logCost;
+        }
 
         if (!breakdownMap[log.requestType]) {
           breakdownMap[log.requestType] = { calls: 0, cost: 0 };
@@ -187,6 +197,10 @@ export const openaiLogsStorage = {
         total_tokens: totalTokens,
         estimated_cost: Math.round(estimatedCost * 100) / 100,
         breakdown,
+        by_provider: {
+          openai: Math.round(openaiCost * 100) / 100,
+          replit: Math.round(replitCost * 100) / 100,
+        },
       };
     }
 

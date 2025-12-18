@@ -4,6 +4,7 @@ export interface OpenAIStatsResponse {
     total_tokens: number; 
     estimated_cost: number;
     breakdown: Array<{ request_type: string; calls: number; cost: number }>;
+    by_provider?: { openai: number; replit: number };
   };
 }
 
