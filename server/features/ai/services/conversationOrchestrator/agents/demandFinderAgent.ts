@@ -5,7 +5,9 @@ import { conversationStorage } from "../../../../conversations/storage/index.js"
 import { getClientRequestVersions, buildCleanSearchContext, buildResolvedClassification } from "../../helpers/index.js";
 import { EnrichmentService } from "../services/enrichmentService.js";
 import { StatusController } from "../statusController.js";
-import { ORCHESTRATOR_STATUS, type DemandFinderAgentResult, type OrchestratorContext } from "../types.js";
+import { ActionExecutor } from "../actionExecutor.js";
+import { ZendeskApiService } from "../../../../external-sources/zendesk/services/zendeskApiService.js";
+import { ORCHESTRATOR_STATUS, type DemandFinderAgentResult, type OrchestratorContext, type OrchestratorAction } from "../types.js";
 
 const CONFIG_KEY = "demand_finder";
 const MAX_INTERACTIONS = 5;
@@ -16,9 +18,21 @@ export interface DemandFinderProcessResult {
   demandConfirmed: boolean;
   needsClarification: boolean;
   maxInteractionsReached: boolean;
+  messageSent: boolean;
   suggestedResponse?: string;
   suggestionId?: number;
   error?: string;
+}
+
+async function isN1agoHandler(conversationId: number): Promise<boolean> {
+  const conversation = await conversationStorage.getById(conversationId);
+  if (!conversation) {
+    return false;
+  }
+  
+  const n1agoIntegrationId = ZendeskApiService.getN1agoIntegrationId();
+  return conversation.currentHandler === n1agoIntegrationId || 
+    conversation.currentHandlerName?.startsWith("n1ago") || false;
 }
 
 export class DemandFinderAgent {
@@ -28,8 +42,10 @@ export class DemandFinderAgent {
     try {
       console.log(`[DemandFinderAgent] Starting demand finding for conversation ${conversationId}`);
 
+      // Step 1: Ensure active demand exists
       await caseDemandStorage.ensureActiveDemand(conversationId);
 
+      // Step 2: Enrichment (Summary + Classification)
       const enrichmentResult = await EnrichmentService.enrich(context);
       
       if (!enrichmentResult.success) {
@@ -44,16 +60,20 @@ export class DemandFinderAgent {
           demandConfirmed: false,
           needsClarification: false,
           maxInteractionsReached: true,
+          messageSent: false,
           suggestedResponse: "Vou te transferir para um especialista que podera te ajudar.",
           error: enrichmentResult.error || "Enrichment failed",
         };
       }
 
+      // Step 3: Search articles/problems
       const searchResults = await this.searchArticles(context);
       context.searchResults = searchResults;
 
+      // Step 4: Evaluate if demand is understood
       const evaluation = await StatusController.evaluateDemandUnderstood(conversationId, context);
 
+      // Step 5: If understood -> confirm demand and exit
       if (evaluation.canTransition) {
         console.log(`[DemandFinderAgent] Demand confirmed - ${evaluation.reason}`);
         
@@ -66,58 +86,82 @@ export class DemandFinderAgent {
           demandConfirmed: true,
           needsClarification: false,
           maxInteractionsReached: false,
+          messageSent: false,
         };
       }
 
       console.log(`[DemandFinderAgent] Demand not confirmed - ${evaluation.reason}`);
 
-      const clarificationResult = await this.generateClarificationQuestion(context);
+      // Step 6: Check interaction counter -> if limit reached, escalate and exit
+      const currentInteractionCount = await caseDemandStorage.getInteractionCount(conversationId);
+      console.log(`[DemandFinderAgent] Current interaction count: ${currentInteractionCount}/${MAX_INTERACTIONS}`);
 
-      if (clarificationResult.suggestedResponse && clarificationResult.suggestionId) {
-        const interactionCount = await caseDemandStorage.incrementInteractionCount(conversationId);
-        console.log(`[DemandFinderAgent] Interaction ${interactionCount}/${MAX_INTERACTIONS} with clarification question`);
-
-        if (interactionCount >= MAX_INTERACTIONS) {
-          console.log(`[DemandFinderAgent] Max interactions reached, escalating`);
-          
-          await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
-          await caseDemandStorage.updateStatus(conversationId, "demand_not_found");
-          context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
-          
-          return {
-            success: true,
-            demandConfirmed: false,
-            needsClarification: false,
-            maxInteractionsReached: true,
-            suggestedResponse: "Ok, vou te transferir para um especialista agora",
-          };
-        }
-
-        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.AWAITING_CUSTOMER_REPLY);
-        context.currentStatus = ORCHESTRATOR_STATUS.AWAITING_CUSTOMER_REPLY;
+      if (currentInteractionCount >= MAX_INTERACTIONS) {
+        console.log(`[DemandFinderAgent] Max interactions already reached, escalating`);
+        
+        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
+        await caseDemandStorage.updateStatus(conversationId, "demand_not_found");
+        context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
         
         return {
           success: true,
           demandConfirmed: false,
-          needsClarification: true,
-          maxInteractionsReached: false,
-          suggestedResponse: clarificationResult.suggestedResponse,
-          suggestionId: clarificationResult.suggestionId,
+          needsClarification: false,
+          maxInteractionsReached: true,
+          messageSent: false,
+          suggestedResponse: "Ok, vou te transferir para um especialista agora",
         };
       }
 
-      console.log(`[DemandFinderAgent] No clarification question generated, escalating immediately`);
+      // Step 7: Generate clarification question
+      const clarificationResult = await this.generateClarificationQuestion(context);
+
+      if (!clarificationResult.suggestedResponse || !clarificationResult.suggestionId) {
+        console.log(`[DemandFinderAgent] No clarification question generated, escalating immediately`);
+        
+        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
+        await caseDemandStorage.updateStatus(conversationId, "demand_not_found");
+        context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
+        
+        return {
+          success: true,
+          demandConfirmed: false,
+          needsClarification: false,
+          maxInteractionsReached: true,
+          messageSent: false,
+          suggestedResponse: "Vou te transferir para um especialista que podera te ajudar melhor.",
+        };
+      }
+
+      // Step 8: Increment counter
+      const newInteractionCount = await caseDemandStorage.incrementInteractionCount(conversationId);
+      console.log(`[DemandFinderAgent] Incremented interaction count to ${newInteractionCount}/${MAX_INTERACTIONS}`);
+
+      // Step 9: Send the message
+      let messageSent = false;
+      const isN1ago = await isN1agoHandler(conversationId);
       
-      await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
-      await caseDemandStorage.updateStatus(conversationId, "demand_not_found");
-      context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
+      if (isN1ago) {
+        console.log(`[DemandFinderAgent] Sending clarification question for conversation ${conversationId}`);
+        const action: OrchestratorAction = {
+          type: "SEND_MESSAGE",
+          payload: { suggestionId: clarificationResult.suggestionId, responsePreview: clarificationResult.suggestedResponse }
+        };
+        await ActionExecutor.execute(context, [action]);
+        messageSent = true;
+      }
+
+      await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.AWAITING_CUSTOMER_REPLY);
+      context.currentStatus = ORCHESTRATOR_STATUS.AWAITING_CUSTOMER_REPLY;
       
       return {
         success: true,
         demandConfirmed: false,
-        needsClarification: false,
-        maxInteractionsReached: true,
-        suggestedResponse: "Vou te transferir para um especialista que podera te ajudar melhor.",
+        needsClarification: true,
+        maxInteractionsReached: false,
+        messageSent,
+        suggestedResponse: clarificationResult.suggestedResponse,
+        suggestionId: clarificationResult.suggestionId,
       };
 
     } catch (error: any) {
@@ -136,6 +180,7 @@ export class DemandFinderAgent {
         demandConfirmed: false,
         needsClarification: false,
         maxInteractionsReached: true,
+        messageSent: false,
         suggestedResponse: "Vou te transferir para um especialista que podera te ajudar.",
         error: error.message || "Failed to process demand finder",
       };

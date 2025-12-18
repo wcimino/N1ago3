@@ -128,6 +128,14 @@ export const caseDemandStorage = {
     }
   },
 
+  async getInteractionCount(conversationId: number): Promise<number> {
+    const existing = await this.getActiveByConversationId(conversationId);
+    if (!existing) {
+      return 0;
+    }
+    return existing.interactionCount || 0;
+  },
+
   async incrementInteractionCount(conversationId: number): Promise<number> {
     const existing = await this.getActiveByConversationId(conversationId);
     
