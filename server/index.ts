@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { setupAuth } from "./replitAuth.js";
+import { setupAuth } from "./features/auth/index.js";
 import { registerRoutes } from "./routes/index.js";
 import { startPollingWorker } from "./features/sync/services/pollingWorker.js";
 import "./features/events/services/eventProcessor.js";
