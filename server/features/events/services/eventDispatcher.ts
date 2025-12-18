@@ -38,7 +38,11 @@ export async function dispatchEvent(event: EventStandard): Promise<void> {
 export async function saveAndDispatchEvent(eventData: StandardEventInput): Promise<{ event: EventStandard; isNew: boolean }> {
   const result = await eventStorage.saveStandardEvent(eventData);
   
-  await dispatchEvent(result.event);
+  if (result.isNew) {
+    await dispatchEvent(result.event);
+  } else {
+    console.log(`[EventDispatcher] Skipping dispatch for duplicate event ${result.event.id} (sourceEventId: ${result.event.sourceEventId})`);
+  }
   
   return result;
 }

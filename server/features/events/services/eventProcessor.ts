@@ -24,12 +24,6 @@ export async function processRawEvent(rawId: number, source: string, skipStatusC
     return;
   }
 
-  const eventsCreatedCount = (raw as any).eventsCreatedCount || 0;
-  if (eventsCreatedCount > 0) {
-    console.log(`Raw event ${rawId} already created ${eventsCreatedCount} events, marking as success`);
-    await storage.updateWebhookRawStatusWithEventsCount(rawId, source, "success", eventsCreatedCount);
-    return;
-  }
 
   const adapter = getAdapter(source);
   if (!adapter) {

@@ -28,26 +28,21 @@ export const eventStorage = {
     };
 
     if (event.sourceEventId) {
-      try {
-        const [saved] = await db.insert(eventsStandard).values(eventData).returning();
-        await this.ensureEventTypeMapping(event.source, event.eventType);
-        return { event: saved, isNew: true };
-      } catch (error: any) {
-        if (error.code === '23505') {
-          const [existing] = await db.select()
-            .from(eventsStandard)
-            .where(and(
-              eq(eventsStandard.source, event.source),
-              eq(eventsStandard.sourceEventId, event.sourceEventId)
-            ));
-          
-          if (existing) {
-            console.log(`Event ${event.sourceEventId} already exists (id: ${existing.id}), skipping dispatch`);
-            return { event: existing, isNew: false };
-          }
-        }
-        throw error;
+      const [existing] = await db.select()
+        .from(eventsStandard)
+        .where(and(
+          eq(eventsStandard.source, event.source),
+          eq(eventsStandard.sourceEventId, event.sourceEventId)
+        ));
+      
+      if (existing) {
+        console.log(`[EventStorage] Event ${event.sourceEventId} already exists (id: ${existing.id}), returning existing`);
+        return { event: existing, isNew: false };
       }
+
+      const [saved] = await db.insert(eventsStandard).values(eventData).returning();
+      await this.ensureEventTypeMapping(event.source, event.eventType);
+      return { event: saved, isNew: true };
     }
 
     const [saved] = await db.insert(eventsStandard).values(eventData).returning();
@@ -223,5 +218,12 @@ export const eventStorage = {
       ))
       .orderBy(desc(eventsStandard.occurredAt))
       .limit(20);
+  },
+
+  async countEventsBySourceRawId(sourceRawId: number): Promise<number> {
+    const [result] = await db.select({ count: sql<number>`count(*)` })
+      .from(eventsStandard)
+      .where(eq(eventsStandard.sourceRawId, sourceRawId));
+    return Number(result?.count || 0);
   },
 };
