@@ -15,6 +15,8 @@ export interface CombinedSearchResult {
   products?: string[];
 }
 
+export type DemandType = "suporte" | "informacoes" | "contratar" | string;
+
 export interface CombinedSearchParams {
   productId?: number;
   productContext?: string;
@@ -23,6 +25,63 @@ export interface CombinedSearchParams {
   articleContext?: string;
   problemContext?: string;
   limit?: number;
+  demandType?: DemandType;
+}
+
+const DEMAND_TYPE_PENALTY = 0.20;
+
+function isArticleFavoredDemandType(demandType: string): boolean {
+  const normalized = demandType.toLowerCase().trim();
+  return normalized === "informacoes" || 
+         normalized === "contratar" || 
+         normalized === "informacoes/contratar" ||
+         normalized.includes("informacoes") || 
+         normalized.includes("contratar");
+}
+
+function isProblemFavoredDemandType(demandType: string): boolean {
+  const normalized = demandType.toLowerCase().trim();
+  return normalized === "suporte" || normalized.includes("suporte");
+}
+
+function applyDemandTypeBoost(
+  results: CombinedSearchResult[],
+  demandType?: DemandType
+): CombinedSearchResult[] {
+  if (!demandType) {
+    return results;
+  }
+
+  const favorArticles = isArticleFavoredDemandType(demandType);
+  const favorProblems = isProblemFavoredDemandType(demandType);
+
+  return results.map(result => {
+    const originalScore = result.matchScore || 0;
+    let adjustedScore = originalScore;
+    let boostApplied = false;
+
+    if (result.source === "problem") {
+      if (favorProblems) {
+        boostApplied = true;
+      } else {
+        adjustedScore = originalScore * (1 - DEMAND_TYPE_PENALTY);
+      }
+    } else if (result.source === "article") {
+      if (favorArticles) {
+        boostApplied = true;
+      } else {
+        adjustedScore = originalScore * (1 - DEMAND_TYPE_PENALTY);
+      }
+    }
+
+    return {
+      ...result,
+      matchScore: adjustedScore,
+      matchReason: boostApplied 
+        ? result.matchReason 
+        : `${result.matchReason || ""} (penalidade por tipo de demanda: ${demandType})`.trim()
+    };
+  });
 }
 
 export interface CombinedSearchResponse {
@@ -34,7 +93,7 @@ export interface CombinedSearchResponse {
 }
 
 export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): Promise<CombinedSearchResponse> {
-  const { productId, keywords, conversationContext, articleContext, problemContext, limit = 5 } = params;
+  const { productId, keywords, conversationContext, articleContext, problemContext, limit = 5, demandType } = params;
   
   let productContext = params.productContext;
   if (!productContext && productId) {
@@ -86,9 +145,10 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
     });
   }
 
-  results.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+  const adjustedResults = applyDemandTypeBoost(results, demandType);
+  adjustedResults.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
 
-  if (results.length === 0) {
+  if (adjustedResults.length === 0) {
     return {
       message: "Nenhum resultado encontrado na base de conhecimento",
       results: [],
@@ -100,7 +160,7 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
 
   return {
     message: `Encontrados ${articlesResult.articles.length} artigos e ${problemsResult.problems.length} problemas`,
-    results,
+    results: adjustedResults,
     productId,
     articleCount: articlesResult.articles.length,
     problemCount: problemsResult.problems.length
