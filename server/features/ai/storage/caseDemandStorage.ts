@@ -55,6 +55,14 @@ export const caseDemandStorage = {
     return demand;
   },
 
+  async ensureActiveDemand(conversationId: number): Promise<CaseDemand> {
+    const existing = await this.getActiveByConversationId(conversationId);
+    if (existing) {
+      return existing;
+    }
+    return this.createNewDemand(conversationId);
+  },
+
   async markAsCompleted(demandId: number): Promise<void> {
     await db.update(caseDemand)
       .set({
@@ -120,22 +128,21 @@ export const caseDemandStorage = {
     }
   },
 
-  async incrementInteractionCount(conversationId: number): Promise<void> {
+  async incrementInteractionCount(conversationId: number): Promise<number> {
     const existing = await this.getActiveByConversationId(conversationId);
     
-    if (existing) {
-      await db.update(caseDemand)
-        .set({
-          interactionCount: (existing.interactionCount || 0) + 1,
-          updatedAt: new Date(),
-        })
-        .where(eq(caseDemand.id, existing.id));
-    } else {
-      await db.insert(caseDemand)
-        .values({
-          conversationId,
-          interactionCount: 1,
-        });
+    if (!existing) {
+      console.warn(`[caseDemandStorage] No active demand found for conversation ${conversationId}, cannot increment interaction count`);
+      return 0;
     }
+    
+    const newCount = (existing.interactionCount || 0) + 1;
+    await db.update(caseDemand)
+      .set({
+        interactionCount: newCount,
+        updatedAt: new Date(),
+      })
+      .where(eq(caseDemand.id, existing.id));
+    return newCount;
   },
 };

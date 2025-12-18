@@ -1,7 +1,6 @@
 import { db } from "../../../db.js";
 import { conversations, eventsStandard, conversationsSummary } from "../../../../shared/schema.js";
 import { eq, desc, sql, and, lt, ne } from "drizzle-orm";
-import { caseDemandStorage } from "../../ai/storage/caseDemandStorage.js";
 import type { ExtractedConversation } from "../../events/adapters/types.js";
 import { CONVERSATION_RULES, type ClosedReason } from "../../../config/conversationRules.js";
 import { saveAndDispatchEvent } from "../../events/services/eventDispatcher.js";
@@ -393,14 +392,4 @@ export const conversationCrud = {
     return result[0]?.orchestratorStatus || null;
   },
 
-  async incrementDemandFinderInteractionCount(conversationId: number): Promise<number> {
-    await caseDemandStorage.incrementInteractionCount(conversationId);
-    const demand = await caseDemandStorage.getFirstByConversationId(conversationId);
-    return demand?.interactionCount || 1;
-  },
-
-  async getDemandFinderInteractionCount(conversationId: number): Promise<number> {
-    const demand = await caseDemandStorage.getFirstByConversationId(conversationId);
-    return demand?.interactionCount || 0;
-  },
 };

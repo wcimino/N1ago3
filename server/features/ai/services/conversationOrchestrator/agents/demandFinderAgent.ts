@@ -28,6 +28,8 @@ export class DemandFinderAgent {
     try {
       console.log(`[DemandFinderAgent] Starting demand finding for conversation ${conversationId}`);
 
+      await caseDemandStorage.ensureActiveDemand(conversationId);
+
       const enrichmentResult = await EnrichmentService.enrich(context);
       
       if (!enrichmentResult.success) {
@@ -72,7 +74,7 @@ export class DemandFinderAgent {
       const clarificationResult = await this.generateClarificationQuestion(context);
 
       if (clarificationResult.suggestedResponse && clarificationResult.suggestionId) {
-        const interactionCount = await conversationStorage.incrementDemandFinderInteractionCount(conversationId);
+        const interactionCount = await caseDemandStorage.incrementInteractionCount(conversationId);
         console.log(`[DemandFinderAgent] Interaction ${interactionCount}/${MAX_INTERACTIONS} with clarification question`);
 
         if (interactionCount >= MAX_INTERACTIONS) {
