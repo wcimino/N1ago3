@@ -2,6 +2,7 @@ import { conversationStorage } from "../../../conversations/storage/index.js";
 import { DemandFinderAgent } from "./agents/demandFinderAgent.js";
 import { SolutionProviderAgent } from "./agents/solutionProviderAgent.js";
 import { CloserAgent } from "./agents/closerAgent.js";
+import { caseDemandStorage } from "../../storage/caseDemandStorage.js";
 import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext, type OrchestratorAction } from "./types.js";
 import { ActionExecutor } from "./actionExecutor.js";
 import { ZendeskApiService } from "../../../external-sources/zendesk/services/zendeskApiService.js";
@@ -189,29 +190,71 @@ export class ConversationOrchestrator {
     const result = await CloserAgent.process(context);
 
     if (!result.success) {
-      console.log(`[ConversationOrchestrator] Closer failed: ${result.error}`);
+      console.log(`[ConversationOrchestrator] Closer failed: ${result.error}, closing conversation with fallback`);
+      await this.closeConversation(context);
       return;
     }
 
-    if (result.newDemandCreated) {
-      console.log(`[ConversationOrchestrator] New demand created, restarting demand finder`);
+    if (result.wantsMoreHelp) {
+      console.log(`[ConversationOrchestrator] Customer wants more help, creating new demand`);
+      
+      const activeDemand = await caseDemandStorage.getActiveByConversationId(conversationId);
+      if (activeDemand) {
+        await caseDemandStorage.markAsCompleted(activeDemand.id);
+        console.log(`[ConversationOrchestrator] Marked demand ${activeDemand.id} as completed`);
+      }
+
+      const newDemandRecord = await caseDemandStorage.createNewDemand(conversationId);
+      console.log(`[ConversationOrchestrator] Created new demand ${newDemandRecord.id} for conversation ${conversationId}`);
+
+      await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.FINDING_DEMAND);
+      context.currentStatus = ORCHESTRATOR_STATUS.FINDING_DEMAND;
+
+      if (result.suggestedResponse && result.suggestionId) {
+        const isN1ago = await isN1agoHandler(conversationId);
+        if (isN1ago) {
+          const action: OrchestratorAction = {
+            type: "SEND_MESSAGE",
+            payload: { suggestionId: result.suggestionId, responsePreview: result.suggestedResponse }
+          };
+          await ActionExecutor.execute(context, [action]);
+        }
+      }
+
       await this.handleDemandFinder(context);
       return;
     }
 
-    if (result.suggestedResponse && result.suggestionId) {
+    await this.closeConversation(context, result.suggestedResponse, result.suggestionId);
+  }
+
+  private static async closeConversation(
+    context: OrchestratorContext, 
+    suggestedResponse?: string, 
+    suggestionId?: number
+  ): Promise<void> {
+    const { conversationId } = context;
+
+    const activeDemand = await caseDemandStorage.getActiveByConversationId(conversationId);
+    if (activeDemand) {
+      await caseDemandStorage.markAsCompleted(activeDemand.id);
+      console.log(`[ConversationOrchestrator] Marked demand ${activeDemand.id} as completed (closing)`);
+    }
+
+    await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.CLOSED);
+    context.currentStatus = ORCHESTRATOR_STATUS.CLOSED;
+
+    console.log(`[ConversationOrchestrator] Conversation ${conversationId} closed`);
+
+    if (suggestedResponse && suggestionId) {
       const isN1ago = await isN1agoHandler(conversationId);
       if (isN1ago) {
         const action: OrchestratorAction = {
           type: "SEND_MESSAGE",
-          payload: { suggestionId: result.suggestionId, responsePreview: result.suggestedResponse }
+          payload: { suggestionId: suggestionId, responsePreview: suggestedResponse }
         };
         await ActionExecutor.execute(context, [action]);
       }
-    }
-
-    if (result.conversationClosed) {
-      console.log(`[ConversationOrchestrator] Conversation ${conversationId} closed by Closer`);
     }
   }
 

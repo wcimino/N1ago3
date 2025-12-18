@@ -71,8 +71,6 @@ export interface SolutionProviderAgentResult extends AgentResult {
 
 export interface CloserAgentResult extends AgentResult {
   wantsMoreHelp: boolean;
-  newDemandCreated: boolean;
-  conversationClosed: boolean;
   suggestedResponse?: string;
   suggestionId?: number;
 }
