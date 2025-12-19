@@ -52,6 +52,46 @@ function isProblemPenalized(requestType: string): boolean {
 interface ScoreAdjustmentParams {
   demandType?: DemandType;
   summaryProductContext?: string;
+  searchQueries?: MultiQuerySearchQueries;
+}
+
+const LEXICAL_COVERAGE_MULTIPLIER = 0.85;
+const MIN_COVERAGE_THRESHOLD = 0.3;
+
+function extractKeyTerms(searchQueries?: MultiQuerySearchQueries): string[] {
+  if (!searchQueries) return [];
+  
+  const stopWords = new Set(['o', 'a', 'os', 'as', 'um', 'uma', 'de', 'da', 'do', 'das', 'dos', 
+    'em', 'na', 'no', 'nas', 'nos', 'com', 'por', 'para', 'que', 'se', 'não', 'nao',
+    'e', 'ou', 'ao', 'aos', 'à', 'às', 'é', 'foi', 'ser', 'está', 'estou', 'meu', 'minha',
+    'seu', 'sua', 'como', 'quando', 'onde', 'porque', 'qual', 'quais']);
+  
+  const queryText = searchQueries.keywordQuery || searchQueries.verbatimQuery || searchQueries.normalizedQuery || '';
+  
+  const terms = queryText.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .split(/\s+/)
+    .filter(t => t.length > 2 && !stopWords.has(t));
+  
+  return [...new Set(terms)];
+}
+
+function calculateLexicalCoverage(matchedTerms: string[] | undefined, keyTerms: string[]): number {
+  if (!keyTerms.length) return 1;
+  if (!matchedTerms || !matchedTerms.length) return 0;
+  
+  const normalizedMatched = matchedTerms.map(t => 
+    t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  );
+  
+  let matchCount = 0;
+  for (const keyTerm of keyTerms) {
+    if (normalizedMatched.some(m => m.includes(keyTerm) || keyTerm.includes(m))) {
+      matchCount++;
+    }
+  }
+  
+  return matchCount / keyTerms.length;
 }
 
 function getProductBaseName(productContext: string): string {
