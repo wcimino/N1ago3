@@ -232,6 +232,8 @@ class ArchiveService {
         console.log(`[Archive] Starting new job ${jobId} for ${tableName} ${archiveDate.toISOString().split("T")[0]}`);
       }
 
+      let lastSuccessfulHour = startHour - 1;
+      
       for (let hour = startHour; hour < 24; hour++) {
         this.currentProgress = {
           tableName,
@@ -251,6 +253,8 @@ class ArchiveService {
             totalFileSize += result.fileSize || 0;
           }
 
+          lastSuccessfulHour = hour;
+          
           await db.execute(sql`
             UPDATE archive_jobs
             SET last_processed_hour = ${hour},
@@ -261,26 +265,31 @@ class ArchiveService {
             WHERE id = ${jobId}
           `);
         } catch (err: any) {
-          console.error(`Error archiving ${tableName} for ${archiveDate} hour ${hour}:`, err);
+          console.error(`[Archive] Error archiving ${tableName} for ${archiveDate.toISOString().split("T")[0]} hour ${hour}:`, err);
           hadErrors = true;
           
           await db.execute(sql`
             UPDATE archive_jobs
             SET status = 'partial',
                 error_message = ${err.message || 'Unknown error'},
-                last_processed_hour = ${hour - 1}
+                last_processed_hour = ${lastSuccessfulHour >= 0 ? lastSuccessfulHour : null}
             WHERE id = ${jobId}
           `);
+          
+          break;
         }
       }
 
+      const finalStatus = hadErrors ? "partial" : "completed";
       await db.execute(sql`
         UPDATE archive_jobs
-        SET status = ${hadErrors ? "partial" : "completed"},
+        SET status = ${finalStatus},
             completed_at = ${new Date()},
-            error_message = ${hadErrors ? "Some hours failed - check logs" : null}
+            error_message = ${hadErrors ? "Stopped at first error - check logs" : null}
         WHERE id = ${jobId}
       `);
+      
+      console.log(`[Archive] Job ${jobId} for ${tableName} ${archiveDate.toISOString().split("T")[0]} finished with status: ${finalStatus}`);
     }
   }
 
@@ -327,21 +336,23 @@ class ArchiveService {
 
     const [existingFile] = await file.exists();
     if (existingFile) {
-      console.log(`[Archive] File already exists: ${storageFileName}, skipping and deleting source records`);
       const [metadata] = await file.getMetadata();
       const existingRecordCount = Number(metadata.metadata?.recordCount || 0);
+      const archivedMinId = Number(metadata.metadata?.minId || 0);
+      const archivedMaxId = Number(metadata.metadata?.maxId || 0);
       
-      if (existingRecordCount > 0) {
+      if (existingRecordCount > 0 && archivedMinId > 0 && archivedMaxId > 0) {
+        console.log(`[Archive] File already exists: ${storageFileName}, deleting only archived records (IDs ${archivedMinId}-${archivedMaxId})`);
+        
         let deletedCount = 0;
-        let deleteLastId = 0;
-        while (true) {
+        let deleteLastId = archivedMinId - 1;
+        while (deletedCount < existingRecordCount) {
           const deleteResult = await db.execute(sql`
             DELETE FROM ${sql.identifier(tableName)}
             WHERE id IN (
               SELECT id FROM ${sql.identifier(tableName)}
-              WHERE ${sql.identifier(dateColumn)} >= ${startOfHour}
-                AND ${sql.identifier(dateColumn)} <= ${endOfHour}
-                AND id > ${deleteLastId}
+              WHERE id > ${deleteLastId}
+                AND id <= ${archivedMaxId}
               ORDER BY id ASC
               LIMIT ${BATCH_SIZE}
             )
@@ -352,6 +363,8 @@ class ArchiveService {
           deletedCount += deletedRows.length;
           deleteLastId = deletedRows[deletedRows.length - 1].id;
         }
+        
+        console.log(`[Archive] Cleanup complete for ${storageFileName}: ${deletedCount} records deleted`);
         return {
           archived: existingRecordCount,
           deleted: deletedCount,
@@ -359,6 +372,7 @@ class ArchiveService {
           fileSize: Number(metadata.size || 0),
         };
       }
+      console.log(`[Archive] File exists but has no valid metadata: ${storageFileName}, skipping`);
       return null;
     }
 
