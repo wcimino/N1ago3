@@ -267,26 +267,30 @@ class ArchiveService {
     }
 
     this.isRunning = true;
-    this.runArchiveProcess().catch(err => {
-      console.error("Archive process error:", err);
-      this.isRunning = false;
-      this.currentProgress = null;
-    });
+    console.log(`[ArchiveService] Starting manual archive at ${new Date().toISOString()}`);
+    
+    this.runArchiveProcess()
+      .then(() => {
+        this.lastRunDate = new Date().toISOString().split("T")[0];
+        console.log(`[ArchiveService] Manual archive completed at ${new Date().toISOString()}`);
+      })
+      .catch(err => {
+        console.error("[ArchiveService] Manual archive failed:", err.message);
+      })
+      .finally(() => {
+        this.isRunning = false;
+        this.currentProgress = null;
+      });
 
     return { message: "Arquivamento iniciado" };
   }
 
   private async runArchiveProcess(): Promise<void> {
-    try {
-      await this.archiveTable("zendesk_conversations_webhook_raw");
-      await this.runVacuum("zendesk_conversations_webhook_raw");
-      
-      await this.archiveTable("openai_api_logs");
-      await this.runVacuum("openai_api_logs");
-    } finally {
-      this.isRunning = false;
-      this.currentProgress = null;
-    }
+    await this.archiveTable("zendesk_conversations_webhook_raw");
+    await this.runVacuum("zendesk_conversations_webhook_raw");
+    
+    await this.archiveTable("openai_api_logs");
+    await this.runVacuum("openai_api_logs");
   }
 
   private async runVacuum(tableName: string): Promise<void> {
