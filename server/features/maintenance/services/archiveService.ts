@@ -10,6 +10,7 @@ import * as os from "os";
 const BATCH_SIZE = 2000;
 const MAX_UPLOAD_RETRIES = 3;
 const INITIAL_RETRY_DELAY_MS = 1000;
+const ARCHIVE_HOUR_UTC = 8; // 5am Brasília (UTC-3)
 
 function getEnvironmentPrefix(): string {
   return process.env.REPLIT_DEPLOYMENT ? "prod" : "dev";
@@ -79,6 +80,118 @@ interface ArchiveJobInternal {
 class ArchiveService {
   private isRunning: boolean = false;
   private currentProgress: ArchiveProgress | null = null;
+  private scheduledTimeout: NodeJS.Timeout | null = null;
+  private lastRunDate: string | null = null;
+
+  start(): void {
+    console.log(`[ArchiveService] Starting scheduler for daily archive at ${ARCHIVE_HOUR_UTC}:00 UTC (5am Brasília)`);
+    this.checkAndRunCatchUp();
+    this.scheduleNextRun();
+  }
+
+  stop(): void {
+    if (this.scheduledTimeout) {
+      clearTimeout(this.scheduledTimeout);
+      this.scheduledTimeout = null;
+    }
+    console.log("[ArchiveService] Scheduler stopped");
+  }
+
+  private scheduleNextRun(): void {
+    const now = new Date();
+    const nextRun = new Date(now);
+    nextRun.setUTCHours(ARCHIVE_HOUR_UTC, 0, 0, 0);
+
+    if (nextRun <= now) {
+      nextRun.setUTCDate(nextRun.getUTCDate() + 1);
+    }
+
+    const msUntilNextRun = nextRun.getTime() - now.getTime();
+    const hoursUntilNextRun = (msUntilNextRun / (1000 * 60 * 60)).toFixed(1);
+
+    console.log(`[ArchiveService] Next archive scheduled for ${nextRun.toISOString()} (in ${hoursUntilNextRun} hours)`);
+
+    this.scheduledTimeout = setTimeout(() => {
+      this.runScheduledArchive();
+    }, msUntilNextRun);
+  }
+
+  private async checkAndRunCatchUp(): Promise<void> {
+    try {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+      const result = await db.execute(sql`
+        SELECT COUNT(*) as count
+        FROM archive_jobs
+        WHERE archive_date::date = ${yesterdayStr}::date
+          AND status = 'completed'
+      `);
+
+      const completedJobs = Number((result.rows[0] as any).count);
+
+      if (completedJobs === 0) {
+        const pendingResult = await db.execute(sql`
+          SELECT 
+            (SELECT COUNT(*) FROM zendesk_conversations_webhook_raw WHERE received_at::date < ${yesterdayStr}::date) +
+            (SELECT COUNT(*) FROM openai_api_logs WHERE created_at::date < ${yesterdayStr}::date) as pending
+        `);
+        const pendingRecords = Number((pendingResult.rows[0] as any).pending);
+
+        if (pendingRecords > 0) {
+          console.log(`[ArchiveService] Catch-up: No completed archive for ${yesterdayStr}, ${pendingRecords} records pending. Starting archive...`);
+          this.runScheduledArchive();
+        } else {
+          console.log(`[ArchiveService] Catch-up: No pending records to archive`);
+        }
+      } else {
+        console.log(`[ArchiveService] Catch-up: Archive already completed for ${yesterdayStr}`);
+        this.lastRunDate = yesterdayStr;
+      }
+    } catch (err: any) {
+      console.error("[ArchiveService] Catch-up check failed:", err.message);
+    }
+  }
+
+  private async runScheduledArchive(): Promise<void> {
+    const today = new Date().toISOString().split("T")[0];
+
+    if (this.lastRunDate === today) {
+      console.log(`[ArchiveService] Archive already ran today (${today}), skipping`);
+      this.scheduleNextRun();
+      return;
+    }
+
+    if (this.isRunning) {
+      console.log("[ArchiveService] Archive already running, skipping scheduled run");
+      this.scheduleNextRun();
+      return;
+    }
+
+    console.log(`[ArchiveService] Starting scheduled archive at ${new Date().toISOString()}`);
+    this.isRunning = true;
+
+    try {
+      await this.runArchiveProcess();
+      this.lastRunDate = today;
+      console.log(`[ArchiveService] Scheduled archive completed at ${new Date().toISOString()}`);
+    } catch (err: any) {
+      console.error("[ArchiveService] Scheduled archive failed:", err.message);
+    } finally {
+      this.isRunning = false;
+      this.currentProgress = null;
+      this.scheduleNextRun();
+    }
+  }
+
+  getSchedulerStatus(): { isRunning: boolean; lastRunDate: string | null; nextRunHourUTC: number } {
+    return {
+      isRunning: this.isRunning,
+      lastRunDate: this.lastRunDate,
+      nextRunHourUTC: ARCHIVE_HOUR_UTC,
+    };
+  }
 
   async getStats(): Promise<ArchiveStats> {
     const yesterday = new Date();
