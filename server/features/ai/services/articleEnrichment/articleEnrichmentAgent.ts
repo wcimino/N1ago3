@@ -211,13 +211,64 @@ export class ArticleEnrichmentAgent {
         if (!Array.isArray(toolResult.questionVariation) || toolResult.questionVariation.length < 4) {
           missingFields.push("questionVariation (min 4)");
         }
-        if (!Array.isArray(toolResult.questionNormalized) || toolResult.questionNormalized.length < 5) {
-          missingFields.push("questionNormalized (must have 5 items)");
+        
+        let finalQuestionNormalized = toolResult.questionNormalized || [];
+        
+        if (!Array.isArray(finalQuestionNormalized) || finalQuestionNormalized.length < 5) {
+          console.warn(`[ArticleEnrichmentAgent] questionNormalized missing or incomplete (${finalQuestionNormalized.length}/5). Auto-generating...`);
+          
+          const baseQuestions: string[] = [];
+          if (context.article?.question) baseQuestions.push(context.article.question);
+          if (Array.isArray(toolResult.questionVariation)) {
+            baseQuestions.push(...toolResult.questionVariation);
+          }
+          
+          const normalized = new Set<string>();
+          for (const q of baseQuestions) {
+            const clean = q
+              .toLowerCase()
+              .replace(/^(como|por que|porque|o que|qual|quais|onde|quando|quem|eu|meu|minha|me|por favor|preciso|gostaria|poderia|pode|consegue|fazer para|faço para|faz para)\s*/gi, "")
+              .replace(/[?!.,;:]+/g, "")
+              .replace(/\s+/g, " ")
+              .trim()
+              .split(" ")
+              .slice(0, 10)
+              .join(" ");
+            
+            if (clean.length >= 5 && clean.split(" ").length >= 2) {
+              normalized.add(clean);
+            }
+          }
+          
+          if (toolResult.keywords) {
+            const keywordPhrases = toolResult.keywords.split(",").map((k: string) => k.trim().toLowerCase()).filter((k: string) => k.length > 3);
+            for (const kp of keywordPhrases.slice(0, 3)) {
+              if (kp.split(" ").length >= 2) {
+                normalized.add(kp.slice(0, 50).trim());
+              }
+            }
+          }
+          
+          const uniqueNormalized = Array.from(normalized).slice(0, 5);
+          
+          while (uniqueNormalized.length < 5 && context.intentName) {
+            const fallback = `${context.intentName.toLowerCase()} ${context.productName?.toLowerCase() || ""}`.trim().slice(0, 40);
+            if (!uniqueNormalized.includes(fallback)) {
+              uniqueNormalized.push(fallback);
+            } else {
+              break;
+            }
+          }
+          
+          finalQuestionNormalized = uniqueNormalized;
+          console.log(`[ArticleEnrichmentAgent] Auto-generated ${finalQuestionNormalized.length} normalized versions`);
         }
         
         if (missingFields.length > 0) {
           console.warn(`[ArticleEnrichmentAgent] Missing required fields for update: ${missingFields.join(", ")}`);
         }
+        
+        toolResult.questionNormalized = finalQuestionNormalized;
       }
 
       return {
