@@ -36,6 +36,9 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **SendMessageService:** Centralized message sending controller for all outbound messages to customers, including validation and handling of transfer messages.
 *   **ResponseFormatterService:** Adjusts tone of voice for outbound messages using an AI agent's configuration.
 *   **Objective Problems Catalog:** Normalized catalog of evidence-based problems.
+*   **Scheduled Maintenance Services:** Daily scheduled tasks for system maintenance:
+    *   **VacuumService:** Runs daily at 6:00 UTC - VACUUM FULL on main tables.
+    *   **ArchiveService:** Runs daily at 8:00 UTC (5am Brasília) - Archives old data to Parquet files in object storage and removes from database. Includes catch-up logic on startup to handle missed runs.
 
 **System Design Choices:**
 
