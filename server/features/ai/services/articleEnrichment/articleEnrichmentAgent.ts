@@ -12,7 +12,7 @@ const CONFIG_KEY = "article_enrichment";
 function buildCreateSuggestionTool(context: ArticleEnrichmentContext): ToolDefinition {
   return {
     name: "create_article_enrichment_suggestion",
-    description: "Registra uma sugestão de refinamento do artigo existente, melhorando a pergunta, resposta, variações e keywords.",
+    description: "Registra uma sugestão de refinamento do artigo existente. A pergunta original NÃO deve ser alterada. Refine a resposta, variações, keywords e versões normalizadas.",
     parameters: {
       type: "object",
       properties: {
@@ -21,22 +21,23 @@ function buildCreateSuggestionTool(context: ArticleEnrichmentContext): ToolDefin
           enum: ["update", "skip"],
           description: "Ação a tomar: update (refinar o artigo), skip (ignorar pois já está bom)"
         },
-        question: {
-          type: "string",
-          description: "Pergunta reformulada no formato que o cliente faria (ex: 'Como desbloquear meu cartão?'). Obrigatório se action=update."
-        },
         answer: {
           type: "string",
-          description: "Resposta direta para o cliente, sem linguagem de atendente. Instruções claras e objetivas. Obrigatório se action=update."
+          description: "Resposta refinada/montada com informações encontradas na base do Zendesk. Resposta direta para o cliente, sem linguagem de atendente. Instruções claras e objetivas. Obrigatório se action=update."
         },
         keywords: {
           type: "string",
-          description: "Palavras-chave separadas por vírgula para busca (ex: 'desbloquear, liberar, bloqueado, travado'). Obrigatório se action=update."
+          description: "Palavras-chave separadas por vírgula para facilitar busca (ex: 'desbloquear, liberar, bloqueado, travado, senha'). Obrigatório se action=update."
         },
         questionVariation: {
           type: "array",
           items: { type: "string" },
-          description: "4 a 6 formas alternativas de fazer a mesma pergunta (ex: ['Meu cartão está bloqueado', 'Como libero o cartão?']). Obrigatório se action=update."
+          description: "4 a 6 formas alternativas de fazer a mesma pergunta, como o cliente perguntaria (ex: ['Meu cartão está bloqueado', 'Como libero o cartão?', 'Cartão travado']). Obrigatório se action=update."
+        },
+        questionNormalized: {
+          type: "array",
+          items: { type: "string" },
+          description: "5 versões normalizadas e curtas (até 10 palavras cada) para busca semântica. Sem pronomes, sem polidez, sem 'como faço'. Deve representar o núcleo semântico da demanda (ex: ['desbloquear cartao credito', 'liberar cartao bloqueado app', 'erro desbloqueio cartao ifood']). Obrigatório se action=update."
         },
         updateReason: {
           type: "string",
@@ -200,13 +201,30 @@ export class ArticleEnrichmentAgent {
         };
       }
 
+      if (toolResult.action === "update") {
+        const missingFields: string[] = [];
+        if (!toolResult.answer?.trim()) missingFields.push("answer");
+        if (!toolResult.keywords?.trim()) missingFields.push("keywords");
+        if (!toolResult.updateReason?.trim()) missingFields.push("updateReason");
+        if (!Array.isArray(toolResult.questionVariation) || toolResult.questionVariation.length < 4) {
+          missingFields.push("questionVariation (min 4)");
+        }
+        if (!Array.isArray(toolResult.questionNormalized) || toolResult.questionNormalized.length < 5) {
+          missingFields.push("questionNormalized (must have 5 items)");
+        }
+        
+        if (missingFields.length > 0) {
+          console.warn(`[ArticleEnrichmentAgent] Missing required fields for update: ${missingFields.join(", ")}`);
+        }
+      }
+
       return {
         success: true,
         action: toolResult.action,
-        question: toolResult.question,
         answer: toolResult.answer,
         keywords: toolResult.keywords,
         questionVariation: toolResult.questionVariation || [],
+        questionNormalized: toolResult.questionNormalized || [],
         updateReason: toolResult.updateReason,
         skipReason: toolResult.skipReason,
         confidenceScore: toolResult.confidenceScore,

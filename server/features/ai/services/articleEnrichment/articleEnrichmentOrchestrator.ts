@@ -84,7 +84,7 @@ async function createSuggestion(
     name: article.question || intent.name,
     productStandard: intent.productName,
     subproductStandard: intent.subproductName,
-    question: result.question,
+    question: article.question,
     answer: result.answer,
     keywords: result.keywords,
     questionVariation: result.questionVariation || [],
@@ -105,7 +105,8 @@ async function createSuggestion(
       originalQuestion: article.question,
       originalAnswer: article.answer,
       originalKeywords: article.keywords,
-      originalQuestionVariation: article.questionVariation
+      originalQuestionVariation: article.questionVariation,
+      questionNormalized: result.questionNormalized || []
     }
   });
 

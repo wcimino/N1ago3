@@ -16,10 +16,10 @@ export interface ArticleEnrichmentContext {
 export interface ArticleEnrichmentResult {
   success: boolean;
   action?: "update" | "skip";
-  question?: string;
   answer?: string;
   keywords?: string;
   questionVariation?: string[];
+  questionNormalized?: string[];
   updateReason?: string;
   skipReason?: string;
   confidenceScore?: number;
@@ -34,10 +34,10 @@ export interface ArticleEnrichmentSuggestion {
   articleId?: number;
   type: "update" | "skip";
   product?: string;
-  question?: string;
   answer?: string;
   keywords?: string;
   questionVariation?: string[];
+  questionNormalized?: string[];
   updateReason?: string;
   skipReason?: string;
   confidenceScore?: number;

@@ -212,10 +212,10 @@ router.post("/api/ai/article-enrichment/inline", isAuthenticated, requireAuthori
       success: true,
       action: "update",
       suggestion: {
-        question: result.question || "",
         answer: result.answer || "",
         keywords: result.keywords || "",
         questionVariation: normalizeVariations(result.questionVariation),
+        questionNormalized: normalizeVariations(result.questionNormalized),
         updateReason: result.updateReason || "",
         confidenceScore: result.confidenceScore ?? null,
         sourceArticles: result.sourceArticles || []

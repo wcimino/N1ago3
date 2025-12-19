@@ -5,10 +5,10 @@ import { apiRequest } from "../../../lib/queryClient";
 import { DiffPreview } from "./DiffView";
 
 interface EnrichmentSuggestion {
-  question: string;
   answer: string;
   keywords: string;
   questionVariation: string[];
+  questionNormalized: string[];
   updateReason: string;
   confidenceScore: number | null;
   sourceArticles: Array<{ id: string; title: string; similarityScore: number }>;
@@ -202,12 +202,6 @@ export function InlineEnrichmentPanel({
               )}
 
               <DiffPreview
-                label="Pergunta"
-                before={currentData.question}
-                after={suggestion.question}
-              />
-
-              <DiffPreview
                 label="Resposta"
                 before={currentData.answer}
                 after={suggestion.answer}
@@ -248,6 +242,21 @@ export function InlineEnrichmentPanel({
                   </div>
                 </div>
               </div>
+
+              {suggestion.questionNormalized && suggestion.questionNormalized.length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-xs font-medium text-gray-700">Versões Normalizadas (para busca):</span>
+                  <div className="text-sm p-3 rounded border bg-blue-50 border-blue-200">
+                    <div className="flex flex-wrap gap-1">
+                      {suggestion.questionNormalized.map((v, i) => (
+                        <span key={i} className="bg-blue-200 text-blue-700 px-2 py-0.5 rounded text-xs">
+                          {v}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {suggestion.sourceArticles && suggestion.sourceArticles.length > 0 && (
                 <div className="space-y-2">
