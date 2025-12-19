@@ -9,6 +9,7 @@ export const archiveJobs = pgTable("archive_jobs", {
   recordsDeleted: integer("records_deleted").default(0).notNull(),
   filePath: text("file_path"),
   fileSize: integer("file_size"),
+  lastProcessedHour: integer("last_processed_hour"),
   errorMessage: text("error_message"),
   startedAt: timestamp("started_at"),
   completedAt: timestamp("completed_at"),

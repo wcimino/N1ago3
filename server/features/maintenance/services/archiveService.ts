@@ -8,9 +8,36 @@ import * as path from "path";
 import * as os from "os";
 
 const BATCH_SIZE = 2000;
+const MAX_UPLOAD_RETRIES = 3;
+const INITIAL_RETRY_DELAY_MS = 1000;
 
 function getEnvironmentPrefix(): string {
   return process.env.REPLIT_DEPLOYMENT ? "prod" : "dev";
+}
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = MAX_UPLOAD_RETRIES,
+  operationName: string = "operation"
+): Promise<T> {
+  let lastError: Error | null = null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (err: any) {
+      lastError = err;
+      if (attempt < maxRetries) {
+        const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt - 1);
+        console.log(`[Archive] ${operationName} failed (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`);
+        await sleep(delay);
+      }
+    }
+  }
+  throw lastError;
 }
 
 export interface ArchiveStats {
@@ -163,13 +190,49 @@ class ArchiveService {
     const dates = (datesResult.rows as any[]).map(r => new Date(r.archive_date));
 
     for (const archiveDate of dates) {
+      const existingJobResult = await db.execute(sql`
+        SELECT id, status, last_processed_hour, records_archived, records_deleted, file_path, file_size
+        FROM archive_jobs
+        WHERE table_name = ${tableName}
+          AND archive_date::date = ${archiveDate}::date
+          AND status IN ('running', 'partial')
+        ORDER BY id DESC
+        LIMIT 1
+      `);
+
+      let jobId: number;
+      let startHour = 0;
       let totalArchived = 0;
       let totalDeleted = 0;
       const filePaths: string[] = [];
       let totalFileSize = 0;
       let hadErrors = false;
 
-      for (let hour = 0; hour < 24; hour++) {
+      if (existingJobResult.rows.length > 0) {
+        const existingJob = existingJobResult.rows[0] as any;
+        jobId = existingJob.id;
+        startHour = (existingJob.last_processed_hour ?? -1) + 1;
+        totalArchived = existingJob.records_archived || 0;
+        totalDeleted = existingJob.records_deleted || 0;
+        if (existingJob.file_path) {
+          filePaths.push(...existingJob.file_path.split(", "));
+        }
+        totalFileSize = existingJob.file_size || 0;
+        console.log(`[Archive] Resuming job ${jobId} for ${tableName} ${archiveDate.toISOString().split("T")[0]} from hour ${startHour}`);
+      } else {
+        const insertResult = await db.insert(archiveJobs).values({
+          tableName,
+          archiveDate,
+          status: "running",
+          recordsArchived: 0,
+          recordsDeleted: 0,
+          startedAt: new Date(),
+        }).returning({ id: archiveJobs.id });
+        jobId = insertResult[0].id;
+        console.log(`[Archive] Starting new job ${jobId} for ${tableName} ${archiveDate.toISOString().split("T")[0]}`);
+      }
+
+      for (let hour = startHour; hour < 24; hour++) {
         this.currentProgress = {
           tableName,
           status: "running",
@@ -187,24 +250,37 @@ class ArchiveService {
             if (result.filePath) filePaths.push(result.filePath);
             totalFileSize += result.fileSize || 0;
           }
+
+          await db.execute(sql`
+            UPDATE archive_jobs
+            SET last_processed_hour = ${hour},
+                records_archived = ${totalArchived},
+                records_deleted = ${totalDeleted},
+                file_path = ${filePaths.length > 0 ? filePaths.join(", ") : null},
+                file_size = ${totalFileSize}
+            WHERE id = ${jobId}
+          `);
         } catch (err: any) {
           console.error(`Error archiving ${tableName} for ${archiveDate} hour ${hour}:`, err);
           hadErrors = true;
+          
+          await db.execute(sql`
+            UPDATE archive_jobs
+            SET status = 'partial',
+                error_message = ${err.message || 'Unknown error'},
+                last_processed_hour = ${hour - 1}
+            WHERE id = ${jobId}
+          `);
         }
       }
 
-      if (totalArchived > 0 || hadErrors) {
-        await this.createJobRecord({
-          tableName,
-          archiveDate,
-          status: hadErrors ? "partial" : "completed",
-          recordsArchived: totalArchived,
-          recordsDeleted: totalDeleted,
-          filePath: filePaths.length > 0 ? filePaths.join(", ") : null,
-          fileSize: totalFileSize,
-          errorMessage: hadErrors ? "Some hours failed - check logs" : null,
-        });
-      }
+      await db.execute(sql`
+        UPDATE archive_jobs
+        SET status = ${hadErrors ? "partial" : "completed"},
+            completed_at = ${new Date()},
+            error_message = ${hadErrors ? "Some hours failed - check logs" : null}
+        WHERE id = ${jobId}
+      `);
     }
   }
 
@@ -236,6 +312,55 @@ class ArchiveService {
     const hourStr = hour.toString().padStart(2, "0");
     const envPrefix = getEnvironmentPrefix();
     const storageFileName = `archives/${envPrefix}/${tableName}/${dateStr}/${hourStr}.parquet`;
+
+    const privateDir = process.env.PRIVATE_OBJECT_DIR;
+    if (!privateDir) {
+      throw new Error("PRIVATE_OBJECT_DIR not configured");
+    }
+
+    const fullPath = `${privateDir}/${storageFileName}`;
+    const pathParts = fullPath.startsWith("/") ? fullPath.slice(1).split("/") : fullPath.split("/");
+    const bucketName = pathParts[0];
+    const objectName = pathParts.slice(1).join("/");
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+
+    const [existingFile] = await file.exists();
+    if (existingFile) {
+      console.log(`[Archive] File already exists: ${storageFileName}, skipping and deleting source records`);
+      const [metadata] = await file.getMetadata();
+      const existingRecordCount = Number(metadata.metadata?.recordCount || 0);
+      
+      if (existingRecordCount > 0) {
+        let deletedCount = 0;
+        let deleteLastId = 0;
+        while (true) {
+          const deleteResult = await db.execute(sql`
+            DELETE FROM ${sql.identifier(tableName)}
+            WHERE id IN (
+              SELECT id FROM ${sql.identifier(tableName)}
+              WHERE ${sql.identifier(dateColumn)} >= ${startOfHour}
+                AND ${sql.identifier(dateColumn)} <= ${endOfHour}
+                AND id > ${deleteLastId}
+              ORDER BY id ASC
+              LIMIT ${BATCH_SIZE}
+            )
+            RETURNING id
+          `);
+          const deletedRows = deleteResult.rows as any[];
+          if (deletedRows.length === 0) break;
+          deletedCount += deletedRows.length;
+          deleteLastId = deletedRows[deletedRows.length - 1].id;
+        }
+        return {
+          archived: existingRecordCount,
+          deleted: deletedCount,
+          filePath: storageFileName,
+          fileSize: Number(metadata.size || 0),
+        };
+      }
+      return null;
+    }
 
     const tempDir = os.tmpdir();
     const tempFilePath = path.join(tempDir, `archive_${tableName}_${dateStr}_${hourStr}_${Date.now()}.parquet`);
@@ -298,33 +423,22 @@ class ArchiveService {
         return null;
       }
 
-      const privateDir = process.env.PRIVATE_OBJECT_DIR;
-      if (!privateDir) {
-        throw new Error("PRIVATE_OBJECT_DIR not configured");
-      }
-
-      const fullPath = `${privateDir}/${storageFileName}`;
-      const pathParts = fullPath.startsWith("/") ? fullPath.slice(1).split("/") : fullPath.split("/");
-      const bucketName = pathParts[0];
-      const objectName = pathParts.slice(1).join("/");
-
-      const bucket = objectStorageClient.bucket(bucketName);
-      const file = bucket.file(objectName);
-
-      await bucket.upload(tempFilePath, {
-        destination: objectName,
-        contentType: "application/octet-stream",
-        metadata: {
+      await withRetry(async () => {
+        await bucket.upload(tempFilePath, {
+          destination: objectName,
+          contentType: "application/octet-stream",
           metadata: {
-            tableName,
-            archiveDate: dateStr,
-            hour: hourStr,
-            recordCount: recordsWritten.toString(),
-            minId: minId.toString(),
-            maxId: maxId.toString(),
+            metadata: {
+              tableName,
+              archiveDate: dateStr,
+              hour: hourStr,
+              recordCount: recordsWritten.toString(),
+              minId: minId.toString(),
+              maxId: maxId.toString(),
+            },
           },
-        },
-      });
+        });
+      }, MAX_UPLOAD_RETRIES, `Upload ${storageFileName}`);
 
       const [exists] = await file.exists();
       if (!exists) {
@@ -333,6 +447,25 @@ class ArchiveService {
 
       const [metadata] = await file.getMetadata();
       const fileSize = Number(metadata.size || 0);
+      const uploadedRecordCount = Number(metadata.metadata?.recordCount || 0);
+
+      if (uploadedRecordCount !== recordsWritten) {
+        throw new Error(`Record count mismatch: wrote ${recordsWritten} but metadata shows ${uploadedRecordCount}`);
+      }
+
+      const remainingCountResult = await db.execute(sql`
+        SELECT COUNT(*) as count
+        FROM ${sql.identifier(tableName)}
+        WHERE ${sql.identifier(dateColumn)} >= ${startOfHour}
+          AND ${sql.identifier(dateColumn)} <= ${endOfHour}
+          AND id >= ${minId}
+          AND id <= ${maxId}
+      `);
+      const remainingCount = Number((remainingCountResult.rows[0] as any).count);
+
+      if (remainingCount !== recordsWritten) {
+        console.warn(`[Archive] Warning: Expected ${recordsWritten} records to delete but found ${remainingCount}`);
+      }
 
       let deletedCount = 0;
       let deleteLastId = minId - 1;
@@ -365,6 +498,8 @@ class ArchiveService {
         }
       }
 
+      console.log(`[Archive] Completed ${storageFileName}: ${recordsWritten} archived, ${deletedCount} deleted`);
+
       return {
         archived: recordsWritten,
         deleted: deletedCount,
@@ -383,7 +518,7 @@ class ArchiveService {
     }
   }
 
-  private getParquetSchema(tableName: string): parquet.ParquetSchema {
+  private getParquetSchema(tableName: string): any {
     if (tableName === "zendesk_conversations_webhook_raw") {
       return new parquet.ParquetSchema({
         id: { type: "INT64" },
