@@ -210,37 +210,39 @@ export function InlineEnrichmentPanel({
               <DiffPreview
                 label="Palavras-chave"
                 before={currentData.keywords}
-                after={suggestion.keywords}
+                after={(() => {
+                  const currentKws = currentData.keywords ? currentData.keywords.split(",").map(k => k.trim()).filter(k => k) : [];
+                  const suggestedKws = suggestion.keywords ? suggestion.keywords.split(",").map(k => k.trim()).filter(k => k) : [];
+                  const uniqueNewKws = suggestedKws.filter(k => !currentKws.includes(k));
+                  return [...currentKws, ...uniqueNewKws].join(", ");
+                })()}
               />
 
               <div className="space-y-2">
                 <span className="text-xs font-medium text-gray-700">Variações da Pergunta:</span>
-                <div className="grid grid-cols-1 gap-2">
-                  <div className="text-sm p-3 rounded border bg-gray-50 border-gray-200">
-                    <div className="text-xs text-gray-500 mb-1">Atual:</div>
-                    {currentData.questionVariation.length > 0 ? (
+                {(() => {
+                  const existingVars = currentData.questionVariation || [];
+                  const newVars = (suggestion.questionVariation || []).filter(v => !existingVars.includes(v));
+                  return (
+                    <div className="text-sm p-3 rounded border bg-gray-50 border-gray-200">
                       <div className="flex flex-wrap gap-1">
-                        {currentData.questionVariation.map((v, i) => (
-                          <span key={i} className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs">
+                        {existingVars.map((v, i) => (
+                          <span key={`existing-${i}`} className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs">
                             {v}
                           </span>
                         ))}
+                        {newVars.map((v, i) => (
+                          <span key={`new-${i}`} className="bg-green-200 text-green-700 px-2 py-0.5 rounded text-xs">
+                            + {v}
+                          </span>
+                        ))}
+                        {existingVars.length === 0 && newVars.length === 0 && (
+                          <span className="text-gray-400 italic">Sem variações</span>
+                        )}
                       </div>
-                    ) : (
-                      <span className="text-gray-400 italic">Sem variações</span>
-                    )}
-                  </div>
-                  <div className="text-sm p-3 rounded border bg-green-50 border-green-200">
-                    <div className="text-xs text-green-600 mb-1">Sugerido:</div>
-                    <div className="flex flex-wrap gap-1">
-                      {suggestion.questionVariation.map((v, i) => (
-                        <span key={i} className="bg-green-200 text-green-700 px-2 py-0.5 rounded text-xs">
-                          {v}
-                        </span>
-                      ))}
                     </div>
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
 
               {suggestion.questionNormalized && suggestion.questionNormalized.length > 0 && (
@@ -249,8 +251,8 @@ export function InlineEnrichmentPanel({
                   <div className="text-sm p-3 rounded border bg-blue-50 border-blue-200">
                     <div className="flex flex-wrap gap-1">
                       {suggestion.questionNormalized.map((v, i) => (
-                        <span key={i} className="bg-blue-200 text-blue-700 px-2 py-0.5 rounded text-xs">
-                          {v}
+                        <span key={i} className="bg-green-200 text-green-700 px-2 py-0.5 rounded text-xs">
+                          + {v}
                         </span>
                       ))}
                     </div>
