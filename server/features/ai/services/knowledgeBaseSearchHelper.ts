@@ -266,8 +266,8 @@ export async function runKnowledgeBaseSearch(
           questionVariation: Array.isArray(a.questionVariation) ? a.questionVariation as string[] : [],
           productId: a.productId,
           intentId: a.intentId,
-          relevanceScore: aggResult.maxScore,
-          matchReason: buildMatchReasonFromQueries(aggResult.queryMatches, aggResult.maxScore),
+          relevanceScore: aggResult.finalScore,
+          matchReason: buildMatchReasonFromQueries(aggResult.queryMatches, aggResult.finalScore, aggResult.isAmbiguous),
           matchedTerms: extractMatchedTerms(queryForMatching, articleText)
         };
       });

@@ -15,6 +15,8 @@ export interface SearchResultWithId {
 export interface AggregatedSearchResult<T extends SearchResultWithId> {
   result: T;
   maxScore: number;
+  finalScore: number;
+  isAmbiguous: boolean;
   queryMatches: {
     verbatim?: number;
     keyword?: number;
@@ -38,15 +40,12 @@ export async function generateMultiQueryEmbeddings(
   } = {};
   const validQueries: string[] = [];
 
-  const enrichQuery = (query: string) => 
-    productContext ? `Produto: ${productContext}. ${query}` : query;
-
   const embeddingPromises: Promise<void>[] = [];
 
   if (queries.verbatimQuery?.trim()) {
     validQueries.push("verbatim");
     embeddingPromises.push(
-      generateEmbedding(enrichQuery(queries.verbatimQuery), { contextType: "query" })
+      generateEmbedding(queries.verbatimQuery, { contextType: "query" })
         .then(result => { embeddings.verbatimEmbedding = result.embedding; })
     );
   }
@@ -54,7 +53,7 @@ export async function generateMultiQueryEmbeddings(
   if (queries.keywordQuery?.trim()) {
     validQueries.push("keyword");
     embeddingPromises.push(
-      generateEmbedding(enrichQuery(queries.keywordQuery), { contextType: "query" })
+      generateEmbedding(queries.keywordQuery, { contextType: "query" })
         .then(result => { embeddings.keywordEmbedding = result.embedding; })
     );
   }
@@ -62,7 +61,7 @@ export async function generateMultiQueryEmbeddings(
   if (queries.normalizedQuery?.trim()) {
     validQueries.push("normalized");
     embeddingPromises.push(
-      generateEmbedding(enrichQuery(queries.normalizedQuery), { contextType: "query" })
+      generateEmbedding(queries.normalizedQuery, { contextType: "query" })
         .then(result => { embeddings.normalizedEmbedding = result.embedding; })
     );
   }
@@ -72,6 +71,43 @@ export async function generateMultiQueryEmbeddings(
   return { ...embeddings, validQueries };
 }
 
+const WEIGHT_VERBATIM = 0.35;
+const WEIGHT_KEYWORD = 0.35;
+const WEIGHT_NORMALIZED = 0.30;
+const INCONSISTENCY_PENALTY_LAMBDA = 0.15;
+const MIN_PER_QUERY_THRESHOLD = 48;
+const MAX_GAP_THRESHOLD = 18;
+
+function calculateConsistencyAwareScore(
+  queryMatches: { verbatim?: number; keyword?: number; normalized?: number }
+): { finalScore: number; isAmbiguous: boolean; maxScore: number } {
+  const scores: number[] = [];
+  
+  if (queryMatches.verbatim !== undefined) scores.push(queryMatches.verbatim);
+  if (queryMatches.keyword !== undefined) scores.push(queryMatches.keyword);
+  if (queryMatches.normalized !== undefined) scores.push(queryMatches.normalized);
+  
+  if (scores.length === 0) {
+    return { finalScore: 0, isAmbiguous: true, maxScore: 0 };
+  }
+  
+  const maxScore = Math.max(...scores);
+  const minScore = Math.min(...scores);
+  const gap = maxScore - minScore;
+  
+  const sV = (queryMatches.verbatim ?? 0) / 100;
+  const sK = (queryMatches.keyword ?? 0) / 100;
+  const sN = (queryMatches.normalized ?? 0) / 100;
+  
+  const base = WEIGHT_VERBATIM * sV + WEIGHT_KEYWORD * sK + WEIGHT_NORMALIZED * sN;
+  const penalty = INCONSISTENCY_PENALTY_LAMBDA * (gap / 100);
+  const finalScore = Math.round((base - penalty) * 100);
+  
+  const isAmbiguous = minScore < MIN_PER_QUERY_THRESHOLD && gap > MAX_GAP_THRESHOLD;
+  
+  return { finalScore: Math.max(0, finalScore), isAmbiguous, maxScore };
+}
+
 export function aggregateMultiQueryResults<T extends SearchResultWithId>(
   verbatimResults: T[],
   keywordResults: T[],
@@ -79,20 +115,20 @@ export function aggregateMultiQueryResults<T extends SearchResultWithId>(
   limit: number = 10,
   minScore: number = 50
 ): AggregatedSearchResult<T>[] {
-  const resultMap = new Map<number, AggregatedSearchResult<T>>();
+  const resultMap = new Map<number, { result: T; bestSimilarity: number; queryMatches: { verbatim?: number; keyword?: number; normalized?: number } }>();
 
   for (const result of verbatimResults) {
     const existing = resultMap.get(result.id);
     if (existing) {
       existing.queryMatches.verbatim = result.similarity;
-      if (result.similarity > existing.maxScore) {
-        existing.maxScore = result.similarity;
+      if (result.similarity > existing.bestSimilarity) {
+        existing.bestSimilarity = result.similarity;
         existing.result = result;
       }
     } else {
       resultMap.set(result.id, {
         result,
-        maxScore: result.similarity,
+        bestSimilarity: result.similarity,
         queryMatches: { verbatim: result.similarity }
       });
     }
@@ -102,14 +138,14 @@ export function aggregateMultiQueryResults<T extends SearchResultWithId>(
     const existing = resultMap.get(result.id);
     if (existing) {
       existing.queryMatches.keyword = result.similarity;
-      if (result.similarity > existing.maxScore) {
-        existing.maxScore = result.similarity;
+      if (result.similarity > existing.bestSimilarity) {
+        existing.bestSimilarity = result.similarity;
         existing.result = result;
       }
     } else {
       resultMap.set(result.id, {
         result,
-        maxScore: result.similarity,
+        bestSimilarity: result.similarity,
         queryMatches: { keyword: result.similarity }
       });
     }
@@ -119,42 +155,57 @@ export function aggregateMultiQueryResults<T extends SearchResultWithId>(
     const existing = resultMap.get(result.id);
     if (existing) {
       existing.queryMatches.normalized = result.similarity;
-      if (result.similarity > existing.maxScore) {
-        existing.maxScore = result.similarity;
+      if (result.similarity > existing.bestSimilarity) {
+        existing.bestSimilarity = result.similarity;
         existing.result = result;
       }
     } else {
       resultMap.set(result.id, {
         result,
-        maxScore: result.similarity,
+        bestSimilarity: result.similarity,
         queryMatches: { normalized: result.similarity }
       });
     }
   }
 
-  const aggregatedResults = Array.from(resultMap.values())
-    .filter(item => item.maxScore >= minScore)
-    .sort((a, b) => b.maxScore - a.maxScore)
-    .slice(0, limit);
+  const aggregatedResults: AggregatedSearchResult<T>[] = [];
+  
+  for (const { result, queryMatches } of resultMap.values()) {
+    const { finalScore, isAmbiguous, maxScore } = calculateConsistencyAwareScore(queryMatches);
+    
+    if (finalScore >= minScore) {
+      aggregatedResults.push({
+        result,
+        maxScore,
+        finalScore,
+        isAmbiguous,
+        queryMatches
+      });
+    }
+  }
 
-  return aggregatedResults;
+  aggregatedResults.sort((a, b) => b.finalScore - a.finalScore);
+
+  return aggregatedResults.slice(0, limit);
 }
 
 export function buildMatchReasonFromQueries(
   queryMatches: { verbatim?: number; keyword?: number; normalized?: number },
-  maxScore: number
+  finalScore: number,
+  isAmbiguous: boolean = false
 ): string {
   const parts: string[] = [];
   
   if (queryMatches.verbatim !== undefined) {
-    parts.push(`verbatim: ${queryMatches.verbatim}%`);
+    parts.push(`V:${queryMatches.verbatim}%`);
   }
   if (queryMatches.keyword !== undefined) {
-    parts.push(`keyword: ${queryMatches.keyword}%`);
+    parts.push(`K:${queryMatches.keyword}%`);
   }
   if (queryMatches.normalized !== undefined) {
-    parts.push(`normalized: ${queryMatches.normalized}%`);
+    parts.push(`N:${queryMatches.normalized}%`);
   }
 
-  return `Multi-query max: ${maxScore}% (${parts.join(", ")})`;
+  const ambiguousFlag = isAmbiguous ? " [AMBIGUOUS]" : "";
+  return `Score: ${finalScore}% (${parts.join(", ")})${ambiguousFlag}`;
 }
