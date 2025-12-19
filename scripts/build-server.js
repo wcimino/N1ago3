@@ -38,6 +38,8 @@ await esbuild.build({
     'openai',
     'drizzle-orm',
     'memoizee',
+    'parquetjs',
+    '@google-cloud/storage',
   ],
   sourcemap: false,
   minify: true,
