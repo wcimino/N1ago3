@@ -442,12 +442,16 @@ export function KnowledgeBaseForm({
               const uniqueNewKeywords = suggestedKeywords.filter(k => !currentKeywords.includes(k));
               newKeywords = [...currentKeywords, ...uniqueNewKeywords];
             }
+            const existingNormalized = prev.questionNormalized || [];
+            const newNormalized = (suggestion.questionNormalized || []).filter(
+              n => !existingNormalized.includes(n)
+            );
             return {
               ...prev,
               answer: suggestion.answer || prev.answer,
               keywords: newKeywords,
               questionVariation: [...existingVariations, ...newVariations],
-              questionNormalized: suggestion.questionNormalized || prev.questionNormalized,
+              questionNormalized: [...existingNormalized, ...newNormalized],
             };
           });
         }}
