@@ -62,9 +62,49 @@ router.get("/api/knowledge/articles/:id", async (req, res) => {
   }
 });
 
+function normalizeArticleData(data: Record<string, unknown>): Record<string, unknown> {
+  const normalized = { ...data };
+  
+  if ('questionNormalized' in normalized) {
+    const qn = normalized.questionNormalized;
+    if (Array.isArray(qn)) {
+      normalized.questionNormalized = qn.length > 0 ? JSON.stringify(qn) : null;
+    } else if (typeof qn === 'string') {
+      try {
+        const parsed = JSON.parse(qn);
+        normalized.questionNormalized = Array.isArray(parsed) && parsed.length > 0 ? qn : null;
+      } catch {
+        normalized.questionNormalized = null;
+      }
+    }
+  }
+  
+  if ('keywords' in normalized) {
+    const kw = normalized.keywords;
+    if (Array.isArray(kw)) {
+      normalized.keywords = kw.length > 0 ? JSON.stringify(kw) : null;
+    } else if (typeof kw === 'string') {
+      const trimmed = kw.trim();
+      if (trimmed.startsWith('[')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          normalized.keywords = Array.isArray(parsed) && parsed.length > 0 ? trimmed : null;
+        } catch {
+          normalized.keywords = trimmed.length > 0 ? JSON.stringify(trimmed.split(',').map(k => k.trim()).filter(k => k)) : null;
+        }
+      } else {
+        normalized.keywords = trimmed.length > 0 ? JSON.stringify(trimmed.split(',').map(k => k.trim()).filter(k => k)) : null;
+      }
+    }
+  }
+  
+  return normalized;
+}
+
 router.post("/api/knowledge/articles", async (req, res) => {
   try {
-    const data: InsertKnowledgeBaseArticle = req.body;
+    const rawData = req.body;
+    const data = normalizeArticleData(rawData) as InsertKnowledgeBaseArticle;
     
     if (!data.question || !data.answer) {
       return res.status(400).json({ error: "Missing required fields (question, answer)" });
@@ -85,7 +125,8 @@ router.put("/api/knowledge/articles/:id", async (req, res) => {
       return res.status(400).json({ error: "Invalid ID" });
     }
     
-    const data: Partial<InsertKnowledgeBaseArticle> = req.body;
+    const rawData = req.body;
+    const data = normalizeArticleData(rawData) as Partial<InsertKnowledgeBaseArticle>;
     const article = await knowledgeBaseStorage.updateArticle(id, data);
     
     if (!article) {

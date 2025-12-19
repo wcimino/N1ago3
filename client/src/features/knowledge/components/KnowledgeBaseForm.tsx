@@ -64,7 +64,12 @@ export function KnowledgeBaseForm({
       }
       let parsedKeywords: string[] = [];
       if (initialData.keywords) {
-        parsedKeywords = initialData.keywords.split(",").map(k => k.trim()).filter(k => k);
+        try {
+          const parsed = JSON.parse(initialData.keywords);
+          if (Array.isArray(parsed)) parsedKeywords = parsed;
+        } catch {
+          parsedKeywords = initialData.keywords.split(",").map(k => k.trim()).filter(k => k);
+        }
       }
       setFormData({
         question: initialData.question || "",
@@ -164,7 +169,7 @@ export function KnowledgeBaseForm({
     onSubmit({
       question: formData.question,
       answer: formData.answer,
-      keywords: keywordsArray.length > 0 ? keywordsArray.join(", ") : null,
+      keywords: keywordsArray.length > 0 ? JSON.stringify(keywordsArray) : null,
       questionVariation: formData.questionVariation.length > 0 ? formData.questionVariation : null,
       questionNormalized: formData.questionNormalized.length > 0 ? JSON.stringify(formData.questionNormalized) : null,
       productId: prefilledData?.productId || hierarchy.selection.productId,
