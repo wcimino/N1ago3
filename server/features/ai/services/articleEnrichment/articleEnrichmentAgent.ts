@@ -38,8 +38,8 @@ function buildCreateSuggestionTool(context: ArticleEnrichmentContext): ToolDefin
           type: "array",
           items: { type: "string" },
           minItems: 5,
-          maxItems: 5,
-          description: "OBRIGATÓRIO: Exatamente 5 versões normalizadas e curtas (até 10 palavras cada) para busca semântica. Sem pronomes, sem polidez, sem 'como faço'. Deve representar o núcleo semântico da demanda. Exemplo para 'Como desbloquear cartão': ['desbloquear cartao credito', 'liberar cartao bloqueado', 'cartao bloqueado senha incorreta', 'reativar cartao ifood pago', 'erro desbloqueio cartao app']. Este campo é OBRIGATÓRIO quando action=update."
+          maxItems: 10,
+          description: "OBRIGATÓRIO: Entre 5 e 10 versões normalizadas e curtas (até 10 palavras cada) para busca semântica. Sem pronomes, sem polidez, sem 'como faço'. Deve representar o núcleo semântico da demanda. Exemplo para 'Como desbloquear cartão': ['desbloquear cartao credito', 'liberar cartao bloqueado', 'cartao bloqueado senha incorreta', 'reativar cartao ifood pago', 'erro desbloqueio cartao app']. Este campo é OBRIGATÓRIO quando action=update."
         },
         updateReason: {
           type: "string",
