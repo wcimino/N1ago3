@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Tag, MessageSquare, CheckCircle, Plus, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
+import { Tag, MessageSquare, CheckCircle, Plus, Trash2, ToggleLeft, ToggleRight, X } from "lucide-react";
 import { FormActions } from "@/shared/components/ui";
 import { ProductHierarchySelects, ProductHierarchyDisplay } from "@/shared/components/forms/ProductHierarchySelects";
 import { useProductHierarchySelects } from "@/shared/hooks";
@@ -39,6 +39,7 @@ export function KnowledgeBaseForm({
     isActive: false,
   });
   const [newVariation, setNewVariation] = useState("");
+  const [newNormalized, setNewNormalized] = useState("");
   const [initializedForId, setInitializedForId] = useState<number | null>(null);
 
   const hierarchy = useProductHierarchySelects({
@@ -113,6 +114,23 @@ export function KnowledgeBaseForm({
     setFormData((prev) => ({
       ...prev,
       questionVariation: prev.questionVariation.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleAddNormalized = () => {
+    if (newNormalized.trim()) {
+      setFormData((prev) => ({
+        ...prev,
+        questionNormalized: [...prev.questionNormalized, newNormalized.trim()],
+      }));
+      setNewNormalized("");
+    }
+  };
+
+  const handleRemoveNormalized = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      questionNormalized: prev.questionNormalized.filter((_, i) => i !== index),
     }));
   };
 
@@ -232,25 +250,54 @@ export function KnowledgeBaseForm({
         </div>
       </div>
 
-      {formData.questionNormalized.length > 0 && (
-        <div>
-          <label className="flex items-center gap-1.5 text-xs font-medium text-purple-600 mb-1.5">
-            <MessageSquare className="w-3.5 h-3.5" />
-            Versões Normalizadas
-            <span className="text-xs text-gray-400 font-normal ml-1">(gerado por IA - para busca semântica)</span>
-          </label>
-          <div className="flex flex-wrap gap-2 p-2 border border-purple-200 rounded-lg bg-purple-50">
+      <div>
+        <label className="flex items-center gap-1.5 text-xs font-medium text-purple-600 mb-1.5">
+          <MessageSquare className="w-3.5 h-3.5" />
+          Versões Normalizadas
+          <span className="text-xs text-gray-400 font-normal ml-1">(para busca semântica)</span>
+        </label>
+        <div className="flex gap-2 mb-2">
+          <input
+            type="text"
+            value={newNormalized}
+            onChange={(e) => setNewNormalized(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleAddNormalized();
+              }
+            }}
+            className="flex-1 px-3 py-2 text-sm border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white"
+            placeholder="Digite uma versão normalizada e pressione Enter ou clique em +"
+          />
+          <button
+            type="button"
+            onClick={handleAddNormalized}
+            className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
+        {formData.questionNormalized.length > 0 && (
+          <div className="flex flex-wrap gap-2">
             {formData.questionNormalized.map((item, index) => (
               <span
                 key={index}
-                className="inline-flex items-center px-2 py-1 text-xs bg-purple-100 border border-purple-300 rounded-lg text-purple-700"
+                className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-purple-50 border border-purple-200 rounded-lg text-purple-700"
               >
                 {item}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveNormalized(index)}
+                  className="hover:text-red-500"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               </span>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <div>
         <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
