@@ -17,10 +17,12 @@ router.get("/stats", async (req: Request, res: Response) => {
   try {
     const orderBy = (req.query.orderBy as string) || "callCount";
     const limit = parseInt(req.query.limit as string) || 50;
+    const period = (req.query.period as "1h" | "24h" | "all") || "all";
     
     const stats = await getQueryStats({
       orderBy: orderBy as any,
       limit,
+      period,
     });
     
     res.json({ stats });
@@ -33,8 +35,9 @@ router.get("/slow-queries", async (req: Request, res: Response) => {
   try {
     const thresholdMs = parseInt(req.query.threshold as string) || 100;
     const limit = parseInt(req.query.limit as string) || 50;
+    const period = (req.query.period as "1h" | "24h" | "all") || "all";
     
-    const queries = await getRecentSlowQueries(thresholdMs, limit);
+    const queries = await getRecentSlowQueries(thresholdMs, limit, period);
     
     res.json({ queries });
   } catch (error: any) {
@@ -44,7 +47,8 @@ router.get("/slow-queries", async (req: Request, res: Response) => {
 
 router.get("/summary", async (req: Request, res: Response) => {
   try {
-    const summary = await getQueryLogsSummary();
+    const period = (req.query.period as "1h" | "24h" | "all") || "all";
+    const summary = await getQueryLogsSummary(period);
     res.json(summary);
   } catch (error: any) {
     res.status(500).json({ error: error.message });

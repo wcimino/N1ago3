@@ -140,8 +140,9 @@ export function logQuery(
 export async function getQueryStats(options: {
   orderBy?: "callCount" | "avgDuration" | "totalDuration" | "maxDuration";
   limit?: number;
+  period?: "1h" | "24h" | "all";
 }) {
-  const { orderBy = "callCount", limit = 50 } = options;
+  const { orderBy = "callCount", limit = 50, period = "all" } = options;
 
   let orderClause;
   switch (orderBy) {
@@ -158,28 +159,56 @@ export async function getQueryStats(options: {
       orderClause = sql`${queryStats.callCount} DESC`;
   }
 
-  const results = await originalDb
-    .select()
-    .from(queryStats)
-    .orderBy(orderClause)
-    .limit(limit);
+  let whereClause;
+  if (period === "1h") {
+    whereClause = sql`${queryStats.lastCalledAt} >= NOW() - INTERVAL '1 hour'`;
+  } else if (period === "24h") {
+    whereClause = sql`${queryStats.lastCalledAt} >= NOW() - INTERVAL '24 hours'`;
+  }
 
+  const query = originalDb.select().from(queryStats);
+  
+  if (whereClause) {
+    const results = await query.where(whereClause).orderBy(orderClause).limit(limit);
+    return results;
+  }
+
+  const results = await query.orderBy(orderClause).limit(limit);
   return results;
 }
 
-export async function getRecentSlowQueries(thresholdMs: number = 100, limit: number = 50) {
+export async function getRecentSlowQueries(thresholdMs: number = 100, limit: number = 50, period?: "1h" | "24h" | "all") {
+  let whereClause = sql`${queryLogs.durationMs} >= ${thresholdMs}`;
+  
+  if (period === "1h") {
+    whereClause = sql`${queryLogs.durationMs} >= ${thresholdMs} AND ${queryLogs.createdAt} >= NOW() - INTERVAL '1 hour'`;
+  } else if (period === "24h") {
+    whereClause = sql`${queryLogs.durationMs} >= ${thresholdMs} AND ${queryLogs.createdAt} >= NOW() - INTERVAL '24 hours'`;
+  }
+
   const results = await originalDb
     .select()
     .from(queryLogs)
-    .where(sql`${queryLogs.durationMs} >= ${thresholdMs}`)
+    .where(whereClause)
     .orderBy(sql`${queryLogs.createdAt} DESC`)
     .limit(limit);
 
   return results;
 }
 
-export async function getQueryLogsSummary() {
-  const [totalStats] = await originalDb
+export async function getQueryLogsSummary(period?: "1h" | "24h" | "all") {
+  let statsWhereClause;
+  let logsWhereClause = sql`${queryLogs.durationMs} >= ${slowQueryThresholdMs}`;
+
+  if (period === "1h") {
+    statsWhereClause = sql`${queryStats.lastCalledAt} >= NOW() - INTERVAL '1 hour'`;
+    logsWhereClause = sql`${queryLogs.durationMs} >= ${slowQueryThresholdMs} AND ${queryLogs.createdAt} >= NOW() - INTERVAL '1 hour'`;
+  } else if (period === "24h") {
+    statsWhereClause = sql`${queryStats.lastCalledAt} >= NOW() - INTERVAL '24 hours'`;
+    logsWhereClause = sql`${queryLogs.durationMs} >= ${slowQueryThresholdMs} AND ${queryLogs.createdAt} >= NOW() - INTERVAL '24 hours'`;
+  }
+
+  const statsQuery = originalDb
     .select({
       totalQueries: sql<number>`COALESCE(SUM(${queryStats.callCount}), 0)`,
       uniqueQueries: sql<number>`COUNT(*)`,
@@ -188,10 +217,14 @@ export async function getQueryLogsSummary() {
     })
     .from(queryStats);
 
+  const [totalStats] = statsWhereClause 
+    ? await statsQuery.where(statsWhereClause)
+    : await statsQuery;
+
   const slowQueriesCount = await originalDb
     .select({ count: sql<number>`COUNT(*)` })
     .from(queryLogs)
-    .where(sql`${queryLogs.durationMs} >= ${slowQueryThresholdMs}`);
+    .where(logsWhereClause);
 
   return {
     totalQueries: Number(totalStats?.totalQueries || 0),

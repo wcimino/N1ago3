@@ -44,15 +44,17 @@ interface Config {
 }
 
 type OrderBy = "callCount" | "avgDuration" | "totalDuration" | "maxDuration";
+type Period = "1h" | "24h" | "all";
 
 export function QueryMonitoringTab() {
   const queryClient = useQueryClient();
   const [orderBy, setOrderBy] = useState<OrderBy>("callCount");
+  const [period, setPeriod] = useState<Period>("all");
   const [showSlowQueries, setShowSlowQueries] = useState(false);
 
   const { data: summary, isLoading: summaryLoading } = useQuery<Summary>({
-    queryKey: ["query-monitoring-summary"],
-    queryFn: () => fetchApi<Summary>("/api/monitoring/queries/summary"),
+    queryKey: ["query-monitoring-summary", period],
+    queryFn: () => fetchApi<Summary>(`/api/monitoring/queries/summary?period=${period}`),
     refetchInterval: 10000,
   });
 
@@ -62,14 +64,14 @@ export function QueryMonitoringTab() {
   });
 
   const { data: statsData, isLoading: statsLoading } = useQuery<{ stats: QueryStat[] }>({
-    queryKey: ["query-monitoring-stats", orderBy],
-    queryFn: () => fetchApi<{ stats: QueryStat[] }>(`/api/monitoring/queries/stats?orderBy=${orderBy}&limit=30`),
+    queryKey: ["query-monitoring-stats", orderBy, period],
+    queryFn: () => fetchApi<{ stats: QueryStat[] }>(`/api/monitoring/queries/stats?orderBy=${orderBy}&limit=30&period=${period}`),
     refetchInterval: 15000,
   });
 
   const { data: slowQueriesData, isLoading: slowLoading } = useQuery<{ queries: QueryLog[] }>({
-    queryKey: ["query-monitoring-slow"],
-    queryFn: () => fetchApi<{ queries: QueryLog[] }>(`/api/monitoring/queries/slow-queries?threshold=100&limit=30`),
+    queryKey: ["query-monitoring-slow", period],
+    queryFn: () => fetchApi<{ queries: QueryLog[] }>(`/api/monitoring/queries/slow-queries?threshold=100&limit=30&period=${period}`),
     enabled: showSlowQueries,
     refetchInterval: 15000,
   });
@@ -110,7 +112,16 @@ export function QueryMonitoringTab() {
             Acompanhe as queries SQL mais executadas e identifique gargalos de performance
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value as Period)}
+            className="px-3 py-2 text-sm border rounded-lg bg-white"
+          >
+            <option value="1h">Ultima hora</option>
+            <option value="24h">Ultimas 24h</option>
+            <option value="all">Todo o periodo</option>
+          </select>
           <button
             onClick={() => flushMutation.mutate()}
             disabled={flushMutation.isPending}
