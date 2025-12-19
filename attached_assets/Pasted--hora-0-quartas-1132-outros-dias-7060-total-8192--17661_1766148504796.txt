@@ -1,0 +1,146 @@
+[
+  {
+    "hora": "0",
+    "quartas": "1132",
+    "outros_dias": "7060",
+    "total": "8192"
+  },
+  {
+    "hora": "1",
+    "quartas": "1095",
+    "outros_dias": "4277",
+    "total": "5372"
+  },
+  {
+    "hora": "2",
+    "quartas": "1079",
+    "outros_dias": "2839",
+    "total": "3918"
+  },
+  {
+    "hora": "3",
+    "quartas": "525",
+    "outros_dias": "1946",
+    "total": "2471"
+  },
+  {
+    "hora": "4",
+    "quartas": "1044",
+    "outros_dias": "938",
+    "total": "1982"
+  },
+  {
+    "hora": "5",
+    "quartas": "345",
+    "outros_dias": "1474",
+    "total": "1819"
+  },
+  {
+    "hora": "6",
+    "quartas": "142",
+    "outros_dias": "658",
+    "total": "800"
+  },
+  {
+    "hora": "7",
+    "quartas": "132",
+    "outros_dias": "664",
+    "total": "796"
+  },
+  {
+    "hora": "8",
+    "quartas": "119",
+    "outros_dias": "722",
+    "total": "841"
+  },
+  {
+    "hora": "9",
+    "quartas": "529",
+    "outros_dias": "1699",
+    "total": "2228"
+  },
+  {
+    "hora": "10",
+    "quartas": "955",
+    "outros_dias": "3794",
+    "total": "4749"
+  },
+  {
+    "hora": "11",
+    "quartas": "12362",
+    "outros_dias": "29799",
+    "total": "42161"
+  },
+  {
+    "hora": "12",
+    "quartas": "36749",
+    "outros_dias": "41539",
+    "total": "78288"
+  },
+  {
+    "hora": "13",
+    "quartas": "28017",
+    "outros_dias": "46669",
+    "total": "74686"
+  },
+  {
+    "hora": "14",
+    "quartas": "21738",
+    "outros_dias": "51405",
+    "total": "73143"
+  },
+  {
+    "hora": "15",
+    "quartas": "22277",
+    "outros_dias": "45307",
+    "total": "67584"
+  },
+  {
+    "hora": "16",
+    "quartas": "17807",
+    "outros_dias": "30381",
+    "total": "48188"
+  },
+  {
+    "hora": "17",
+    "quartas": "17742",
+    "outros_dias": "42073",
+    "total": "59815"
+  },
+  {
+    "hora": "18",
+    "quartas": "16360",
+    "outros_dias": "37861",
+    "total": "54221"
+  },
+  {
+    "hora": "19",
+    "quartas": "14382",
+    "outros_dias": "31863",
+    "total": "46245"
+  },
+  {
+    "hora": "20",
+    "quartas": "11653",
+    "outros_dias": "27682",
+    "total": "39335"
+  },
+  {
+    "hora": "21",
+    "quartas": "11247",
+    "outros_dias": "35795",
+    "total": "47042"
+  },
+  {
+    "hora": "22",
+    "quartas": "9042",
+    "outros_dias": "29256",
+    "total": "38298"
+  },
+  {
+    "hora": "23",
+    "quartas": "6807",
+    "outros_dias": "22165",
+    "total": "28972"
+  }
+]

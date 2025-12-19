@@ -5,6 +5,7 @@ import { setupAuth } from "./features/auth/index.js";
 import { registerRoutes } from "./routes/index.js";
 import { startPollingWorker } from "./features/sync/services/pollingWorker.js";
 import "./features/events/services/eventProcessor.js";
+import { vacuumService } from "./features/maintenance/services/index.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -38,6 +39,7 @@ async function startServer() {
   }
 
   startPollingWorker();
+  vacuumService.start();
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Servidor N1ago iniciado em http://0.0.0.0:${PORT}`);

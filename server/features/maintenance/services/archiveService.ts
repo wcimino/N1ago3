@@ -166,10 +166,23 @@ class ArchiveService {
   private async runArchiveProcess(): Promise<void> {
     try {
       await this.archiveTable("zendesk_conversations_webhook_raw");
+      await this.runVacuum("zendesk_conversations_webhook_raw");
+      
       await this.archiveTable("openai_api_logs");
+      await this.runVacuum("openai_api_logs");
     } finally {
       this.isRunning = false;
       this.currentProgress = null;
+    }
+  }
+
+  private async runVacuum(tableName: string): Promise<void> {
+    try {
+      console.log(`[Archive] Running VACUUM on ${tableName}...`);
+      await db.execute(sql`VACUUM ${sql.identifier(tableName)}`);
+      console.log(`[Archive] VACUUM completed on ${tableName}`);
+    } catch (err: any) {
+      console.error(`[Archive] VACUUM failed on ${tableName}:`, err.message);
     }
   }
 
