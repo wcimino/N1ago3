@@ -9,6 +9,10 @@ import * as os from "os";
 
 const BATCH_SIZE = 2000;
 
+function getEnvironmentPrefix(): string {
+  return process.env.REPLIT_DEPLOYMENT ? "prod" : "dev";
+}
+
 export interface ArchiveStats {
   zendeskWebhook: {
     pendingRecords: number;
@@ -230,7 +234,8 @@ class ArchiveService {
     const schema = this.getParquetSchema(tableName);
     const dateStr = archiveDate.toISOString().split("T")[0];
     const hourStr = hour.toString().padStart(2, "0");
-    const storageFileName = `archives/${tableName}/${dateStr}/${hourStr}.parquet`;
+    const envPrefix = getEnvironmentPrefix();
+    const storageFileName = `archives/${envPrefix}/${tableName}/${dateStr}/${hourStr}.parquet`;
 
     const tempDir = os.tmpdir();
     const tempFilePath = path.join(tempDir, `archive_${tableName}_${dateStr}_${hourStr}_${Date.now()}.parquet`);
