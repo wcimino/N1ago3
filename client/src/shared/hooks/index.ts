@@ -22,3 +22,4 @@ export { useProductHierarchySelects } from "./useProductHierarchySelects";
 export type { ProductHierarchySelection, ProductHierarchyOptions, ProductHierarchyResult } from "./useProductHierarchySelects";
 export { useModalState, useConfirmModal, useInputModal } from "./useModalState";
 export type { ModalState, UseModalStateResult, ConfirmModalState, UseConfirmModalResult, InputModalState, UseInputModalResult } from "./useModalState";
+export { useConfirmation } from "./useConfirmation";

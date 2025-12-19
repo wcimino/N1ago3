@@ -1,6 +1,34 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Info } from "lucide-react";
 import { Button } from "./Button";
 import { BaseModal } from "./BaseModal";
+
+type ConfirmVariant = "danger" | "warning" | "info";
+
+const variantConfig: Record<ConfirmVariant, {
+  bgClass: string;
+  iconClass: string;
+  buttonVariant: "danger" | "primary";
+  icon: typeof AlertTriangle | typeof Info;
+}> = {
+  danger: {
+    bgClass: "bg-red-100",
+    iconClass: "text-red-600",
+    buttonVariant: "danger",
+    icon: AlertTriangle,
+  },
+  warning: {
+    bgClass: "bg-amber-100",
+    iconClass: "text-amber-600",
+    buttonVariant: "danger",
+    icon: AlertTriangle,
+  },
+  info: {
+    bgClass: "bg-blue-100",
+    iconClass: "text-blue-600",
+    buttonVariant: "primary",
+    icon: Info,
+  },
+};
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -10,7 +38,7 @@ interface ConfirmModalProps {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  variant?: "danger" | "warning";
+  variant?: ConfirmVariant;
 }
 
 export function ConfirmModal({
@@ -19,7 +47,7 @@ export function ConfirmModal({
   onConfirm,
   title,
   message,
-  confirmLabel = "Excluir",
+  confirmLabel = "Confirmar",
   cancelLabel = "Cancelar",
   variant = "danger",
 }: ConfirmModalProps) {
@@ -28,9 +56,12 @@ export function ConfirmModal({
     onClose();
   };
 
+  const config = variantConfig[variant];
+  const IconComponent = config.icon;
+
   const icon = (
-    <div className={`p-2 rounded-full ${variant === "danger" ? "bg-red-100" : "bg-amber-100"}`}>
-      <AlertTriangle className={`w-5 h-5 ${variant === "danger" ? "text-red-600" : "text-amber-600"}`} />
+    <div className={`p-2 rounded-full ${config.bgClass}`}>
+      <IconComponent className={`w-5 h-5 ${config.iconClass}`} />
     </div>
   );
 
@@ -39,7 +70,7 @@ export function ConfirmModal({
       <Button onClick={onClose} variant="secondary">
         {cancelLabel}
       </Button>
-      <Button onClick={handleConfirm} variant="danger">
+      <Button onClick={handleConfirm} variant={config.buttonVariant}>
         {confirmLabel}
       </Button>
     </>
