@@ -28,6 +28,7 @@ export interface KnowledgeArticle {
   resolution: string | null;
   observations: string | null;
   question: string | null;
+  questionNormalized: string | null;
   answer: string | null;
   keywords: string | null;
   questionVariation: string[] | null;
@@ -69,6 +70,7 @@ export interface SolutionWithActions extends KnowledgeBaseSolution {
 export interface ObjectiveProblem {
   id: number;
   name: string;
+  problemNormalized: string | null;
   description: string;
   synonyms: string[];
   examples: string[];

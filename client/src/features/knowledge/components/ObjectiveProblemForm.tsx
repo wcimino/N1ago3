@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, ChevronDown, X } from "lucide-react";
+import { ChevronRight, ChevronDown, X, MessageSquare } from "lucide-react";
 import { FormField } from "../../../shared/components/crud";
 import { FormActions } from "../../../shared/components/ui";
 
@@ -48,6 +48,7 @@ interface ObjectiveProblemFormProps {
   onCancel: () => void;
   isEditing: boolean;
   isMutating: boolean;
+  problemNormalized?: string | null;
 }
 
 export function ObjectiveProblemForm({
@@ -57,6 +58,7 @@ export function ObjectiveProblemForm({
   onCancel,
   isEditing,
   isMutating,
+  problemNormalized,
 }: ObjectiveProblemFormProps) {
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
 
@@ -122,6 +124,19 @@ export function ObjectiveProblemForm({
             rows={2}
             placeholder="Descricao detalhada do problema"
           />
+
+          {problemNormalized && (
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-medium text-purple-600 mb-1.5">
+                <MessageSquare className="w-3.5 h-3.5" />
+                Problema Normalizado
+                <span className="text-xs text-gray-400 font-normal ml-1">(gerado por IA)</span>
+              </label>
+              <div className="w-full px-3 py-2 text-sm border border-purple-200 rounded-lg bg-purple-50 text-purple-900">
+                {problemNormalized}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <FormField

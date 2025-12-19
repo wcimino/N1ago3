@@ -6,6 +6,7 @@ export type CatalogProduct = ProductCatalogItem;
 export interface KnowledgeBaseArticle {
   id: number;
   question: string | null;
+  questionNormalized: string | null;
   answer: string | null;
   keywords: string | null;
   questionVariation: string[] | null;

@@ -220,6 +220,19 @@ export function KnowledgeBaseForm({
         </div>
       </div>
 
+      {initialData?.questionNormalized && (
+        <div>
+          <label className="flex items-center gap-1.5 text-xs font-medium text-purple-600 mb-1.5">
+            <MessageSquare className="w-3.5 h-3.5" />
+            Pergunta Normalizada
+            <span className="text-xs text-gray-400 font-normal ml-1">(gerado por IA)</span>
+          </label>
+          <div className="w-full px-3 py-2 text-sm border border-purple-200 rounded-lg bg-purple-50 text-purple-900">
+            {initialData.questionNormalized}
+          </div>
+        </div>
+      )}
+
       <div>
         <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
           <Tag className="w-3.5 h-3.5" />

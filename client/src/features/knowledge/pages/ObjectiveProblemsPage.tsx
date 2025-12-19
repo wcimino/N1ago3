@@ -23,6 +23,7 @@ export function ObjectiveProblemsPage() {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProduct, setSelectedProduct] = useState("");
+  const [editingProblem, setEditingProblem] = useState<ObjectiveProblem | null>(null);
 
   const {
     showForm,
@@ -71,8 +72,8 @@ export function ObjectiveProblemsPage() {
     queryKeys: ["/api/knowledge/objective-problems", "/api/knowledge/objective-problems/stats"],
     transformCreateData: transformObjectiveProblemFormData,
     transformUpdateData: transformObjectiveProblemFormData,
-    onCreateSuccess: resetForm,
-    onUpdateSuccess: resetForm,
+    onCreateSuccess: () => { setEditingProblem(null); resetForm(); },
+    onUpdateSuccess: () => { setEditingProblem(null); resetForm(); },
   });
 
   const filteredProblems = useMemo(() => {
@@ -162,6 +163,7 @@ export function ObjectiveProblemsPage() {
   }, [products]);
 
   const handleEdit = (problem: ObjectiveProblem) => {
+    setEditingProblem(problem);
     openEditForm(problem.id, {
       name: problem.name,
       description: problem.description,
@@ -171,6 +173,11 @@ export function ObjectiveProblemsPage() {
       isActive: problem.isActive,
       productIds: problem.productIds || [],
     });
+  };
+
+  const handleResetForm = () => {
+    setEditingProblem(null);
+    resetForm();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -212,7 +219,7 @@ export function ObjectiveProblemsPage() {
           <Pencil className="w-4 h-4" />
         </button>
         <button
-          onClick={() => handleDelete(problem.id, "Tem certeza que deseja excluir este problema?")}
+          onClick={() => handleDelete(problem.id)}
           disabled={isDeleting}
           className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
           title="Excluir"
@@ -259,9 +266,10 @@ export function ObjectiveProblemsPage() {
         formData={formData}
         setFormData={setFormData}
         onSubmit={handleSubmit}
-        onCancel={resetForm}
+        onCancel={handleResetForm}
         isEditing={isEditing}
         isMutating={isMutating}
+        problemNormalized={editingProblem?.problemNormalized}
       />
     );
   }
