@@ -35,6 +35,7 @@ export function KnowledgeBaseForm({
     answer: "",
     keywords: "",
     questionVariation: [] as string[],
+    questionNormalized: [] as string[],
     isActive: false,
   });
   const [newVariation, setNewVariation] = useState("");
@@ -52,11 +53,19 @@ export function KnowledgeBaseForm({
 
   useEffect(() => {
     if (initialData && hierarchy.isReady && initializedForId !== initialData.id) {
+      let parsedNormalized: string[] = [];
+      if (initialData.questionNormalized) {
+        try {
+          const parsed = JSON.parse(initialData.questionNormalized);
+          if (Array.isArray(parsed)) parsedNormalized = parsed;
+        } catch { }
+      }
       setFormData({
         question: initialData.question || "",
         answer: initialData.answer || "",
         keywords: initialData.keywords || "",
         questionVariation: initialData.questionVariation || [],
+        questionNormalized: parsedNormalized,
         isActive: initialData.isActive,
       });
       setInitializedForId(initialData.id);
@@ -66,6 +75,7 @@ export function KnowledgeBaseForm({
         answer: "",
         keywords: "",
         questionVariation: [],
+        questionNormalized: [],
         isActive: false,
       });
       setInitializedForId(-1);
@@ -75,6 +85,7 @@ export function KnowledgeBaseForm({
         answer: "",
         keywords: "",
         questionVariation: [],
+        questionNormalized: [],
         isActive: false,
       });
       setInitializedForId(0);
@@ -113,6 +124,7 @@ export function KnowledgeBaseForm({
       answer: formData.answer,
       keywords: formData.keywords || null,
       questionVariation: formData.questionVariation.length > 0 ? formData.questionVariation : null,
+      questionNormalized: formData.questionNormalized.length > 0 ? JSON.stringify(formData.questionNormalized) : null,
       productId: prefilledData?.productId || hierarchy.selection.productId,
       subjectId: prefilledData?.subjectId || hierarchy.selection.subjectId,
       intentId: prefilledData?.intentId || hierarchy.selection.intentId,
@@ -220,7 +232,7 @@ export function KnowledgeBaseForm({
         </div>
       </div>
 
-      {initialData?.questionNormalized && (
+      {formData.questionNormalized.length > 0 && (
         <div>
           <label className="flex items-center gap-1.5 text-xs font-medium text-purple-600 mb-1.5">
             <MessageSquare className="w-3.5 h-3.5" />
@@ -228,24 +240,14 @@ export function KnowledgeBaseForm({
             <span className="text-xs text-gray-400 font-normal ml-1">(gerado por IA - para busca semântica)</span>
           </label>
           <div className="flex flex-wrap gap-2 p-2 border border-purple-200 rounded-lg bg-purple-50">
-            {(() => {
-              try {
-                const normalized = JSON.parse(initialData.questionNormalized);
-                if (Array.isArray(normalized)) {
-                  return normalized.map((item, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center px-2 py-1 text-xs bg-purple-100 border border-purple-300 rounded-lg text-purple-700"
-                    >
-                      {item}
-                    </span>
-                  ));
-                }
-                return <span className="text-sm text-purple-700">{initialData.questionNormalized}</span>;
-              } catch {
-                return <span className="text-sm text-purple-700">{initialData.questionNormalized}</span>;
-              }
-            })()}
+            {formData.questionNormalized.map((item, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center px-2 py-1 text-xs bg-purple-100 border border-purple-300 rounded-lg text-purple-700"
+              >
+                {item}
+              </span>
+            ))}
           </div>
         </div>
       )}
@@ -333,6 +335,7 @@ export function KnowledgeBaseForm({
               answer: suggestion.answer || prev.answer,
               keywords: suggestion.keywords || prev.keywords,
               questionVariation: [...existingVariations, ...newVariations],
+              questionNormalized: suggestion.questionNormalized || prev.questionNormalized,
             };
           });
         }}

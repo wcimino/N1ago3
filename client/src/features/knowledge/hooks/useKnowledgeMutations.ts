@@ -6,6 +6,7 @@ export interface KnowledgeBaseFormData {
   answer: string;
   keywords: string | null;
   questionVariation: string[] | null;
+  questionNormalized: string | null;
   productId: number | null;
   subjectId: number | null;
   intentId: number | null;
