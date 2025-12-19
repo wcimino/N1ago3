@@ -67,3 +67,6 @@ ZENDESK_ANSWER_BOT_ID = "64d65d81a40bc6cf30ebfbb1"
 deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
 run = ["npm", "run", "start"]
+
+[objectStorage]
+defaultBucketID = "replit-objstore-d057708f-ac8a-4e6c-b233-8271b6c66626"
