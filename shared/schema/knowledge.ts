@@ -15,6 +15,7 @@ export const productsCatalog = pgTable("products_catalog", {
 export const knowledgeBase = pgTable("knowledge_base", {
   id: serial("id").primaryKey(),
   question: text("question"),
+  questionNormalized: text("question_normalized"),
   answer: text("answer"),
   keywords: text("keywords"),
   questionVariation: json("question_variation").$type<string[]>().default([]),
@@ -49,6 +50,7 @@ export const knowledgeBaseEmbeddings = pgTable("knowledge_base_embeddings", {
 export const knowledgeBaseObjectiveProblems = pgTable("knowledge_base_objective_problems", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  problemNormalized: text("problem_normalized"),
   description: text("description").notNull(),
   synonyms: json("synonyms").$type<string[]>().default([]),
   examples: json("examples").$type<string[]>().default([]),
