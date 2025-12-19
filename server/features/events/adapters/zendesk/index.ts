@@ -46,11 +46,12 @@ export class ZendeskAdapter implements SourceAdapter {
       case "conversation:create":
         return [mapConversationCreated(payload, rootPayload, this.source)];
       case "conversation:read":
-        return [mapReadReceipt(payload, rootPayload, this.source)];
+        return [mapReadReceipt(event, rootPayload, this.source)];
+      case "conversation:typing":
       case "typing:start":
-        return [mapTypingEvent(payload, rootPayload, this.source, "start")];
+        return [mapTypingEvent(event, rootPayload, this.source, "start")];
       case "typing:stop":
-        return [mapTypingEvent(payload, rootPayload, this.source, "stop")];
+        return [mapTypingEvent(event, rootPayload, this.source, "stop")];
       default:
         return [mapGenericEvent(event, rootPayload, this.source)];
     }

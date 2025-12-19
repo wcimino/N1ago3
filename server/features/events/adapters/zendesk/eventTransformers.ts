@@ -115,35 +115,41 @@ export function mapConversationCreated(payload: any, root: any, source: string):
   };
 }
 
-export function mapReadReceipt(payload: any, root: any, source: string): StandardEvent {
+export function mapReadReceipt(event: any, root: any, source: string): StandardEvent {
+  const payload = event.payload || {};
   const conversationData = payload.conversation || root.conversation || {};
   const userData = payload.user || root.user;
 
   return {
     eventType: "read_receipt",
     source,
+    sourceEventId: event.id,
     externalConversationId: conversationData.id,
     externalUserId: userData?.id,
-    authorType: mapAuthorType(payload.author?.type),
-    authorId: payload.author?.userId,
-    occurredAt: new Date(),
+    authorType: mapAuthorType(payload.author?.type || payload.activity?.author?.type),
+    authorId: payload.author?.userId || payload.activity?.author?.userId,
+    occurredAt: event.createdAt ? new Date(event.createdAt) : new Date(),
     channelType: "chat",
   };
 }
 
-export function mapTypingEvent(payload: any, root: any, source: string, subtype: "start" | "stop"): StandardEvent {
+export function mapTypingEvent(event: any, root: any, source: string, subtype: "start" | "stop"): StandardEvent {
+  const payload = event.payload || {};
   const conversationData = payload.conversation || root.conversation || {};
   const userData = payload.user || payload.activity?.author?.user || root.user;
+  const activityType = payload.activity?.type;
+  const resolvedSubtype = activityType === "typing:start" ? "start" : activityType === "typing:stop" ? "stop" : subtype;
 
   return {
     eventType: "typing",
-    eventSubtype: subtype,
+    eventSubtype: resolvedSubtype,
     source,
+    sourceEventId: event.id,
     externalConversationId: conversationData.id,
     externalUserId: userData?.id,
     authorType: mapAuthorType(payload.activity?.author?.type || "user"),
     authorId: userData?.id,
-    occurredAt: new Date(),
+    occurredAt: event.createdAt ? new Date(event.createdAt) : new Date(),
     channelType: "chat",
   };
 }
