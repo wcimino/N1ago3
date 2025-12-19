@@ -105,6 +105,7 @@ function AuthenticatedApp() {
           <Route path="/settings/maintenance">{() => <SettingsPage activeTab="maintenance" />}</Route>
           <Route path="/settings/external-data">{() => <SettingsPage activeTab="external-data" />}</Route>
           <Route path="/settings/external-events">{() => <SettingsPage activeTab="external-events" />}</Route>
+          <Route path="/settings/monitoring">{() => <SettingsPage activeTab="monitoring" />}</Route>
           <Route path="/settings/external-data/zendesk-users" component={ZendeskUsersPage} />
           <Route path="/settings/external-data/zendesk-users/:id">{(params) => <ZendeskUserDetailPage params={params} />}</Route>
           <Route path="/settings/product-standards" component={ProductStandardsPage} />
