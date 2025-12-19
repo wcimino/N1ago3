@@ -16,6 +16,7 @@ export interface CombinedSearchResult {
   products?: string[];
   productId?: number;
   productIds?: number[];
+  productContext?: string;
 }
 
 export type DemandType = "suporte" | "informacoes" | "contratar" | string;
@@ -30,6 +31,7 @@ export interface CombinedSearchParams {
   limit?: number;
   demandType?: DemandType;
   summaryProductId?: number;
+  summaryProductContext?: string;
 }
 
 const REQUEST_TYPE_MULTIPLIER = 0.9;
@@ -49,14 +51,28 @@ function isProblemPenalized(requestType: string): boolean {
 
 interface ScoreAdjustmentParams {
   demandType?: DemandType;
-  summaryProductId?: number;
+  summaryProductContext?: string;
+}
+
+function getProductBaseName(productContext: string): string {
+  const parts = productContext.split('>').map(p => p.trim());
+  return parts[0].toLowerCase();
+}
+
+function isProductMatch(resultProductContext: string | undefined, summaryProductContext: string): boolean {
+  if (!resultProductContext) return true;
+  
+  const resultBase = getProductBaseName(resultProductContext);
+  const summaryBase = getProductBaseName(summaryProductContext);
+  
+  return resultBase === summaryBase;
 }
 
 function applyScoreAdjustments(
   results: CombinedSearchResult[],
   params: ScoreAdjustmentParams
 ): CombinedSearchResult[] {
-  const { demandType, summaryProductId } = params;
+  const { demandType, summaryProductContext } = params;
 
   return results.map(result => {
     const originalScore = result.matchScore || 0;
@@ -75,11 +91,16 @@ function applyScoreAdjustments(
       }
     }
 
-    if (summaryProductId) {
-      if (result.source === "article" && result.productId && result.productId !== summaryProductId) {
-        adjustedScore *= PRODUCT_MISMATCH_MULTIPLIER;
-        adjustments.push('0.9x (Produto diferente)');
-      } else if (result.source === "problem" && result.productIds && result.productIds.length > 0 && !result.productIds.includes(summaryProductId)) {
+    if (summaryProductContext) {
+      let hasProductMismatch = false;
+      
+      if (result.source === "article" && result.productContext) {
+        hasProductMismatch = !isProductMatch(result.productContext, summaryProductContext);
+      } else if (result.source === "problem" && result.products && result.products.length > 0) {
+        hasProductMismatch = !result.products.some(p => isProductMatch(p, summaryProductContext));
+      }
+      
+      if (hasProductMismatch) {
         adjustedScore *= PRODUCT_MISMATCH_MULTIPLIER;
         adjustments.push('0.9x (Produto diferente)');
       }
@@ -107,7 +128,7 @@ const DEFAULT_COMBINED_LIMIT = 10;
 const PER_SOURCE_FETCH_LIMIT = 10;
 
 export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): Promise<CombinedSearchResponse> {
-  const { productId, conversationContext, articleContext, problemContext, searchQueries, limit = DEFAULT_COMBINED_LIMIT, demandType, summaryProductId } = params;
+  const { productId, conversationContext, articleContext, problemContext, searchQueries, limit = DEFAULT_COMBINED_LIMIT, demandType, summaryProductContext } = params;
   
   let productContext = params.productContext;
   if (!productContext && productId) {
@@ -134,6 +155,17 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
 
   const results: CombinedSearchResult[] = [];
 
+  const articleProductIds = articlesResult.articles
+    .map(a => a.productId)
+    .filter((id): id is number => id !== null && id !== undefined);
+  const uniqueProductIds = [...new Set(articleProductIds)];
+  
+  const productContextMap: Record<number, string> = {};
+  for (const pid of uniqueProductIds) {
+    const ctx = await productCatalogStorage.resolveProductContext(pid);
+    if (ctx) productContextMap[pid] = ctx;
+  }
+
   for (const article of articlesResult.articles) {
     results.push({
       source: "article",
@@ -144,6 +176,7 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
       matchReason: article.matchReason,
       matchedTerms: article.matchedTerms,
       productId: article.productId ?? undefined,
+      productContext: article.productId ? productContextMap[article.productId] : undefined,
     });
   }
 
@@ -161,7 +194,7 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
     });
   }
 
-  const adjustedResults = applyScoreAdjustments(results, { demandType, summaryProductId });
+  const adjustedResults = applyScoreAdjustments(results, { demandType, summaryProductContext });
   adjustedResults.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
   
   const limitedResults = adjustedResults.slice(0, limit);

@@ -2,6 +2,7 @@ import { runAgentAndSaveSuggestion, buildAgentContextFromEvent } from "../../age
 import { runCombinedKnowledgeSearch } from "../../tools/combinedKnowledgeSearchTool.js";
 import { caseDemandStorage } from "../../../storage/caseDemandStorage.js";
 import { conversationStorage } from "../../../../conversations/storage/index.js";
+import { productCatalogStorage } from "../../../../products/storage/productCatalogStorage.js";
 import { getClientRequestVersions, getSearchQueries, getCustomerRequestType, buildCleanSearchContext, buildResolvedClassification } from "../../helpers/index.js";
 import { EnrichmentService } from "../services/enrichmentService.js";
 import { StatusController } from "../statusController.js";
@@ -190,6 +191,11 @@ export class DemandFinderAgent {
       console.log(`[DemandFinderAgent] Customer request type: ${customerRequestType}`);
     }
     
+    let summaryProductContext: string | undefined;
+    if (classification?.productId) {
+      summaryProductContext = await productCatalogStorage.resolveProductContext(classification.productId);
+    }
+    
     const searchResponse = await runCombinedKnowledgeSearch({
       productId: classification?.productId,
       conversationContext,
@@ -197,7 +203,7 @@ export class DemandFinderAgent {
       problemContext,
       searchQueries: searchQueries || undefined,
       demandType: customerRequestType || undefined,
-      summaryProductId: classification?.productId,
+      summaryProductContext,
       limit: 10,
     });
 

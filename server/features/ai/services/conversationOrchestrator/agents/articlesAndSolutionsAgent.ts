@@ -1,6 +1,7 @@
 import { runAgent, buildAgentContextFromEvent } from "../../agentFramework.js";
 import { runCombinedKnowledgeSearch } from "../../tools/combinedKnowledgeSearchTool.js";
 import { caseDemandStorage } from "../../../storage/caseDemandStorage.js";
+import { productCatalogStorage } from "../../../../products/storage/productCatalogStorage.js";
 import { getClientRequestVersions, getSearchQueries, getCustomerRequestType, buildCleanSearchContext, buildResolvedClassification } from "../../helpers/index.js";
 import type { ArticlesAndSolutionsAgentResult, OrchestratorContext } from "../types.js";
 
@@ -66,6 +67,11 @@ export class ArticlesAndSolutionsAgent {
       console.log(`  - Customer request type: ${customerRequestType}`);
     }
     
+    let summaryProductContext: string | undefined;
+    if (classification?.productId) {
+      summaryProductContext = await productCatalogStorage.resolveProductContext(classification.productId);
+    }
+    
     const searchResponse = await runCombinedKnowledgeSearch({
       productId: classification?.productId,
       conversationContext,
@@ -73,7 +79,7 @@ export class ArticlesAndSolutionsAgent {
       problemContext,
       searchQueries: searchQueries || undefined,
       demandType: customerRequestType || undefined,
-      summaryProductId: classification?.productId,
+      summaryProductContext,
       limit: 10,
     });
 
