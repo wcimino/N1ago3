@@ -3,6 +3,7 @@ import { runProblemObjectiveSearch } from "./problemObjectiveTool.js";
 import { productCatalogStorage } from "../../../products/storage/productCatalogStorage.js";
 import type { ToolDefinition } from "../openaiApiService.js";
 import { caseDemandStorage } from "../../storage/caseDemandStorage.js";
+import type { MultiQuerySearchQueries } from "../../../../shared/embeddings/multiQuerySearch.js";
 
 export interface CombinedSearchResult {
   source: "article" | "problem";
@@ -23,6 +24,7 @@ export interface CombinedSearchParams {
   conversationContext?: string;
   articleContext?: string;
   problemContext?: string;
+  searchQueries?: MultiQuerySearchQueries;
   limit?: number;
   demandType?: DemandType;
 }
@@ -92,7 +94,7 @@ export interface CombinedSearchResponse {
 }
 
 export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): Promise<CombinedSearchResponse> {
-  const { productId, conversationContext, articleContext, problemContext, limit = 5, demandType } = params;
+  const { productId, conversationContext, articleContext, problemContext, searchQueries, limit = 5, demandType } = params;
   
   let productContext = params.productContext;
   if (!productContext && productId) {
@@ -106,11 +108,13 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
     runKnowledgeBaseSearch({
       productContext,
       conversationContext: effectiveArticleContext,
+      searchQueries,
       limit
     }),
     runProblemObjectiveSearch({
       productContext,
       conversationContext: effectiveProblemContext,
+      searchQueries,
       limit
     })
   ]);

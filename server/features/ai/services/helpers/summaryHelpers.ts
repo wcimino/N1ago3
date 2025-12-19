@@ -10,6 +10,13 @@ export interface ParsedSummary {
     clientRequestProblemVersion?: string;
     clientRequestStandardVersion?: string;
   };
+  clientRequestVerbatimSearchQuery?: string;
+  clientRequestKeywordSearchQuery?: string;
+  clientRequestNormalizedSearchQuery?: string;
+  clientRequestSearchQueryQuality?: {
+    isGeneric?: boolean;
+    missingKeyInfo?: string | null;
+  };
   triage?: {
     anamnese?: {
       customerMainComplaint?: string;
@@ -17,6 +24,12 @@ export interface ParsedSummary {
   };
   objectiveProblems?: Array<{ id: number; name: string; matchScore?: number }>;
   [key: string]: unknown;
+}
+
+export interface SearchQueries {
+  verbatimQuery?: string;
+  keywordQuery?: string;
+  normalizedQuery?: string;
 }
 
 export function parseSummaryJson(summary: string | null | undefined): ParsedSummary | null {
@@ -64,5 +77,24 @@ export function getClientRequestVersions(summary: string | null | undefined): {
     clientRequestQuestionVersion: versions.clientRequestQuestionVersion || undefined,
     clientRequestProblemVersion: versions.clientRequestProblemVersion || undefined,
     clientRequestStandardVersion: versions.clientRequestStandardVersion || undefined,
+  };
+}
+
+export function getSearchQueries(summary: string | null | undefined): SearchQueries | null {
+  const parsed = parseSummaryJson(summary);
+  if (!parsed) return null;
+  
+  const verbatimQuery = parsed.clientRequestVerbatimSearchQuery;
+  const keywordQuery = parsed.clientRequestKeywordSearchQuery;
+  const normalizedQuery = parsed.clientRequestNormalizedSearchQuery;
+  
+  if (!verbatimQuery && !keywordQuery && !normalizedQuery) {
+    return null;
+  }
+  
+  return {
+    verbatimQuery: verbatimQuery || undefined,
+    keywordQuery: keywordQuery || undefined,
+    normalizedQuery: normalizedQuery || undefined,
   };
 }

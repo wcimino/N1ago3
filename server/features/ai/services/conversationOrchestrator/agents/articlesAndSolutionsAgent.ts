@@ -1,7 +1,7 @@
 import { runAgent, buildAgentContextFromEvent } from "../../agentFramework.js";
 import { runCombinedKnowledgeSearch } from "../../tools/combinedKnowledgeSearchTool.js";
 import { caseDemandStorage } from "../../../storage/caseDemandStorage.js";
-import { getClientRequestVersions, buildCleanSearchContext, buildResolvedClassification } from "../../helpers/index.js";
+import { getClientRequestVersions, getSearchQueries, buildCleanSearchContext, buildResolvedClassification } from "../../helpers/index.js";
 import type { ArticlesAndSolutionsAgentResult, OrchestratorContext } from "../types.js";
 
 const CONFIG_KEY = "articles_and_solutions";
@@ -53,15 +53,21 @@ export class ArticlesAndSolutionsAgent {
     const articleContext = versions?.clientRequestQuestionVersion;
     const problemContext = versions?.clientRequestProblemVersion;
     
+    const searchQueries = getSearchQueries(summary);
+    
     console.log(`[ArticlesAndSolutionsAgent] Search input for conversation ${conversationId}:`);
     console.log(`  - articleContext: ${articleContext ? 'Question version' : 'fallback'}`);
     console.log(`  - problemContext: ${problemContext ? 'Problem version' : 'fallback'}`);
+    if (searchQueries) {
+      console.log(`  - Multi-query search: verbatim=${!!searchQueries.verbatimQuery}, keyword=${!!searchQueries.keywordQuery}, normalized=${!!searchQueries.normalizedQuery}`);
+    }
     
     const searchResponse = await runCombinedKnowledgeSearch({
       productId: classification?.productId,
       conversationContext,
       articleContext,
       problemContext,
+      searchQueries: searchQueries || undefined,
       limit: 10,
     });
 

@@ -4,11 +4,19 @@ import { generateEmbedding } from "../../../shared/embeddings/index.js";
 import type { KnowledgeBaseArticle } from "../../../../shared/schema.js";
 import { normalizeText, calculateMatchScore as sharedCalculateMatchScore, parseSearchTerms, extractMatchedTerms, type MatchField } from "../../../shared/utils/matchScoring.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
+import { 
+  type MultiQuerySearchQueries,
+  generateMultiQueryEmbeddings,
+  aggregateMultiQueryResults,
+  buildMatchReasonFromQueries,
+  type SearchResultWithId
+} from "../../../shared/embeddings/multiQuerySearch.js";
 
 export interface KBSearchParams {
   productContext?: string;
   keywords?: string | string[];
   conversationContext?: string;
+  searchQueries?: MultiQuerySearchQueries;
   limit?: number;
 }
 
@@ -162,7 +170,7 @@ export async function runKnowledgeBaseSearch(
   params: KBSearchParams,
   context: KBSearchContext = {}
 ): Promise<KBSearchResult> {
-  const { productContext, conversationContext, limit = 5 } = params;
+  const { productContext, conversationContext, searchQueries, limit = 5 } = params;
 
   if (productContext) {
     console.log(`[KB Search] Using productContext="${productContext}"`);
@@ -175,28 +183,81 @@ export async function runKnowledgeBaseSearch(
   let articles: KBArticleResult[] = [];
   const hasEmbeddings = await knowledgeBaseStorage.hasEmbeddings();
 
-  const enrichedContext = productContext && conversationContext
-    ? `Produto: ${productContext}. ${conversationContext}`
-    : conversationContext;
+  const hasMultiQuery = searchQueries && (
+    searchQueries.verbatimQuery?.trim() || 
+    searchQueries.keywordQuery?.trim() || 
+    searchQueries.normalizedQuery?.trim()
+  );
 
-  if (enrichedContext && enrichedContext.trim().length > 0 && hasEmbeddings) {
+  if (hasMultiQuery && hasEmbeddings) {
     try {
-      console.log(`[KB Search] Semantic search with enrichedContext`);
+      console.log(`[KB Search] Multi-query semantic search with 3 queries`);
       
-      const { embedding: contextEmbedding } = await generateEmbedding(enrichedContext, { contextType: "query" });
-      const semanticResults = await knowledgeBaseStorage.searchBySimilarity(
-        contextEmbedding,
-        { limit: keywordsStr ? limit * 2 : limit }
+      const embeddings = await generateMultiQueryEmbeddings(searchQueries!, productContext);
+      console.log(`[KB Search] Generated embeddings for queries: ${embeddings.validQueries.join(", ")}`);
+      
+      const searchLimit = 20;
+      const searchPromises: Promise<{ type: string; results: any[] }>[] = [];
+      
+      if (embeddings.verbatimEmbedding) {
+        searchPromises.push(
+          knowledgeBaseStorage.searchBySimilarity(embeddings.verbatimEmbedding, { limit: searchLimit })
+            .then(results => ({ type: "verbatim", results }))
+        );
+      }
+      if (embeddings.keywordEmbedding) {
+        searchPromises.push(
+          knowledgeBaseStorage.searchBySimilarity(embeddings.keywordEmbedding, { limit: searchLimit })
+            .then(results => ({ type: "keyword", results }))
+        );
+      }
+      if (embeddings.normalizedEmbedding) {
+        searchPromises.push(
+          knowledgeBaseStorage.searchBySimilarity(embeddings.normalizedEmbedding, { limit: searchLimit })
+            .then(results => ({ type: "normalized", results }))
+        );
+      }
+      
+      const allResults = await Promise.all(searchPromises);
+      
+      const verbatimResults = allResults.find(r => r.type === "verbatim")?.results || [];
+      const keywordResults = allResults.find(r => r.type === "keyword")?.results || [];
+      const normalizedResults = allResults.find(r => r.type === "normalized")?.results || [];
+      
+      console.log(`[KB Search] Results - verbatim: ${verbatimResults.length}, keyword: ${keywordResults.length}, normalized: ${normalizedResults.length}`);
+      
+      const toSearchResult = (a: any): SearchResultWithId => ({
+        id: a.id,
+        similarity: a.similarity,
+        question: a.question,
+        answer: a.answer,
+        keywords: a.keywords,
+        questionVariation: a.questionVariation,
+        productId: a.productId,
+        intentId: a.intentId,
+      });
+      
+      const aggregatedResults = aggregateMultiQueryResults(
+        verbatimResults.map(toSearchResult),
+        keywordResults.map(toSearchResult),
+        normalizedResults.map(toSearchResult),
+        10
       );
       
-      articles = semanticResults.map(a => {
+      const queryForMatching = [
+        searchQueries!.verbatimQuery || "",
+        searchQueries!.keywordQuery || "",
+        searchQueries!.normalizedQuery || ""
+      ].filter(Boolean).join(" ");
+      
+      articles = aggregatedResults.map(aggResult => {
+        const a = aggResult.result;
         const articleText = [
           a.question || "",
           a.answer || "",
           a.keywords || "",
           ...(Array.isArray(a.questionVariation) ? a.questionVariation as string[] : [])
         ].join(" ");
-        const queryForMatching = conversationContext + (keywordsStr ? " " + keywordsStr : "");
         return {
           id: a.id,
           question: a.question,
@@ -205,25 +266,72 @@ export async function runKnowledgeBaseSearch(
           questionVariation: Array.isArray(a.questionVariation) ? a.questionVariation as string[] : [],
           productId: a.productId,
           intentId: a.intentId,
-          relevanceScore: a.similarity,
-          matchReason: `Similaridade semântica (contexto): ${a.similarity}%`,
+          relevanceScore: aggResult.maxScore,
+          matchReason: buildMatchReasonFromQueries(aggResult.queryMatches, aggResult.maxScore),
           matchedTerms: extractMatchedTerms(queryForMatching, articleText)
         };
       });
       
-      console.log(`[KB Search] Context-based semantic search found ${articles.length} articles`);
-
-      if (keywordsStr && keywordsStr.trim().length > 0) {
-        articles = applyKeywordsBoost(articles, keywordsStr, limit);
-        console.log(`[KB Search] After keywords boost/filter: ${articles.length} articles`);
-      }
+      console.log(`[KB Search] Multi-query aggregated ${articles.length} articles`);
     } catch (error) {
-      console.error("[KB Search] Semantic search failed, falling back to keywords-only search:", error);
-      if (keywordsStr) {
-        articles = await runTextBasedSearch(keywordsStr, limit);
+      console.error("[KB Search] Multi-query search failed, falling back to single query:", error);
+      articles = [];
+    }
+  }
+  
+  if (articles.length === 0) {
+    const enrichedContext = productContext && conversationContext
+      ? `Produto: ${productContext}. ${conversationContext}`
+      : conversationContext;
+
+    if (enrichedContext && enrichedContext.trim().length > 0 && hasEmbeddings) {
+      try {
+        console.log(`[KB Search] Semantic search with enrichedContext (fallback)`);
+        
+        const { embedding: contextEmbedding } = await generateEmbedding(enrichedContext, { contextType: "query" });
+        const semanticResults = await knowledgeBaseStorage.searchBySimilarity(
+          contextEmbedding,
+          { limit: keywordsStr ? limit * 2 : limit }
+        );
+        
+        articles = semanticResults.map(a => {
+          const articleText = [
+            a.question || "",
+            a.answer || "",
+            a.keywords || "",
+            ...(Array.isArray(a.questionVariation) ? a.questionVariation as string[] : [])
+          ].join(" ");
+          const queryForMatching = conversationContext + (keywordsStr ? " " + keywordsStr : "");
+          return {
+            id: a.id,
+            question: a.question,
+            answer: a.answer,
+            keywords: a.keywords,
+            questionVariation: Array.isArray(a.questionVariation) ? a.questionVariation as string[] : [],
+            productId: a.productId,
+            intentId: a.intentId,
+            relevanceScore: a.similarity,
+            matchReason: `Similaridade semântica (contexto): ${a.similarity}%`,
+            matchedTerms: extractMatchedTerms(queryForMatching, articleText)
+          };
+        });
+        
+        console.log(`[KB Search] Context-based semantic search found ${articles.length} articles`);
+
+        if (keywordsStr && keywordsStr.trim().length > 0) {
+          articles = applyKeywordsBoost(articles, keywordsStr, limit);
+          console.log(`[KB Search] After keywords boost/filter: ${articles.length} articles`);
+        }
+      } catch (error) {
+        console.error("[KB Search] Semantic search failed, falling back to keywords-only search:", error);
+        if (keywordsStr) {
+          articles = await runTextBasedSearch(keywordsStr, limit);
+        }
       }
     }
-  } else if (keywordsStr && keywordsStr.trim().length > 0) {
+  }
+  
+  if (articles.length === 0 && keywordsStr && keywordsStr.trim().length > 0) {
     const enrichedKeywords = productContext 
       ? `Produto: ${productContext}. ${keywordsStr}`
       : keywordsStr;
