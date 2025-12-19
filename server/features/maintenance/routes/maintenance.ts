@@ -2,6 +2,7 @@ import { Router } from "express";
 import { reprocessingService, type ReprocessingType } from "../../sync/services/reprocessingService.js";
 import { autoCloseService } from "../../conversations/services/autoCloseService.js";
 import { duplicatesService } from "../services/duplicatesService.js";
+import { archiveService } from "../services/archiveService.js";
 import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
 
 const router = Router();
@@ -133,6 +134,44 @@ router.post("/api/maintenance/duplicates/cleanup", isAuthenticated, requireAutho
       dryRun,
       ...result,
     });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get("/api/maintenance/archive/stats", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+  try {
+    const stats = await archiveService.getStats();
+    res.json(stats);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get("/api/maintenance/archive/progress", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+  try {
+    const progress = archiveService.getProgress();
+    const isRunning = archiveService.isArchiveRunning();
+    res.json({ isRunning, progress });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get("/api/maintenance/archive/history", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 50;
+    const history = await archiveService.getHistory(limit);
+    res.json(history);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/api/maintenance/archive/start", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+  try {
+    const result = await archiveService.startArchive();
+    res.json(result);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
