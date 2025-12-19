@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Tag, MessageSquare, CheckCircle, Plus, Trash2, ToggleLeft, ToggleRight, X } from "lucide-react";
+import { Tag, MessageSquare, CheckCircle, Plus, Trash2, X } from "lucide-react";
 import { FormActions } from "@/shared/components/ui";
 import { ProductHierarchySelects, ProductHierarchyDisplay } from "@/shared/components/forms/ProductHierarchySelects";
 import { useProductHierarchySelects } from "@/shared/hooks";
@@ -210,32 +210,52 @@ export function KnowledgeBaseForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
-          <Tag className="w-3.5 h-3.5" />
-          Classificação
-        </label>
-        {prefilledData || initialData ? (
-          <ProductHierarchyDisplay
-            productName={getProductName()}
-            subjectName={getSubjectName()}
-            intentName={getIntentName()}
-          />
-        ) : (
-          <ProductHierarchySelects
-            productId={hierarchy.selection.productId}
-            subjectId={hierarchy.selection.subjectId}
-            intentId={hierarchy.selection.intentId}
-            onProductChange={hierarchy.setProductId}
-            onSubjectChange={hierarchy.setSubjectId}
-            onIntentChange={hierarchy.setIntentId}
-            products={hierarchy.products}
-            subjects={hierarchy.subjects}
-            intents={hierarchy.intents}
-            showLabel={false}
-            required
-          />
-        )}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
+            <Tag className="w-3.5 h-3.5" />
+            Classificação
+          </label>
+          {prefilledData || initialData ? (
+            <ProductHierarchyDisplay
+              productName={getProductName()}
+              subjectName={getSubjectName()}
+              intentName={getIntentName()}
+            />
+          ) : (
+            <ProductHierarchySelects
+              productId={hierarchy.selection.productId}
+              subjectId={hierarchy.selection.subjectId}
+              intentId={hierarchy.selection.intentId}
+              onProductChange={hierarchy.setProductId}
+              onSubjectChange={hierarchy.setSubjectId}
+              onIntentChange={hierarchy.setIntentId}
+              products={hierarchy.products}
+              subjects={hierarchy.subjects}
+              intents={hierarchy.intents}
+              showLabel={false}
+              required
+            />
+          )}
+        </div>
+        <div className="flex items-center gap-2 pt-5">
+          <span className={`text-sm font-medium ${formData.isActive ? 'text-green-700' : 'text-gray-500'}`}>
+            {formData.isActive ? 'Ativo' : 'Inativo'}
+          </span>
+          <button
+            type="button"
+            onClick={() => setFormData(prev => ({ ...prev, isActive: !prev.isActive }))}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+              formData.isActive ? 'bg-green-500' : 'bg-gray-300'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                formData.isActive ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -420,84 +440,52 @@ export function KnowledgeBaseForm({
         )}
       </div>
 
-      <InlineEnrichmentPanel
-        intentId={hierarchy.selection.intentId}
-        articleId={initialData?.id || null}
-        currentData={{
-          question: formData.question,
-          answer: formData.answer,
-          keywords: Array.isArray(formData.keywords) ? formData.keywords.join(", ") : "",
-          questionVariation: formData.questionVariation,
-        }}
-        onApply={(suggestion) => {
-          setFormData(prev => {
-            const existingVariations = prev.questionVariation || [];
-            const newVariations = (suggestion.questionVariation || []).filter(
-              v => !existingVariations.includes(v)
-            );
-            const currentKeywords = Array.isArray(prev.keywords) ? prev.keywords : [];
-            let newKeywords = currentKeywords;
-            if (suggestion.keywords) {
-              const suggestedKeywords = suggestion.keywords.split(",").map(k => k.trim()).filter(k => k);
-              const uniqueNewKeywords = suggestedKeywords.filter(k => !currentKeywords.includes(k));
-              newKeywords = [...currentKeywords, ...uniqueNewKeywords];
-            }
-            const existingNormalized = prev.questionNormalized || [];
-            const newNormalized = (suggestion.questionNormalized || []).filter(
-              n => !existingNormalized.includes(n)
-            );
-            return {
-              ...prev,
-              answer: suggestion.answer || prev.answer,
-              keywords: newKeywords,
-              questionVariation: [...existingVariations, ...newVariations],
-              questionNormalized: [...existingNormalized, ...newNormalized],
-            };
-          });
-        }}
-      />
+      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+        <InlineEnrichmentPanel
+          intentId={hierarchy.selection.intentId}
+          articleId={initialData?.id || null}
+          currentData={{
+            question: formData.question,
+            answer: formData.answer,
+            keywords: Array.isArray(formData.keywords) ? formData.keywords.join(", ") : "",
+            questionVariation: formData.questionVariation,
+          }}
+          onApply={(suggestion) => {
+            setFormData(prev => {
+              const existingVariations = prev.questionVariation || [];
+              const newVariations = (suggestion.questionVariation || []).filter(
+                v => !existingVariations.includes(v)
+              );
+              const currentKeywords = Array.isArray(prev.keywords) ? prev.keywords : [];
+              let newKeywords = currentKeywords;
+              if (suggestion.keywords) {
+                const suggestedKeywords = suggestion.keywords.split(",").map(k => k.trim()).filter(k => k);
+                const uniqueNewKeywords = suggestedKeywords.filter(k => !currentKeywords.includes(k));
+                newKeywords = [...currentKeywords, ...uniqueNewKeywords];
+              }
+              const existingNormalized = prev.questionNormalized || [];
+              const newNormalized = (suggestion.questionNormalized || []).filter(
+                n => !existingNormalized.includes(n)
+              );
+              return {
+                ...prev,
+                answer: suggestion.answer || prev.answer,
+                keywords: newKeywords,
+                questionVariation: [...existingVariations, ...newVariations],
+                questionNormalized: [...existingNormalized, ...newNormalized],
+              };
+            });
+          }}
+        />
 
-      <div className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg border border-gray-200">
-        <div className="flex items-center gap-2">
-          {formData.isActive ? (
-            <ToggleRight className="w-5 h-5 text-green-600" />
-          ) : (
-            <ToggleLeft className="w-5 h-5 text-gray-400" />
-          )}
-          <div>
-            <span className={`text-sm font-medium ${formData.isActive ? 'text-green-700' : 'text-gray-600'}`}>
-              {formData.isActive ? 'Ativo' : 'Inativo'}
-            </span>
-            <p className="text-xs text-gray-500">
-              {formData.isActive 
-                ? 'Este artigo será usado nas buscas do chatbot' 
-                : 'Este artigo não será usado nas buscas do chatbot'}
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => setFormData(prev => ({ ...prev, isActive: !prev.isActive }))}
-          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-            formData.isActive ? 'bg-green-500' : 'bg-gray-300'
-          }`}
-        >
-          <span
-            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-              formData.isActive ? 'translate-x-5' : 'translate-x-0'
-            }`}
-          />
-        </button>
+        <FormActions
+          isLoading={isLoading}
+          isEditing={!!initialData}
+          onCancel={onCancel}
+          disabled={!isValid}
+          submitLabel="Salvar Artigo"
+        />
       </div>
-
-      <FormActions
-        isLoading={isLoading}
-        isEditing={!!initialData}
-        onCancel={onCancel}
-        disabled={!isValid}
-        submitLabel="Salvar Artigo"
-        className="pt-3 border-t border-gray-100"
-      />
     </form>
   );
 }

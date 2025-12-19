@@ -86,6 +86,7 @@ router.put("/api/knowledge/articles/:id", async (req, res) => {
     }
     
     const data: Partial<InsertKnowledgeBaseArticle> = req.body;
+    console.log("[KB Update] Received data:", { id, questionNormalized: data.questionNormalized, keywords: data.keywords });
     const article = await knowledgeBaseStorage.updateArticle(id, data);
     
     if (!article) {
