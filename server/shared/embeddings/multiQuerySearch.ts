@@ -76,7 +76,8 @@ export function aggregateMultiQueryResults<T extends SearchResultWithId>(
   verbatimResults: T[],
   keywordResults: T[],
   normalizedResults: T[],
-  limit: number = 10
+  limit: number = 10,
+  minScore: number = 50
 ): AggregatedSearchResult<T>[] {
   const resultMap = new Map<number, AggregatedSearchResult<T>>();
 
@@ -132,6 +133,7 @@ export function aggregateMultiQueryResults<T extends SearchResultWithId>(
   }
 
   const aggregatedResults = Array.from(resultMap.values())
+    .filter(item => item.maxScore >= minScore)
     .sort((a, b) => b.maxScore - a.maxScore)
     .slice(0, limit);
 
