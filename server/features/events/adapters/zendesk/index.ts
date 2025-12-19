@@ -3,7 +3,6 @@ import { verifyZendeskAuth, type AuthVerificationResult } from "./auth.js";
 import {
   mapMessageEvents,
   mapConversationCreated,
-  mapReadReceipt,
   mapTypingEvent,
   mapGenericEvent,
   mapSwitchboardPassControl,
@@ -46,8 +45,10 @@ export class ZendeskAdapter implements SourceAdapter {
       case "conversation:create":
         return [mapConversationCreated(payload, rootPayload, this.source)];
       case "conversation:read":
-        return [mapReadReceipt(event, rootPayload, this.source)];
       case "conversation:typing":
+      case "conversation:message:delivery:channel":
+      case "conversation:message:delivery:user":
+        return [];
       case "typing:start":
         return [mapTypingEvent(event, rootPayload, this.source, "start")];
       case "typing:stop":
