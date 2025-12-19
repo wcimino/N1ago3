@@ -1,6 +1,6 @@
 import { db } from "../../../db.js";
 import { knowledgeBase, knowledgeIntents, knowledgeSubjects, productsCatalog } from "../../../../shared/schema.js";
-import { eq, desc, asc, ilike, or, and, isNull, sql, type SQL } from "drizzle-orm";
+import { eq, ne, desc, asc, ilike, or, and, isNull, sql, type SQL } from "drizzle-orm";
 import type { KnowledgeBaseArticle, InsertKnowledgeBaseArticle } from "../../../../shared/schema.js";
 import type { KnowledgeBaseArticleWithProduct } from "../../../shared/embeddings/adapters/knowledgeBaseAdapter.js";
 import type { IntentWithArticle } from "./knowledgeBaseTypes.js";
@@ -126,7 +126,7 @@ export const knowledgeBaseArticlesCrud = {
         .from(knowledgeBase)
         .where(and(
           eq(knowledgeBase.intentId, data.intentId),
-          sql`${knowledgeBase.id} != ${id}`
+          ne(knowledgeBase.id, id)
         ))
         .limit(1);
       
