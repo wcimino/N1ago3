@@ -64,6 +64,6 @@ ZENDESK_APP_ID = "5fbcf8fffea626000bbaa1eb"
 ZENDESK_ANSWER_BOT_ID = "64d65d81a40bc6cf30ebfbb1"
 
 [deployment]
-deploymentTarget = "vm"
-run = ["npm", "run", "start"]
+deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
+run = ["npm", "run", "start"]
