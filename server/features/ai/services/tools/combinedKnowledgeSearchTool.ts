@@ -103,8 +103,11 @@ export interface CombinedSearchResponse {
   problemCount: number;
 }
 
+const DEFAULT_COMBINED_LIMIT = 10;
+const PER_SOURCE_FETCH_LIMIT = 10;
+
 export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): Promise<CombinedSearchResponse> {
-  const { productId, conversationContext, articleContext, problemContext, searchQueries, limit = 5, demandType, summaryProductId } = params;
+  const { productId, conversationContext, articleContext, problemContext, searchQueries, limit = DEFAULT_COMBINED_LIMIT, demandType, summaryProductId } = params;
   
   let productContext = params.productContext;
   if (!productContext && productId) {
@@ -119,13 +122,13 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
       productContext,
       conversationContext: effectiveArticleContext,
       searchQueries,
-      limit
+      limit: PER_SOURCE_FETCH_LIMIT
     }),
     runProblemObjectiveSearch({
       productContext,
       conversationContext: effectiveProblemContext,
       searchQueries,
-      limit
+      limit: PER_SOURCE_FETCH_LIMIT
     })
   ]);
 
@@ -161,8 +164,7 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
   const adjustedResults = applyScoreAdjustments(results, { demandType, summaryProductId });
   adjustedResults.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
   
-  const finalLimit = limit || 10;
-  const limitedResults = adjustedResults.slice(0, finalLimit);
+  const limitedResults = adjustedResults.slice(0, limit);
 
   if (limitedResults.length === 0) {
     return {
@@ -221,8 +223,7 @@ export function createCombinedKnowledgeSearchToolWithContext(conversationId?: nu
       
       const result = await runCombinedKnowledgeSearch({
         productContext,
-        conversationContext: args.conversationContext,
-        limit: 5
+        conversationContext: args.conversationContext
       });
       
       if (conversationId && result.results.length > 0) {
