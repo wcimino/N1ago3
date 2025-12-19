@@ -60,7 +60,9 @@ export function KnowledgeBaseForm({
         try {
           const parsed = JSON.parse(initialData.questionNormalized);
           if (Array.isArray(parsed)) parsedNormalized = parsed;
-        } catch { }
+        } catch {
+          parsedNormalized = initialData.questionNormalized.split(",").map(k => k.trim()).filter(k => k);
+        }
       }
       let parsedKeywords: string[] = [];
       if (initialData.keywords) {

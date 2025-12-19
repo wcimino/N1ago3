@@ -70,11 +70,18 @@ function normalizeArticleData(data: Record<string, unknown>): Record<string, unk
     if (Array.isArray(qn)) {
       normalized.questionNormalized = qn.length > 0 ? JSON.stringify(qn) : null;
     } else if (typeof qn === 'string') {
-      try {
-        const parsed = JSON.parse(qn);
-        normalized.questionNormalized = Array.isArray(parsed) && parsed.length > 0 ? qn : null;
-      } catch {
-        normalized.questionNormalized = null;
+      const trimmed = qn.trim();
+      if (trimmed.startsWith('[')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          normalized.questionNormalized = Array.isArray(parsed) && parsed.length > 0 ? trimmed : null;
+        } catch {
+          const items = trimmed.split(',').map(k => k.trim()).filter(k => k);
+          normalized.questionNormalized = items.length > 0 ? JSON.stringify(items) : null;
+        }
+      } else {
+        const items = trimmed.split(',').map(k => k.trim()).filter(k => k);
+        normalized.questionNormalized = items.length > 0 ? JSON.stringify(items) : null;
       }
     }
   }
