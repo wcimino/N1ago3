@@ -41,17 +41,17 @@ async function withRetry<T>(
   throw lastError;
 }
 
+interface TableStats {
+  pendingRecords: number;
+  pendingDays: number;
+  oldestDate: string | null;
+}
+
 export interface ArchiveStats {
-  zendeskWebhook: {
-    pendingRecords: number;
-    pendingDays: number;
-    oldestDate: string | null;
-  };
-  openaiLogs: {
-    pendingRecords: number;
-    pendingDays: number;
-    oldestDate: string | null;
-  };
+  zendeskWebhook: TableStats;
+  openaiLogs: TableStats;
+  responsesSuggested: TableStats;
+  queryLogs: TableStats;
   runningJobs: number;
   completedJobs: number;
   totalArchivedRecords: number;
@@ -198,34 +198,52 @@ class ArchiveService {
     yesterday.setDate(yesterday.getDate() - 1);
     yesterday.setHours(0, 0, 0, 0);
 
-    const zendeskStats = await db.execute(sql`
-      SELECT 
-        COUNT(*) as count,
-        MIN(received_at)::date as oldest_date,
-        COUNT(DISTINCT DATE(received_at)) as days
-      FROM zendesk_conversations_webhook_raw
-      WHERE received_at < ${yesterday}
-    `);
-
-    const openaiStats = await db.execute(sql`
-      SELECT 
-        COUNT(*) as count,
-        MIN(created_at)::date as oldest_date,
-        COUNT(DISTINCT DATE(created_at)) as days
-      FROM openai_api_logs
-      WHERE created_at < ${yesterday}
-    `);
-
-    const jobStats = await db.execute(sql`
-      SELECT 
-        SUM(CASE WHEN status IN ('running', 'pending') THEN 1 ELSE 0 END) as running,
-        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
-        SUM(CASE WHEN status = 'completed' THEN records_archived ELSE 0 END) as total_archived
-      FROM archive_jobs
-    `);
+    const [zendeskStats, openaiStats, responsesStats, queryLogsStats, jobStats] = await Promise.all([
+      db.execute(sql`
+        SELECT 
+          COUNT(*) as count,
+          MIN(received_at)::date as oldest_date,
+          COUNT(DISTINCT DATE(received_at)) as days
+        FROM zendesk_conversations_webhook_raw
+        WHERE received_at < ${yesterday}
+      `),
+      db.execute(sql`
+        SELECT 
+          COUNT(*) as count,
+          MIN(created_at)::date as oldest_date,
+          COUNT(DISTINCT DATE(created_at)) as days
+        FROM openai_api_logs
+        WHERE created_at < ${yesterday}
+      `),
+      db.execute(sql`
+        SELECT 
+          COUNT(*) as count,
+          MIN(created_at)::date as oldest_date,
+          COUNT(DISTINCT DATE(created_at)) as days
+        FROM responses_suggested
+        WHERE created_at < ${yesterday}
+      `),
+      db.execute(sql`
+        SELECT 
+          COUNT(*) as count,
+          MIN(created_at)::date as oldest_date,
+          COUNT(DISTINCT DATE(created_at)) as days
+        FROM query_logs
+        WHERE created_at < ${yesterday}
+      `),
+      db.execute(sql`
+        SELECT 
+          SUM(CASE WHEN status IN ('running', 'pending') THEN 1 ELSE 0 END) as running,
+          SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+          SUM(CASE WHEN status = 'completed' THEN records_archived ELSE 0 END) as total_archived
+        FROM archive_jobs
+      `),
+    ]);
 
     const zRow = zendeskStats.rows[0] as any;
     const oRow = openaiStats.rows[0] as any;
+    const rRow = responsesStats.rows[0] as any;
+    const qRow = queryLogsStats.rows[0] as any;
     const jRow = jobStats.rows[0] as any;
 
     return {
@@ -238,6 +256,16 @@ class ArchiveService {
         pendingRecords: Number(oRow?.count || 0),
         pendingDays: Number(oRow?.days || 0),
         oldestDate: oRow?.oldest_date || null,
+      },
+      responsesSuggested: {
+        pendingRecords: Number(rRow?.count || 0),
+        pendingDays: Number(rRow?.days || 0),
+        oldestDate: rRow?.oldest_date || null,
+      },
+      queryLogs: {
+        pendingRecords: Number(qRow?.count || 0),
+        pendingDays: Number(qRow?.days || 0),
+        oldestDate: qRow?.oldest_date || null,
       },
       runningJobs: Number(jRow?.running || 0),
       completedJobs: Number(jRow?.completed || 0),

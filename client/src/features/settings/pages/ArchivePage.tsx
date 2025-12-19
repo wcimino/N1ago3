@@ -5,17 +5,17 @@ import { apiRequest, fetchApi } from "../../../lib/queryClient";
 import { useConfirmation } from "../../../shared/hooks";
 import { ConfirmModal } from "../../../shared/components";
 
+interface TableStats {
+  pendingRecords: number;
+  pendingDays: number;
+  oldestDate: string | null;
+}
+
 interface ArchiveStats {
-  zendeskWebhook: {
-    pendingRecords: number;
-    pendingDays: number;
-    oldestDate: string | null;
-  };
-  openaiLogs: {
-    pendingRecords: number;
-    pendingDays: number;
-    oldestDate: string | null;
-  };
+  zendeskWebhook: TableStats;
+  openaiLogs: TableStats;
+  responsesSuggested: TableStats;
+  queryLogs: TableStats;
   runningJobs: number;
   completedJobs: number;
   totalArchivedRecords: number;
@@ -165,7 +165,10 @@ export function ArchivePage() {
     setLoading(false);
   };
 
-  const totalPending = (stats?.zendeskWebhook.pendingRecords || 0) + (stats?.openaiLogs.pendingRecords || 0);
+  const totalPending = (stats?.zendeskWebhook.pendingRecords || 0) + 
+    (stats?.openaiLogs.pendingRecords || 0) + 
+    (stats?.responsesSuggested.pendingRecords || 0) + 
+    (stats?.queryLogs.pendingRecords || 0);
 
   return (
     <div className="space-y-6">
@@ -182,14 +185,14 @@ export function ArchivePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <div className="bg-white rounded-lg border p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
               <Database className="w-5 h-5 text-blue-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Zendesk Webhooks</p>
+            <div className="min-w-0">
+              <p className="text-sm text-gray-600 truncate">Zendesk Webhooks</p>
               <p className="text-xl font-bold">{stats ? formatNumber(stats.zendeskWebhook.pendingRecords) : "-"}</p>
               <p className="text-xs text-gray-500">{stats?.zendeskWebhook.pendingDays || 0} dias</p>
             </div>
@@ -198,11 +201,11 @@ export function ArchivePage() {
 
         <div className="bg-white rounded-lg border p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
               <Database className="w-5 h-5 text-purple-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-600">OpenAI Logs</p>
+            <div className="min-w-0">
+              <p className="text-sm text-gray-600 truncate">OpenAI Logs</p>
               <p className="text-xl font-bold">{stats ? formatNumber(stats.openaiLogs.pendingRecords) : "-"}</p>
               <p className="text-xs text-gray-500">{stats?.openaiLogs.pendingDays || 0} dias</p>
             </div>
@@ -211,11 +214,37 @@ export function ArchivePage() {
 
         <div className="bg-white rounded-lg border p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center shrink-0">
+              <Database className="w-5 h-5 text-teal-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm text-gray-600 truncate">Respostas Sugeridas</p>
+              <p className="text-xl font-bold">{stats ? formatNumber(stats.responsesSuggested.pendingRecords) : "-"}</p>
+              <p className="text-xs text-gray-500">{stats?.responsesSuggested.pendingDays || 0} dias</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center shrink-0">
+              <Database className="w-5 h-5 text-indigo-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm text-gray-600 truncate">Query Logs</p>
+              <p className="text-xl font-bold">{stats ? formatNumber(stats.queryLogs.pendingRecords) : "-"}</p>
+              <p className="text-xs text-gray-500">{stats?.queryLogs.pendingDays || 0} dias</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
               <CheckCircle className="w-5 h-5 text-green-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Jobs Completados</p>
+            <div className="min-w-0">
+              <p className="text-sm text-gray-600 truncate">Jobs Completados</p>
               <p className="text-xl font-bold">{stats ? formatNumber(stats.completedJobs) : "-"}</p>
             </div>
           </div>
@@ -223,11 +252,11 @@ export function ArchivePage() {
 
         <div className="bg-white rounded-lg border p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
               <FileArchive className="w-5 h-5 text-amber-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Total Arquivado</p>
+            <div className="min-w-0">
+              <p className="text-sm text-gray-600 truncate">Total Arquivado</p>
               <p className="text-xl font-bold">{stats ? formatNumber(stats.totalArchivedRecords) : "-"}</p>
             </div>
           </div>
