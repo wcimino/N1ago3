@@ -27,6 +27,7 @@ export interface ProblemSearchResult {
   synonyms: string[];
   examples: string[];
   products: string[];
+  productIds: number[];
 }
 
 export interface ProblemSearchResponse {
@@ -102,6 +103,7 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
         synonyms: p.synonyms,
         examples: p.examples,
         productNames: p.productNames,
+        productIds: p.productIds,
       });
       
       const aggregatedResults = aggregateMultiQueryResults(
@@ -136,6 +138,7 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
           synonyms: p.synonyms || [],
           examples: p.examples || [],
           products: p.productNames || [],
+          productIds: p.productIds || [],
         };
       });
       
@@ -191,6 +194,7 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
         synonyms: p.synonyms || [],
         examples: p.examples || [],
         products: p.productNames || [],
+        productIds: p.productIds || [],
       };
     });
 
@@ -244,6 +248,7 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
         synonyms: p.synonyms || [],
         examples: p.examples || [],
         products: p.productNames || [],
+        productIds: p.productIds || [],
       };
     });
 
@@ -289,6 +294,7 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
       synonyms: p.synonyms || [],
       examples: p.examples || [],
       products: p.productNames || [],
+      productIds: p.productIds || [],
     };
   });
 

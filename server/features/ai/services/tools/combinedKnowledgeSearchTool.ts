@@ -15,6 +15,7 @@ export interface CombinedSearchResult {
   matchedTerms?: string[];
   products?: string[];
   productId?: number;
+  productIds?: number[];
 }
 
 export type DemandType = "suporte" | "informacoes" | "contratar" | string;
@@ -74,9 +75,14 @@ function applyScoreAdjustments(
       }
     }
 
-    if (summaryProductId && result.productId && summaryProductId !== result.productId) {
-      adjustedScore *= PRODUCT_MISMATCH_MULTIPLIER;
-      adjustments.push('0.9x (Produto diferente)');
+    if (summaryProductId) {
+      if (result.source === "article" && result.productId && result.productId !== summaryProductId) {
+        adjustedScore *= PRODUCT_MISMATCH_MULTIPLIER;
+        adjustments.push('0.9x (Produto diferente)');
+      } else if (result.source === "problem" && result.productIds && result.productIds.length > 0 && !result.productIds.includes(summaryProductId)) {
+        adjustedScore *= PRODUCT_MISMATCH_MULTIPLIER;
+        adjustments.push('0.9x (Produto diferente)');
+      }
     }
 
     return {
@@ -148,6 +154,7 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
       matchReason: problem.matchReason,
       matchedTerms: problem.matchedTerms,
       products: problem.products,
+      productIds: problem.productIds,
     });
   }
 
