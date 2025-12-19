@@ -98,3 +98,9 @@ export function getSearchQueries(summary: string | null | undefined): SearchQuer
     normalizedQuery: normalizedQuery || undefined,
   };
 }
+
+export function getCustomerRequestType(summary: string | null | undefined): string | null {
+  const parsed = parseSummaryJson(summary);
+  if (!parsed) return null;
+  return parsed.customerRequestType || null;
+}

@@ -14,6 +14,7 @@ export interface CombinedSearchResult {
   matchReason?: string;
   matchedTerms?: string[];
   products?: string[];
+  productId?: number;
 }
 
 export type DemandType = "suporte" | "informacoes" | "contratar" | string;
@@ -27,60 +28,63 @@ export interface CombinedSearchParams {
   searchQueries?: MultiQuerySearchQueries;
   limit?: number;
   demandType?: DemandType;
+  summaryProductId?: number;
 }
 
-const DEMAND_TYPE_PENALTY = 0.20;
+const REQUEST_TYPE_MULTIPLIER = 0.9;
+const PRODUCT_MISMATCH_MULTIPLIER = 0.9;
 
-function isArticleFavoredDemandType(demandType: string): boolean {
-  const normalized = demandType.toLowerCase().trim();
-  return normalized === "informacoes" || 
-         normalized === "contratar" || 
-         normalized === "informacoes/contratar" ||
+function isArticlePenalized(requestType: string): boolean {
+  const normalized = requestType.toLowerCase().trim();
+  return normalized.includes("suporte");
+}
+
+function isProblemPenalized(requestType: string): boolean {
+  const normalized = requestType.toLowerCase().trim();
+  return normalized.includes("informações") || 
          normalized.includes("informacoes") || 
          normalized.includes("contratar");
 }
 
-function isProblemFavoredDemandType(demandType: string): boolean {
-  const normalized = demandType.toLowerCase().trim();
-  return normalized === "suporte" || normalized.includes("suporte");
+interface ScoreAdjustmentParams {
+  demandType?: DemandType;
+  summaryProductId?: number;
 }
 
-function applyDemandTypeBoost(
+function applyScoreAdjustments(
   results: CombinedSearchResult[],
-  demandType?: DemandType
+  params: ScoreAdjustmentParams
 ): CombinedSearchResult[] {
-  if (!demandType) {
-    return results;
-  }
-
-  const favorArticles = isArticleFavoredDemandType(demandType);
-  const favorProblems = isProblemFavoredDemandType(demandType);
+  const { demandType, summaryProductId } = params;
 
   return results.map(result => {
     const originalScore = result.matchScore || 0;
     let adjustedScore = originalScore;
-    let boostApplied = false;
+    const adjustments: string[] = [];
 
-    if (result.source === "problem") {
-      if (favorProblems) {
-        boostApplied = true;
-      } else {
-        adjustedScore = originalScore * (1 - DEMAND_TYPE_PENALTY);
+    if (demandType) {
+      if (result.source === "article" && isArticlePenalized(demandType)) {
+        adjustedScore *= REQUEST_TYPE_MULTIPLIER;
+        adjustments.push('0.9x (Quer Suporte → Artigo)');
       }
-    } else if (result.source === "article") {
-      if (favorArticles) {
-        boostApplied = true;
-      } else {
-        adjustedScore = originalScore * (1 - DEMAND_TYPE_PENALTY);
+      
+      if (result.source === "problem" && isProblemPenalized(demandType)) {
+        adjustedScore *= REQUEST_TYPE_MULTIPLIER;
+        adjustments.push('0.9x (Quer informações/contratar → Problema)');
       }
+    }
+
+    if (summaryProductId && result.productId && summaryProductId !== result.productId) {
+      adjustedScore *= PRODUCT_MISMATCH_MULTIPLIER;
+      adjustments.push('0.9x (Produto diferente)');
     }
 
     return {
       ...result,
-      matchScore: adjustedScore,
-      matchReason: boostApplied 
-        ? result.matchReason 
-        : `${result.matchReason || ""} (penalidade por tipo de demanda: ${demandType})`.trim()
+      matchScore: Math.round(adjustedScore * 100) / 100,
+      matchReason: adjustments.length > 0 
+        ? `${result.matchReason || ""} ${adjustments.join(' ')}`.trim()
+        : result.matchReason
     };
   });
 }
@@ -94,7 +98,7 @@ export interface CombinedSearchResponse {
 }
 
 export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): Promise<CombinedSearchResponse> {
-  const { productId, conversationContext, articleContext, problemContext, searchQueries, limit = 5, demandType } = params;
+  const { productId, conversationContext, articleContext, problemContext, searchQueries, limit = 5, demandType, summaryProductId } = params;
   
   let productContext = params.productContext;
   if (!productContext && productId) {
@@ -130,6 +134,7 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
       matchScore: article.relevanceScore,
       matchReason: article.matchReason,
       matchedTerms: article.matchedTerms,
+      productId: article.productId ?? undefined,
     });
   }
 
@@ -146,7 +151,7 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
     });
   }
 
-  const adjustedResults = applyDemandTypeBoost(results, demandType);
+  const adjustedResults = applyScoreAdjustments(results, { demandType, summaryProductId });
   adjustedResults.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
 
   if (adjustedResults.length === 0) {

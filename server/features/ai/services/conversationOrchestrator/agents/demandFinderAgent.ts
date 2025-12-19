@@ -2,7 +2,7 @@ import { runAgentAndSaveSuggestion, buildAgentContextFromEvent } from "../../age
 import { runCombinedKnowledgeSearch } from "../../tools/combinedKnowledgeSearchTool.js";
 import { caseDemandStorage } from "../../../storage/caseDemandStorage.js";
 import { conversationStorage } from "../../../../conversations/storage/index.js";
-import { getClientRequestVersions, getSearchQueries, buildCleanSearchContext, buildResolvedClassification } from "../../helpers/index.js";
+import { getClientRequestVersions, getSearchQueries, getCustomerRequestType, buildCleanSearchContext, buildResolvedClassification } from "../../helpers/index.js";
 import { EnrichmentService } from "../services/enrichmentService.js";
 import { StatusController } from "../statusController.js";
 import { ActionExecutor } from "../actionExecutor.js";
@@ -180,10 +180,14 @@ export class DemandFinderAgent {
     const problemContext = versions?.clientRequestProblemVersion;
     
     const searchQueries = getSearchQueries(summary);
+    const customerRequestType = getCustomerRequestType(summary);
     
     console.log(`[DemandFinderAgent] Searching articles for conversation ${conversationId}`);
     if (searchQueries) {
       console.log(`[DemandFinderAgent] Using multi-query search: verbatim=${!!searchQueries.verbatimQuery}, keyword=${!!searchQueries.keywordQuery}, normalized=${!!searchQueries.normalizedQuery}`);
+    }
+    if (customerRequestType) {
+      console.log(`[DemandFinderAgent] Customer request type: ${customerRequestType}`);
     }
     
     const searchResponse = await runCombinedKnowledgeSearch({
@@ -192,6 +196,8 @@ export class DemandFinderAgent {
       articleContext,
       problemContext,
       searchQueries: searchQueries || undefined,
+      demandType: customerRequestType || undefined,
+      summaryProductId: classification?.productId,
       limit: 10,
     });
 

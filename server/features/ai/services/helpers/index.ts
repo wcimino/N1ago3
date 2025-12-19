@@ -4,6 +4,7 @@ export {
   getCustomerMainComplaint,
   getClientRequestVersions,
   getSearchQueries,
+  getCustomerRequestType,
   type ParsedSummary,
   type SearchQueries,
 } from "./summaryHelpers.js";

@@ -158,3 +158,48 @@ export function buildMatchReasonFromQueries(
 
   return `Multi-query max: ${maxScore}% (${parts.join(", ")})`;
 }
+
+export interface ScoreAdjustmentContext {
+  customerRequestType?: string;
+  summaryProductId?: number;
+}
+
+export interface ScoreAdjustmentResult {
+  adjustedScore: number;
+  adjustments: string[];
+}
+
+const REQUEST_TYPE_PENALTY = 0.9;
+const PRODUCT_MISMATCH_PENALTY = 0.9;
+
+export function applyScoreAdjustments(
+  score: number,
+  resultType: 'article' | 'problem',
+  resultProductId: number | null | undefined,
+  context: ScoreAdjustmentContext
+): ScoreAdjustmentResult {
+  let adjustedScore = score;
+  const adjustments: string[] = [];
+
+  const requestType = context.customerRequestType?.toLowerCase() || '';
+
+  if (resultType === 'article' && requestType.includes('suporte')) {
+    adjustedScore *= REQUEST_TYPE_PENALTY;
+    adjustments.push('0.9x (Quer Suporte → Artigo)');
+  }
+
+  if (resultType === 'problem' && (requestType.includes('informações') || requestType.includes('informacoes') || requestType.includes('contratar'))) {
+    adjustedScore *= REQUEST_TYPE_PENALTY;
+    adjustments.push('0.9x (Quer informações/contratar → Problema)');
+  }
+
+  if (context.summaryProductId && resultProductId && context.summaryProductId !== resultProductId) {
+    adjustedScore *= PRODUCT_MISMATCH_PENALTY;
+    adjustments.push('0.9x (Produto diferente)');
+  }
+
+  return {
+    adjustedScore: Math.round(adjustedScore * 100) / 100,
+    adjustments
+  };
+}
