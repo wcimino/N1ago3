@@ -207,16 +207,32 @@ export function InlineEnrichmentPanel({
                 after={suggestion.answer}
               />
 
-              <DiffPreview
-                label="Palavras-chave"
-                before={currentData.keywords}
-                after={(() => {
-                  const currentKws = currentData.keywords ? currentData.keywords.split(",").map(k => k.trim()).filter(k => k) : [];
-                  const suggestedKws = suggestion.keywords ? suggestion.keywords.split(",").map(k => k.trim()).filter(k => k) : [];
-                  const uniqueNewKws = suggestedKws.filter(k => !currentKws.includes(k));
-                  return [...currentKws, ...uniqueNewKws].join(", ");
+              <div className="space-y-2">
+                <span className="text-xs font-medium text-gray-700">Palavras-chave:</span>
+                {(() => {
+                  const existingKws = currentData.keywords ? currentData.keywords.split(",").map(k => k.trim()).filter(k => k) : [];
+                  const newKws = (suggestion.keywords ? suggestion.keywords.split(",").map(k => k.trim()).filter(k => k) : []).filter(k => !existingKws.includes(k));
+                  return (
+                    <div className="text-sm p-3 rounded border bg-gray-50 border-gray-200">
+                      <div className="flex flex-wrap gap-1">
+                        {existingKws.map((k, i) => (
+                          <span key={`existing-${i}`} className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs">
+                            {k}
+                          </span>
+                        ))}
+                        {newKws.map((k, i) => (
+                          <span key={`new-${i}`} className="bg-green-200 text-green-700 px-2 py-0.5 rounded text-xs">
+                            + {k}
+                          </span>
+                        ))}
+                        {existingKws.length === 0 && newKws.length === 0 && (
+                          <span className="text-gray-400 italic">Sem palavras-chave</span>
+                        )}
+                      </div>
+                    </div>
+                  );
                 })()}
-              />
+              </div>
 
               <div className="space-y-2">
                 <span className="text-xs font-medium text-gray-700">Variações da Pergunta:</span>
