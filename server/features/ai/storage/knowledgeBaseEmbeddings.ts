@@ -76,6 +76,7 @@ export const knowledgeBaseEmbeddingsStorage = {
         a.answer,
         a.keywords,
         a.question_variation,
+        a.question_normalized,
         COALESCE(p.full_name, '') as product_full_name
       FROM knowledge_base a
       LEFT JOIN products_catalog p ON a.product_id = p.id
@@ -85,14 +86,24 @@ export const knowledgeBaseEmbeddingsStorage = {
       LIMIT ${limit}
     `);
     
-    return results.rows.map((row: any) => ({
-      id: row.id,
-      question: row.question,
-      answer: row.answer,
-      keywords: row.keywords,
-      questionVariation: row.question_variation || [],
-      productFullName: row.product_full_name,
-    }));
+    return results.rows.map((row: any) => {
+      let parsedNormalized: string[] = [];
+      if (row.question_normalized) {
+        try {
+          const parsed = JSON.parse(row.question_normalized);
+          if (Array.isArray(parsed)) parsedNormalized = parsed;
+        } catch { }
+      }
+      return {
+        id: row.id,
+        question: row.question,
+        answer: row.answer,
+        keywords: row.keywords,
+        questionVariation: row.question_variation || [],
+        questionNormalized: parsedNormalized,
+        productFullName: row.product_full_name,
+      };
+    });
   },
 
   async getArticlesWithChangedContent(limit: number = 100): Promise<KnowledgeBaseArticleWithProduct[]> {
@@ -103,29 +114,37 @@ export const knowledgeBaseEmbeddingsStorage = {
         a.answer,
         a.keywords,
         a.question_variation,
+        a.question_normalized,
         COALESCE(p.full_name, '') as product_full_name
       FROM knowledge_base a
       LEFT JOIN products_catalog p ON a.product_id = p.id
       INNER JOIN knowledge_base_embeddings e ON a.id = e.article_id
       WHERE e.content_hash != md5(
-        COALESCE(a.question, '') || 
-        COALESCE(a.answer, '') || 
-        COALESCE(a.keywords, '') || 
-        COALESCE(a.question_variation::text, '[]') || 
-        COALESCE(p.full_name, '')
+        COALESCE(a.question_normalized, '[]') || 
+        COALESCE(a.keywords, '')
       )
       ORDER BY a.updated_at DESC
       LIMIT ${limit}
     `);
     
-    return results.rows.map((row: any) => ({
-      id: row.id,
-      question: row.question,
-      answer: row.answer,
-      keywords: row.keywords,
-      questionVariation: row.question_variation || [],
-      productFullName: row.product_full_name,
-    }));
+    return results.rows.map((row: any) => {
+      let parsedNormalized: string[] = [];
+      if (row.question_normalized) {
+        try {
+          const parsed = JSON.parse(row.question_normalized);
+          if (Array.isArray(parsed)) parsedNormalized = parsed;
+        } catch { }
+      }
+      return {
+        id: row.id,
+        question: row.question,
+        answer: row.answer,
+        keywords: row.keywords,
+        questionVariation: row.question_variation || [],
+        questionNormalized: parsedNormalized,
+        productFullName: row.product_full_name,
+      };
+    });
   },
 
   async getEmbeddingStats(): Promise<{
@@ -140,14 +159,10 @@ export const knowledgeBaseEmbeddingsStorage = {
         (SELECT count(*)::int FROM knowledge_base_embeddings) as with_embedding,
         (SELECT count(*)::int FROM knowledge_base a LEFT JOIN knowledge_base_embeddings e ON a.id = e.article_id WHERE e.id IS NULL) as without_embedding,
         (SELECT count(*)::int FROM knowledge_base a 
-         LEFT JOIN products_catalog p ON a.product_id = p.id
          INNER JOIN knowledge_base_embeddings e ON a.id = e.article_id 
          WHERE e.content_hash != md5(
-           COALESCE(a.question, '') || 
-           COALESCE(a.answer, '') || 
-           COALESCE(a.keywords, '') || 
-           COALESCE(a.question_variation::text, '[]') || 
-           COALESCE(p.full_name, '')
+           COALESCE(a.question_normalized, '[]') || 
+           COALESCE(a.keywords, '')
          )) as outdated
     `).then(r => r.rows);
     
@@ -181,6 +196,7 @@ async function getArticleByIdWithProductInternal(id: number): Promise<KnowledgeB
       a.answer,
       a.keywords,
       a.question_variation,
+      a.question_normalized,
       COALESCE(p.full_name, '') as product_full_name
     FROM knowledge_base a
     LEFT JOIN products_catalog p ON a.product_id = p.id
@@ -190,12 +206,20 @@ async function getArticleByIdWithProductInternal(id: number): Promise<KnowledgeB
   if (results.rows.length === 0) return null;
   
   const row = results.rows[0] as any;
+  let parsedNormalized: string[] = [];
+  if (row.question_normalized) {
+    try {
+      const parsed = JSON.parse(row.question_normalized);
+      if (Array.isArray(parsed)) parsedNormalized = parsed;
+    } catch { }
+  }
   return {
     id: row.id,
     question: row.question,
     answer: row.answer,
     keywords: row.keywords,
     questionVariation: row.question_variation || [],
+    questionNormalized: parsedNormalized,
     productFullName: row.product_full_name,
   };
 }

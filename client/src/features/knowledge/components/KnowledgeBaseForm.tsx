@@ -33,13 +33,14 @@ export function KnowledgeBaseForm({
   const [formData, setFormData] = useState({
     question: "",
     answer: "",
-    keywords: "",
+    keywords: [] as string[],
     questionVariation: [] as string[],
     questionNormalized: [] as string[],
     isActive: false,
   });
   const [newVariation, setNewVariation] = useState("");
   const [newNormalized, setNewNormalized] = useState("");
+  const [newKeyword, setNewKeyword] = useState("");
   const [initializedForId, setInitializedForId] = useState<number | null>(null);
 
   const hierarchy = useProductHierarchySelects({
@@ -61,10 +62,14 @@ export function KnowledgeBaseForm({
           if (Array.isArray(parsed)) parsedNormalized = parsed;
         } catch { }
       }
+      let parsedKeywords: string[] = [];
+      if (initialData.keywords) {
+        parsedKeywords = initialData.keywords.split(",").map(k => k.trim()).filter(k => k);
+      }
       setFormData({
         question: initialData.question || "",
         answer: initialData.answer || "",
-        keywords: initialData.keywords || "",
+        keywords: parsedKeywords,
         questionVariation: initialData.questionVariation || [],
         questionNormalized: parsedNormalized,
         isActive: initialData.isActive,
@@ -74,7 +79,7 @@ export function KnowledgeBaseForm({
       setFormData({
         question: "",
         answer: "",
-        keywords: "",
+        keywords: [],
         questionVariation: [],
         questionNormalized: [],
         isActive: false,
@@ -84,7 +89,7 @@ export function KnowledgeBaseForm({
       setFormData({
         question: "",
         answer: "",
-        keywords: "",
+        keywords: [],
         questionVariation: [],
         questionNormalized: [],
         isActive: false,
@@ -134,13 +139,32 @@ export function KnowledgeBaseForm({
     }));
   };
 
+  const handleAddKeyword = () => {
+    const currentKeywords = Array.isArray(formData.keywords) ? formData.keywords : [];
+    if (newKeyword.trim() && !currentKeywords.includes(newKeyword.trim())) {
+      setFormData((prev) => ({
+        ...prev,
+        keywords: [...(Array.isArray(prev.keywords) ? prev.keywords : []), newKeyword.trim()],
+      }));
+      setNewKeyword("");
+    }
+  };
+
+  const handleRemoveKeyword = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      keywords: (Array.isArray(prev.keywords) ? prev.keywords : []).filter((_, i) => i !== index),
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    const keywordsArray = Array.isArray(formData.keywords) ? formData.keywords : [];
     onSubmit({
       question: formData.question,
       answer: formData.answer,
-      keywords: formData.keywords || null,
+      keywords: keywordsArray.length > 0 ? keywordsArray.join(", ") : null,
       questionVariation: formData.questionVariation.length > 0 ? formData.questionVariation : null,
       questionNormalized: formData.questionNormalized.length > 0 ? JSON.stringify(formData.questionNormalized) : null,
       productId: prefilledData?.productId || hierarchy.selection.productId,
@@ -300,18 +324,52 @@ export function KnowledgeBaseForm({
       </div>
 
       <div>
-        <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
+        <label className="flex items-center gap-1.5 text-xs font-medium text-amber-600 mb-1.5">
           <Tag className="w-3.5 h-3.5" />
           Palavras-chave
+          <span className="text-xs text-gray-400 font-normal ml-1">(para busca semântica)</span>
         </label>
-        <input
-          type="text"
-          name="keywords"
-          value={formData.keywords}
-          onChange={handleChange}
-          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
-          placeholder="Ex: cartão, limite, fatura (separadas por vírgula)"
-        />
+        <div className="flex gap-2 mb-2">
+          <input
+            type="text"
+            value={newKeyword}
+            onChange={(e) => setNewKeyword(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleAddKeyword();
+              }
+            }}
+            className="flex-1 px-3 py-2 text-sm border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors bg-white"
+            placeholder="Digite uma palavra-chave e pressione Enter ou clique em +"
+          />
+          <button
+            type="button"
+            onClick={handleAddKeyword}
+            className="px-3 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
+        {Array.isArray(formData.keywords) && formData.keywords.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {formData.keywords.map((keyword, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-amber-50 border border-amber-200 rounded-lg text-amber-700"
+              >
+                {keyword}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveKeyword(index)}
+                  className="hover:text-red-500"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div>
@@ -368,7 +426,7 @@ export function KnowledgeBaseForm({
         currentData={{
           question: formData.question,
           answer: formData.answer,
-          keywords: formData.keywords,
+          keywords: Array.isArray(formData.keywords) ? formData.keywords.join(", ") : "",
           questionVariation: formData.questionVariation,
         }}
         onApply={(suggestion) => {
@@ -377,10 +435,17 @@ export function KnowledgeBaseForm({
             const newVariations = (suggestion.questionVariation || []).filter(
               v => !existingVariations.includes(v)
             );
+            const currentKeywords = Array.isArray(prev.keywords) ? prev.keywords : [];
+            let newKeywords = currentKeywords;
+            if (suggestion.keywords) {
+              const suggestedKeywords = suggestion.keywords.split(",").map(k => k.trim()).filter(k => k);
+              const uniqueNewKeywords = suggestedKeywords.filter(k => !currentKeywords.includes(k));
+              newKeywords = [...currentKeywords, ...uniqueNewKeywords];
+            }
             return {
               ...prev,
               answer: suggestion.answer || prev.answer,
-              keywords: suggestion.keywords || prev.keywords,
+              keywords: newKeywords,
               questionVariation: [...existingVariations, ...newVariations],
               questionNormalized: suggestion.questionNormalized || prev.questionNormalized,
             };

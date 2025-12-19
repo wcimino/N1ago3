@@ -71,6 +71,7 @@ export const knowledgeBaseArticlesCrud = {
         a.answer,
         a.keywords,
         a.question_variation,
+        a.question_normalized,
         COALESCE(p.full_name, '') as product_full_name
       FROM knowledge_base a
       LEFT JOIN products_catalog p ON a.product_id = p.id
@@ -80,12 +81,20 @@ export const knowledgeBaseArticlesCrud = {
     if (results.rows.length === 0) return null;
     
     const row = results.rows[0] as any;
+    let parsedNormalized: string[] = [];
+    if (row.question_normalized) {
+      try {
+        const parsed = JSON.parse(row.question_normalized);
+        if (Array.isArray(parsed)) parsedNormalized = parsed;
+      } catch { }
+    }
     return {
       id: row.id,
       question: row.question,
       answer: row.answer,
       keywords: row.keywords,
       questionVariation: row.question_variation || [],
+      questionNormalized: parsedNormalized,
       productFullName: row.product_full_name,
     };
   },

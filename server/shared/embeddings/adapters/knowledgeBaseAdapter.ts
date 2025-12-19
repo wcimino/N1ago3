@@ -1,12 +1,30 @@
 import type { EmbeddableArticle } from "../types.js";
 import { generateContentHashFromParts } from "../types.js";
 
+function parseQuestionNormalized(value: string[] | string | null | undefined): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed;
+    } catch { }
+  }
+  return [];
+}
+
+function normalizeKeywords(keywords: string | null | undefined): string {
+  if (!keywords) return '';
+  return keywords.split(',').map(k => k.trim()).filter(k => k).join(', ');
+}
+
 export interface KnowledgeBaseArticleWithProduct {
   id: number;
   question?: string | null;
   answer?: string | null;
   keywords?: string | null;
   questionVariation?: string[];
+  questionNormalized?: string[] | string | null;
   productFullName: string;
 }
 
@@ -22,36 +40,25 @@ export class KnowledgeBaseEmbeddableArticle implements EmbeddableArticle {
   getContentForEmbedding(): string {
     const parts: string[] = [];
     
-    if (this.article.question) {
-      parts.push(`Pergunta: ${this.article.question}`);
+    const normalized = parseQuestionNormalized(this.article.questionNormalized as any);
+    if (normalized.length > 0) {
+      parts.push(normalized.join("; "));
     }
     
-    if (this.article.questionVariation && this.article.questionVariation.length > 0) {
-      parts.push(`Variações: ${this.article.questionVariation.join("; ")}`);
-    }
-    
-    if (this.article.answer) {
-      parts.push(`Resposta: ${this.article.answer}`);
-    }
-    
-    if (this.article.keywords) {
-      parts.push(`Keywords: ${this.article.keywords}`);
-    }
-    
-    if (this.article.productFullName) {
-      parts.push(`Produto: ${this.article.productFullName}`);
+    const keywords = normalizeKeywords(this.article.keywords);
+    if (keywords) {
+      parts.push(keywords);
     }
 
     return parts.join("\n\n");
   }
 
   getContentHash(): string {
+    const normalized = parseQuestionNormalized(this.article.questionNormalized as any);
+    const keywords = normalizeKeywords(this.article.keywords);
     return generateContentHashFromParts([
-      this.article.question,
-      this.article.answer,
-      this.article.keywords,
-      JSON.stringify(this.article.questionVariation || []),
-      this.article.productFullName,
+      JSON.stringify(normalized),
+      keywords,
     ]);
   }
 
@@ -65,48 +72,31 @@ export class KnowledgeBaseEmbeddableArticle implements EmbeddableArticle {
 }
 
 export function generateKBContentHash(article: {
-  question?: string | null;
-  answer?: string | null;
   keywords?: string | null;
-  questionVariation?: string[];
-  productFullName: string;
+  questionNormalized?: string[] | string | null;
 }): string {
+  const normalized = parseQuestionNormalized(article.questionNormalized);
+  const keywords = normalizeKeywords(article.keywords);
   return generateContentHashFromParts([
-    article.question,
-    article.answer,
-    article.keywords,
-    JSON.stringify(article.questionVariation || []),
-    article.productFullName,
+    JSON.stringify(normalized),
+    keywords,
   ]);
 }
 
 export function generateKBContentForEmbedding(article: {
-  question?: string | null;
-  answer?: string | null;
   keywords?: string | null;
-  questionVariation?: string[];
-  productFullName: string;
+  questionNormalized?: string[] | string | null;
 }): string {
   const parts: string[] = [];
   
-  if (article.question) {
-    parts.push(`Pergunta: ${article.question}`);
+  const normalized = parseQuestionNormalized(article.questionNormalized);
+  if (normalized.length > 0) {
+    parts.push(normalized.join("; "));
   }
   
-  if (article.questionVariation && article.questionVariation.length > 0) {
-    parts.push(`Variações: ${article.questionVariation.join("; ")}`);
-  }
-  
-  if (article.answer) {
-    parts.push(`Resposta: ${article.answer}`);
-  }
-  
-  if (article.keywords) {
-    parts.push(`Keywords: ${article.keywords}`);
-  }
-  
-  if (article.productFullName) {
-    parts.push(`Produto: ${article.productFullName}`);
+  const keywords = normalizeKeywords(article.keywords);
+  if (keywords) {
+    parts.push(keywords);
   }
 
   return parts.join("\n\n");

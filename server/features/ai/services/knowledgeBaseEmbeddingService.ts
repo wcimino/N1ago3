@@ -22,22 +22,16 @@ export async function generateEmbedding(text: string): Promise<EmbeddingResult> 
 }
 
 export async function generateArticleEmbedding(article: {
-  question?: string | null;
-  answer?: string | null;
   keywords?: string | null;
-  questionVariation?: string[];
-  productFullName: string;
+  questionNormalized?: string[] | string | null;
 }): Promise<EmbeddingResult> {
   const contentText = generateKBContentForEmbedding(article);
   return baseGenerateEmbedding(contentText, { contextType: "knowledge_base_article" });
 }
 
 export function generateContentHash(article: {
-  question?: string | null;
-  answer?: string | null;
   keywords?: string | null;
-  questionVariation?: string[];
-  productFullName: string;
+  questionNormalized?: string[] | string | null;
 }): string {
   return generateKBContentHash(article);
 }
