@@ -10,7 +10,7 @@ interface EnrichmentSuggestion {
   keywords: string;
   questionVariation: string[];
   updateReason: string;
-  confidenceScore: number;
+  confidenceScore: number | null;
   sourceArticles: Array<{ id: string; title: string; similarityScore: number }>;
 }
 
