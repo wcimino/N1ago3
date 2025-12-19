@@ -160,8 +160,11 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
 
   const adjustedResults = applyScoreAdjustments(results, { demandType, summaryProductId });
   adjustedResults.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+  
+  const finalLimit = limit || 10;
+  const limitedResults = adjustedResults.slice(0, finalLimit);
 
-  if (adjustedResults.length === 0) {
+  if (limitedResults.length === 0) {
     return {
       message: "Nenhum resultado encontrado na base de conhecimento",
       results: [],
@@ -171,12 +174,15 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
     };
   }
 
+  const articleCount = limitedResults.filter(r => r.source === "article").length;
+  const problemCount = limitedResults.filter(r => r.source === "problem").length;
+
   return {
-    message: `Encontrados ${articlesResult.articles.length} artigos e ${problemsResult.problems.length} problemas`,
-    results: adjustedResults,
+    message: `Retornando ${limitedResults.length} resultados (${articleCount} artigos, ${problemCount} problemas)`,
+    results: limitedResults,
     productId,
-    articleCount: articlesResult.articles.length,
-    problemCount: problemsResult.problems.length
+    articleCount,
+    problemCount
   };
 }
 
