@@ -20,30 +20,12 @@ const WEIGHT_SCORES: Record<MatchField['weight'], number> = {
   contains_low: 40,
 };
 
-const BONUS_EXTRA_TERM = 5;
-const BONUS_FREQUENCY = 3;
-const BONUS_MULTI_FIELD = 10;
-
 export function normalizeText(text: string): string {
   return text
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim();
-}
-
-function countOccurrences(text: string, term: string): number {
-  const normalizedText = normalizeText(text);
-  const normalizedTerm = normalizeText(term);
-  if (!normalizedTerm) return 0;
-  
-  let count = 0;
-  let pos = 0;
-  while ((pos = normalizedText.indexOf(normalizedTerm, pos)) !== -1) {
-    count++;
-    pos += normalizedTerm.length;
-  }
-  return count;
 }
 
 export function calculateMatchScore(
@@ -58,7 +40,6 @@ export function calculateMatchScore(
   let bestReason = "";
   const matchedFieldNames = new Set<string>();
   const termsMatched = new Set<string>();
-  let frequencyBonus = 0;
 
   for (const term of searchTerms) {
     const normalizedTerm = normalizeText(term);
@@ -75,11 +56,6 @@ export function calculateMatchScore(
 
       termsMatched.add(term);
       matchedFieldNames.add(field.name);
-
-      const occurrences = countOccurrences(field.value, term);
-      if (occurrences > 1) {
-        frequencyBonus += BONUS_FREQUENCY * (occurrences - 1);
-      }
 
       let fieldScore = 0;
       let reason = "";
@@ -111,24 +87,9 @@ export function calculateMatchScore(
     return { score: 0, reason: "Sem match", matchedFields: [], termsFound: 0 };
   }
 
-  const extraTermsBonus = Math.max(0, termsMatched.size - 1) * BONUS_EXTRA_TERM;
-
-  const multiFieldBonus = matchedFieldNames.size >= 2 ? BONUS_MULTI_FIELD : 0;
-
-  const totalScore = Math.min(baseScore + extraTermsBonus + frequencyBonus + multiFieldBonus, 100);
-
-  const bonusParts: string[] = [];
-  if (extraTermsBonus > 0) bonusParts.push(`+${extraTermsBonus} (${termsMatched.size} termos)`);
-  if (frequencyBonus > 0) bonusParts.push(`+${frequencyBonus} (frequência)`);
-  if (multiFieldBonus > 0) bonusParts.push(`+${multiFieldBonus} (multi-campo)`);
-
-  const finalReason = bonusParts.length > 0 
-    ? `${bestReason} ${bonusParts.join(' ')}`
-    : bestReason;
-
   return {
-    score: Math.round(totalScore * 100) / 100,
-    reason: finalReason,
+    score: baseScore,
+    reason: bestReason,
     matchedFields: Array.from(matchedFieldNames),
     termsFound: termsMatched.size,
   };
