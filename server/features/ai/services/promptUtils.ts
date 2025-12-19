@@ -15,6 +15,19 @@ export interface PromptVariables {
   produtoESubprodutoMatch?: string | null;
   tipoDeDemandaMatch?: string | null;
   artigoOuProblemaPrincipalMatch?: string | null;
+  intencaoId?: string | null;
+  intencaoNome?: string | null;
+  intencaoSinonimos?: string | null;
+  assuntoNome?: string | null;
+  assuntoSinonimos?: string | null;
+  produtoNome?: string | null;
+  subprodutoNome?: string | null;
+  artigoId?: string | null;
+  artigoPergunta?: string | null;
+  artigoResposta?: string | null;
+  artigoKeywords?: string | null;
+  artigoVariacoes?: string | null;
+  artigoExiste?: boolean;
   customVariables?: Record<string, string>;
 }
 
@@ -52,6 +65,41 @@ export function replacePromptVariables(
   result = result.replace(/\{\{PRODUTO_E_SUBPRODUTO_MATCH\}\}/g, variables.produtoESubprodutoMatch || 'Nenhum produto/subproduto identificado.');
   result = result.replace(/\{\{TIPO_DE_DEMANDA_MATCH\}\}/g, variables.tipoDeDemandaMatch || 'Nenhum tipo de demanda identificado.');
   result = result.replace(/\{\{ARTIGO_OU_PROBLEMA_PRINCIPAL_MATCH\}\}/g, variables.artigoOuProblemaPrincipalMatch || 'Nenhum artigo ou problema principal identificado.');
+
+  result = result.replace(/\{\{INTENCAO_ID\}\}/gi, variables.intencaoId || '');
+  result = result.replace(/\{\{INTENCAO_NOME\}\}/gi, variables.intencaoNome || '');
+  result = result.replace(/\{\{INTENCAO_SINONIMOS\}\}/gi, variables.intencaoSinonimos || '');
+  result = result.replace(/\{\{ASSUNTO_NOME\}\}/gi, variables.assuntoNome || '');
+  result = result.replace(/\{\{ASSUNTO_SINONIMOS\}\}/gi, variables.assuntoSinonimos || '');
+  result = result.replace(/\{\{PRODUTO_NOME\}\}/gi, variables.produtoNome || '');
+  result = result.replace(/\{\{SUBPRODUTO_NOME\}\}/gi, variables.subprodutoNome || '');
+  result = result.replace(/\{\{ARTIGO_ID\}\}/gi, variables.artigoId || '');
+  result = result.replace(/\{\{ARTIGO_PERGUNTA\}\}/gi, variables.artigoPergunta || 'Sem pergunta');
+  result = result.replace(/\{\{ARTIGO_RESPOSTA\}\}/gi, variables.artigoResposta || 'Sem resposta');
+  result = result.replace(/\{\{ARTIGO_KEYWORDS\}\}/gi, variables.artigoKeywords || 'Sem keywords');
+  result = result.replace(/\{\{ARTIGO_VARIACOES\}\}/gi, variables.artigoVariacoes || 'Sem variações');
+
+  if (variables.artigoExiste === true) {
+    result = result
+      .replace(/\{\{#if_artigo_existe\}\}([\s\S]*?)\{\{\/if_artigo_existe\}\}/gi, '$1')
+      .replace(/\{\{#if_artigo_nao_existe\}\}[\s\S]*?\{\{\/if_artigo_nao_existe\}\}/gi, '');
+  } else if (variables.artigoExiste === false) {
+    result = result
+      .replace(/\{\{#if_artigo_nao_existe\}\}([\s\S]*?)\{\{\/if_artigo_nao_existe\}\}/gi, '$1')
+      .replace(/\{\{#if_artigo_existe\}\}[\s\S]*?\{\{\/if_artigo_existe\}\}/gi, '');
+  }
+
+  if (variables.intencaoSinonimos) {
+    result = result.replace(/\{\{#if_intencao_sinonimos\}\}([\s\S]*?)\{\{\/if_intencao_sinonimos\}\}/gi, '$1');
+  } else {
+    result = result.replace(/\{\{#if_intencao_sinonimos\}\}[\s\S]*?\{\{\/if_intencao_sinonimos\}\}/gi, '');
+  }
+
+  if (variables.assuntoSinonimos) {
+    result = result.replace(/\{\{#if_assunto_sinonimos\}\}([\s\S]*?)\{\{\/if_assunto_sinonimos\}\}/gi, '$1');
+  } else {
+    result = result.replace(/\{\{#if_assunto_sinonimos\}\}[\s\S]*?\{\{\/if_assunto_sinonimos\}\}/gi, '');
+  }
 
   if (variables.customVariables) {
     for (const [key, value] of Object.entries(variables.customVariables)) {
@@ -200,4 +248,20 @@ export const AVAILABLE_VARIABLES = [
   { name: '{{PRODUTO_E_SUBPRODUTO_MATCH}}', description: 'Produto e Subproduto identificados com match na base' },
   { name: '{{TIPO_DE_DEMANDA_MATCH}}', description: 'Tipo de demanda identificado com match' },
   { name: '{{ARTIGO_OU_PROBLEMA_PRINCIPAL_MATCH}}', description: 'Artigo ou problema principal identificado com melhor match' },
+  { name: '{{INTENCAO_ID}}', description: 'ID da intenção (para enriquecimento de artigos)' },
+  { name: '{{INTENCAO_NOME}}', description: 'Nome da intenção (para enriquecimento de artigos)' },
+  { name: '{{INTENCAO_SINONIMOS}}', description: 'Sinônimos da intenção separados por vírgula' },
+  { name: '{{ASSUNTO_NOME}}', description: 'Nome do assunto (para enriquecimento de artigos)' },
+  { name: '{{ASSUNTO_SINONIMOS}}', description: 'Sinônimos do assunto separados por vírgula' },
+  { name: '{{PRODUTO_NOME}}', description: 'Nome do produto (para enriquecimento de artigos)' },
+  { name: '{{SUBPRODUTO_NOME}}', description: 'Nome do subproduto (para enriquecimento de artigos)' },
+  { name: '{{ARTIGO_ID}}', description: 'ID do artigo existente (para enriquecimento)' },
+  { name: '{{ARTIGO_PERGUNTA}}', description: 'Pergunta do artigo existente' },
+  { name: '{{ARTIGO_RESPOSTA}}', description: 'Resposta do artigo existente' },
+  { name: '{{ARTIGO_KEYWORDS}}', description: 'Keywords do artigo existente' },
+  { name: '{{ARTIGO_VARIACOES}}', description: 'Variações de pergunta do artigo existente' },
+  { name: '{{#if_artigo_existe}}...{{/if_artigo_existe}}', description: 'Bloco condicional: exibe conteúdo se artigo existe' },
+  { name: '{{#if_artigo_nao_existe}}...{{/if_artigo_nao_existe}}', description: 'Bloco condicional: exibe conteúdo se artigo não existe' },
+  { name: '{{#if_intencao_sinonimos}}...{{/if_intencao_sinonimos}}', description: 'Bloco condicional: exibe se há sinônimos de intenção' },
+  { name: '{{#if_assunto_sinonimos}}...{{/if_assunto_sinonimos}}', description: 'Bloco condicional: exibe se há sinônimos de assunto' },
 ];

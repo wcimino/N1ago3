@@ -1,7 +1,7 @@
 import { OpenaiConfigForm } from "../components";
 import { getAgentConfig } from "../config/agentConfigMetadata";
 
-const config = getAgentConfig("enrichment");
+const config = getAgentConfig("article_enrichment");
 
 export function EnrichmentConfigPage() {
   return (

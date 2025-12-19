@@ -53,7 +53,7 @@ export function InlineEnrichmentPanel({
       if (!intentId) {
         throw new Error("É necessário selecionar uma intenção para enriquecer o artigo.");
       }
-      const response = await apiRequest("POST", "/api/ai/enrichment/inline", {
+      const response = await apiRequest("POST", "/api/ai/article-enrichment/inline", {
         intentId,
         articleId,
         currentData: {

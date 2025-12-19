@@ -1,0 +1,233 @@
+import { storage } from "../../../../storage/index.js";
+import { callOpenAI, type ToolDefinition } from "../openaiApiService.js";
+import { createZendeskKnowledgeBaseTool } from "../aiTools.js";
+import { replacePromptVariables, type PromptVariables } from "../promptUtils.js";
+import { generalSettingsStorage } from "../../storage/generalSettingsStorage.js";
+import type { IntentWithArticle } from "../../storage/knowledgeBaseTypes.js";
+import type { ArticleEnrichmentContext, ArticleEnrichmentResult } from "./types.js";
+import { buildArticleEnrichmentContext } from "./types.js";
+
+const CONFIG_KEY = "article_enrichment";
+
+function buildCreateSuggestionTool(context: ArticleEnrichmentContext): ToolDefinition {
+  return {
+    name: "create_article_enrichment_suggestion",
+    description: "Registra uma sugestão de refinamento do artigo existente, melhorando a pergunta, resposta, variações e keywords.",
+    parameters: {
+      type: "object",
+      properties: {
+        action: {
+          type: "string",
+          enum: ["update", "skip"],
+          description: "Ação a tomar: update (refinar o artigo), skip (ignorar pois já está bom)"
+        },
+        question: {
+          type: "string",
+          description: "Pergunta reformulada no formato que o cliente faria (ex: 'Como desbloquear meu cartão?'). Obrigatório se action=update."
+        },
+        answer: {
+          type: "string",
+          description: "Resposta direta para o cliente, sem linguagem de atendente. Instruções claras e objetivas. Obrigatório se action=update."
+        },
+        keywords: {
+          type: "string",
+          description: "Palavras-chave separadas por vírgula para busca (ex: 'desbloquear, liberar, bloqueado, travado'). Obrigatório se action=update."
+        },
+        questionVariation: {
+          type: "array",
+          items: { type: "string" },
+          description: "4 a 6 formas alternativas de fazer a mesma pergunta (ex: ['Meu cartão está bloqueado', 'Como libero o cartão?']). Obrigatório se action=update."
+        },
+        updateReason: {
+          type: "string",
+          description: "Motivo do refinamento proposto (obrigatório se action=update)"
+        },
+        confidenceScore: {
+          type: "number",
+          description: "Nível de confiança de 0 a 100"
+        },
+        sourceArticles: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              title: { type: "string" },
+              similarityScore: { type: "number" }
+            }
+          },
+          description: "Artigos do Zendesk utilizados como referência (opcional)"
+        },
+        skipReason: {
+          type: "string",
+          description: "Motivo para ignorar (obrigatório se action=skip)"
+        }
+      },
+      required: ["action"]
+    },
+    handler: async (args: any) => {
+      return `Sugestão registrada para intenção #${context.intentId}: action=${args.action}`;
+    }
+  };
+}
+
+function buildPromptVariablesFromContext(context: ArticleEnrichmentContext): PromptVariables {
+  const hasArticle = !!context.article;
+  
+  return {
+    intencaoId: String(context.intentId),
+    intencaoNome: context.intentName,
+    intencaoSinonimos: context.intentSynonyms.length > 0 ? context.intentSynonyms.join(", ") : null,
+    assuntoNome: context.subjectName,
+    assuntoSinonimos: context.subjectSynonyms.length > 0 ? context.subjectSynonyms.join(", ") : null,
+    produtoNome: context.productName,
+    subprodutoNome: context.subproductName,
+    artigoExiste: hasArticle,
+    artigoId: hasArticle && context.article ? String(context.article.id) : null,
+    artigoPergunta: context.article?.question || null,
+    artigoResposta: context.article?.answer || null,
+    artigoKeywords: context.article?.keywords || null,
+    artigoVariacoes: context.article?.questionVariation?.join(", ") || null,
+  };
+}
+
+export class ArticleEnrichmentAgent {
+  static async process(intentWithArticle: IntentWithArticle): Promise<ArticleEnrichmentResult> {
+    const context = buildArticleEnrichmentContext(intentWithArticle);
+    
+    try {
+      const config = await storage.getOpenaiApiConfig(CONFIG_KEY);
+      
+      if (!config || !config.enabled) {
+        console.log(`[ArticleEnrichmentAgent] Agent is disabled or no config found`);
+        return {
+          success: false,
+          error: "Agent is disabled or configuration not found",
+        };
+      }
+
+      if (!config.promptTemplate || !config.promptTemplate.trim()) {
+        return {
+          success: false,
+          error: "Prompt template is required. Please configure it in the database.",
+        };
+      }
+
+      if (!config.promptSystem || !config.promptSystem.trim()) {
+        return {
+          success: false,
+          error: "System prompt is required. Please configure it in the database.",
+        };
+      }
+
+      let effectivePromptSystem = config.promptSystem;
+      if (config.useGeneralSettings) {
+        const generalSettings = await generalSettingsStorage.getConcatenatedContent();
+        if (generalSettings) {
+          effectivePromptSystem = generalSettings + "\n\n" + effectivePromptSystem;
+        }
+      }
+
+      const variables = buildPromptVariablesFromContext(context);
+      const systemPrompt = replacePromptVariables(effectivePromptSystem, variables);
+      let userPrompt = replacePromptVariables(config.promptTemplate, variables);
+
+      if (config.responseFormat) {
+        userPrompt += `\n\n## Formato da Resposta\n${config.responseFormat}`;
+      }
+
+      const tools: ToolDefinition[] = [buildCreateSuggestionTool(context)];
+
+      if (config.useZendeskKnowledgeBaseTool) {
+        const zendeskTool = createZendeskKnowledgeBaseTool({
+          produto: context.productName,
+          subproduto: context.subproductName || undefined,
+          assunto: context.subjectName || undefined,
+          intencao: context.intentName,
+          question: context.article?.question || undefined,
+          questionVariation: context.article?.questionVariation || undefined,
+        });
+        const originalHandler = zendeskTool.handler;
+        zendeskTool.handler = async (args) => {
+          console.log(`[ArticleEnrichmentAgent] Zendesk KB search for intent #${context.intentId}: keywords=${args.keywords}`);
+          return originalHandler(args);
+        };
+        tools.unshift(zendeskTool);
+      }
+
+      console.log(`[ArticleEnrichmentAgent] Processing intent #${context.intentId} (${context.intentName})`);
+
+      const result = await callOpenAI({
+        requestType: CONFIG_KEY,
+        modelName: config.modelName || "gpt-4o-mini",
+        promptSystem: systemPrompt,
+        promptUser: userPrompt,
+        tools,
+        maxTokens: 4096,
+        maxIterations: 5,
+        contextType: "article_enrichment",
+        contextId: `intent-${context.intentId}`,
+        finalToolName: "create_article_enrichment_suggestion",
+      });
+
+      if (!result.success) {
+        return {
+          success: false,
+          error: result.error || `Failed to process intent #${context.intentId}`,
+          openaiLogId: result.logId,
+        };
+      }
+
+      if (!result.toolResult) {
+        return {
+          success: true,
+          action: "skip",
+          skipReason: `Nenhuma sugestão gerada para intenção #${context.intentId}`,
+          openaiLogId: result.logId,
+        };
+      }
+
+      const toolResult = result.toolResult;
+      const validActions = ["update", "skip"];
+      
+      if (!toolResult.action || !validActions.includes(toolResult.action)) {
+        return {
+          success: true,
+          action: "skip",
+          skipReason: toolResult.skipReason || `Resposta inválida para intenção #${context.intentId}`,
+          confidenceScore: toolResult.confidenceScore,
+          openaiLogId: result.logId,
+        };
+      }
+
+      return {
+        success: true,
+        action: toolResult.action,
+        question: toolResult.question,
+        answer: toolResult.answer,
+        keywords: toolResult.keywords,
+        questionVariation: toolResult.questionVariation || [],
+        updateReason: toolResult.updateReason,
+        skipReason: toolResult.skipReason,
+        confidenceScore: toolResult.confidenceScore,
+        sourceArticles: toolResult.sourceArticles?.map((s: any) => ({
+          id: s.id,
+          title: s.title,
+          similarityScore: s.similarityScore,
+        })) || [],
+        openaiLogId: result.logId,
+      };
+    } catch (error: any) {
+      console.error(`[ArticleEnrichmentAgent] Error processing intent #${context.intentId}:`, error);
+      return {
+        success: false,
+        error: error.message || "Failed to process intent",
+      };
+    }
+  }
+
+  static async shouldProcess(): Promise<boolean> {
+    const config = await storage.getOpenaiApiConfig(CONFIG_KEY);
+    return !!(config && config.enabled);
+  }
+}

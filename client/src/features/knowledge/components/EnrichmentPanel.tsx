@@ -33,7 +33,7 @@ export function EnrichmentPanel() {
 
   const generateMutation = useMutation({
     mutationFn: async (params: { product?: string; subproduct?: string; limit: number }): Promise<EnrichmentResponse> => {
-      const response = await apiRequest("POST", "/api/ai/enrichment/generate", params);
+      const response = await apiRequest("POST", "/api/ai/article-enrichment/generate", params);
       return response.json();
     },
     onSuccess: () => {

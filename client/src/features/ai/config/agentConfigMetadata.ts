@@ -1,4 +1,4 @@
-export type AgentConfigType = "summary" | "classification" | "response" | "learning" | "enrichment" | "demand_finder" | "solution_provider" | "articles_and_solutions" | "topic_classification" | "closer";
+export type AgentConfigType = "summary" | "classification" | "response" | "learning" | "enrichment" | "article_enrichment" | "demand_finder" | "solution_provider" | "articles_and_solutions" | "topic_classification" | "closer";
 
 export interface AgentToolsConfig {
   showKnowledgeBaseTool?: boolean;
@@ -81,7 +81,19 @@ export const agentConfigMetadata: Record<AgentConfigType, AgentConfigMetadata> =
 
   enrichment: {
     configType: "enrichment",
-    title: "Configuração de Enriquecimento",
+    title: "Configuração de Enriquecimento (Legado)",
+    description: "Configure a geração de sugestões de melhoria para artigos da base de conhecimento usando artigos do Zendesk como referência. Use 'Article Enrichment' para a nova implementação.",
+    enabledLabel: "Ativar geração de sugestões de melhoria",
+    enabledDescription: "Quando ativado, permite gerar sugestões comparando artigos da base de conhecimento com artigos do Zendesk",
+    promptRows: 24,
+    responseFormatRows: 12,
+    recommendedModel: "gpt-4o",
+    tools: allToolsEnabled,
+  },
+
+  article_enrichment: {
+    configType: "article_enrichment",
+    title: "Configuração de Enriquecimento de Artigos",
     description: "Configure a geração de sugestões de melhoria para artigos da base de conhecimento usando artigos do Zendesk como referência",
     enabledLabel: "Ativar geração de sugestões de melhoria",
     enabledDescription: "Quando ativado, permite gerar sugestões comparando artigos da base de conhecimento com artigos do Zendesk",

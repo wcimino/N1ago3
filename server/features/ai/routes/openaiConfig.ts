@@ -4,7 +4,7 @@ import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/i
 
 const router = Router();
 
-export const VALID_CONFIG_TYPES = ["summary", "classification", "response", "learning", "enrichment", "demand_finder", "solution_provider", "closer", "articles_and_solutions", "topic_classification"];
+export const VALID_CONFIG_TYPES = ["summary", "classification", "response", "learning", "enrichment", "article_enrichment", "demand_finder", "solution_provider", "closer", "articles_and_solutions", "topic_classification"];
 
 function formatConfigResponse(config: any) {
   return {

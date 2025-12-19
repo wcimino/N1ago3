@@ -26,6 +26,8 @@ import knowledgeSuggestionsRoutes from "../features/ai/routes/knowledgeSuggestio
 import learningAttemptsRoutes from "../features/ai/routes/learningAttempts.js";
 import enrichmentRoutes from "../features/ai/routes/enrichment.js";
 import enrichmentLogsRoutes from "../features/ai/routes/enrichmentLogs.js";
+import articleEnrichmentRoutes from "../features/ai/routes/articleEnrichment.js";
+import articleEnrichmentLogsRoutes from "../features/ai/routes/articleEnrichmentLogs.js";
 import knowledgeSubjectsRoutes from "../features/knowledge/routes/knowledgeSubjectsRoutes.js";
 import knowledgeIntentsRoutes from "../features/knowledge/routes/knowledgeIntentsRoutes.js";
 import objectiveProblemsRoutes from "../features/knowledge/routes/objectiveProblemsRoutes.js";
@@ -66,6 +68,8 @@ export function registerRoutes(app: Express) {
   app.use(learningAttemptsRoutes);
   app.use(enrichmentRoutes);
   app.use(enrichmentLogsRoutes);
+  app.use(articleEnrichmentRoutes);
+  app.use(articleEnrichmentLogsRoutes);
   app.use(knowledgeSubjectsRoutes);
   app.use(knowledgeIntentsRoutes);
   app.use(objectiveProblemsRoutes);
