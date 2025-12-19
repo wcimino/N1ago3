@@ -1,7 +1,7 @@
 import { Route, Switch, Link, Redirect } from "wouter";
 import { Home, Sparkles, Settings, LogOut, MessageCircle, BookOpen, BarChart3 } from "lucide-react";
-import { useAuth } from "./shared/hooks";
-import { NavLink, EnvironmentBadge, N1agoLogo } from "./shared/components";
+import { useAuth, useConfirmation } from "./shared/hooks";
+import { NavLink, EnvironmentBadge, N1agoLogo, ConfirmModal } from "./shared/components";
 import { TimezoneProvider } from "./contexts/TimezoneContext";
 import { AIPage } from "./features/ai";
 import { SettingsPage, ProductStandardsPage, ReprocessingPage, AutoClosePage, ProductCatalogPage, DuplicatesPage, ArchivePage, ZendeskUsersPage, ZendeskUserDetailPage } from "./features/settings";
@@ -16,6 +16,7 @@ import { LandingPage, LoadingPage, UnauthorizedPage, HomePage } from "./shared/p
 
 function AuthenticatedApp() {
   const { user } = useAuth();
+  const confirmation = useConfirmation();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -65,9 +66,15 @@ function AuthenticatedApp() {
               </span>
               <button
                 onClick={() => {
-                  if (window.confirm("Tem certeza que deseja sair?")) {
-                    window.location.href = "/api/logout";
-                  }
+                  confirmation.confirm({
+                    title: "Sair do sistema",
+                    message: "Tem certeza que deseja sair?",
+                    confirmLabel: "Sair",
+                    variant: "info",
+                    onConfirm: () => {
+                      window.location.href = "/api/logout";
+                    },
+                  });
                 }}
                 className="inline-flex items-center gap-1 p-1.5 sm:px-3 sm:py-1.5 text-sm text-gray-600 hover:text-gray-900 border rounded-lg hover:bg-gray-50"
                 title="Sair"
@@ -120,6 +127,17 @@ function AuthenticatedApp() {
           <Route path="/settings/maintenance/archive" component={ArchivePage} />
         </Switch>
       </main>
+
+      <ConfirmModal
+        isOpen={confirmation.isOpen}
+        onClose={confirmation.close}
+        onConfirm={confirmation.handleConfirm}
+        title={confirmation.title}
+        message={confirmation.message}
+        confirmLabel={confirmation.confirmLabel}
+        cancelLabel={confirmation.cancelLabel}
+        variant={confirmation.variant}
+      />
     </div>
   );
 }

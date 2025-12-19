@@ -92,9 +92,7 @@ export function useKnowledgeMutations(options: UseKnowledgeMutationsOptions = {}
   };
 
   const handleDelete = (id: number) => {
-    if (confirm("Tem certeza que deseja excluir este artigo?")) {
-      deleteMutation.mutate(id);
-    }
+    deleteMutation.mutate(id);
   };
 
   return {

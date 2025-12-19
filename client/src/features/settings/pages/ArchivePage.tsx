@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft, Archive, Database, RefreshCw, Play, CheckCircle, XCircle, Clock, FileArchive } from "lucide-react";
 import { apiRequest, fetchApi } from "../../../lib/queryClient";
+import { useConfirmation } from "../../../shared/hooks";
+import { ConfirmModal } from "../../../shared/components";
 
 interface ArchiveStats {
   zendeskWebhook: {
@@ -66,6 +68,7 @@ function formatBytes(bytes: number | null): string {
 
 export function ArchivePage() {
   const [, navigate] = useLocation();
+  const confirmation = useConfirmation();
   const [stats, setStats] = useState<ArchiveStats | null>(null);
   const [progress, setProgress] = useState<{ isRunning: boolean; progress: ArchiveProgress | null }>({ isRunning: false, progress: null });
   const [history, setHistory] = useState<ArchiveJob[]>([]);
@@ -135,10 +138,7 @@ export function ArchivePage() {
     }
   }, [progress.isRunning]);
 
-  const handleStart = async () => {
-    if (!confirm("Iniciar o arquivamento? Dados anteriores a ontem serao arquivados em Parquet e removidos do banco.")) {
-      return;
-    }
+  const startArchive = async () => {
     setStarting(true);
     try {
       await apiRequest("POST", "/api/maintenance/archive/start");
@@ -147,6 +147,16 @@ export function ArchivePage() {
       console.error("Erro ao iniciar arquivamento:", error);
     }
     setStarting(false);
+  };
+
+  const handleStart = () => {
+    confirmation.confirm({
+      title: "Iniciar arquivamento",
+      message: "Iniciar o arquivamento? Dados anteriores a ontem serão arquivados em Parquet e removidos do banco.",
+      confirmLabel: "Iniciar",
+      variant: "warning",
+      onConfirm: startArchive,
+    });
   };
 
   const handleRefresh = async () => {
@@ -321,6 +331,17 @@ export function ArchivePage() {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmation.isOpen}
+        onClose={confirmation.close}
+        onConfirm={confirmation.handleConfirm}
+        title={confirmation.title}
+        message={confirmation.message}
+        confirmLabel={confirmation.confirmLabel}
+        cancelLabel={confirmation.cancelLabel}
+        variant={confirmation.variant}
+      />
     </div>
   );
 }

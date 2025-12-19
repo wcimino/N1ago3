@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft, AlertTriangle, Trash2, RefreshCw, Database, Copy } from "lucide-react";
 import { apiRequest, fetchApi } from "../../../lib/queryClient";
+import { useConfirmation } from "../../../shared/hooks";
+import { ConfirmModal } from "../../../shared/components";
 
 interface DuplicateStats {
   totalEvents: number;
@@ -33,6 +35,7 @@ function formatNumber(n: number): string {
 
 export function DuplicatesPage() {
   const [, navigate] = useLocation();
+  const confirmation = useConfirmation();
   const [stats, setStats] = useState<DuplicateStats | null>(null);
   const [duplicates, setDuplicates] = useState<DuplicateGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,10 +81,7 @@ export function DuplicatesPage() {
     setCleaning(false);
   };
 
-  const handleCleanup = async () => {
-    if (!confirm("Tem certeza que deseja remover os duplicados? Esta ação não pode ser desfeita.")) {
-      return;
-    }
+  const executeCleanup = async () => {
     setCleaning(true);
     try {
       const res = await apiRequest("POST", "/api/maintenance/duplicates/cleanup?dryRun=false");
@@ -92,6 +92,16 @@ export function DuplicatesPage() {
       console.error("Erro na limpeza:", error);
     }
     setCleaning(false);
+  };
+
+  const handleCleanup = () => {
+    confirmation.confirm({
+      title: "Remover duplicados",
+      message: "Tem certeza que deseja remover os duplicados? Esta ação não pode ser desfeita.",
+      confirmLabel: "Remover",
+      variant: "danger",
+      onConfirm: executeCleanup,
+    });
   };
 
   const handleRefresh = async () => {
@@ -248,6 +258,17 @@ export function DuplicatesPage() {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmation.isOpen}
+        onClose={confirmation.close}
+        onConfirm={confirmation.handleConfirm}
+        title={confirmation.title}
+        message={confirmation.message}
+        confirmLabel={confirmation.confirmLabel}
+        cancelLabel={confirmation.cancelLabel}
+        variant={confirmation.variant}
+      />
     </div>
   );
 }

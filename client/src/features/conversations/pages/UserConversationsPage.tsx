@@ -3,10 +3,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { XCircle, MessageCircle, ChevronLeft, FileText, Eye, EyeOff, ArrowRightLeft, Zap, ZapOff, XSquare, Loader2, ArrowLeft } from "lucide-react";
 import type { UserConversationsMessagesResponse, ImagePayload } from "../../../types";
-import { ImageLightbox, LoadingState, SegmentedTabs } from "../../../shared/components/ui";
+import { ImageLightbox, LoadingState, SegmentedTabs, ConfirmModal } from "../../../shared/components/ui";
 import { HandlerBadge } from "../../../shared/components/badges/HandlerBadge";
 import { ConversationSelector, ConversationSummary, ConversationChat, TransferConversationModal } from "../components";
-import { useResizablePanel, useDateFormatters } from "../../../shared/hooks";
+import { useResizablePanel, useDateFormatters, useConfirmation } from "../../../shared/hooks";
 import { fetchApi, apiRequest } from "../../../lib/queryClient";
 import { getUserDisplayNameFromProfile } from "../../../lib/userUtils";
 import { FavoriteButton } from "../../favorites/components/FavoriteButton";
@@ -23,6 +23,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
   const userId = decodeURIComponent(params.userId);
   const conversationIdFromUrl = params.conversationId ? parseInt(params.conversationId, 10) : null;
   const { formatDateTimeShort } = useDateFormatters();
+  const confirmation = useConfirmation();
   const [expandedImage, setExpandedImage] = useState<ImagePayload | null>(null);
   const [selectedConversationIndex, setSelectedConversationIndex] = useState(0);
   const [contentTab, setContentTab] = useState<ContentTab>("resumo");
@@ -157,9 +158,13 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
         {selectedConversation.conversation.status === "active" && (
           <button
             onClick={() => {
-              if (confirm("Tem certeza que deseja encerrar esta conversa?")) {
-                closeConversationMutation.mutate(selectedConversation.conversation.id);
-              }
+              confirmation.confirm({
+                title: "Encerrar conversa",
+                message: "Tem certeza que deseja encerrar esta conversa?",
+                confirmLabel: "Encerrar",
+                variant: "warning",
+                onConfirm: () => closeConversationMutation.mutate(selectedConversation.conversation.id),
+              });
             }}
             disabled={closeConversationMutation.isPending}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 hover:text-red-700 border border-red-200 hover:border-red-300 rounded-lg hover:bg-red-50 transition-colors"
@@ -378,6 +383,17 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
           currentHandler={selectedConversation.conversation.current_handler_name}
         />
       )}
+
+      <ConfirmModal
+        isOpen={confirmation.isOpen}
+        onClose={confirmation.close}
+        onConfirm={confirmation.handleConfirm}
+        title={confirmation.title}
+        message={confirmation.message}
+        confirmLabel={confirmation.confirmLabel}
+        cancelLabel={confirmation.cancelLabel}
+        variant={confirmation.variant}
+      />
     </div>
   );
 }

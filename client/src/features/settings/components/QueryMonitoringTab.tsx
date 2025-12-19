@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi, apiRequest } from "../../../lib/queryClient";
+import { useConfirmation } from "../../../shared/hooks";
+import { ConfirmModal } from "../../../shared/components";
 import { RefreshCw, Trash2, Database, Clock, Activity, AlertTriangle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -48,6 +50,7 @@ type Period = "1h" | "24h" | "all";
 
 export function QueryMonitoringTab() {
   const queryClient = useQueryClient();
+  const confirmation = useConfirmation();
   const [orderBy, setOrderBy] = useState<OrderBy>("callCount");
   const [period, setPeriod] = useState<Period>("all");
   const [showSlowQueries, setShowSlowQueries] = useState(false);
@@ -132,9 +135,13 @@ export function QueryMonitoringTab() {
           </button>
           <button
             onClick={() => {
-              if (confirm("Limpar todas as estatisticas de queries?")) {
-                clearMutation.mutate();
-              }
+              confirmation.confirm({
+                title: "Limpar estatísticas",
+                message: "Limpar todas as estatísticas de queries?",
+                confirmLabel: "Limpar",
+                variant: "danger",
+                onConfirm: () => clearMutation.mutate(),
+              });
             }}
             disabled={clearMutation.isPending}
             className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-700 bg-white border border-red-300 rounded-lg hover:bg-red-50"
@@ -351,6 +358,17 @@ export function QueryMonitoringTab() {
           )}
         </>
       )}
+
+      <ConfirmModal
+        isOpen={confirmation.isOpen}
+        onClose={confirmation.close}
+        onConfirm={confirmation.handleConfirm}
+        title={confirmation.title}
+        message={confirmation.message}
+        confirmLabel={confirmation.confirmLabel}
+        cancelLabel={confirmation.cancelLabel}
+        variant={confirmation.variant}
+      />
     </div>
   );
 }

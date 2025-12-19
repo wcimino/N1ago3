@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, ChevronDown, ChevronRight, Webhook, Copy, RefreshCw, ToggleLeft, ToggleRight, Download, Pencil, AlertTriangle } from "lucide-react";
 import { apiRequest, fetchApi } from "../../../lib/queryClient";
-import { LoadingState, EmptyState, Button } from "../../../shared/components";
-import { useDateFormatters } from "../../../shared/hooks";
+import { LoadingState, EmptyState, Button, ConfirmModal } from "../../../shared/components";
+import { useDateFormatters, useConfirmation } from "../../../shared/hooks";
 
 const ROTATION_WARNING_DAYS = 90;
 
@@ -39,6 +39,7 @@ export function ExternalEventsTab() {
   const [editError, setEditError] = useState("");
   const queryClient = useQueryClient();
   const { formatShortDateTime } = useDateFormatters();
+  const confirmation = useConfirmation();
 
   const { data, isLoading } = useQuery<ExternalEventSourcesResponse>({
     queryKey: ["external-event-sources"],
@@ -405,9 +406,13 @@ export function ExternalEventsTab() {
                     <button
                       type="button"
                       onClick={() => {
-                        if (confirm("Regenerar a chave de API? A chave antiga deixará de funcionar.")) {
-                          regenerateKeyMutation.mutate(source.id);
-                        }
+                        confirmation.confirm({
+                          title: "Regenerar chave de API",
+                          message: "Regenerar a chave de API? A chave antiga deixará de funcionar.",
+                          confirmLabel: "Regenerar",
+                          variant: "warning",
+                          onConfirm: () => regenerateKeyMutation.mutate(source.id),
+                        });
                       }}
                       disabled={regenerateKeyMutation.isPending}
                       className="p-1.5 text-yellow-600 hover:bg-yellow-50 rounded transition-colors"
@@ -418,9 +423,13 @@ export function ExternalEventsTab() {
                     <button
                       type="button"
                       onClick={() => {
-                        if (confirm(`Excluir o sistema "${source.name}"? Esta ação não pode ser desfeita.`)) {
-                          deleteMutation.mutate(source.id);
-                        }
+                        confirmation.confirm({
+                          title: "Excluir sistema",
+                          message: `Excluir o sistema "${source.name}"? Esta ação não pode ser desfeita.`,
+                          confirmLabel: "Excluir",
+                          variant: "danger",
+                          onConfirm: () => deleteMutation.mutate(source.id),
+                        });
                       }}
                       disabled={deleteMutation.isPending}
                       className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
@@ -492,6 +501,17 @@ export function ExternalEventsTab() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmation.isOpen}
+        onClose={confirmation.close}
+        onConfirm={confirmation.handleConfirm}
+        title={confirmation.title}
+        message={confirmation.message}
+        confirmLabel={confirmation.confirmLabel}
+        cancelLabel={confirmation.cancelLabel}
+        variant={confirmation.variant}
+      />
     </div>
   );
 }

@@ -22,7 +22,7 @@ export interface CrudMutationsReturn<TCreateData, TUpdateData> {
   isMutating: boolean;
   handleCreate: (data: TCreateData) => void;
   handleUpdate: (id: number, data: TUpdateData) => void;
-  handleDelete: (id: number, confirmMessage?: string) => void;
+  handleDelete: (id: number) => void;
 }
 
 export function useCrudMutations<TCreateData = unknown, TUpdateData = unknown>(
@@ -98,10 +98,8 @@ export function useCrudMutations<TCreateData = unknown, TUpdateData = unknown>(
     updateMutation.mutate({ id, data });
   };
 
-  const handleDelete = (id: number, confirmMessage = "Tem certeza que deseja excluir?") => {
-    if (confirm(confirmMessage)) {
-      deleteMutation.mutate(id);
-    }
+  const handleDelete = (id: number) => {
+    deleteMutation.mutate(id);
   };
 
   return {
