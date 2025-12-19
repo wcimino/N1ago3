@@ -291,6 +291,12 @@ class ArchiveService {
     
     await this.archiveTable("openai_api_logs");
     await this.runVacuum("openai_api_logs");
+    
+    await this.archiveTable("responses_suggested");
+    await this.runVacuum("responses_suggested");
+    
+    await this.archiveTable("query_logs");
+    await this.runVacuum("query_logs");
   }
 
   private async runVacuum(tableName: string): Promise<void> {
@@ -678,7 +684,7 @@ class ArchiveService {
         retry_count: { type: "INT32", optional: true },
         events_created_count: { type: "INT32", optional: true },
       });
-    } else {
+    } else if (tableName === "openai_api_logs") {
       return new parquet.ParquetSchema({
         id: { type: "INT64" },
         request_type: { type: "UTF8", optional: true },
@@ -697,6 +703,33 @@ class ArchiveService {
         context_id: { type: "UTF8", optional: true },
         created_at: { type: "UTF8", optional: true },
       });
+    } else if (tableName === "responses_suggested") {
+      return new parquet.ParquetSchema({
+        id: { type: "INT64" },
+        conversation_id: { type: "INT32", optional: true },
+        external_conversation_id: { type: "UTF8", optional: true },
+        suggested_response: { type: "UTF8", optional: true },
+        last_event_id: { type: "INT32", optional: true },
+        openai_log_id: { type: "INT32", optional: true },
+        used_at: { type: "UTF8", optional: true },
+        dismissed: { type: "BOOLEAN", optional: true },
+        created_at: { type: "UTF8", optional: true },
+        in_response_to: { type: "UTF8", optional: true },
+        status: { type: "UTF8", optional: true },
+        articles_used: { type: "UTF8", optional: true },
+      });
+    } else if (tableName === "query_logs") {
+      return new parquet.ParquetSchema({
+        id: { type: "INT64" },
+        query_hash: { type: "UTF8", optional: true },
+        query_normalized: { type: "UTF8", optional: true },
+        duration_ms: { type: "INT32", optional: true },
+        rows_affected: { type: "INT32", optional: true },
+        source: { type: "UTF8", optional: true },
+        created_at: { type: "UTF8", optional: true },
+      });
+    } else {
+      throw new Error(`Unknown table for Parquet schema: ${tableName}`);
     }
   }
 
