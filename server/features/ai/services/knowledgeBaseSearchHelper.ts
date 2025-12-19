@@ -2,7 +2,6 @@ import { knowledgeBaseStorage } from "../storage/knowledgeBaseStorage.js";
 import { KnowledgeBaseStatisticsStorage } from "../storage/knowledgeBaseStatisticsStorage.js";
 import { extractMatchedTerms } from "../../../shared/utils/matchScoring.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
-import { generateEmbedding } from "../../../shared/embeddings/index.js";
 import { 
   type MultiQuerySearchQueries,
   generateMultiQueryEmbeddings,
@@ -203,88 +202,6 @@ export async function runKnowledgeBaseSearch(
     } catch (error) {
       console.error("[KB Search] Multi-query search failed:", error);
       articles = [];
-    }
-  }
-
-  // Fallback 1: Use conversationContext for semantic search when no multi-query
-  if (articles.length === 0 && conversationContext && conversationContext.trim().length > 0 && hasEmbeddings) {
-    try {
-      const enrichedContext = productContext 
-        ? `Produto: ${productContext}. ${conversationContext}`
-        : conversationContext;
-      
-      console.log(`[KB Search] Fallback: semantic search with conversationContext`);
-      
-      const { embedding } = await generateEmbedding(enrichedContext, { contextType: "query" });
-      
-      const semanticResults = await knowledgeBaseStorage.searchBySimilarity(embedding, { limit: limit * 2 });
-      
-      if (semanticResults.length > 0) {
-        articles = semanticResults.map(a => {
-          const articleText = [
-            a.question || "",
-            a.answer || "",
-            a.keywords || "",
-            ...(Array.isArray(a.questionVariation) ? a.questionVariation as string[] : [])
-          ].join(" ");
-          return {
-            id: a.id,
-            question: a.question,
-            answer: a.answer,
-            keywords: a.keywords,
-            questionVariation: Array.isArray(a.questionVariation) ? a.questionVariation as string[] : [],
-            productId: a.productId,
-            intentId: a.intentId,
-            relevanceScore: a.similarity,
-            matchReason: `Similaridade semântica (contexto): ${a.similarity}%`,
-            matchedTerms: extractMatchedTerms(conversationContext, articleText)
-          };
-        });
-        console.log(`[KB Search] Fallback found ${articles.length} articles via context search`);
-      }
-    } catch (error) {
-      console.error("[KB Search] Fallback context search failed:", error);
-    }
-  }
-
-  // Fallback 2: Use keywords for semantic search
-  if (articles.length === 0 && keywordsStr && keywordsStr.trim().length > 0 && hasEmbeddings) {
-    try {
-      const enrichedKeywords = productContext 
-        ? `Produto: ${productContext}. ${keywordsStr}`
-        : keywordsStr;
-      
-      console.log(`[KB Search] Fallback: semantic search with keywords "${keywordsStr}"`);
-      
-      const { embedding } = await generateEmbedding(enrichedKeywords, { contextType: "query" });
-      
-      const semanticResults = await knowledgeBaseStorage.searchBySimilarity(embedding, { limit });
-      
-      if (semanticResults.length > 0) {
-        articles = semanticResults.map(a => {
-          const articleText = [
-            a.question || "",
-            a.answer || "",
-            a.keywords || "",
-            ...(Array.isArray(a.questionVariation) ? a.questionVariation as string[] : [])
-          ].join(" ");
-          return {
-            id: a.id,
-            question: a.question,
-            answer: a.answer,
-            keywords: a.keywords,
-            questionVariation: Array.isArray(a.questionVariation) ? a.questionVariation as string[] : [],
-            productId: a.productId,
-            intentId: a.intentId,
-            relevanceScore: a.similarity,
-            matchReason: `Similaridade semântica (keywords): ${a.similarity}%`,
-            matchedTerms: extractMatchedTerms(keywordsStr, articleText)
-          };
-        });
-        console.log(`[KB Search] Fallback found ${articles.length} articles via keyword search`);
-      }
-    } catch (error) {
-      console.error("[KB Search] Fallback keyword search failed:", error);
     }
   }
 
