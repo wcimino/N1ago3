@@ -67,23 +67,39 @@ export const knowledgeSuggestionsStorage = {
     if (!suggestion) return null;
 
     if (suggestion.suggestionType === "update" && suggestion.similarArticleId) {
+      const existingArticle = await knowledgeBaseStorage.getArticleById(suggestion.similarArticleId);
       const updateData: Record<string, string | string[] | null | undefined> = {};
       if (suggestion.question) updateData.question = suggestion.question;
       if (suggestion.answer) updateData.answer = suggestion.answer;
       if (suggestion.keywords) updateData.keywords = suggestion.keywords;
       if (suggestion.questionVariation && suggestion.questionVariation.length > 0) {
-        updateData.questionVariation = suggestion.questionVariation;
+        const existingVariations = existingArticle?.questionVariation || [];
+        const newVariations = suggestion.questionVariation.filter(
+          v => !existingVariations.includes(v)
+        );
+        updateData.questionVariation = [...existingVariations, ...newVariations];
+      }
+      
+      const rawExtraction = suggestion.rawExtraction as { questionNormalized?: string[] } | null;
+      if (rawExtraction?.questionNormalized && Array.isArray(rawExtraction.questionNormalized) && rawExtraction.questionNormalized.length > 0) {
+        updateData.questionNormalized = JSON.stringify(rawExtraction.questionNormalized);
       }
       
       if (Object.keys(updateData).length > 0) {
         await knowledgeBaseStorage.updateArticle(suggestion.similarArticleId, updateData);
       }
     } else {
+      const rawExtraction = suggestion.rawExtraction as { questionNormalized?: string[] } | null;
+      const questionNormalized = rawExtraction?.questionNormalized && Array.isArray(rawExtraction.questionNormalized) 
+        ? JSON.stringify(rawExtraction.questionNormalized) 
+        : null;
+      
       await knowledgeBaseStorage.createArticle({
         question: suggestion.question || null,
         answer: suggestion.answer || null,
         keywords: suggestion.keywords || null,
         questionVariation: suggestion.questionVariation || [],
+        questionNormalized,
       });
     }
 
@@ -118,12 +134,22 @@ export const knowledgeSuggestionsStorage = {
     const suggestion = await this.getSuggestionById(id);
     if (!suggestion) return null;
 
+    const existingArticle = await knowledgeBaseStorage.getArticleById(targetArticleId);
     const updateData: Record<string, string | string[] | null | undefined> = {};
     if (suggestion.question) updateData.question = suggestion.question;
     if (suggestion.answer) updateData.answer = suggestion.answer;
     if (suggestion.keywords) updateData.keywords = suggestion.keywords;
     if (suggestion.questionVariation && suggestion.questionVariation.length > 0) {
-      updateData.questionVariation = suggestion.questionVariation;
+      const existingVariations = existingArticle?.questionVariation || [];
+      const newVariations = suggestion.questionVariation.filter(
+        v => !existingVariations.includes(v)
+      );
+      updateData.questionVariation = [...existingVariations, ...newVariations];
+    }
+    
+    const rawExtraction = suggestion.rawExtraction as { questionNormalized?: string[] } | null;
+    if (rawExtraction?.questionNormalized && Array.isArray(rawExtraction.questionNormalized) && rawExtraction.questionNormalized.length > 0) {
+      updateData.questionNormalized = JSON.stringify(rawExtraction.questionNormalized);
     }
 
     if (Object.keys(updateData).length > 0) {
