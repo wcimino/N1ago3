@@ -19,6 +19,7 @@ export {
 
 export {
   getProductIdsForProblem,
+  getProductIdsForProblems,
   setProductsForProblem,
   getProductNamesForProblem,
   getAllProducts,

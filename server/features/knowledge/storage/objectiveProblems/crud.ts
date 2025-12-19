@@ -6,7 +6,7 @@ import {
 } from "../../../../../shared/schema.js";
 import { eq } from "drizzle-orm";
 import type { ObjectiveProblemWithProducts } from "./types.js";
-import { getProductIdsForProblem, setProductsForProblem } from "./products.js";
+import { getProductIdsForProblem, getProductIdsForProblems, setProductsForProblem } from "./products.js";
 import { generateAndSaveEmbeddingAsync } from "./embedding.js";
 
 export async function getAllObjectiveProblems(): Promise<ObjectiveProblemWithProducts[]> {
@@ -15,9 +15,12 @@ export async function getAllObjectiveProblems(): Promise<ObjectiveProblemWithPro
     .from(knowledgeBaseObjectiveProblems)
     .orderBy(knowledgeBaseObjectiveProblems.name);
   
-  return Promise.all(problems.map(async (problem: KnowledgeBaseObjectiveProblem) => {
-    const productIds = await getProductIdsForProblem(problem.id);
-    return { ...problem, productIds };
+  const problemIds = problems.map((p: KnowledgeBaseObjectiveProblem) => p.id);
+  const productIdsByProblem = await getProductIdsForProblems(problemIds);
+  
+  return problems.map((problem: KnowledgeBaseObjectiveProblem) => ({
+    ...problem,
+    productIds: productIdsByProblem.get(problem.id) || [],
   }));
 }
 
@@ -28,9 +31,12 @@ export async function getActiveObjectiveProblems(): Promise<ObjectiveProblemWith
     .where(eq(knowledgeBaseObjectiveProblems.isActive, true))
     .orderBy(knowledgeBaseObjectiveProblems.name);
   
-  return Promise.all(problems.map(async (problem: KnowledgeBaseObjectiveProblem) => {
-    const productIds = await getProductIdsForProblem(problem.id);
-    return { ...problem, productIds };
+  const problemIds = problems.map((p: KnowledgeBaseObjectiveProblem) => p.id);
+  const productIdsByProblem = await getProductIdsForProblems(problemIds);
+  
+  return problems.map((problem: KnowledgeBaseObjectiveProblem) => ({
+    ...problem,
+    productIds: productIdsByProblem.get(problem.id) || [],
   }));
 }
 

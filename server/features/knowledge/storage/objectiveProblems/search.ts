@@ -13,7 +13,7 @@ import type {
   SemanticSearchParams,
   SemanticSearchResult
 } from "./types.js";
-import { getProductIdsForProblem } from "./products.js";
+import { getProductIdsForProblems } from "./products.js";
 
 function calculateProblemMatchScore(
   problem: KnowledgeBaseObjectiveProblem,
@@ -66,36 +66,37 @@ export async function searchObjectiveProblems(
     ? parseSearchTerms(keywords)
     : [];
 
-  const results: ObjectiveProblemSearchResult[] = await Promise.all(
-    problems.map(async (problem: KnowledgeBaseObjectiveProblem) => {
-      const productIds = await getProductIdsForProblem(problem.id);
-      const productNames = productIds.map(id => productMap.get(id) || "").filter(Boolean);
-      
-      let matchScore = 0;
-      let matchReason = "Listado";
-      
-      if (searchTerms.length > 0) {
-        const scoreResult = calculateProblemMatchScore(problem, searchTerms);
-        matchScore = scoreResult.score;
-        matchReason = scoreResult.reason || "Sem match direto";
-      } else {
-        matchScore = 100;
-        matchReason = "Listagem completa";
-      }
+  const problemIds = problems.map((p: KnowledgeBaseObjectiveProblem) => p.id);
+  const productIdsByProblem = await getProductIdsForProblems(problemIds);
 
-      return {
-        id: problem.id,
-        name: problem.name,
-        description: problem.description,
-        synonyms: problem.synonyms || [],
-        examples: problem.examples || [],
-        matchScore,
-        matchReason,
-        productIds,
-        productNames,
-      };
-    })
-  );
+  const results: ObjectiveProblemSearchResult[] = problems.map((problem: KnowledgeBaseObjectiveProblem) => {
+    const productIds = productIdsByProblem.get(problem.id) || [];
+    const productNames = productIds.map(id => productMap.get(id) || "").filter(Boolean);
+    
+    let matchScore = 0;
+    let matchReason = "Listado";
+    
+    if (searchTerms.length > 0) {
+      const scoreResult = calculateProblemMatchScore(problem, searchTerms);
+      matchScore = scoreResult.score;
+      matchReason = scoreResult.reason || "Sem match direto";
+    } else {
+      matchScore = 100;
+      matchReason = "Listagem completa";
+    }
+
+    return {
+      id: problem.id,
+      name: problem.name,
+      description: problem.description,
+      synonyms: problem.synonyms || [],
+      examples: problem.examples || [],
+      matchScore,
+      matchReason,
+      productIds,
+      productNames,
+    };
+  });
 
   const filteredResults = searchTerms.length > 0
     ? results.filter(r => r.matchScore > 0)
@@ -190,23 +191,25 @@ export async function searchObjectiveProblemsBySimilarity(
   const allProducts = await db.select().from(productsCatalog);
   const productMap = new Map(allProducts.map((prod: typeof allProducts[number]) => [prod.id, prod.fullName]));
   
-  const enrichedResults = await Promise.all(
-    (results.rows as any[]).map(async (row) => {
-      const productIds = await getProductIdsForProblem(row.id);
-      const productNames = productIds.map(id => productMap.get(id) || "").filter(Boolean);
-      
-      return {
-        id: row.id,
-        name: row.name,
-        description: row.description,
-        synonyms: row.synonyms || [],
-        examples: row.examples || [],
-        similarity: Number(row.similarity),
-        productIds,
-        productNames,
-      };
-    })
-  );
+  const rows = results.rows as any[];
+  const problemIds = rows.map((row) => row.id);
+  const productIdsByProblem = await getProductIdsForProblems(problemIds);
+
+  const enrichedResults = rows.map((row) => {
+    const productIds = productIdsByProblem.get(row.id) || [];
+    const productNames = productIds.map(id => productMap.get(id) || "").filter(Boolean);
+    
+    return {
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      synonyms: row.synonyms || [],
+      examples: row.examples || [],
+      similarity: Number(row.similarity),
+      productIds,
+      productNames,
+    };
+  });
   
   return enrichedResults;
 }
