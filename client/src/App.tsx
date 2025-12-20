@@ -10,7 +10,7 @@ import { EventsLayout } from "./features/events";
 import { AtendimentosPage, UserConversationsPage } from "./features/conversations";
 import { CadastroPage, UserStandardDetailPage, OrganizationStandardDetailPage } from "./features/cadastro";
 import { ExportPage } from "./features/export";
-import { KnowledgeBasePage } from "./features/knowledge";
+import { KnowledgeBasePage, KnowledgeBaseArticlePage } from "./features/knowledge";
 import { ReportsPage, QuestionTopicsPage } from "./features/reports";
 import { RoutingRulesPage } from "./features/routing";
 import { LandingPage, LoadingPage, UnauthorizedPage, HomePage } from "./shared/pages";
@@ -169,6 +169,7 @@ function AuthenticatedApp() {
           <Route path="/settings/maintenance/export" component={ExportPage} />
           <Route path="/settings/maintenance/export/:rest*" component={ExportPage} />
           <Route path="/knowledge-base" component={KnowledgeBasePage} />
+          <Route path="/knowledge-base/article/:id" component={KnowledgeBaseArticlePage} />
           <Route path="/reports" component={ReportsPage} />
           <Route path="/reports/question-topics" component={QuestionTopicsPage} />
           <Route path="/routing-rules" component={RoutingRulesPage} />
