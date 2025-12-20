@@ -76,6 +76,8 @@ export interface ObjectiveProblem {
   examples: string[];
   presentedBy: "customer" | "system" | "both";
   isActive: boolean;
+  visibleInSearch: boolean;
+  availableForAutoReply: boolean;
   productIds: number[];
   createdAt: string;
   updatedAt: string;

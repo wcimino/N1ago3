@@ -149,6 +149,8 @@ router.put("/api/knowledge/objective-problems/:id", async (req, res) => {
     if (examples !== undefined) updateData.examples = examples;
     if (presentedBy !== undefined) updateData.presentedBy = presentedBy;
     if (isActive !== undefined) updateData.isActive = isActive;
+    if (req.body.visibleInSearch !== undefined) updateData.visibleInSearch = req.body.visibleInSearch;
+    if (req.body.availableForAutoReply !== undefined) updateData.availableForAutoReply = req.body.availableForAutoReply;
 
     const problem = await updateObjectiveProblem(id, updateData, productIds);
     if (!problem) {
@@ -162,6 +164,31 @@ router.put("/api/knowledge/objective-problems/:id", async (req, res) => {
       return res.status(409).json({ error: "A problem with this name already exists" });
     }
     res.status(500).json({ error: "Failed to update objective problem" });
+  }
+});
+
+router.patch("/api/knowledge/objective-problems/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const updateData: any = {};
+    
+    if (req.body.visibleInSearch !== undefined) updateData.visibleInSearch = req.body.visibleInSearch;
+    if (req.body.availableForAutoReply !== undefined) updateData.availableForAutoReply = req.body.availableForAutoReply;
+    if (req.body.isActive !== undefined) updateData.isActive = req.body.isActive;
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ error: "No valid fields to update" });
+    }
+
+    const problem = await updateObjectiveProblem(id, updateData);
+    if (!problem) {
+      return res.status(404).json({ error: "Objective problem not found" });
+    }
+
+    res.json(problem);
+  } catch (error) {
+    console.error("Error patching objective problem:", error);
+    res.status(500).json({ error: "Failed to patch objective problem" });
   }
 });
 
