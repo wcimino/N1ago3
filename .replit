@@ -1,7 +1,14 @@
 modules = ["nodejs-20", "postgresql-16"]
 [agent]
 expertMode = true
-integrations = ["python_openai:1.0.0", "zendesk:1.0.0", "python_database:1.0.0", "javascript_openai:1.0.0", "javascript_openai_ai_integrations:1.0.0", "javascript_object_storage:2.0.0"]
+integrations = [
+  "python_openai:1.0.0",
+  "zendesk:1.0.0",
+  "python_database:1.0.0",
+  "javascript_openai:1.0.0",
+  "javascript_openai_ai_integrations:1.0.0",
+  "javascript_object_storage:2.0.0",
+]
 
 [nix]
 channel = "stable-25_05"
@@ -32,16 +39,8 @@ args = "npm run dev"
 waitForPort = 5000
 
 [[ports]]
-localPort = 3000
-externalPort = 3000
-
-[[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 5001
-externalPort = 3002
 
 [userenv]
 
@@ -66,7 +65,7 @@ ZENDESK_ANSWER_BOT_ID = "64d65d81a40bc6cf30ebfbb1"
 PROD_DATABASE_URL = "postgresql://neondb_owner:npg_xl0HsELRA4PK@ep-little-bird-ahcl97q2.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require"
 
 [deployment]
-deploymentTarget = "autoscale"
+deploymentTarget = "vm"
 build = ["npm", "run", "build"]
 run = ["npm", "run", "start"]
 
