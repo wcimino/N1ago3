@@ -32,7 +32,6 @@ export const openaiLogsStorage = {
           useZendeskKnowledgeBaseTool: data.useZendeskKnowledgeBaseTool ?? existing.useZendeskKnowledgeBaseTool,
           useObjectiveProblemTool: data.useObjectiveProblemTool ?? existing.useObjectiveProblemTool,
           useCombinedKnowledgeSearchTool: data.useCombinedKnowledgeSearchTool ?? existing.useCombinedKnowledgeSearchTool,
-          useGeneralSettings: data.useGeneralSettings ?? existing.useGeneralSettings,
           updatedAt: new Date(),
         })
         .where(eq(openaiApiConfig.id, existing.id))

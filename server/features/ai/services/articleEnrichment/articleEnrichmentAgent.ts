@@ -1,7 +1,6 @@
 import { storage } from "../../../../storage/index.js";
 import { callOpenAI, type ToolDefinition } from "../openaiApiService.js";
 import { replacePromptVariables, type PromptVariables } from "../promptUtils.js";
-import { generalSettingsStorage } from "../../storage/generalSettingsStorage.js";
 import type { IntentWithArticle } from "../../storage/knowledgeBaseTypes.js";
 import type { ArticleEnrichmentContext, ArticleEnrichmentResult } from "./types.js";
 import { buildArticleEnrichmentContext } from "./types.js";
@@ -117,12 +116,6 @@ export class ArticleEnrichmentAgent {
       }
 
       let effectivePromptSystem = config.promptSystem || "";
-      if (config.useGeneralSettings) {
-        const generalSettings = await generalSettingsStorage.getConcatenatedContent();
-        if (generalSettings) {
-          effectivePromptSystem = generalSettings + (effectivePromptSystem ? "\n\n" + effectivePromptSystem : "");
-        }
-      }
 
       console.log(`[ArticleEnrichmentAgent] Processing intent #${context.intentId} (${context.intentName})`);
 

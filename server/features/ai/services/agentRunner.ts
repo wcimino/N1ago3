@@ -1,6 +1,5 @@
 import { storage } from "../../../storage/index.js";
 import { callOpenAI } from "./openaiApiService.js";
-import { generalSettingsStorage } from "../storage/generalSettingsStorage.js";
 import { replacePromptVariables } from "./promptUtils.js";
 import { buildPromptVariables } from "./agentContextBuilder.js";
 import type { OpenaiApiConfig } from "../../../../shared/schema.js";
@@ -54,12 +53,6 @@ export async function runAgent(
   }
 
   let effectivePromptSystem = config.promptSystem || "";
-  if (config.useGeneralSettings) {
-    const generalSettings = await generalSettingsStorage.getConcatenatedContent();
-    if (generalSettings) {
-      effectivePromptSystem = generalSettings + "\n\n" + effectivePromptSystem;
-    }
-  }
 
   const variables = await buildPromptVariables(context);
 

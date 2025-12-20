@@ -1,6 +1,5 @@
 import { storage } from "../../../storage/index.js";
 import { callOpenAI } from "../../ai/services/openaiApiService.js";
-import { generalSettingsStorage } from "../../ai/storage/generalSettingsStorage.js";
 
 const CONFIG_KEY = "response";
 
@@ -35,13 +34,6 @@ async function buildFormattingPrompts(originalMessage: string): Promise<{
   }
 
   let systemPrompt = config.promptSystem || "";
-  
-  if (config.useGeneralSettings) {
-    const generalSettings = await generalSettingsStorage.getConcatenatedContent();
-    if (generalSettings) {
-      systemPrompt = generalSettings + "\n\n" + systemPrompt;
-    }
-  }
 
   const formattingContext = `
 Você é um especialista em comunicação com clientes. Sua tarefa é ajustar o tom de voz e formatar a mensagem abaixo para que ela siga as diretrizes de comunicação estabelecidas.
