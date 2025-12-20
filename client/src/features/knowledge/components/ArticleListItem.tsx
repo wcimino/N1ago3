@@ -7,7 +7,7 @@ import type { KnowledgeBaseArticle } from "../hooks/useKnowledgeBase";
 interface ArticleListItemProps {
   article: KnowledgeBaseArticle;
   depth: number;
-  onEdit: (article: KnowledgeBaseArticle) => void;
+  onEdit?: (article: KnowledgeBaseArticle) => void;
   onDelete: (id: number) => void;
 }
 
