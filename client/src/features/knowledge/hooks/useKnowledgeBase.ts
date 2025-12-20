@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useLocation } from "wouter";
 import { useKnowledgeQueries } from "./useKnowledgeQueries";
 import { useKnowledgeMutations } from "./useKnowledgeMutations";
 import { useKnowledgeHierarchy } from "./useKnowledgeHierarchy";
@@ -12,6 +13,7 @@ export type { KnowledgeBaseArticle, KnowledgeBaseFormData };
 export type { HierarchyNode } from "./useKnowledgeHierarchy";
 
 export function useKnowledgeBase(activeTab: string) {
+  const [, navigate] = useLocation();
   const [showForm, setShowForm] = useState(false);
   const [editingArticle, setEditingArticle] = useState<KnowledgeBaseArticle | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -83,8 +85,7 @@ export function useKnowledgeBase(activeTab: string) {
   };
 
   const handleEdit = (article: KnowledgeBaseArticle) => {
-    setEditingArticle(article);
-    setShowForm(true);
+    navigate(`/knowledge-base/article/${article.id}`);
   };
 
   const handleCancel = () => {
