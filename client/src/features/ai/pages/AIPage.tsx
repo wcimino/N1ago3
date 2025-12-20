@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
-import { FileText, Tags, MessageSquare, GraduationCap, Wrench, Settings, Lightbulb, Sparkles, Search, Zap } from "lucide-react";
+import { FileText, Tags, MessageSquare, GraduationCap, Wrench, Lightbulb, Sparkles, Search, Zap } from "lucide-react";
 import { PageHeader } from "../../../shared/components/ui";
 import { OpenaiSummaryConfigPage } from "./OpenaiSummaryConfigPage";
 import { ClassificationConfigPage } from "./ClassificationConfigPage";
@@ -13,8 +13,6 @@ import { ArticlesAndSolutionsConfigPage } from "./ArticlesAndSolutionsConfigPage
 import { TopicClassificationConfigPage } from "./TopicClassificationConfigPage";
 import { CloserConfigPage } from "./CloserConfigPage";
 import { ToolsPage } from "./ToolsPage";
-import { GeneralSettingsPage } from "./GeneralSettingsPage";
-
 import { BookOpen, BarChart3, CheckCircle } from "lucide-react";
 
 const agentTabs = [
@@ -31,7 +29,6 @@ const agentTabs = [
 ];
 
 const utilityTabs = [
-  { id: "general", label: "Configurações", icon: <Settings className="w-4 h-4" /> },
   { id: "tools", label: "Ferramentas", icon: <Wrench className="w-4 h-4" /> },
 ];
 
@@ -45,7 +42,6 @@ export function AIPage() {
   }, [location, navigate]);
 
   const getActiveTab = () => {
-    if (location.includes("/general")) return "general";
     if (location.includes("/topic_classification")) return "topic_classification";
     if (location.includes("/classification")) return "classification";
     if (location.includes("/response")) return "response";
@@ -61,7 +57,7 @@ export function AIPage() {
   };
 
   const activeTab = getActiveTab();
-  const isUtilityTab = activeTab === "general" || activeTab === "tools";
+  const isUtilityTab = activeTab === "tools";
 
   const handleTabChange = (tabId: string) => {
     navigate(`/ai/settings/${tabId}`);
@@ -81,7 +77,6 @@ export function AIPage() {
       />
 
       <div className="p-4">
-        {activeTab === "general" && <GeneralSettingsPage />}
         {activeTab === "summary" && <OpenaiSummaryConfigPage />}
         {activeTab === "classification" && <ClassificationConfigPage />}
         {activeTab === "response" && <ResponseConfigPage />}

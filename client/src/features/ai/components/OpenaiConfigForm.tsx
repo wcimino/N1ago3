@@ -65,13 +65,6 @@ export function OpenaiConfigForm({
             onChange={() => actions.setEnabled(!state.enabled)}
           />
 
-          <ToggleRow
-            label="Usar configurações gerais"
-            description="Concatena as configurações gerais ao prompt deste agente"
-            checked={state.useGeneralSettings}
-            onChange={() => actions.setUseGeneralSettings(!state.useGeneralSettings)}
-          />
-
           <div>
             <h3 className="text-sm font-medium text-gray-900 mb-2">Modelo OpenAI</h3>
             <select
