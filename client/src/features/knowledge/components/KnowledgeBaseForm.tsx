@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Tag, MessageSquare, CheckCircle, Search, Sparkles, Loader2 } from "lucide-react";
+import { Tag, MessageSquare, CheckCircle, Search, Sparkles, Loader2, Eye, Bot } from "lucide-react";
 import { FormActions } from "@/shared/components/ui";
 import { ProductHierarchySelects, ProductHierarchyDisplay, TagInput, CollapsibleSection } from "@/shared/components/forms";
 import { useProductHierarchySelects } from "@/shared/hooks";
@@ -254,24 +254,71 @@ export function KnowledgeBaseForm({
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-        <label className="flex items-center gap-2 cursor-pointer">
+      <div className="grid grid-cols-2 gap-3">
+        <label 
+          className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+            formData.visibleInSearch 
+              ? 'border-blue-500 bg-blue-50' 
+              : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+          }`}
+        >
           <input
             type="checkbox"
             checked={formData.visibleInSearch}
             onChange={(e) => setFormData(prev => ({ ...prev, visibleInSearch: e.target.checked }))}
-            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+            className="sr-only"
           />
-          <span className="text-sm text-gray-700">Visível na busca de problemas e artigos</span>
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
+            formData.visibleInSearch ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'
+          }`}>
+            <Eye className="w-4 h-4" />
+          </div>
+          <div className="flex-1">
+            <div className={`text-sm font-medium ${formData.visibleInSearch ? 'text-blue-700' : 'text-gray-600'}`}>
+              Visível na busca
+            </div>
+            <div className="text-xs text-gray-500">Aparece nos resultados de pesquisa</div>
+          </div>
+          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+            formData.visibleInSearch 
+              ? 'border-blue-500 bg-blue-500' 
+              : 'border-gray-300 bg-white'
+          }`}>
+            {formData.visibleInSearch && <CheckCircle className="w-3.5 h-3.5 text-white" />}
+          </div>
         </label>
-        <label className="flex items-center gap-2 cursor-pointer">
+
+        <label 
+          className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+            formData.availableForAutoReply 
+              ? 'border-green-500 bg-green-50' 
+              : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+          }`}
+        >
           <input
             type="checkbox"
             checked={formData.availableForAutoReply}
             onChange={(e) => setFormData(prev => ({ ...prev, availableForAutoReply: e.target.checked }))}
-            className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
+            className="sr-only"
           />
-          <span className="text-sm text-gray-700">Disponível para resposta automática</span>
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
+            formData.availableForAutoReply ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'
+          }`}>
+            <Bot className="w-4 h-4" />
+          </div>
+          <div className="flex-1">
+            <div className={`text-sm font-medium ${formData.availableForAutoReply ? 'text-green-700' : 'text-gray-600'}`}>
+              Resposta automática
+            </div>
+            <div className="text-xs text-gray-500">Usado pela IA para responder</div>
+          </div>
+          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+            formData.availableForAutoReply 
+              ? 'border-green-500 bg-green-500' 
+              : 'border-gray-300 bg-white'
+          }`}>
+            {formData.availableForAutoReply && <CheckCircle className="w-3.5 h-3.5 text-white" />}
+          </div>
         </label>
       </div>
 
