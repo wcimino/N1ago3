@@ -57,20 +57,28 @@ export function KnowledgeBaseForm({
     if (initialData && hierarchy.isReady && initializedForId !== initialData.id) {
       let parsedNormalized: string[] = [];
       if (initialData.questionNormalized) {
-        try {
-          const parsed = JSON.parse(initialData.questionNormalized);
-          if (Array.isArray(parsed)) parsedNormalized = parsed;
-        } catch {
-          parsedNormalized = initialData.questionNormalized.split(",").map(k => k.trim()).filter(k => k);
+        if (Array.isArray(initialData.questionNormalized)) {
+          parsedNormalized = initialData.questionNormalized;
+        } else if (typeof initialData.questionNormalized === 'string') {
+          try {
+            const parsed = JSON.parse(initialData.questionNormalized);
+            if (Array.isArray(parsed)) parsedNormalized = parsed;
+          } catch {
+            parsedNormalized = initialData.questionNormalized.split(",").map(k => k.trim()).filter(k => k);
+          }
         }
       }
       let parsedKeywords: string[] = [];
       if (initialData.keywords) {
-        try {
-          const parsed = JSON.parse(initialData.keywords);
-          if (Array.isArray(parsed)) parsedKeywords = parsed;
-        } catch {
-          parsedKeywords = initialData.keywords.split(",").map(k => k.trim()).filter(k => k);
+        if (Array.isArray(initialData.keywords)) {
+          parsedKeywords = initialData.keywords;
+        } else if (typeof initialData.keywords === 'string') {
+          try {
+            const parsed = JSON.parse(initialData.keywords);
+            if (Array.isArray(parsed)) parsedKeywords = parsed;
+          } catch {
+            parsedKeywords = initialData.keywords.split(",").map(k => k.trim()).filter(k => k);
+          }
         }
       }
       setFormData({
