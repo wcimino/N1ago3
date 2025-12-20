@@ -38,7 +38,7 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **Objective Problems Catalog:** Normalized catalog of evidence-based problems.
 *   **Solution Center Integration:** External KB API integration ("Central de Soluções") that runs in parallel with internal KB search during DemandFinder execution. Results are stored separately in `solution_center_articles_and_problems` column for comparison. Configured via `SOLUTION_CENTER_API_URL` and `SOLUTION_CENTER_API_TOKEN` environment variables.
 *   **Scheduled Maintenance Services:** Daily scheduled tasks for system maintenance:
-    *   **ArchiveService:** Runs daily at 5:00 UTC (2am Brasília) - Archives old data to Parquet files in object storage and removes from database. Includes catch-up logic on startup to handle missed runs.
+    *   **ArchiveService:** Runs daily at 5:00 UTC (2am Brasília) - Archives old data to Parquet files in object storage and removes from database. Only runs at the scheduled time (no catch-up on startup).
     *   **VacuumService:** Runs daily at 6:00 UTC (3am Brasília) - VACUUM FULL on main tables. Runs after ArchiveService to reclaim space from deleted records.
 
 **System Design Choices:**

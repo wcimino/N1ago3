@@ -85,7 +85,6 @@ class ArchiveService {
 
   start(): void {
     console.log(`[ArchiveService] Starting scheduler for daily archive at ${ARCHIVE_HOUR_UTC}:00 UTC (2am Brasília)`);
-    this.checkAndRunCatchUp();
     this.scheduleNextRun();
   }
 
