@@ -1,11 +1,9 @@
+import { formatNumber } from "../../../lib/formatters";
+
 interface DonutChartProps {
   authenticated: number;
   anonymous: number;
   total: number;
-}
-
-function formatNumber(num: number): string {
-  return num.toLocaleString("pt-BR");
 }
 
 export function DonutChart({ authenticated, anonymous, total }: DonutChartProps) {

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft, AlertTriangle, Trash2, RefreshCw, Database, Copy } from "lucide-react";
 import { apiRequest, fetchApi } from "../../../lib/queryClient";
+import { formatNumber } from "../../../lib/formatters";
 import { useConfirmation } from "../../../shared/hooks";
 import { ConfirmModal } from "../../../shared/components";
 
@@ -27,10 +28,6 @@ interface CleanupResult {
   deletedCount: number;
   groups: number;
   deletedIds: number[];
-}
-
-function formatNumber(n: number): string {
-  return n.toLocaleString("pt-BR");
 }
 
 export function DuplicatesPage() {

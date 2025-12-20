@@ -23,6 +23,4 @@ export const EMOTION_CONFIG: Record<number, { label: string; color: string; bgCo
   5: { label: "Muito irritado", color: "text-red-600", bgColor: "bg-red-50", emoji: "😠" },
 };
 
-export function formatNumber(num: number): string {
-  return num.toLocaleString("pt-BR");
-}
+export { formatNumber } from "../../../lib/formatters";

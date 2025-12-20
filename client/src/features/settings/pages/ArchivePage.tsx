@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft, Archive, Database, RefreshCw, Play, CheckCircle, XCircle, Clock, FileArchive } from "lucide-react";
 import { apiRequest, fetchApi } from "../../../lib/queryClient";
+import { formatNumber } from "../../../lib/formatters";
 import { useConfirmation } from "../../../shared/hooks";
 import { ConfirmModal } from "../../../shared/components";
 
@@ -41,10 +42,6 @@ interface ArchiveJob {
   errorMessage: string | null;
   completedAt: string | null;
   createdAt: string;
-}
-
-function formatNumber(n: number): string {
-  return n.toLocaleString("pt-BR");
 }
 
 function formatDate(dateStr: string | null): string {

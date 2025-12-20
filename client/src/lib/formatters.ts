@@ -31,3 +31,7 @@ export function formatPhone(phone: string): string {
   }
   return phone;
 }
+
+export function formatNumber(num: number): string {
+  return num.toLocaleString("pt-BR");
+}

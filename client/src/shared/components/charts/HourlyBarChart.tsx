@@ -1,3 +1,5 @@
+import { formatNumber } from "../../../lib/formatters";
+
 interface HourlyDataPoint {
   hour: number;
   isCurrentHour: boolean;
@@ -9,10 +11,6 @@ interface HourlyDataPoint {
 interface HourlyBarChartProps {
   data: HourlyDataPoint[];
   isLoading?: boolean;
-}
-
-function formatNumber(num: number): string {
-  return num.toLocaleString("pt-BR");
 }
 
 export function HourlyBarChart({ data, isLoading }: HourlyBarChartProps) {
