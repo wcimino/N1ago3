@@ -1,4 +1,4 @@
-export type AgentConfigType = "summary" | "classification" | "response" | "learning" | "enrichment" | "article_enrichment" | "demand_finder" | "solution_provider" | "articles_and_solutions" | "topic_classification" | "closer";
+export type AgentConfigType = "summary" | "classification" | "response" | "enrichment" | "article_enrichment" | "demand_finder" | "solution_provider" | "topic_classification" | "closer";
 
 export interface AgentToolsConfig {
   showKnowledgeBaseTool?: boolean;
@@ -67,18 +67,6 @@ export const agentConfigMetadata: Record<AgentConfigType, AgentConfigMetadata> =
     tools: allToolsEnabled,
   },
 
-  learning: {
-    configType: "learning",
-    title: "Configuração de Aprendizado",
-    description: "Configure a extração automática de conhecimento das conversas para enriquecer a base de conhecimento",
-    enabledLabel: "Ativar extração de conhecimento",
-    enabledDescription: "Quando ativado, conhecimento será extraído automaticamente das conversas",
-    promptRows: 24,
-    responseFormatRows: 8,
-    recommendedModel: "gpt-4o-mini",
-    tools: allToolsEnabled,
-  },
-
   enrichment: {
     configType: "enrichment",
     title: "Configuração de Enriquecimento (Legado)",
@@ -125,18 +113,6 @@ export const agentConfigMetadata: Record<AgentConfigType, AgentConfigMetadata> =
     responseFormatRows: 8,
     recommendedModel: "gpt-4o",
     tools: allToolsEnabled,
-  },
-
-  articles_and_solutions: {
-    configType: "articles_and_solutions",
-    title: "Configuração de Artigos e Soluções",
-    description: "Configure o agente que busca e avalia artigos e problemas da base de conhecimento, reordenando por relevância",
-    enabledLabel: "Ativar Artigos e Soluções",
-    enabledDescription: "Quando ativado, o sistema busca e avalia artigos/problemas usando IA para melhor relevância",
-    promptRows: 20,
-    responseFormatRows: 8,
-    recommendedModel: "gpt-4o-mini",
-    tools: {},
   },
 
   topic_classification: {

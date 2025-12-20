@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { BookOpen, Lightbulb, BarChart3, Cloud, Database, AlertCircle, Play, Puzzle, Layers, GitBranch } from "lucide-react";
+import { BookOpen, Lightbulb, Cloud, Database, AlertCircle, Play, Puzzle, Layers, GitBranch } from "lucide-react";
 import { ArticleFormSection, ArticlesHierarchyView, type PrefilledArticleData } from "../components";
 import { SuggestionsPage } from "./SuggestionsPage";
-import { LearningAttemptsPage } from "./LearningAttemptsPage";
 import { ZendeskArticlesPage } from "./ZendeskArticlesPage";
 import { ObjectiveProblemsPage } from "./ObjectiveProblemsPage";
 import { ActionsPage } from "./ActionsPage";
@@ -15,7 +14,6 @@ import { useKnowledgeBase, useSubjectIntentMutations, type InputModalState, type
 const mainTabs = [
   { id: "articles", label: "Artigos", icon: <BookOpen className="w-4 h-4" /> },
   { id: "suggestions", label: "Sugestões", icon: <Lightbulb className="w-4 h-4" /> },
-  { id: "processing", label: "Processamento", icon: <BarChart3 className="w-4 h-4" /> },
 ];
 
 const problemSolutionTabs = [
@@ -198,11 +196,7 @@ export function KnowledgeBasePage() {
         </div>
       ) : (
         <>
-          {activeTab === "processing" ? (
-            <div className="p-4">
-              <LearningAttemptsPage />
-            </div>
-          ) : activeTab === "suggestions" ? (
+          {activeTab === "suggestions" ? (
             <div className="p-4">
               <SuggestionsPage />
             </div>

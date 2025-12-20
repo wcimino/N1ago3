@@ -11,6 +11,5 @@ export {
   ClassificationAgent,
   DemandFinderAgent,
   SolutionProviderAgent,
-  ArticlesAndSolutionsAgent,
   TopicClassificationAgent,
 } from "../features/ai/services/conversationOrchestrator/agents/index.js";

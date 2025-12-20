@@ -76,19 +76,6 @@ export interface CloserAgentResult extends AgentResult {
   suggestionId?: number;
 }
 
-export interface ArticlesAndSolutionsAgentResult extends AgentResult {
-  searchResults?: Array<{
-    source: string;
-    id: number;
-    name: string | null;
-    description: string;
-    matchScore?: number;
-    matchReason?: string;
-    matchedTerms?: string[];
-    products?: string[];
-  }>;
-}
-
 export interface OrchestratorContext {
   event: EventStandard;
   conversationId: number;

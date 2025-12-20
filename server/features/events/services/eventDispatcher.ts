@@ -1,5 +1,4 @@
 import { eventStorage } from "../storage/eventStorage.js";
-import { processLearningForEvent } from "../../ai/services/knowledgeLearningOrchestrator.js";
 import { RoutingOrchestrator } from "../../routing/services/routingOrchestrator.js";
 import { processConversationEvent } from "../../ai/services/conversationOrchestrator/index.js";
 import { processHandoffEvent } from "../../handoff/index.js";
@@ -26,12 +25,6 @@ export async function dispatchEvent(event: EventStandard): Promise<void> {
     } catch (error) {
       console.error(`[EventDispatcher] Failed to process conversation orchestrator for event ${event.id}:`, error);
     }
-  }
-
-  try {
-    await processLearningForEvent(event);
-  } catch (error) {
-    console.error(`[EventDispatcher] Failed to process learning for event ${event.id}:`, error);
   }
 }
 
