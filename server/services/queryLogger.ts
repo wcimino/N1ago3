@@ -1,11 +1,54 @@
 import { db as originalDb, pool } from "../db";
-import { queryLogs, queryStats } from "../../shared/schema";
+import { queryLogs, queryStats, systemConfig } from "../../shared/schema";
 import { eq, sql } from "drizzle-orm";
 import crypto from "crypto";
 
 let loggingEnabled = true;
 let logToConsole = false;
 let slowQueryThresholdMs = 100;
+let configInitialized = false;
+
+async function loadConfigFromDb() {
+  if (configInitialized) return;
+  
+  try {
+    const configs = await originalDb.select().from(systemConfig).where(
+      sql`${systemConfig.key} IN ('query_monitoring_enabled', 'query_monitoring_log_console', 'query_monitoring_slow_threshold')`
+    );
+    
+    for (const config of configs) {
+      if (config.key === 'query_monitoring_enabled') {
+        loggingEnabled = config.value === 'true';
+      } else if (config.key === 'query_monitoring_log_console') {
+        logToConsole = config.value === 'true';
+      } else if (config.key === 'query_monitoring_slow_threshold') {
+        slowQueryThresholdMs = parseInt(config.value) || 100;
+      }
+    }
+    
+    configInitialized = true;
+    console.log(`[QueryLogger] Config loaded: enabled=${loggingEnabled}, logToConsole=${logToConsole}, slowThreshold=${slowQueryThresholdMs}ms`);
+  } catch (error) {
+    configInitialized = true;
+    console.log("[QueryLogger] Could not load config from DB, using defaults");
+  }
+}
+
+function saveConfigToDb(key: string, value: string) {
+  originalDb
+    .insert(systemConfig)
+    .values({ key, value, updatedAt: new Date() })
+    .onConflictDoUpdate({
+      target: systemConfig.key,
+      set: { value, updatedAt: new Date() },
+    })
+    .then(() => {})
+    .catch((error) => {
+      console.error("[QueryLogger] Failed to save config:", error);
+    });
+}
+
+loadConfigFromDb();
 
 const pendingLogs: Array<{
   queryHash: string;
@@ -33,14 +76,17 @@ function hashQuery(normalizedQuery: string): string {
 
 export function setLoggingEnabled(enabled: boolean) {
   loggingEnabled = enabled;
+  saveConfigToDb('query_monitoring_enabled', String(enabled));
 }
 
 export function setLogToConsole(enabled: boolean) {
   logToConsole = enabled;
+  saveConfigToDb('query_monitoring_log_console', String(enabled));
 }
 
 export function setSlowQueryThreshold(ms: number) {
   slowQueryThresholdMs = ms;
+  saveConfigToDb('query_monitoring_slow_threshold', String(ms));
 }
 
 export function getLoggingConfig() {

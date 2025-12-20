@@ -64,7 +64,7 @@ router.get("/config", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/config", async (req: Request, res: Response) => {
+router.post("/config", (req: Request, res: Response) => {
   try {
     const { enabled, slowQueryThresholdMs, logToConsole } = req.body;
     
