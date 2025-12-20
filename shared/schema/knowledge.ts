@@ -19,7 +19,7 @@ export const knowledgeBase = pgTable("knowledge_base", {
   answer: text("answer"),
   keywords: text("keywords"),
   questionVariation: json("question_variation").$type<string[]>().default([]),
-  productId: integer("product_id"),
+  productId: integer("product_id").references(() => productsCatalog.id, { onDelete: "set null" }),
   subjectId: integer("subject_id"),
   intentId: integer("intent_id"),
   isActive: boolean("is_active").default(false).notNull(),
@@ -66,7 +66,7 @@ export const knowledgeBaseObjectiveProblems = pgTable("knowledge_base_objective_
 export const knowledgeBaseObjectiveProblemsHasProductsCatalog = pgTable("knowledge_base_objective_problems_has_products_catalog", {
   id: serial("id").primaryKey(),
   objectiveProblemId: integer("objective_problem_id").notNull().references(() => knowledgeBaseObjectiveProblems.id, { onDelete: "cascade" }),
-  productId: integer("product_id").notNull(),
+  productId: integer("product_id").notNull().references(() => productsCatalog.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   uniqueLink: uniqueIndex("idx_kb_objective_problems_products_unique").on(table.objectiveProblemId, table.productId),
@@ -144,7 +144,7 @@ export const learningAttempts = pgTable("learning_attempts", {
 
 export const knowledgeSubjects = pgTable("knowledge_subjects", {
   id: serial("id").primaryKey(),
-  productCatalogId: integer("product_catalog_id").notNull(),
+  productCatalogId: integer("product_catalog_id").notNull().references(() => productsCatalog.id),
   name: text("name").notNull(),
   synonyms: json("synonyms").$type<string[]>().default([]).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -234,7 +234,7 @@ export const knowledgeBaseSolutions = pgTable("knowledge_base_solutions", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
-  productId: integer("product_id"),
+  productId: integer("product_id").references(() => productsCatalog.id),
   conditions: json("conditions").$type<Record<string, unknown>>(),
   isActive: boolean("is_active").default(true).notNull(),
   isFallback: boolean("is_fallback").default(false).notNull(),

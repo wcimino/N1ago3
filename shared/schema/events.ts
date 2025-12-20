@@ -80,7 +80,7 @@ export const conversationsSummary = pgTable("conversations_summary", {
   orchestratorStatus: text("orchestrator_status").default("new"),
   importantInfo: text("important_info"),
   lastEventId: integer("last_event_id"),
-  productId: integer("product_id"),
+  productId: integer("product_id").references(() => productsCatalog.id, { onDelete: "set null" }),
   productConfidence: integer("product_confidence"),
   productConfidenceReason: text("product_confidence_reason"),
   classifiedAt: timestamp("classified_at"),
