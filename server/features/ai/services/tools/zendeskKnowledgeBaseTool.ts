@@ -3,7 +3,7 @@ import { ZendeskArticleStatisticsStorage } from "../../../external-sources/zende
 import { generateEmbedding as generateZendeskEmbedding, generateEnrichedQueryEmbedding } from "../../../external-sources/zendesk/services/embeddingService.js";
 import type { ToolDefinition } from "../openaiApiService.js";
 
-const PRODUCT_MISMATCH_PENALTY = 0.20;
+const MAX_PRODUCT_MISMATCH_PENALTY = 0.20;
 const MOVILE_PAY_SUBDOMAIN_PENALTY = 0.20;
 
 function normalizeForComparison(text: string): string {
@@ -14,13 +14,96 @@ function normalizeForComparison(text: string): string {
     .trim();
 }
 
-function sectionMatchesProduct(sectionName: string | null, produto: string | undefined): boolean {
-  if (!sectionName || !produto) return true;
+function levenshteinDistance(a: string, b: string): number {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+
+  const matrix: number[][] = [];
+
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+
+  return matrix[b.length][a.length];
+}
+
+function levenshteinSimilarity(a: string, b: string): number {
+  const maxLen = Math.max(a.length, b.length);
+  if (maxLen === 0) return 1;
+  const distance = levenshteinDistance(a, b);
+  return 1 - distance / maxLen;
+}
+
+function tokenize(text: string): string[] {
+  return normalizeForComparison(text)
+    .split(/[\s\-_]+/)
+    .filter(token => token.length > 1);
+}
+
+function calculateProductMatchScore(sectionName: string | null, produto: string | undefined): number {
+  if (!sectionName || !produto) return 1;
   
   const normalizedSection = normalizeForComparison(sectionName);
   const normalizedProduct = normalizeForComparison(produto);
   
-  return normalizedSection.includes(normalizedProduct) || normalizedProduct.includes(normalizedSection);
+  if (normalizedSection.includes(normalizedProduct) || normalizedProduct.includes(normalizedSection)) {
+    return 1;
+  }
+  
+  const sectionTokens = tokenize(sectionName);
+  const productTokens = tokenize(produto);
+  
+  if (sectionTokens.length === 0 || productTokens.length === 0) {
+    return levenshteinSimilarity(normalizedSection, normalizedProduct);
+  }
+  
+  let totalScore = 0;
+  let matchCount = 0;
+  
+  for (const productToken of productTokens) {
+    let bestTokenScore = 0;
+    
+    for (const sectionToken of sectionTokens) {
+      if (sectionToken.includes(productToken) || productToken.includes(sectionToken)) {
+        bestTokenScore = 1;
+        break;
+      }
+      
+      const similarity = levenshteinSimilarity(sectionToken, productToken);
+      if (similarity > bestTokenScore) {
+        bestTokenScore = similarity;
+      }
+    }
+    
+    if (bestTokenScore >= 0.7) {
+      matchCount++;
+    }
+    totalScore += bestTokenScore;
+  }
+  
+  const avgScore = totalScore / productTokens.length;
+  const matchRatio = matchCount / productTokens.length;
+  
+  const finalScore = (avgScore * 0.6) + (matchRatio * 0.4);
+  
+  return Math.min(1, Math.max(0, finalScore));
 }
 
 function applyProductMismatchPenalty<T extends { similarity: number; sectionName: string | null }>(
@@ -31,10 +114,12 @@ function applyProductMismatchPenalty<T extends { similarity: number; sectionName
   
   return articles
     .map(article => {
-      const matches = sectionMatchesProduct(article.sectionName, produto);
-      if (!matches) {
-        const penalizedSimilarity = Math.max(0, article.similarity - (article.similarity * PRODUCT_MISMATCH_PENALTY));
-        console.log(`[Zendesk KB Tool] Product mismatch penalty applied: "${article.sectionName}" vs "${produto}" - score ${article.similarity.toFixed(2)} -> ${penalizedSimilarity.toFixed(2)}`);
+      const matchScore = calculateProductMatchScore(article.sectionName, produto);
+      
+      if (matchScore < 1) {
+        const penaltyFactor = (1 - matchScore) * MAX_PRODUCT_MISMATCH_PENALTY;
+        const penalizedSimilarity = Math.max(0, article.similarity * (1 - penaltyFactor));
+        console.log(`[Zendesk KB Tool] Product match score: "${article.sectionName}" vs "${produto}" = ${matchScore.toFixed(2)} - penalty ${(penaltyFactor * 100).toFixed(1)}% - score ${article.similarity.toFixed(2)} -> ${penalizedSimilarity.toFixed(2)}`);
         return { ...article, similarity: penalizedSimilarity };
       }
       return article;
