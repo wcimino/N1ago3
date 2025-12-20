@@ -15,7 +15,6 @@ import type {
 function extractToolFlags(config: OpenaiApiConfig): ToolFlags {
   return {
     useKnowledgeBaseTool: config.useKnowledgeBaseTool ?? false,
-    useProductCatalogTool: config.useProductCatalogTool ?? false,
     useSubjectIntentTool: config.useSubjectIntentTool ?? false,
     useZendeskKnowledgeBaseTool: config.useZendeskKnowledgeBaseTool ?? false,
     useObjectiveProblemTool: config.useObjectiveProblemTool ?? false,

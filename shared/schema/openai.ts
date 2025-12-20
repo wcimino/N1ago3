@@ -11,7 +11,6 @@ export const openaiApiConfig = pgTable("openai_api_config", {
   responseFormat: text("response_format"),
   modelName: text("model_name").default("gpt-4o-mini").notNull(),
   useKnowledgeBaseTool: boolean("use_knowledge_base_tool").default(false).notNull(),
-  useProductCatalogTool: boolean("use_product_catalog_tool").default(false).notNull(),
   useSubjectIntentTool: boolean("use_subject_intent_tool").default(false).notNull(),
   useZendeskKnowledgeBaseTool: boolean("use_zendesk_knowledge_base_tool").default(false).notNull(),
   useObjectiveProblemTool: boolean("use_objective_problem_tool").default(false).notNull(),

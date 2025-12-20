@@ -13,7 +13,6 @@ export interface OpenaiApiConfigResponse {
   response_format: string | null;
   model_name: string;
   use_knowledge_base_tool: boolean;
-  use_product_catalog_tool: boolean;
   use_subject_intent_tool: boolean;
   use_zendesk_knowledge_base_tool: boolean;
   use_objective_problem_tool: boolean;
@@ -29,7 +28,6 @@ export interface OpenaiApiConfigState {
   responseFormat: string;
   modelName: string;
   useKnowledgeBaseTool: boolean;
-  useProductCatalogTool: boolean;
   useSubjectIntentTool: boolean;
   useZendeskKnowledgeBaseTool: boolean;
   useObjectiveProblemTool: boolean;
@@ -44,7 +42,6 @@ export interface OpenaiApiConfigActions {
   setResponseFormat: (format: string) => void;
   setModelName: (model: string) => void;
   setUseKnowledgeBaseTool: (value: boolean) => void;
-  setUseProductCatalogTool: (value: boolean) => void;
   setUseSubjectIntentTool: (value: boolean) => void;
   setUseZendeskKnowledgeBaseTool: (value: boolean) => void;
   setUseObjectiveProblemTool: (value: boolean) => void;
@@ -68,7 +65,6 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
   const [responseFormat, setResponseFormatState] = useState("");
   const [modelName, setModelNameState] = useState("gpt-4o-mini");
   const [useKnowledgeBaseTool, setUseKnowledgeBaseToolState] = useState(false);
-  const [useProductCatalogTool, setUseProductCatalogToolState] = useState(false);
   const [useSubjectIntentTool, setUseSubjectIntentToolState] = useState(false);
   const [useZendeskKnowledgeBaseTool, setUseZendeskKnowledgeBaseToolState] = useState(false);
   const [useObjectiveProblemTool, setUseObjectiveProblemToolState] = useState(false);
@@ -88,7 +84,6 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       setResponseFormatState(config.response_format || "");
       setModelNameState(config.model_name);
       setUseKnowledgeBaseToolState(config.use_knowledge_base_tool ?? false);
-      setUseProductCatalogToolState(config.use_product_catalog_tool ?? false);
       setUseSubjectIntentToolState(config.use_subject_intent_tool ?? false);
       setUseZendeskKnowledgeBaseToolState(config.use_zendesk_knowledge_base_tool ?? false);
       setUseObjectiveProblemToolState(config.use_objective_problem_tool ?? false);
@@ -106,7 +101,6 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
         response_format: responseFormat || null,
         model_name: modelName,
         use_knowledge_base_tool: useKnowledgeBaseTool,
-        use_product_catalog_tool: useProductCatalogTool,
         use_subject_intent_tool: useSubjectIntentTool,
         use_zendesk_knowledge_base_tool: useZendeskKnowledgeBaseTool,
         use_objective_problem_tool: useObjectiveProblemTool,
@@ -151,11 +145,6 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
     markChanged();
   }, [markChanged]);
 
-  const setUseProductCatalogTool = useCallback((value: boolean) => {
-    setUseProductCatalogToolState(value);
-    markChanged();
-  }, [markChanged]);
-
   const setUseSubjectIntentTool = useCallback((value: boolean) => {
     setUseSubjectIntentToolState(value);
     markChanged();
@@ -188,7 +177,6 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       responseFormat,
       modelName,
       useKnowledgeBaseTool,
-      useProductCatalogTool,
       useSubjectIntentTool,
       useZendeskKnowledgeBaseTool,
       useObjectiveProblemTool,
@@ -202,7 +190,6 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       setResponseFormat,
       setModelName,
       setUseKnowledgeBaseTool,
-      setUseProductCatalogTool,
       setUseSubjectIntentTool,
       setUseZendeskKnowledgeBaseTool,
       setUseObjectiveProblemTool,

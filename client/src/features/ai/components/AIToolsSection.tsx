@@ -2,7 +2,6 @@ import { CheckboxListItem, CollapsibleSection } from "../../../shared/components
 
 interface AIToolsState {
   useKnowledgeBaseTool: boolean;
-  useProductCatalogTool: boolean;
   useSubjectIntentTool: boolean;
   useZendeskKnowledgeBaseTool: boolean;
   useObjectiveProblemTool: boolean;
@@ -12,13 +11,11 @@ interface AIToolsState {
 interface AIToolsSectionProps {
   state: AIToolsState;
   showKnowledgeBaseTool?: boolean;
-  showProductCatalogTool?: boolean;
   showSubjectIntentTool?: boolean;
   showZendeskKnowledgeBaseTool?: boolean;
   showObjectiveProblemTool?: boolean;
   showCombinedKnowledgeSearchTool?: boolean;
   onToggleKnowledgeBase: () => void;
-  onToggleProductCatalog: () => void;
   onToggleSubjectIntent: () => void;
   onToggleZendeskKnowledgeBase: () => void;
   onToggleObjectiveProblem: () => void;
@@ -28,26 +25,23 @@ interface AIToolsSectionProps {
 export function AIToolsSection({
   state,
   showKnowledgeBaseTool = false,
-  showProductCatalogTool = false,
   showSubjectIntentTool = false,
   showZendeskKnowledgeBaseTool = false,
   showObjectiveProblemTool = false,
   showCombinedKnowledgeSearchTool = false,
   onToggleKnowledgeBase,
-  onToggleProductCatalog,
   onToggleSubjectIntent,
   onToggleZendeskKnowledgeBase,
   onToggleObjectiveProblem,
   onToggleCombinedKnowledgeSearch,
 }: AIToolsSectionProps) {
-  const hasAnyTool = showKnowledgeBaseTool || showProductCatalogTool || showSubjectIntentTool || 
+  const hasAnyTool = showKnowledgeBaseTool || showSubjectIntentTool || 
                      showZendeskKnowledgeBaseTool || showObjectiveProblemTool || showCombinedKnowledgeSearchTool;
 
   if (!hasAnyTool) return null;
 
   const activeCount = [
     state.useKnowledgeBaseTool,
-    state.useProductCatalogTool,
     state.useSubjectIntentTool,
     state.useZendeskKnowledgeBaseTool,
     state.useObjectiveProblemTool,
@@ -74,14 +68,6 @@ export function AIToolsSection({
             sublabel="Permite buscar artigos da base antes de gerar resposta"
             checked={state.useKnowledgeBaseTool}
             onChange={onToggleKnowledgeBase}
-          />
-        )}
-        {showProductCatalogTool && (
-          <CheckboxListItem
-            label="Usar Catálogo de Produtos"
-            sublabel="Permite buscar classificações no catálogo de produtos"
-            checked={state.useProductCatalogTool}
-            onChange={onToggleProductCatalog}
           />
         )}
         {showSubjectIntentTool && (

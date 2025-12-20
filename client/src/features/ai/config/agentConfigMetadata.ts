@@ -2,7 +2,6 @@ export type AgentConfigType = "summary" | "classification" | "response" | "enric
 
 export interface AgentToolsConfig {
   showKnowledgeBaseTool?: boolean;
-  showProductCatalogTool?: boolean;
   showZendeskKnowledgeBaseTool?: boolean;
   showSubjectIntentTool?: boolean;
   showObjectiveProblemTool?: boolean;
@@ -23,7 +22,6 @@ export interface AgentConfigMetadata {
 
 const allToolsEnabled: AgentToolsConfig = {
   showKnowledgeBaseTool: true,
-  showProductCatalogTool: true,
   showZendeskKnowledgeBaseTool: true,
   showSubjectIntentTool: true,
   showObjectiveProblemTool: true,
