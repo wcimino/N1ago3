@@ -28,7 +28,6 @@ export class ZendeskEmbeddableArticle implements EmbeddableArticle {
   getContentHash(): string {
     return generateContentHashFromParts([
       this.article.title,
-      this.article.body,
       this.article.sectionName,
       this.article.categoryName,
     ]);
@@ -51,7 +50,6 @@ export function generateZendeskContentHash(article: {
 }): string {
   return generateContentHashFromParts([
     article.title,
-    article.body,
     article.sectionName,
     article.categoryName,
   ]);
