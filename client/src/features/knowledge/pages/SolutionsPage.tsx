@@ -205,7 +205,7 @@ export function SolutionsPage() {
         await syncSolutionActions(formState.editingId, formState.formData.selectedActionIds);
         queryClient.invalidateQueries({ queryKey: ["/api/knowledge/solutions", formState.editingId, "withActions"] });
       } else {
-        const newSolution = await solutionCrud.createMutation.mutateAsync(formState.formData);
+        const newSolution = await solutionCrud.createMutation.mutateAsync(formState.formData) as { id: number };
         if (formState.formData.selectedActionIds.length > 0) {
           for (let i = 0; i < formState.formData.selectedActionIds.length; i++) {
             const actionId = formState.formData.selectedActionIds[i];
@@ -224,7 +224,7 @@ export function SolutionsPage() {
   };
 
   const handleDelete = (id: number) => {
-    solutionCrud.handleDelete(id, "Tem certeza que deseja excluir esta solução?");
+    solutionCrud.handleDelete(id);
   };
 
   const handleToggleExpand = (id: number) => {

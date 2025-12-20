@@ -1,10 +1,10 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { X, GripVertical, Play } from "lucide-react";
-import type { SolutionAction } from "../../../types";
+import type { KnowledgeBaseAction } from "../../../types";
 
 interface SortableActionItemProps {
-  action: SolutionAction;
+  action: KnowledgeBaseAction;
   index: number;
   onRemove: (id: number) => void;
   getActionTypeLabel: (type: string) => string;

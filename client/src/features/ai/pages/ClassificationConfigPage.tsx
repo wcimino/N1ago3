@@ -15,7 +15,6 @@ export function ClassificationConfigPage() {
       responseFormatRows={config.responseFormatRows}
       recommendedModel={config.recommendedModel}
       showKnowledgeBaseTool={config.tools.showKnowledgeBaseTool}
-      showProductCatalogTool={config.tools.showProductCatalogTool}
       showZendeskKnowledgeBaseTool={config.tools.showZendeskKnowledgeBaseTool}
       showSubjectIntentTool={config.tools.showSubjectIntentTool}
       showObjectiveProblemTool={config.tools.showObjectiveProblemTool}

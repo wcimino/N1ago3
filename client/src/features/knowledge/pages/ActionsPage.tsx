@@ -220,7 +220,7 @@ export function ActionsPage() {
           key={action.id}
           isActive={action.isActive}
           onEdit={() => handleEdit(action)}
-          onDelete={() => handleDelete(action.id, "Tem certeza que deseja excluir esta acao?")}
+          onDelete={() => handleDelete(action.id)}
           isDeleting={isDeleting}
         >
           <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-violet-100 text-violet-800 flex-shrink-0">

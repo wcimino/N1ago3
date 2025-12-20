@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Tag, MessageSquare, CheckCircle, Search, Sparkles, Loader2, Eye, Bot } from "lucide-react";
 import { FormActions } from "@/shared/components/ui";
-import { ProductHierarchySelects, ProductHierarchyDisplay, TagInput, CollapsibleSection } from "@/shared/components/forms";
+import { ProductHierarchySelects, ProductHierarchyDisplay, TagInput, FormCollapsibleSection } from "@/shared/components/forms";
 import { useProductHierarchySelects } from "@/shared/hooks";
 import { useInlineEnrichment } from "../hooks/useInlineEnrichment";
 import { EnrichmentSuggestionPanel } from "./EnrichmentSuggestionPanel";
@@ -358,7 +358,7 @@ export function KnowledgeBaseForm({
         </div>
       </div>
 
-      <CollapsibleSection
+      <FormCollapsibleSection
         title="Busca Semântica"
         icon={Search}
         badge={semanticTagsCount > 0 ? semanticTagsCount : undefined}
@@ -388,9 +388,9 @@ export function KnowledgeBaseForm({
             maxVisible={8}
           />
         </div>
-      </CollapsibleSection>
+      </FormCollapsibleSection>
 
-      <CollapsibleSection
+      <FormCollapsibleSection
         title="Variações da Pergunta"
         icon={MessageSquare}
         badge={variationsCount > 0 ? variationsCount : undefined}
@@ -406,7 +406,7 @@ export function KnowledgeBaseForm({
           colorScheme="orange"
           maxVisible={6}
         />
-      </CollapsibleSection>
+      </FormCollapsibleSection>
 
       <EnrichmentSuggestionPanel
         suggestion={enrichment.suggestion}

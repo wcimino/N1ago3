@@ -63,6 +63,7 @@ ZENDESK_SWITCHBOARD_INTEGRATION_ID = "693577c73ef61062218d9705"
 ZENDESK_AGENT_WORKSPACE_ID = "5fbcf90112addf000c227bb2"
 ZENDESK_APP_ID = "5fbcf8fffea626000bbaa1eb"
 ZENDESK_ANSWER_BOT_ID = "64d65d81a40bc6cf30ebfbb1"
+PROD_DATABASE_URL = "postgresql://neondb_owner:npg_xl0HsELRA4PK@ep-little-bird-ahcl97q2.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require"
 
 [deployment]
 deploymentTarget = "autoscale"

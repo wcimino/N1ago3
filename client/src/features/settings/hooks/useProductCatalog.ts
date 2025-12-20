@@ -13,8 +13,6 @@ interface ProductCatalogItem {
   id: number;
   produto: string;
   subproduto: string | null;
-  categoria1: string | null;
-  categoria2: string | null;
   fullName: string;
   createdAt: string;
   updatedAt: string;
@@ -23,8 +21,6 @@ interface ProductCatalogItem {
 interface ProductData {
   produto: string;
   subproduto: string | null;
-  categoria1: string | null;
-  categoria2: string | null;
 }
 
 export function useProductCatalog() {
@@ -100,30 +96,16 @@ export function useProductCatalog() {
     let data: ProductData;
 
     if (level === "produto") {
-      data = { produto: name, subproduto: null, categoria1: null, categoria2: null };
+      data = { produto: name, subproduto: null };
     } else if (level === "subproduto") {
       data = { 
         produto: parentNode!.ancestry.produto, 
-        subproduto: name, 
-        categoria1: null, 
-        categoria2: null 
-      };
-    } else if (level === "categoria1") {
-      const subproduto = parentNode!.level === "subproduto" 
-        ? parentNode!.name 
-        : parentNode!.ancestry.subproduto;
-      data = { 
-        produto: parentNode!.ancestry.produto, 
-        subproduto: subproduto,
-        categoria1: name, 
-        categoria2: null 
+        subproduto: name
       };
     } else {
       data = { 
         produto: parentNode!.ancestry.produto, 
-        subproduto: parentNode!.ancestry.subproduto,
-        categoria1: parentNode!.level === "categoria1" ? parentNode!.name : parentNode!.ancestry.categoria1, 
-        categoria2: name 
+        subproduto: parentNode!.ancestry.subproduto
       };
     }
 
@@ -146,27 +128,16 @@ export function useProductCatalog() {
     let data: ProductData;
 
     if (level === "produto") {
-      data = { produto: newName, subproduto: null, categoria1: null, categoria2: null };
+      data = { produto: newName, subproduto: null };
     } else if (level === "subproduto") {
       data = { 
         produto: editingNode.ancestry.produto, 
-        subproduto: newName, 
-        categoria1: null, 
-        categoria2: null 
-      };
-    } else if (level === "categoria1") {
-      data = { 
-        produto: editingNode.ancestry.produto, 
-        subproduto: editingNode.ancestry.subproduto,
-        categoria1: newName, 
-        categoria2: null 
+        subproduto: newName
       };
     } else {
       data = { 
         produto: editingNode.ancestry.produto, 
-        subproduto: editingNode.ancestry.subproduto,
-        categoria1: editingNode.ancestry.categoria1, 
-        categoria2: newName 
+        subproduto: editingNode.ancestry.subproduto
       };
     }
 
