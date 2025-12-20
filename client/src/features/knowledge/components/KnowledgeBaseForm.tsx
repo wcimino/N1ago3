@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Tag, MessageSquare, CheckCircle, Search } from "lucide-react";
+import { Tag, MessageSquare, CheckCircle, Search, Sparkles, Loader2 } from "lucide-react";
 import { FormActions } from "@/shared/components/ui";
 import { ProductHierarchySelects, ProductHierarchyDisplay, TagInput, CollapsibleSection } from "@/shared/components/forms";
 import { useProductHierarchySelects } from "@/shared/hooks";
-import { InlineEnrichmentPanel } from "./InlineEnrichmentPanel";
+import { useInlineEnrichment } from "../hooks/useInlineEnrichment";
+import { EnrichmentSuggestionPanel } from "./EnrichmentSuggestionPanel";
 import type { KnowledgeBaseArticle, KnowledgeBaseFormData } from "../hooks/useKnowledgeBase";
 
 interface PrefilledArticleData {
@@ -184,6 +185,17 @@ export function KnowledgeBaseForm({
   const semanticTagsCount = formData.questionNormalized.length + formData.keywords.length;
   const variationsCount = formData.questionVariation.length;
 
+  const enrichment = useInlineEnrichment({
+    intentId: hierarchy.selection.intentId,
+    articleId: initialData?.id || null,
+    currentData: {
+      question: formData.question,
+      answer: formData.answer,
+      keywords: formData.keywords.join(", "),
+      questionVariation: formData.questionVariation,
+    },
+  });
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex items-start justify-between gap-4">
@@ -214,7 +226,26 @@ export function KnowledgeBaseForm({
             />
           )}
         </div>
-        <div className="flex items-center gap-2 pt-5">
+        <div className="flex items-center gap-3 pt-5">
+          <button
+            type="button"
+            onClick={enrichment.handleEnrich}
+            disabled={enrichment.isLoading || !enrichment.isEnabled}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title={!enrichment.isEnabled ? "Selecione uma intenção para habilitar" : "Enriquecer artigo com IA"}
+          >
+            {enrichment.isLoading ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Analisando...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5" />
+                Enriquecer com IA
+              </>
+            )}
+          </button>
           <span className={`text-sm font-medium ${formData.isActive ? 'text-green-700' : 'text-gray-500'}`}>
             {formData.isActive ? 'Ativo' : 'Inativo'}
           </span>
@@ -320,19 +351,25 @@ export function KnowledgeBaseForm({
         />
       </CollapsibleSection>
 
-      <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
-        <InlineEnrichmentPanel
-          intentId={hierarchy.selection.intentId}
-          articleId={initialData?.id || null}
-          currentData={{
-            question: formData.question,
-            answer: formData.answer,
-            keywords: formData.keywords.join(", "),
-            questionVariation: formData.questionVariation,
-          }}
-          onApply={handleApplyEnrichment}
-        />
+      <EnrichmentSuggestionPanel
+        suggestion={enrichment.suggestion}
+        skipReason={enrichment.skipReason}
+        apiError={enrichment.apiError}
+        isError={enrichment.isError}
+        error={enrichment.error}
+        expanded={enrichment.expanded}
+        setExpanded={enrichment.setExpanded}
+        currentData={{
+          question: formData.question,
+          answer: formData.answer,
+          keywords: formData.keywords.join(", "),
+          questionVariation: formData.questionVariation,
+        }}
+        onApply={handleApplyEnrichment}
+        onDiscard={enrichment.handleDiscard}
+      />
 
+      <div className="pt-3 border-t border-gray-100 flex items-center justify-end">
         <FormActions
           isLoading={isLoading}
           isEditing={!!initialData}
