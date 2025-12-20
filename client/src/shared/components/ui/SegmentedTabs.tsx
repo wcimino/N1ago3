@@ -15,7 +15,7 @@ interface SegmentedTabsProps {
 
 export function SegmentedTabs({ tabs, activeTab, onChange, className = "", iconOnlyMobile = false, wrapMobile = false }: SegmentedTabsProps) {
   const containerClass = wrapMobile
-    ? "bg-gray-100 p-1 rounded-lg grid grid-cols-3 sm:grid-cols-4 md:flex gap-1"
+    ? "bg-gray-100 p-1 rounded-lg grid grid-cols-3 sm:grid-cols-4 lg:flex gap-1"
     : "bg-gray-100 p-1 rounded-lg flex gap-1";
 
   return (
