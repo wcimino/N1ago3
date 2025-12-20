@@ -60,7 +60,7 @@ ZENDESK_SWITCHBOARD_INTEGRATION_ID = "69357782256891c6fda71018"
 ZENDESK_AGENT_WORKSPACE_ID = "5fbcf90112addf000c227bb2"
 ZENDESK_APP_ID = "5fbcf8fffea626000bbaa1eb"
 ZENDESK_ANSWER_BOT_ID = "64d65d81a40bc6cf30ebfbb1"
-SOLUTION_CENTER_API_URL = "https://b2a1c841-a2da-4caa-93c2-c5bd1f187c94-00-1thpjxqhsrg2r.janeway.replit.dev/api/search/articlesandproblems"
+SOLUTION_CENTER_API_URL = "https://b2a1c841-a2da-4caa-93c2-c5bd1f187c94-00-1thpjxqhsrg2r.janeway.replit.dev"
 SOLUTION_CENTER_API_TOKEN = "41601cecf49044bc3d12262e16b3289d0b3696f006013733a638f77b369c4b9c"
 
 [userenv.production]
@@ -71,7 +71,7 @@ ZENDESK_SWITCHBOARD_INTEGRATION_ID = "693577c73ef61062218d9705"
 ZENDESK_AGENT_WORKSPACE_ID = "5fbcf90112addf000c227bb2"
 ZENDESK_APP_ID = "5fbcf8fffea626000bbaa1eb"
 ZENDESK_ANSWER_BOT_ID = "64d65d81a40bc6cf30ebfbb1"
-SOLUTION_CENTER_API_URL = "https://b2a1c841-a2da-4caa-93c2-c5bd1f187c94-00-1thpjxqhsrg2r.janeway.replit.dev/api/search/articlesandproblems"
+SOLUTION_CENTER_API_URL = "https://b2a1c841-a2da-4caa-93c2-c5bd1f187c94-00-1thpjxqhsrg2r.janeway.replit.dev"
 SOLUTION_CENTER_API_TOKEN = "41601cecf49044bc3d12262e16b3289d0b3696f006013733a638f77b369c4b9c"
 
 [userenv.shared]
