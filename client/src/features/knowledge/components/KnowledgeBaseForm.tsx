@@ -279,12 +279,12 @@ export function KnowledgeBaseForm({
             </div>
             <div className="text-xs text-gray-500">Aparece nos resultados de pesquisa</div>
           </div>
-          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-            formData.visibleInSearch 
-              ? 'border-blue-500 bg-blue-500' 
-              : 'border-gray-300 bg-white'
+          <div className={`relative w-11 h-6 rounded-full transition-colors ${
+            formData.visibleInSearch ? 'bg-blue-500' : 'bg-gray-300'
           }`}>
-            {formData.visibleInSearch && <CheckCircle className="w-3.5 h-3.5 text-white" />}
+            <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+              formData.visibleInSearch ? 'translate-x-5' : 'translate-x-0'
+            }`} />
           </div>
         </label>
 
@@ -312,12 +312,12 @@ export function KnowledgeBaseForm({
             </div>
             <div className="text-xs text-gray-500">Usado pela IA para responder</div>
           </div>
-          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-            formData.availableForAutoReply 
-              ? 'border-green-500 bg-green-500' 
-              : 'border-gray-300 bg-white'
+          <div className={`relative w-11 h-6 rounded-full transition-colors ${
+            formData.availableForAutoReply ? 'bg-green-500' : 'bg-gray-300'
           }`}>
-            {formData.availableForAutoReply && <CheckCircle className="w-3.5 h-3.5 text-white" />}
+            <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+              formData.availableForAutoReply ? 'translate-x-5' : 'translate-x-0'
+            }`} />
           </div>
         </label>
       </div>
