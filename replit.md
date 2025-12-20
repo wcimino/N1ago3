@@ -83,6 +83,20 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **External Sources & Knowledge Base Architecture:** Replicas of external data (e.g., Zendesk articles) and internal Q&A articles with embeddings.
 *   **RAG (Retrieval Augmented Generation):** Implements semantic search using OpenAI embeddings with pgvector and HNSW indexing, with fallbacks to full-text search.
 
+**Server Bootstrap & Initialization (December 2024):**
+
+*   **Preflight Checks:** `server/bootstrap/preflight.ts` validates critical environment variables (DATABASE_URL, PRIVATE_OBJECT_DIR) before starting schedulers. If validation fails, schedulers are disabled and the server runs in API-only mode.
+*   **Granular Scheduler Flags:** Individual control over background workers via environment variables:
+    *   `DISABLE_SCHEDULERS=true` - Disables all schedulers (existing)
+    *   `ENABLE_POLLING=false` - Disables polling worker only (default: enabled)
+    *   `ENABLE_ARCHIVE=false` - Disables archive service only (default: enabled)
+    *   `ENABLE_VACUUM=false` - Disables vacuum service only (default: enabled)
+*   **Enhanced Readiness Endpoint:** `/ready` now returns detailed status including:
+    *   Scheduler status (enabled/running for polling, archive, vacuum)
+    *   Last run dates for archive and vacuum services
+    *   Preflight results (canRunSchedulers, warnings, errors)
+*   **Production Static Files Check:** Verifies `dist/public/index.html` exists; serves informative error page if build is missing.
+
 ## External Dependencies
 
 *   **Zendesk Sunshine Conversations:** Webhook source for conversation data.
