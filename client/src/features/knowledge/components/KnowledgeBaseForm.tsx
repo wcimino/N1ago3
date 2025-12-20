@@ -455,7 +455,7 @@ export function KnowledgeBaseForm({
         )}
       </div>
 
-      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+      <div className="pt-3 border-t border-gray-100 space-y-4">
         <InlineEnrichmentPanel
           intentId={hierarchy.selection.intentId}
           articleId={initialData?.id || null}
@@ -493,13 +493,15 @@ export function KnowledgeBaseForm({
           }}
         />
 
-        <FormActions
-          isLoading={isLoading}
-          isEditing={!!initialData}
-          onCancel={onCancel}
-          disabled={!isValid}
-          submitLabel="Salvar Artigo"
-        />
+        <div className="flex justify-end">
+          <FormActions
+            isLoading={isLoading}
+            isEditing={!!initialData}
+            onCancel={onCancel}
+            disabled={!isValid}
+            submitLabel="Salvar Artigo"
+          />
+        </div>
       </div>
     </form>
   );
