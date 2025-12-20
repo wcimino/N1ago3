@@ -143,11 +143,10 @@ export class ArticleEnrichmentAgent {
 
       if (config.useZendeskKnowledgeBaseTool) {
         const zendeskTool = createZendeskKnowledgeBaseTool({
+          // Usado apenas para penalidades de ranking
           produto: context.productName,
-          subproduto: context.subproductName || undefined,
-          assunto: context.subjectName || undefined,
+          // Usado para gerar o embedding de busca
           intencao: context.intentName,
-          question: context.article?.question || undefined,
           articleKeywords: context.article?.keywords || undefined,
         });
         const originalHandler = zendeskTool.handler;

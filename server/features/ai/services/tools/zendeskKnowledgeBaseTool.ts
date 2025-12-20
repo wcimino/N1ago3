@@ -60,19 +60,17 @@ function applySubdomainPenalty<T extends { similarity: number; helpCenterSubdoma
 }
 
 export interface ZendeskSearchContext {
+  // Campos usados APENAS para penalidades (não entram no embedding)
   produto?: string;
-  subproduto?: string;
-  assunto?: string;
+  // Campos usados para gerar o embedding de busca
   intencao?: string;
-  situacao?: string;
-  question?: string;
   articleKeywords?: string;
 }
 
 export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchContext): ToolDefinition {
   return {
     name: "search_knowledge_base_zendesk",
-    description: "Busca artigos na base de conhecimento do Zendesk (Help Center) usando busca semântica inteligente. Use para encontrar artigos de ajuda, FAQs e documentação pública. A busca entende o significado da sua consulta e encontra os artigos mais relevantes. Você pode fornecer contexto adicional (produto, subproduto, assunto, intenção) para melhorar a precisão da busca.",
+    description: "Busca artigos na base de conhecimento do Zendesk (Help Center) usando busca semântica inteligente. Use para encontrar artigos de ajuda, FAQs e documentação pública. A busca entende o significado da sua consulta e encontra os artigos mais relevantes. Você pode fornecer intenção para melhorar a busca e produto para penalizar artigos de outros produtos.",
     parameters: {
       type: "object",
       properties: {
@@ -86,24 +84,16 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
         },
         produto: {
           type: "string",
-          description: "Produto relacionado (ex: Cartão, Conta Digital, Maquinona, Empréstimo). Melhora a precisão da busca."
-        },
-        subproduto: {
-          type: "string",
-          description: "Subproduto ou variante (ex: Cartão de Débito, Cartão de Crédito). Melhora a precisão da busca."
-        },
-        assunto: {
-          type: "string",
-          description: "Assunto ou tema geral (ex: Saque, Fatura, Limite, Preço e tarifas). Melhora a precisão da busca."
+          description: "Produto relacionado (ex: Cartão, Conta Digital, Maquinona, Empréstimo). Usado para penalizar artigos de produtos diferentes no ranking."
         },
         intencao: {
           type: "string",
-          description: "Intenção ou tipo de demanda (ex: Dúvida, Reclamação, Solicitação). Melhora a precisão da busca."
+          description: "Intenção ou tipo de demanda (ex: Cancelar cartão, Desbloquear conta). Usado para melhorar a busca semântica."
         }
       },
       required: []
     },
-    handler: async (args: { keywords?: string; section?: string; produto?: string; subproduto?: string; assunto?: string; intencao?: string }) => {
+    handler: async (args: { keywords?: string; section?: string; produto?: string; intencao?: string }) => {
       let articles: Array<{
         id: number;
         zendeskId: string;
@@ -115,17 +105,18 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
         similarity: number;
       }> = [];
       
-      const mergedContext = {
-        produto: args.produto || searchContext?.produto,
-        subproduto: args.subproduto || searchContext?.subproduto,
-        assunto: args.assunto || searchContext?.assunto,
+      // Contexto para EMBEDDING (apenas intencao e articleKeywords)
+      const embeddingContext = {
         intencao: args.intencao || searchContext?.intencao,
-        situacao: searchContext?.situacao,
-        question: searchContext?.question,
         articleKeywords: searchContext?.articleKeywords,
       };
       
-      const hasContext = mergedContext.produto || mergedContext.subproduto || mergedContext.assunto || mergedContext.intencao || mergedContext.situacao || mergedContext.question || mergedContext.articleKeywords;
+      // Contexto para PENALIDADES (produto)
+      const penaltyContext = {
+        produto: args.produto || searchContext?.produto,
+      };
+      
+      const hasEmbeddingContext = embeddingContext.intencao || embeddingContext.articleKeywords;
       
       if (args.keywords && args.keywords.trim().length > 0) {
         const stats = await ZendeskArticlesStorage.getEmbeddingStats();
@@ -134,11 +125,12 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
           try {
             let queryEmbedding: number[];
             
-            if (hasContext) {
-              console.log(`[Zendesk KB Tool] Using enriched query with context: produto=${mergedContext.produto}, subproduto=${mergedContext.subproduto}, assunto=${mergedContext.assunto}, intencao=${mergedContext.intencao}`);
+            if (hasEmbeddingContext) {
+              console.log(`[Zendesk KB Tool] Using enriched query with context: intencao=${embeddingContext.intencao}, articleKeywords=${embeddingContext.articleKeywords} (produto=${penaltyContext.produto} for penalties only)`);
               const enrichedResult = await generateEnrichedQueryEmbedding({
                 keywords: args.keywords,
-                ...mergedContext,
+                intencao: embeddingContext.intencao,
+                articleKeywords: embeddingContext.articleKeywords,
               });
               queryEmbedding = enrichedResult.embedding;
             } else {
@@ -163,10 +155,10 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
             }));
             
             let penalizedArticles = applySubdomainPenalty(mappedArticles);
-            penalizedArticles = applyProductMismatchPenalty(penalizedArticles, mergedContext.produto);
+            penalizedArticles = applyProductMismatchPenalty(penalizedArticles, penaltyContext.produto);
             articles = penalizedArticles.slice(0, 5);
             
-            console.log(`[Zendesk KB Tool] Semantic search found ${articles.length} articles (enriched=${hasContext}, product penalty applied for: ${mergedContext.produto || 'none'})`);
+            console.log(`[Zendesk KB Tool] Semantic search found ${articles.length} articles (enriched=${hasEmbeddingContext}, product penalty applied for: ${penaltyContext.produto || 'none'})`);
           } catch (error) {
             console.error("[Zendesk KB Tool] Semantic search failed:", error);
           }
