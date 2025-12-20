@@ -1,0 +1,146 @@
+[
+  {
+    "id": 1,
+    "produto": "Conta Digital",
+    "subproduto": null,
+    "full_name": "Conta Digital",
+    "created_at": "2025-12-08T02:56:38.585Z",
+    "updated_at": "2025-12-08T02:56:38.585Z"
+  },
+  {
+    "id": 2,
+    "produto": "Cartão",
+    "subproduto": null,
+    "full_name": "Cartão",
+    "created_at": "2025-12-08T02:56:43.556Z",
+    "updated_at": "2025-12-08T02:56:43.556Z"
+  },
+  {
+    "id": 4,
+    "produto": "Empréstimo / Crédito",
+    "subproduto": null,
+    "full_name": "Empréstimo / Crédito",
+    "created_at": "2025-12-08T02:57:00.230Z",
+    "updated_at": "2025-12-08T02:57:00.230Z"
+  },
+  {
+    "id": 5,
+    "produto": "Antecipação",
+    "subproduto": null,
+    "full_name": "Antecipação",
+    "created_at": "2025-12-08T02:57:05.063Z",
+    "updated_at": "2025-12-08T02:57:05.063Z"
+  },
+  {
+    "id": 6,
+    "produto": "Maquinona",
+    "subproduto": null,
+    "full_name": "Maquinona",
+    "created_at": "2025-12-08T02:57:11.887Z",
+    "updated_at": "2025-12-08T02:57:11.887Z"
+  },
+  {
+    "id": 7,
+    "produto": "Outros",
+    "subproduto": null,
+    "full_name": "Outros",
+    "created_at": "2025-12-08T02:57:48.546Z",
+    "updated_at": "2025-12-08T02:57:48.546Z"
+  },
+  {
+    "id": 8,
+    "produto": "Antecipação",
+    "subproduto": "Plano receba em 1 semana (D7)",
+    "full_name": "Antecipação > Plano receba em 1 semana (D7)",
+    "created_at": "2025-12-08T02:58:31.409Z",
+    "updated_at": "2025-12-08T02:58:31.409Z"
+  },
+  {
+    "id": 9,
+    "produto": "Antecipação",
+    "subproduto": "Plano receba em 4 semanas (D30)",
+    "full_name": "Antecipação > Plano receba em 4 semanas (D30)",
+    "created_at": "2025-12-08T02:58:46.990Z",
+    "updated_at": "2025-12-08T02:58:46.990Z"
+  },
+  {
+    "id": 12,
+    "produto": "Conta Digital",
+    "subproduto": "Extrato",
+    "full_name": "Conta Digital > Extrato",
+    "created_at": "2025-12-08T03:00:09.129Z",
+    "updated_at": "2025-12-08T03:00:09.129Z"
+  },
+  {
+    "id": 13,
+    "produto": "Conta Digital",
+    "subproduto": "PIX",
+    "full_name": "Conta Digital > PIX",
+    "created_at": "2025-12-08T03:00:22.068Z",
+    "updated_at": "2025-12-08T03:00:22.068Z"
+  },
+  {
+    "id": 14,
+    "produto": "Conta Digital",
+    "subproduto": "Pagamento de Boleto",
+    "full_name": "Conta Digital > Pagamento de Boleto",
+    "created_at": "2025-12-08T03:00:31.092Z",
+    "updated_at": "2025-12-08T03:00:31.092Z"
+  },
+  {
+    "id": 15,
+    "produto": "Conta Digital",
+    "subproduto": "TED",
+    "full_name": "Conta Digital > TED",
+    "created_at": "2025-12-08T03:00:45.558Z",
+    "updated_at": "2025-12-08T03:00:45.558Z"
+  },
+  {
+    "id": 16,
+    "produto": "Maquinona",
+    "subproduto": "Antecipação",
+    "full_name": "Maquinona > Antecipação",
+    "created_at": "2025-12-08T03:00:55.623Z",
+    "updated_at": "2025-12-08T03:00:55.623Z"
+  },
+  {
+    "id": 10,
+    "produto": "Cartão",
+    "subproduto": "Cartão de Crédito",
+    "full_name": "Cartão > Cartão de Crédito",
+    "created_at": "2025-12-08T02:58:59.457Z",
+    "updated_at": "2025-12-10T18:26:09.239Z"
+  },
+  {
+    "id": 11,
+    "produto": "Cartão",
+    "subproduto": "Cartão de Débito",
+    "full_name": "Cartão > Cartão de Débito",
+    "created_at": "2025-12-08T02:59:08.622Z",
+    "updated_at": "2025-12-10T18:26:16.326Z"
+  },
+  {
+    "id": 17,
+    "produto": "Repasse",
+    "subproduto": "Repasse",
+    "full_name": "Repasse > Repasse",
+    "created_at": "2025-12-13T04:11:37.119Z",
+    "updated_at": "2025-12-13T04:11:37.119Z"
+  },
+  {
+    "id": 18,
+    "produto": "Repasse",
+    "subproduto": "Portal do Parceiro",
+    "full_name": "Repasse > Portal do Parceiro",
+    "created_at": "2025-12-13T04:12:03.371Z",
+    "updated_at": "2025-12-13T04:12:03.371Z"
+  },
+  {
+    "id": 19,
+    "produto": "Repasse",
+    "subproduto": "Gestor de Pedidos",
+    "full_name": "Repasse > Gestor de Pedidos",
+    "created_at": "2025-12-13T04:12:18.501Z",
+    "updated_at": "2025-12-13T04:12:18.501Z"
+  }
+]
