@@ -1,0 +1,34 @@
+Abaixo estão as otimizações mais impactantes para reduzir riscos de deploy e facilitar operação/manutenção:
+
+1) Blindar a inicialização do servidor
+Pré-checagem de variáveis obrigatórias: validar PRIVATE_OBJECT_DIR, credenciais de storage e DB antes de iniciar serviços e, em caso de falta, não iniciar schedulers (apenas subir HTTP e health). Hoje, a falta dessas variáveis causa erro tardio em runtime do arquivamento. 
+
+Isolar o bootstrap de workers: mover start de polling/maintenance para um módulo de “bootstrap” opcional e fazer o server/index.ts apenas registrar rotas e healthchecks; isso permite subir uma “API-only” para smoke tests ou ambientes que não devem rodar jobs. 
+
+2) Controlar schedulers por ambiente
+Flags explícitas: hoje só existe DISABLE_SCHEDULERS; adicionar flags por serviço (ex.: ENABLE_ARCHIVE, ENABLE_VACUUM, ENABLE_POLLING) evita que um job falho impeça o deploy de todo o app. 
+
+Graceful degrade: se a conexão ao storage ou DB falhar no start de um job, registrar aviso e pular apenas aquele job, em vez de manter o processo em estado “partial” indefinidamente. 
+
+3) Robustez do arquivamento
+Separar responsabilidades: dividir o ArchiveService em (a) scheduler, (b) job store, (c) exportador Parquet/upload, (d) cleaner/VACUUM. Isso simplifica retries, testes unitários e permite desligar só a parte de upload se o storage estiver fora. 
+
+Fallback local: quando PRIVATE_OBJECT_DIR ou upload falhar, salvar Parquet localmente com um status “pending upload” para evitar perda de dados e liberar o job de delete. 
+
+4) Endpoints de ingestão mais resilientes
+Reuso de validação: extrair a lógica de validação+autorização+rate limit para um serviço compartilhado entre /api/events/ingest e /batch para garantir mensagens e limites consistentes e facilitar testes automatizados. 
+
+Limites configuráveis: expor envs para MAX_EVENTS_PER_BATCH e janelas de rate limit; hoje o limite é fixo em 100, o que força código se a demanda mudar. 
+
+5) Minimizar riscos de jobs longos no mesmo processo
+Mover jobs para worker dedicado: rodar syncs longos (Zendesk) e arquivamento em processos/containers separados com fila ou agendamento externo. Evita que timeouts da plataforma derrubem o web server e deixem jobs “partial”. 
+
+Persistir checkpoints menores: no sync Zendesk, checkpoints por página já existem, mas a lógica está duplicada; unificar em um paginador com checkpoint reduz inconsistências em cancelamento/retomada. 
+
+6) Build e estáticos
+Verificação de artefatos: antes de iniciar em produção, confirmar a existência de dist/public/index.html; se não existir, logar erro claro e servir uma página de “build ausente” em vez de falhar silenciosamente. 
+
+7) Observabilidade
+Health/readiness detalhados: incluir no /ready um resumo dos schedulers habilitados e últimos erros de inicialização de workers; isso agiliza diagnóstico em deploys. F:server/index.ts†L32-L54】
+
+Essas ações priorizam impedir que dependências externas ou jobs longos derrubem o web server, mantêm o deploy previsível e dão caminhos claros para operar ambientes com requisitos diferentes (produção vs. staging).
