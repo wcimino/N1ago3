@@ -99,7 +99,7 @@ export function ProductsCard({ productStats24h, productStats1h }: ProductsCardPr
           <span className="font-bold text-orange-600 w-12 text-right text-sm">{formatNumber(total24h)}</span>
         </div>
       </div>
-      <div className="space-y-0 mt-2">
+      <div className="space-y-1 mt-2">
         {top5.map((item) => {
           const count1h = items1hMap.get(item.product)?.count || 0;
           const linkTo = `/atendimentos?productStandard=${encodeURIComponent(item.product)}`;
@@ -109,16 +109,16 @@ export function ProductsCard({ productStats24h, productStats1h }: ProductsCardPr
           return (
             <div key={item.product}>
               <div className="flex items-center justify-between py-1 text-sm">
-                <div className="flex items-center gap-1 flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
                   {hasSubproducts ? (
                     <button
                       onClick={() => toggleExpand(item.product)}
-                      className="p-0.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors shrink-0"
+                      className="w-4 h-4 flex items-center justify-center text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors shrink-0"
                     >
-                      {isExpanded ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                      {isExpanded ? <Minus className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
                     </button>
                   ) : (
-                    <span className="w-4.5" />
+                    <span className="w-4" />
                   )}
                   <Link href={linkTo} className="text-gray-700 hover:text-orange-600 truncate">
                     {item.product}
@@ -135,8 +135,8 @@ export function ProductsCard({ productStats24h, productStats1h }: ProductsCardPr
         })}
         {others.length > 0 && (
           <div className="flex items-center justify-between py-1 text-sm text-gray-400">
-            <div className="flex items-center gap-1">
-              <span className="w-4.5" />
+            <div className="flex items-center gap-1.5">
+              <span className="w-4" />
               <span>Outros ({others.length})</span>
             </div>
             <div className="flex gap-3">
