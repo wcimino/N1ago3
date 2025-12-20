@@ -1,7 +1,7 @@
 import express from "express";
 import { setupAuth } from "./features/auth/index.js";
 import { registerRoutes } from "./routes/index.js";
-import { bootstrap } from "./bootstrap/index.js";
+import { bootstrap, getBootstrapHealth } from "./bootstrap/index.js";
 import "./features/events/services/eventProcessor.js";
 
 const app = express();
@@ -29,8 +29,19 @@ app.get("/health", (req, res) => {
 });
 
 app.get("/ready", (req, res) => {
+  const bootstrapHealth = serverReady ? getBootstrapHealth() : null;
+  
   if (serverReady) {
-    res.status(200).json({ ready: true, timestamp: new Date().toISOString() });
+    res.status(200).json({ 
+      ready: true, 
+      timestamp: new Date().toISOString(),
+      schedulers: bootstrapHealth?.schedulerStatus || null,
+      preflight: bootstrapHealth?.preflight ? {
+        canRunSchedulers: bootstrapHealth.preflight.canRunSchedulers,
+        warnings: bootstrapHealth.preflight.warnings,
+        errors: bootstrapHealth.preflight.errors,
+      } : null,
+    });
   } else {
     res.status(503).json({ 
       ready: false, 
