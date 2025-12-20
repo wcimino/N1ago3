@@ -1,15 +1,19 @@
 export type {
   ParsedSummary,
-  SearchQueries,
-  ClientRequestVersions,
   ObjectiveProblemResult,
-} from "../summaryDomain/types.js";
+  ClientRequestVersions,
+  SearchQueries,
+  SearchQueryQuality,
+  Triage,
+  TriageAnamnese,
+} from "./types.js";
 
 export {
   parseSummaryJson,
+  parseSummaryResponse,
   getClientRequest,
   getCustomerMainComplaint,
   getClientRequestVersions,
   getSearchQueries,
   getCustomerRequestType,
-} from "../summaryDomain/parser.js";
+} from "./parser.js";
