@@ -58,11 +58,15 @@ export const knowledgeBaseObjectiveProblems = pgTable("knowledge_base_objective_
   examples: json("examples").$type<string[]>().default([]),
   presentedBy: text("presented_by").notNull().default("customer"),
   isActive: boolean("is_active").default(true).notNull(),
+  visibleInSearch: boolean("visible_in_search").default(false).notNull(),
+  availableForAutoReply: boolean("available_for_auto_reply").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   presentedByIdx: index("idx_kb_objective_problems_presented_by").on(table.presentedBy),
   isActiveIdx: index("idx_kb_objective_problems_is_active").on(table.isActive),
+  visibleInSearchIdx: index("idx_kb_objective_problems_visible_in_search").on(table.visibleInSearch),
+  availableForAutoReplyIdx: index("idx_kb_objective_problems_available_for_auto_reply").on(table.availableForAutoReply),
 }));
 
 export const knowledgeBaseObjectiveProblemsHasProductsCatalog = pgTable("knowledge_base_objective_problems_has_products_catalog", {
