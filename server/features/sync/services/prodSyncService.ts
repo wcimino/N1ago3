@@ -82,7 +82,7 @@ export async function syncFromProd(
       `);
     }
     if (prodProducts.length > 0) {
-      await devDb.execute(sql.raw(`SELECT setval('products_catalog_id_seq', (SELECT COALESCE(MAX(id), 1) FROM products_catalog), true)`));
+      await devPool.query(`SELECT setval('products_catalog_id_seq', (SELECT COALESCE(MAX(id), 1) FROM products_catalog), true)`);
     }
 
     onProgress?.({ step: "subjects", current: 0, total: 1, details: "Sincronizando assuntos..." });
@@ -99,7 +99,7 @@ export async function syncFromProd(
       `);
     }
     if (prodSubjects.length > 0) {
-      await devDb.execute(sql.raw(`SELECT setval('knowledge_subjects_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_subjects), true)`));
+      await devPool.query(`SELECT setval('knowledge_subjects_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_subjects), true)`);
     }
 
     onProgress?.({ step: "intents", current: 0, total: 1, details: "Sincronizando intenções..." });
@@ -116,7 +116,7 @@ export async function syncFromProd(
       `);
     }
     if (prodIntents.length > 0) {
-      await devDb.execute(sql.raw(`SELECT setval('knowledge_intents_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_intents), true)`));
+      await devPool.query(`SELECT setval('knowledge_intents_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_intents), true)`);
     }
 
     onProgress?.({ step: "articles", current: 0, total: 1, details: "Sincronizando artigos KB..." });
@@ -133,7 +133,7 @@ export async function syncFromProd(
       `);
     }
     if (prodArticles.length > 0) {
-      await devDb.execute(sql.raw(`SELECT setval('knowledge_base_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base), true)`));
+      await devPool.query(`SELECT setval('knowledge_base_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base), true)`);
     }
 
     onProgress?.({ step: "articleEmbeddings", current: 0, total: 1, details: "Sincronizando embeddings de artigos..." });
@@ -150,7 +150,7 @@ export async function syncFromProd(
       `);
     }
     if (prodArticleEmbeddings.length > 0) {
-      await devDb.execute(sql.raw(`SELECT setval('knowledge_base_embeddings_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_embeddings), true)`));
+      await devPool.query(`SELECT setval('knowledge_base_embeddings_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_embeddings), true)`);
     }
 
     onProgress?.({ step: "problems", current: 0, total: 1, details: "Sincronizando problemas..." });
@@ -167,7 +167,7 @@ export async function syncFromProd(
       `);
     }
     if (prodProblems.length > 0) {
-      await devDb.execute(sql.raw(`SELECT setval('knowledge_base_objective_problems_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_objective_problems), true)`));
+      await devPool.query(`SELECT setval('knowledge_base_objective_problems_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_objective_problems), true)`);
     }
 
     onProgress?.({ step: "problemEmbeddings", current: 0, total: 1, details: "Sincronizando embeddings de problemas..." });
@@ -184,7 +184,7 @@ export async function syncFromProd(
       `);
     }
     if (prodProblemEmbeddings.length > 0) {
-      await devDb.execute(sql.raw(`SELECT setval('knowledge_base_objective_problems_embeddings_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_objective_problems_embeddings), true)`));
+      await devPool.query(`SELECT setval('knowledge_base_objective_problems_embeddings_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_objective_problems_embeddings), true)`);
     }
 
     onProgress?.({ step: "problemProductLinks", current: 0, total: 1, details: "Sincronizando links problema-produto..." });
@@ -201,7 +201,7 @@ export async function syncFromProd(
       `);
     }
     if (prodProblemProductLinks.length > 0) {
-      await devDb.execute(sql.raw(`SELECT setval('knowledge_base_objective_problems_has_products_catalog_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_objective_problems_has_products_catalog), true)`));
+      await devPool.query(`SELECT setval('knowledge_base_objective_problems_has_products_catalog_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_objective_problems_has_products_catalog), true)`);
     }
 
     onProgress?.({ step: "actions", current: 0, total: 1, details: "Sincronizando ações..." });
@@ -218,7 +218,7 @@ export async function syncFromProd(
       `);
     }
     if (prodActions.length > 0) {
-      await devDb.execute(sql.raw(`SELECT setval('knowledge_base_actions_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_actions), true)`));
+      await devPool.query(`SELECT setval('knowledge_base_actions_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_actions), true)`);
     }
 
     onProgress?.({ step: "solutions", current: 0, total: 1, details: "Sincronizando soluções..." });
@@ -235,7 +235,7 @@ export async function syncFromProd(
       `);
     }
     if (prodSolutions.length > 0) {
-      await devDb.execute(sql.raw(`SELECT setval('knowledge_base_solutions_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_solutions), true)`));
+      await devPool.query(`SELECT setval('knowledge_base_solutions_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_solutions), true)`);
     }
 
     onProgress?.({ step: "solutionActionLinks", current: 0, total: 1, details: "Sincronizando links solução-ação..." });
@@ -252,7 +252,7 @@ export async function syncFromProd(
       `);
     }
     if (prodSolutionActionLinks.length > 0) {
-      await devDb.execute(sql.raw(`SELECT setval('knowledge_base_solutions_has_knowledge_base_actions_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_solutions_has_knowledge_base_actions), true)`));
+      await devPool.query(`SELECT setval('knowledge_base_solutions_has_knowledge_base_actions_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_solutions_has_knowledge_base_actions), true)`);
     }
 
     onProgress?.({ step: "rootCauses", current: 0, total: 1, details: "Sincronizando causas raiz..." });
@@ -269,7 +269,7 @@ export async function syncFromProd(
       `);
     }
     if (prodRootCauses.length > 0) {
-      await devDb.execute(sql.raw(`SELECT setval('knowledge_base_root_causes_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_root_causes), true)`));
+      await devPool.query(`SELECT setval('knowledge_base_root_causes_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_root_causes), true)`);
     }
 
     onProgress?.({ step: "rootCauseProblemLinks", current: 0, total: 1, details: "Sincronizando links causa-problema..." });
@@ -286,7 +286,7 @@ export async function syncFromProd(
       `);
     }
     if (prodRootCauseProblemLinks.length > 0) {
-      await devDb.execute(sql.raw(`SELECT setval('knowledge_base_root_cause_has_knowledge_base_objective_problems_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_root_cause_has_knowledge_base_objective_problems), true)`));
+      await devPool.query(`SELECT setval('knowledge_base_root_cause_has_knowledge_base_objective_problems_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_root_cause_has_knowledge_base_objective_problems), true)`);
     }
 
     onProgress?.({ step: "rootCauseSolutionLinks", current: 0, total: 1, details: "Sincronizando links causa-solução..." });
@@ -303,7 +303,7 @@ export async function syncFromProd(
       `);
     }
     if (prodRootCauseSolutionLinks.length > 0) {
-      await devDb.execute(sql.raw(`SELECT setval('knowledge_base_root_cause_has_knowledge_base_solutions_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_root_cause_has_knowledge_base_solutions), true)`));
+      await devPool.query(`SELECT setval('knowledge_base_root_cause_has_knowledge_base_solutions_id_seq', (SELECT COALESCE(MAX(id), 1) FROM knowledge_base_root_cause_has_knowledge_base_solutions), true)`);
     }
 
     onProgress?.({ step: "done", current: 1, total: 1, details: "Sincronização concluída!" });
