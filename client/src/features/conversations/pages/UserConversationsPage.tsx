@@ -1,16 +1,15 @@
 import { useState, useEffect, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { XCircle, MessageCircle, ChevronLeft, FileText, Eye, EyeOff, ArrowRightLeft, Zap, ZapOff, XSquare, Loader2, ArrowLeft } from "lucide-react";
-import type { UserConversationsMessagesResponse, ImagePayload } from "../../../types";
+import { XCircle, MessageCircle, FileText, Eye, EyeOff, ArrowRightLeft, Zap, ZapOff, XSquare, Loader2, ArrowLeft } from "lucide-react";
+import type { ImagePayload } from "../../../types";
 import { ImageLightbox, LoadingState, SegmentedTabs, ConfirmModal } from "../../../shared/components/ui";
 import { HandlerBadge } from "../../../shared/components/badges/HandlerBadge";
 import { ConversationSelector, ConversationSummary, ConversationChat, TransferConversationModal } from "../components";
 import { useResizablePanel, useDateFormatters, useConfirmation } from "../../../shared/hooks";
-import { fetchApi, apiRequest } from "../../../lib/queryClient";
 import { getUserDisplayNameFromProfile } from "../../../lib/userUtils";
 import { FavoriteButton } from "../../favorites/components/FavoriteButton";
 import { useFavorites } from "../../favorites/hooks/useFavorites";
+import { useUserConversations } from "../hooks";
 
 interface UserConversationsPageProps {
   params: { userId: string; conversationId?: string };
@@ -25,12 +24,10 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
   const { formatDateTimeShort } = useDateFormatters();
   const confirmation = useConfirmation();
   const [expandedImage, setExpandedImage] = useState<ImagePayload | null>(null);
-  const [selectedConversationIndex, setSelectedConversationIndex] = useState(0);
   const [contentTab, setContentTab] = useState<ContentTab>("resumo");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const hasInitializedSelection = useRef(false);
   
   const { containerRef, leftPanelWidth, isResizing, handleMouseDown } = useResizablePanel({
     initialWidth: 35,
@@ -38,73 +35,30 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
     maxWidth: 50,
   });
 
-  const queryClient = useQueryClient();
   const { isFavorite, toggleFavorite, isToggling } = useFavorites();
 
-  const { data, isLoading, error } = useQuery<UserConversationsMessagesResponse>({
-    queryKey: ["user-conversations-messages", userId],
-    queryFn: () => fetchApi<UserConversationsMessagesResponse>(
-      `/api/conversations/user/${encodeURIComponent(userId)}/messages`
-    ),
-    refetchInterval: 10000,
-  });
-
-  const toggleAutopilotMutation = useMutation({
-    mutationFn: async ({ conversationId, enabled }: { conversationId: number; enabled: boolean }) => {
-      return apiRequest("PATCH", `/api/conversations/${conversationId}/autopilot`, { enabled });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-conversations-messages", userId] });
-    },
-  });
-
-  const closeConversationMutation = useMutation({
-    mutationFn: async (conversationId: number) => {
-      return apiRequest("POST", `/api/conversations/${conversationId}/close`, { reason: "manual" });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-conversations-messages", userId] });
-    },
-    onError: (error: Error) => {
-      alert(`Erro ao encerrar conversa: ${error.message}`);
-    },
-  });
-
-  const sortedConversations = data?.conversations
-    ? [...data.conversations].sort((a, b) => 
-        new Date(b.conversation.created_at).getTime() - new Date(a.conversation.created_at).getTime()
-      )
-    : [];
+  const {
+    data,
+    isLoading,
+    error,
+    sortedConversations,
+    selectedConversation,
+    selectedConversationIndex,
+    totalMessages,
+    userProfile,
+    goToPreviousConversation,
+    goToNextConversation,
+    toggleAutopilot,
+    isTogglingAutopilot,
+    closeConversation,
+    isClosingConversation,
+  } = useUserConversations({ userId, conversationIdFromUrl });
 
   useEffect(() => {
-    hasInitializedSelection.current = false;
-    setSelectedConversationIndex(0);
     setContentTab("resumo");
   }, [userId]);
 
-  useEffect(() => {
-    if (sortedConversations.length > 0) {
-      if (conversationIdFromUrl) {
-        const targetIndex = sortedConversations.findIndex(
-          (item) => item.conversation.id === conversationIdFromUrl
-        );
-        const newIndex = targetIndex >= 0 ? targetIndex : 0;
-        if (newIndex !== selectedConversationIndex || !hasInitializedSelection.current) {
-          setSelectedConversationIndex(newIndex);
-        }
-      } else if (!hasInitializedSelection.current) {
-        setSelectedConversationIndex(0);
-      }
-      hasInitializedSelection.current = true;
-    }
-    if (sortedConversations.length > 0 && selectedConversationIndex >= sortedConversations.length) {
-      setSelectedConversationIndex(sortedConversations.length - 1);
-    }
-  }, [sortedConversations.length, selectedConversationIndex, conversationIdFromUrl]);
-
-  const totalMessages = data?.conversations.reduce((acc, conv) => acc + conv.messages.length, 0) || 0;
-  const selectedConversation = sortedConversations[selectedConversationIndex];
-  const customerName = getUserDisplayNameFromProfile(data?.user_profile, userId);
+  const customerName = getUserDisplayNameFromProfile(userProfile, userId);
 
   const contentTabs = [
     { id: "resumo", label: "Resumo", icon: <FileText className="w-4 h-4" /> },
@@ -128,11 +82,11 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
         />
         {selectedConversation.conversation.current_handler_name?.startsWith("n1ago") && (
           <button
-            onClick={() => toggleAutopilotMutation.mutate({
-              conversationId: selectedConversation.conversation.id,
-              enabled: !selectedConversation.conversation.autopilot_enabled,
-            })}
-            disabled={toggleAutopilotMutation.isPending}
+            onClick={() => toggleAutopilot(
+              selectedConversation.conversation.id,
+              !selectedConversation.conversation.autopilot_enabled
+            )}
+            disabled={isTogglingAutopilot}
             className={`inline-flex items-center justify-center w-8 h-8 text-sm border rounded-lg transition-colors ${
               selectedConversation.conversation.autopilot_enabled
                 ? "text-amber-600 hover:text-amber-700 border-amber-200 hover:border-amber-300 hover:bg-amber-50"
@@ -163,14 +117,14 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                 message: "Tem certeza que deseja encerrar esta conversa?",
                 confirmLabel: "Encerrar",
                 variant: "warning",
-                onConfirm: () => closeConversationMutation.mutate(selectedConversation.conversation.id),
+                onConfirm: () => closeConversation(selectedConversation.conversation.id),
               });
             }}
-            disabled={closeConversationMutation.isPending}
+            disabled={isClosingConversation}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 hover:text-red-700 border border-red-200 hover:border-red-300 rounded-lg hover:bg-red-50 transition-colors"
             title="Encerrar conversa"
           >
-            {closeConversationMutation.isPending ? (
+            {isClosingConversation ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <XSquare className="w-4 h-4" />
@@ -180,18 +134,6 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
         )}
       </>
     );
-  };
-
-  const goToPreviousConversation = () => {
-    if (selectedConversationIndex > 0) {
-      setSelectedConversationIndex(selectedConversationIndex - 1);
-    }
-  };
-
-  const goToNextConversation = () => {
-    if (selectedConversationIndex < sortedConversations.length - 1) {
-      setSelectedConversationIndex(selectedConversationIndex + 1);
-    }
   };
 
   return (

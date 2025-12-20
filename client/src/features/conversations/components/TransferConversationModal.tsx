@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { X, ArrowRight, Bot, Brain, UserCircle, Loader2 } from "lucide-react";
+import { ArrowRight, Bot, Brain, UserCircle, Loader2 } from "lucide-react";
+import { BaseModal } from "../../../shared/components/ui/BaseModal";
+import { Button } from "../../../shared/components/ui/Button";
 
 interface TransferConversationModalProps {
   isOpen: boolean;
@@ -46,90 +48,79 @@ export function TransferConversationModal({ isOpen, onClose, conversationId, cur
     }
   };
 
-  if (!isOpen) return null;
-
   const currentHandlerNormalized = currentHandler?.toLowerCase() || "";
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Transferir conversa para...
-        </h2>
-
-        <div className="space-y-2 mb-6">
-          {TRANSFER_TARGETS.map((target) => {
-            const Icon = target.icon;
-            const isCurrent = currentHandlerNormalized.includes(target.handlerName.toLowerCase());
-            const isSelected = selectedTarget === target.id;
-
-            return (
-              <button
-                key={target.id}
-                onClick={() => !isCurrent && setSelectedTarget(target.id)}
-                disabled={isCurrent}
-                className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                  isCurrent
-                    ? "bg-gray-50 border-gray-200 opacity-50 cursor-not-allowed"
-                    : isSelected
-                    ? "border-purple-500 bg-purple-50"
-                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                }`}
-              >
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${target.bgClass}`}>
-                  <Icon className={`w-5 h-5 ${target.iconClass}`} />
-                </div>
-                <div className="flex-1 text-left">
-                  <span className="font-medium text-gray-900">{target.label}</span>
-                  {isCurrent && (
-                    <span className="ml-2 text-xs text-gray-500">(atual)</span>
-                  )}
-                </div>
-                {isSelected && (
-                  <ArrowRight className="w-5 h-5 text-purple-600" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {transferMutation.error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-            {transferMutation.error.message}
-          </div>
+  const footer = (
+    <>
+      <Button onClick={onClose} variant="secondary">
+        Cancelar
+      </Button>
+      <Button
+        onClick={handleTransfer}
+        disabled={!selectedTarget || transferMutation.isPending}
+        className="flex items-center justify-center gap-2"
+      >
+        {transferMutation.isPending ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Transferindo...
+          </>
+        ) : (
+          "Transferir"
         )}
+      </Button>
+    </>
+  );
 
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 text-gray-600 hover:text-gray-900 border rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleTransfer}
-            disabled={!selectedTarget || transferMutation.isPending}
-            className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-          >
-            {transferMutation.isPending ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Transferindo...
-              </>
-            ) : (
-              "Transferir"
-            )}
-          </button>
-        </div>
+  return (
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Transferir conversa para..."
+      maxWidth="md"
+      footer={footer}
+    >
+      <div className="space-y-2 mb-4">
+        {TRANSFER_TARGETS.map((target) => {
+          const Icon = target.icon;
+          const isCurrent = currentHandlerNormalized.includes(target.handlerName.toLowerCase());
+          const isSelected = selectedTarget === target.id;
+
+          return (
+            <button
+              key={target.id}
+              onClick={() => !isCurrent && setSelectedTarget(target.id)}
+              disabled={isCurrent}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                isCurrent
+                  ? "bg-gray-50 border-gray-200 opacity-50 cursor-not-allowed"
+                  : isSelected
+                  ? "border-purple-500 bg-purple-50"
+                  : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${target.bgClass}`}>
+                <Icon className={`w-5 h-5 ${target.iconClass}`} />
+              </div>
+              <div className="flex-1 text-left">
+                <span className="font-medium text-gray-900">{target.label}</span>
+                {isCurrent && (
+                  <span className="ml-2 text-xs text-gray-500">(atual)</span>
+                )}
+              </div>
+              {isSelected && (
+                <ArrowRight className="w-5 h-5 text-purple-600" />
+              )}
+            </button>
+          );
+        })}
       </div>
-    </div>
+
+      {transferMutation.error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+          {transferMutation.error.message}
+        </div>
+      )}
+    </BaseModal>
   );
 }

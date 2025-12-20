@@ -3,8 +3,8 @@ import { conversations, eventsStandard, conversationsSummary } from "../../../..
 import { eq, desc, sql, and, lt, ne } from "drizzle-orm";
 import type { ExtractedConversation } from "../../events/adapters/types.js";
 import { CONVERSATION_RULES, type ClosedReason } from "../../../config/conversationRules.js";
-import { saveAndDispatchEvent } from "../../events/services/eventDispatcher.js";
 import { ZendeskApiService } from "../../external-sources/zendesk/services/zendeskApiService.js";
+import { createConversationClosedEvent } from "./conversationEvents.js";
 
 interface ConversationData {
   externalConversationId: string;
@@ -12,36 +12,6 @@ interface ConversationData {
   externalUserId?: string;
   userExternalId?: string;
   metadata?: any;
-}
-
-async function createConversationClosedEvent(
-  conversation: { id: number; externalConversationId: string; userExternalId?: string | null; closedAt?: Date | null },
-  reason: ClosedReason
-) {
-  try {
-    const closedAt = conversation.closedAt || new Date();
-    const sourceEventId = `close:${conversation.id}:${reason}:${closedAt.toISOString()}`;
-    
-    await saveAndDispatchEvent({
-      eventType: "conversation_closed",
-      eventSubtype: reason,
-      source: "n1ago",
-      sourceEventId,
-      externalConversationId: conversation.externalConversationId,
-      externalUserId: conversation.userExternalId || undefined,
-      authorType: "system",
-      authorId: "n1ago",
-      authorName: "N1ago System",
-      contentText: `Conversa encerrada: ${reason}`,
-      occurredAt: closedAt,
-      metadata: { reason, closedAt: closedAt.toISOString() },
-      conversationId: conversation.id,
-    });
-    
-    console.log(`Created conversation_closed event for conversation ${conversation.id} (${reason})`);
-  } catch (error) {
-    console.error(`Failed to create conversation_closed event for conversation ${conversation.id}:`, error);
-  }
 }
 
 async function upsertConversation(data: ConversationData): Promise<{ conversation: typeof conversations.$inferSelect; isNew: boolean }> {
