@@ -265,7 +265,7 @@ export function KnowledgeBaseForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="space-y-4">
         <div>
           <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
             <MessageSquare className="w-3.5 h-3.5" />
@@ -276,7 +276,7 @@ export function KnowledgeBaseForm({
             name="question"
             value={formData.question}
             onChange={handleChange}
-            rows={4}
+            rows={3}
             className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors bg-white"
             placeholder="Qual é a pergunta ou dúvida do cliente?"
             required
