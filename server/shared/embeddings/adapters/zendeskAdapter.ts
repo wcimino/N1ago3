@@ -1,6 +1,6 @@
 import type { ZendeskArticle } from "../../../../shared/schema.js";
 import type { EmbeddableArticle } from "../types.js";
-import { generateContentHashFromParts, stripHtmlTags } from "../types.js";
+import { generateContentHashFromParts } from "../types.js";
 
 export class ZendeskEmbeddableArticle implements EmbeddableArticle {
   id: number;
@@ -21,11 +21,6 @@ export class ZendeskEmbeddableArticle implements EmbeddableArticle {
       parts.push(`Seção: ${this.article.sectionName}`);
     }
     parts.push(`Título: ${this.article.title}`);
-    
-    const bodyText = stripHtmlTags(this.article.body);
-    if (bodyText) {
-      parts.push(`Conteúdo: ${bodyText}`);
-    }
 
     return parts.join("\n\n");
   }
@@ -77,11 +72,6 @@ export function generateZendeskContentForEmbedding(article: {
     parts.push(`Seção: ${article.sectionName}`);
   }
   parts.push(`Título: ${article.title}`);
-  
-  const bodyText = stripHtmlTags(article.body);
-  if (bodyText) {
-    parts.push(`Conteúdo: ${bodyText}`);
-  }
 
   return parts.join("\n\n");
 }
