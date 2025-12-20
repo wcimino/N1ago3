@@ -1,4 +1,5 @@
 import path from "path";
+import fs from "fs";
 import type { Express } from "express";
 import express from "express";
 import { startPollingWorker, stopPollingWorker, isPollingWorkerRunning } from "../features/sync/services/pollingWorker.js";
@@ -58,9 +59,7 @@ export function getBootstrapHealth(): {
 
 export function configureStaticFiles(app: Express): void {
   const publicPath = path.join(process.cwd(), "dist", "public");
-  
   const indexPath = path.join(publicPath, "index.html");
-  const fs = require("fs");
   
   if (!fs.existsSync(indexPath)) {
     console.warn("[Bootstrap] WARNING: dist/public/index.html not found - frontend build may be missing");
