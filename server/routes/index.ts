@@ -41,6 +41,7 @@ import favoritesRoutes from "../features/favorites/routes/favorites.js";
 import reportsRoutes from "../features/reports/routes/reports.js";
 import dashboardRoutes from "../features/dashboard/routes/dashboardRoutes.js";
 import queryMonitoringRoutes from "../features/monitoring/routes/queryMonitoringRoutes.js";
+import { adminSyncRoutes } from "../features/sync/index.js";
 
 export function registerRoutes(app: Express) {
   app.use(webhooksRoutes);
@@ -80,4 +81,5 @@ export function registerRoutes(app: Express) {
   app.use(reportsRoutes);
   app.use("/api/dashboard", dashboardRoutes);
   app.use("/api/monitoring/queries", queryMonitoringRoutes);
+  app.use(adminSyncRoutes);
 }
