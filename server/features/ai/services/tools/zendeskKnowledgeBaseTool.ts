@@ -66,7 +66,7 @@ export interface ZendeskSearchContext {
   intencao?: string;
   situacao?: string;
   question?: string;
-  questionVariation?: string[];
+  articleKeywords?: string;
 }
 
 export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchContext): ToolDefinition {
@@ -122,10 +122,10 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
         intencao: args.intencao || searchContext?.intencao,
         situacao: searchContext?.situacao,
         question: searchContext?.question,
-        questionVariation: searchContext?.questionVariation,
+        articleKeywords: searchContext?.articleKeywords,
       };
       
-      const hasContext = mergedContext.produto || mergedContext.subproduto || mergedContext.assunto || mergedContext.intencao || mergedContext.situacao || mergedContext.question || mergedContext.questionVariation;
+      const hasContext = mergedContext.produto || mergedContext.subproduto || mergedContext.assunto || mergedContext.intencao || mergedContext.situacao || mergedContext.question || mergedContext.articleKeywords;
       
       if (args.keywords && args.keywords.trim().length > 0) {
         const stats = await ZendeskArticlesStorage.getEmbeddingStats();

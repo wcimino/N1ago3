@@ -148,7 +148,7 @@ export class ArticleEnrichmentAgent {
           assunto: context.subjectName || undefined,
           intencao: context.intentName,
           question: context.article?.question || undefined,
-          questionVariation: context.article?.questionVariation || undefined,
+          articleKeywords: context.article?.keywords || undefined,
         });
         const originalHandler = zendeskTool.handler;
         zendeskTool.handler = async (args) => {

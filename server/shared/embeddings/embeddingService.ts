@@ -53,7 +53,7 @@ export interface EnrichedQueryParams {
   subject?: string;
   intent?: string;
   question?: string;
-  questionVariation?: string[];
+  articleKeywords?: string;
 }
 
 export function buildEnrichedQueryText(params: EnrichedQueryParams): string {
@@ -72,8 +72,8 @@ export function buildEnrichedQueryText(params: EnrichedQueryParams): string {
   if (intencao) contentParts.push(intencao);
   if (params.situacao) contentParts.push(params.situacao);
   if (params.question) contentParts.push(params.question);
-  if (params.questionVariation && params.questionVariation.length > 0) {
-    contentParts.push(params.questionVariation.join(", "));
+  if (params.articleKeywords) {
+    contentParts.push(params.articleKeywords);
   }
   contentParts.push(params.keywords);
   
