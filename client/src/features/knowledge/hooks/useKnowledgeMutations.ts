@@ -66,6 +66,21 @@ export function useKnowledgeMutations(options: UseKnowledgeMutationsOptions = {}
     },
   });
 
+  const patchMutation = useMutation({
+    mutationFn: async ({ id, ...data }: Partial<KnowledgeBaseFormData> & { id: number }) => {
+      const res = await fetch(`/api/knowledge/articles/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update article");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/articles"] });
+    },
+  });
+
   const generateEmbeddingsMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/knowledge/embeddings/generate", {
@@ -101,6 +116,7 @@ export function useKnowledgeMutations(options: UseKnowledgeMutationsOptions = {}
     createMutation,
     updateMutation,
     deleteMutation,
+    patchMutation,
     generateEmbeddingsMutation,
     handleSubmit,
     handleDelete,

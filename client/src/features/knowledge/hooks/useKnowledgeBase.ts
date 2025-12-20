@@ -52,6 +52,7 @@ export function useKnowledgeBase(activeTab: string) {
   const {
     createMutation,
     updateMutation,
+    patchMutation,
     generateEmbeddingsMutation,
     handleSubmit: baseHandleSubmit,
     handleDelete,
@@ -125,6 +126,7 @@ export function useKnowledgeBase(activeTab: string) {
     expandedPaths,
     createMutation,
     updateMutation,
+    patchMutation,
     handleSubmit,
     handleEdit,
     handleDelete,

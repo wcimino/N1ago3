@@ -69,6 +69,7 @@ export function KnowledgeBasePage() {
     expandedPaths,
     createMutation,
     updateMutation,
+    patchMutation,
     handleSubmit,
     handleEdit,
     handleDelete,
@@ -169,6 +170,10 @@ export function KnowledgeBasePage() {
     setConfirmModal({ isOpen: false, type: null, id: null, name: "", hasArticles: false });
   };
 
+  const handleToggleVisibility = (articleId: number, currentValue: boolean) => {
+    patchMutation.mutate({ id: articleId, visibleInSearch: !currentValue });
+  };
+
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <PageHeader
@@ -253,6 +258,7 @@ export function KnowledgeBasePage() {
               onEditSubject={handleEditSubject}
               onDeleteSubject={handleDeleteSubject}
               onDeleteIntent={handleDeleteIntent}
+              onToggleVisibility={handleToggleVisibility}
             />
           )}
         </>
