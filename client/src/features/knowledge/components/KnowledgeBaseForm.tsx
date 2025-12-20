@@ -121,6 +121,17 @@ export function KnowledgeBaseForm({
 
   const isValid = (formData.question || "").trim() && (formData.answer || "").trim();
 
+  const enrichment = useInlineEnrichment({
+    intentId: hierarchy.selection.intentId,
+    articleId: initialData?.id || null,
+    currentData: {
+      question: formData.question,
+      answer: formData.answer,
+      keywords: formData.keywords.join(", "),
+      questionVariation: formData.questionVariation,
+    },
+  });
+
   const getProductName = () => {
     if (prefilledData) return prefilledData.productName;
     if (initialData?.productId) return hierarchy.getProductName(initialData.productId);
@@ -174,6 +185,9 @@ export function KnowledgeBaseForm({
     });
   };
 
+  const semanticTagsCount = formData.questionNormalized.length + formData.keywords.length;
+  const variationsCount = formData.questionVariation.length;
+
   if (initialData && !isInitialized) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -181,20 +195,6 @@ export function KnowledgeBaseForm({
       </div>
     );
   }
-
-  const semanticTagsCount = formData.questionNormalized.length + formData.keywords.length;
-  const variationsCount = formData.questionVariation.length;
-
-  const enrichment = useInlineEnrichment({
-    intentId: hierarchy.selection.intentId,
-    articleId: initialData?.id || null,
-    currentData: {
-      question: formData.question,
-      answer: formData.answer,
-      keywords: formData.keywords.join(", "),
-      questionVariation: formData.questionVariation,
-    },
-  });
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
