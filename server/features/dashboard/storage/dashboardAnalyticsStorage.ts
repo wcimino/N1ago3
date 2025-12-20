@@ -6,10 +6,16 @@ export interface DashboardAnalyticsParams {
   timezone?: string;
 }
 
+export interface SubproductItem {
+  subproduct: string;
+  count: number;
+}
+
 export interface ProductItem {
   product: string;
   productId: number | null;
   count: number;
+  subproducts?: SubproductItem[];
 }
 
 export interface EmotionItem {
@@ -84,14 +90,26 @@ export const dashboardAnalyticsStorage = {
           FROM conversations c
           INNER JOIN conversation_message_counts cmc ON c.id = cmc.conversation_id
         ),
-        products_agg AS (
+        products_subproducts_agg AS (
           SELECT 
             COALESCE(pc.produto, 'Sem classificação') as product,
+            pc.subproduto as subproduct,
             COUNT(DISTINCT ac.conversation_id)::int as count
           FROM active_conversations ac
           LEFT JOIN conversations_summary cs ON ac.conversation_id = cs.conversation_id
           LEFT JOIN products_catalog pc ON cs.product_id = pc.id
-          GROUP BY COALESCE(pc.produto, 'Sem classificação')
+          GROUP BY COALESCE(pc.produto, 'Sem classificação'), pc.subproduto
+        ),
+        products_agg AS (
+          SELECT 
+            product,
+            SUM(count)::int as count,
+            json_agg(
+              json_build_object('subproduct', subproduct, 'count', count)
+              ORDER BY count DESC
+            ) FILTER (WHERE subproduct IS NOT NULL) as subproducts
+          FROM products_subproducts_agg
+          GROUP BY product
           ORDER BY count DESC
         ),
         emotions_agg AS (
@@ -133,7 +151,7 @@ export const dashboardAnalyticsStorage = {
           LEFT JOIN users u ON ac.conv_user_id = u.sunshine_id
         )
         SELECT 
-          (SELECT json_agg(json_build_object('product', product, 'count', count)) FROM products_agg) as products_json,
+          (SELECT json_agg(json_build_object('product', product, 'count', count, 'subproducts', subproducts)) FROM products_agg) as products_json,
           (SELECT json_agg(json_build_object('emotionLevel', emotion_level, 'count', count)) FROM emotions_agg) as emotions_json,
           (SELECT json_agg(json_build_object('problemName', problem_name, 'count', count)) FROM problems_agg) as problems_json,
           (SELECT total FROM problems_total) as problems_total,

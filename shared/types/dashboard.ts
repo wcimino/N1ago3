@@ -1,7 +1,13 @@
+export interface DashboardSubproductItem {
+  subproduct: string;
+  count: number;
+}
+
 export interface DashboardProductItem {
   product: string;
   productId: number | null;
   count: number;
+  subproducts?: DashboardSubproductItem[];
 }
 
 export interface DashboardEmotionItem {

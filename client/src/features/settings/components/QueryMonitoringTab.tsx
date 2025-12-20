@@ -46,13 +46,13 @@ interface Config {
 }
 
 type OrderBy = "callCount" | "avgDuration" | "totalDuration" | "maxDuration";
-type Period = "1h" | "24h" | "all";
+type Period = "1h" | "24h";
 
 export function QueryMonitoringTab() {
   const queryClient = useQueryClient();
   const confirmation = useConfirmation();
   const [orderBy, setOrderBy] = useState<OrderBy>("callCount");
-  const [period, setPeriod] = useState<Period>("all");
+  const [period, setPeriod] = useState<Period>("24h");
   const [showSlowQueries, setShowSlowQueries] = useState(false);
 
   const { data: summary, isLoading: summaryLoading } = useQuery<Summary>({
@@ -123,7 +123,6 @@ export function QueryMonitoringTab() {
           >
             <option value="1h">Ultima hora</option>
             <option value="24h">Ultimas 24h</option>
-            <option value="all">Todo o periodo</option>
           </select>
           <button
             onClick={() => flushMutation.mutate()}
