@@ -101,6 +101,12 @@ export function replacePromptVariables(
     result = result.replace(/\{\{#if_assunto_sinonimos\}\}[\s\S]*?\{\{\/if_assunto_sinonimos\}\}/gi, '');
   }
 
+  if (variables.subprodutoNome) {
+    result = result.replace(/\{\{#if_subproduto_nome\}\}([\s\S]*?)\{\{\/if_subproduto_nome\}\}/gi, '$1');
+  } else {
+    result = result.replace(/\{\{#if_subproduto_nome\}\}[\s\S]*?\{\{\/if_subproduto_nome\}\}/gi, '');
+  }
+
   if (variables.customVariables) {
     for (const [key, value] of Object.entries(variables.customVariables)) {
       const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');

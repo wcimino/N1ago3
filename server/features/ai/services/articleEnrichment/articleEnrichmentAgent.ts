@@ -1,11 +1,11 @@
 import { storage } from "../../../../storage/index.js";
 import { callOpenAI, type ToolDefinition } from "../openaiApiService.js";
-import { createZendeskKnowledgeBaseTool } from "../aiTools.js";
 import { replacePromptVariables, type PromptVariables } from "../promptUtils.js";
 import { generalSettingsStorage } from "../../storage/generalSettingsStorage.js";
 import type { IntentWithArticle } from "../../storage/knowledgeBaseTypes.js";
 import type { ArticleEnrichmentContext, ArticleEnrichmentResult } from "./types.js";
 import { buildArticleEnrichmentContext } from "./types.js";
+import { retrieveZendeskArticles, formatRetrievedArticlesForPrompt } from "./articleRetrieval.js";
 
 const CONFIG_KEY = "article_enrichment";
 
@@ -116,24 +116,45 @@ export class ArticleEnrichmentAgent {
         };
       }
 
-      if (!config.promptSystem || !config.promptSystem.trim()) {
-        return {
-          success: false,
-          error: "System prompt is required. Please configure it in the database.",
-        };
-      }
-
-      let effectivePromptSystem = config.promptSystem;
+      let effectivePromptSystem = config.promptSystem || "";
       if (config.useGeneralSettings) {
         const generalSettings = await generalSettingsStorage.getConcatenatedContent();
         if (generalSettings) {
-          effectivePromptSystem = generalSettings + "\n\n" + effectivePromptSystem;
+          effectivePromptSystem = generalSettings + (effectivePromptSystem ? "\n\n" + effectivePromptSystem : "");
+        }
+      }
+
+      console.log(`[ArticleEnrichmentAgent] Processing intent #${context.intentId} (${context.intentName})`);
+
+      let retrievedArticlesText = "";
+      let retrievalLogId: number | null = null;
+      let retrievedSourceArticles: Array<{ id: string; title: string; similarityScore: number }> = [];
+      
+      if (config.useZendeskKnowledgeBaseTool) {
+        console.log(`[ArticleEnrichmentAgent] Running RAG retrieval for intent #${context.intentId}...`);
+        const retrievalResult = await retrieveZendeskArticles(context, { limit: 5, minSimilarity: 50 });
+        retrievedArticlesText = formatRetrievedArticlesForPrompt(retrievalResult.articles);
+        retrievalLogId = retrievalResult.embeddingLogId;
+        
+        retrievedSourceArticles = retrievalResult.articles.map(a => ({
+          id: a.zendeskId,
+          title: a.title,
+          similarityScore: a.similarity,
+        }));
+        
+        console.log(`[ArticleEnrichmentAgent] Retrieved ${retrievalResult.articles.length} articles for context (embeddingLogId=${retrievalLogId})`);
+        if (retrievalResult.articles.length > 0) {
+          console.log(`[ArticleEnrichmentAgent] Top articles: ${retrievalResult.articles.slice(0, 3).map(a => `"${a.title}" (${a.similarity}%)`).join(", ")}`);
         }
       }
 
       const variables = buildPromptVariablesFromContext(context);
-      const systemPrompt = replacePromptVariables(effectivePromptSystem, variables);
+      const systemPrompt = effectivePromptSystem ? replacePromptVariables(effectivePromptSystem, variables) : undefined;
       let userPrompt = replacePromptVariables(config.promptTemplate, variables);
+
+      if (retrievedArticlesText) {
+        userPrompt += `\n\n## Artigos Relevantes do Zendesk (para referência)\n${retrievedArticlesText}`;
+      }
 
       if (config.responseFormat) {
         userPrompt += `\n\n## Formato da Resposta\n${config.responseFormat}`;
@@ -141,32 +162,14 @@ export class ArticleEnrichmentAgent {
 
       const tools: ToolDefinition[] = [buildCreateSuggestionTool(context)];
 
-      if (config.useZendeskKnowledgeBaseTool) {
-        const zendeskTool = createZendeskKnowledgeBaseTool({
-          // Usado apenas para penalidades de ranking
-          produto: context.productName,
-          // Usado para gerar o embedding de busca
-          question: context.article?.question || undefined,
-          keywords: context.article?.keywords || undefined,
-        });
-        const originalHandler = zendeskTool.handler;
-        zendeskTool.handler = async (args) => {
-          console.log(`[ArticleEnrichmentAgent] Zendesk KB search for intent #${context.intentId}: keywords=${args.keywords}`);
-          return originalHandler(args);
-        };
-        tools.unshift(zendeskTool);
-      }
-
-      console.log(`[ArticleEnrichmentAgent] Processing intent #${context.intentId} (${context.intentName})`);
-
       const result = await callOpenAI({
         requestType: CONFIG_KEY,
         modelName: config.modelName || "gpt-4o-mini",
-        promptSystem: systemPrompt,
+        promptSystem: systemPrompt || null,
         promptUser: userPrompt,
         tools,
         maxTokens: 4096,
-        maxIterations: 5,
+        maxIterations: 2,
         contextType: "article_enrichment",
         contextId: `intent-${context.intentId}`,
         finalToolName: "create_article_enrichment_suggestion",
@@ -270,6 +273,14 @@ export class ArticleEnrichmentAgent {
         toolResult.questionNormalized = finalQuestionNormalized;
       }
 
+      const sourceArticles = retrievedSourceArticles.length > 0 
+        ? retrievedSourceArticles 
+        : (toolResult.sourceArticles?.map((s: any) => ({
+            id: s.id,
+            title: s.title,
+            similarityScore: s.similarityScore,
+          })) || []);
+
       return {
         success: true,
         action: toolResult.action,
@@ -280,11 +291,7 @@ export class ArticleEnrichmentAgent {
         updateReason: toolResult.updateReason,
         skipReason: toolResult.skipReason,
         confidenceScore: toolResult.confidenceScore,
-        sourceArticles: toolResult.sourceArticles?.map((s: any) => ({
-          id: s.id,
-          title: s.title,
-          similarityScore: s.similarityScore,
-        })) || [],
+        sourceArticles,
         openaiLogId: result.logId,
       };
     } catch (error: any) {
