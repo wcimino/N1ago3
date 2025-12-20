@@ -144,6 +144,54 @@ export async function getQueryStats(options: {
 }) {
   const { orderBy = "callCount", limit = 50, period = "all" } = options;
 
+  if (period === "1h" || period === "24h") {
+    const interval = period === "1h" ? "1 hour" : "24 hours";
+    
+    let orderByColumn;
+    switch (orderBy) {
+      case "avgDuration":
+        orderByColumn = sql`avg_duration_ms DESC`;
+        break;
+      case "totalDuration":
+        orderByColumn = sql`total_duration_ms DESC`;
+        break;
+      case "maxDuration":
+        orderByColumn = sql`max_duration_ms DESC`;
+        break;
+      default:
+        orderByColumn = sql`call_count DESC`;
+    }
+
+    const results = await originalDb.execute(sql`
+      SELECT 
+        query_hash as "queryHash",
+        query_normalized as "queryNormalized",
+        COUNT(*)::int as "callCount",
+        SUM(duration_ms)::float as "totalDurationMs",
+        AVG(duration_ms)::float as "avgDurationMs",
+        MAX(duration_ms)::int as "maxDurationMs",
+        MIN(duration_ms)::int as "minDurationMs",
+        MAX(created_at) as "lastCalledAt"
+      FROM query_logs
+      WHERE created_at >= NOW() - INTERVAL '${sql.raw(interval)}'
+      GROUP BY query_hash, query_normalized
+      ORDER BY ${orderByColumn}
+      LIMIT ${limit}
+    `);
+    
+    return results.rows.map((row: any, idx: number) => ({
+      id: idx + 1,
+      queryHash: row.queryHash,
+      queryNormalized: row.queryNormalized,
+      callCount: Number(row.callCount),
+      totalDurationMs: Number(row.totalDurationMs),
+      avgDurationMs: Number(row.avgDurationMs),
+      maxDurationMs: Number(row.maxDurationMs),
+      minDurationMs: Number(row.minDurationMs),
+      lastCalledAt: row.lastCalledAt,
+    }));
+  }
+
   let orderClause;
   switch (orderBy) {
     case "avgDuration":
@@ -159,21 +207,7 @@ export async function getQueryStats(options: {
       orderClause = sql`${queryStats.callCount} DESC`;
   }
 
-  let whereClause;
-  if (period === "1h") {
-    whereClause = sql`${queryStats.lastCalledAt} >= NOW() - INTERVAL '1 hour'`;
-  } else if (period === "24h") {
-    whereClause = sql`${queryStats.lastCalledAt} >= NOW() - INTERVAL '24 hours'`;
-  }
-
-  const query = originalDb.select().from(queryStats);
-  
-  if (whereClause) {
-    const results = await query.where(whereClause).orderBy(orderClause).limit(limit);
-    return results;
-  }
-
-  const results = await query.orderBy(orderClause).limit(limit);
+  const results = await originalDb.select().from(queryStats).orderBy(orderClause).limit(limit);
   return results;
 }
 
@@ -197,15 +231,38 @@ export async function getRecentSlowQueries(thresholdMs: number = 100, limit: num
 }
 
 export async function getQueryLogsSummary(period?: "1h" | "24h" | "all") {
-  let statsWhereClause;
   let logsWhereClause = sql`${queryLogs.durationMs} >= ${slowQueryThresholdMs}`;
 
-  if (period === "1h") {
-    statsWhereClause = sql`${queryStats.lastCalledAt} >= NOW() - INTERVAL '1 hour'`;
-    logsWhereClause = sql`${queryLogs.durationMs} >= ${slowQueryThresholdMs} AND ${queryLogs.createdAt} >= NOW() - INTERVAL '1 hour'`;
-  } else if (period === "24h") {
-    statsWhereClause = sql`${queryStats.lastCalledAt} >= NOW() - INTERVAL '24 hours'`;
-    logsWhereClause = sql`${queryLogs.durationMs} >= ${slowQueryThresholdMs} AND ${queryLogs.createdAt} >= NOW() - INTERVAL '24 hours'`;
+  if (period === "1h" || period === "24h") {
+    const interval = period === "1h" ? "1 hour" : "24 hours";
+    logsWhereClause = sql`${queryLogs.durationMs} >= ${slowQueryThresholdMs} AND ${queryLogs.createdAt} >= NOW() - INTERVAL '${sql.raw(interval)}'`;
+
+    const statsFromLogs = await originalDb.execute(sql`
+      SELECT 
+        COUNT(*)::int as "totalQueries",
+        COUNT(DISTINCT query_hash)::int as "uniqueQueries",
+        COALESCE(AVG(duration_ms), 0)::float as "avgDuration",
+        COALESCE(MAX(duration_ms), 0)::int as "maxDuration"
+      FROM query_logs
+      WHERE created_at >= NOW() - INTERVAL '${sql.raw(interval)}'
+    `);
+
+    const slowQueriesCount = await originalDb.execute(sql`
+      SELECT COUNT(*)::int as count
+      FROM query_logs
+      WHERE duration_ms >= ${slowQueryThresholdMs} 
+        AND created_at >= NOW() - INTERVAL '${sql.raw(interval)}'
+    `);
+
+    const stats = statsFromLogs.rows[0] as any;
+    return {
+      totalQueries: Number(stats?.totalQueries || 0),
+      uniqueQueries: Number(stats?.uniqueQueries || 0),
+      avgDurationMs: Number(stats?.avgDuration || 0).toFixed(2),
+      maxDurationMs: Number(stats?.maxDuration || 0),
+      slowQueriesCount: Number((slowQueriesCount.rows[0] as any)?.count || 0),
+      slowQueryThresholdMs,
+    };
   }
 
   const statsQuery = originalDb
@@ -217,9 +274,7 @@ export async function getQueryLogsSummary(period?: "1h" | "24h" | "all") {
     })
     .from(queryStats);
 
-  const [totalStats] = statsWhereClause 
-    ? await statsQuery.where(statsWhereClause)
-    : await statsQuery;
+  const [totalStats] = await statsQuery;
 
   const slowQueriesCount = await originalDb
     .select({ count: sql<number>`COUNT(*)` })

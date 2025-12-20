@@ -277,6 +277,24 @@ export function QueryMonitoringTab() {
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ultima</th>
                   </tr>
+                  <tr className="bg-blue-50 border-b-2 border-blue-200">
+                    <td className="px-4 py-2 text-xs font-semibold text-blue-800">
+                      TOTAIS ({stats.length} queries listadas)
+                    </td>
+                    <td className="px-4 py-2 text-right text-sm font-bold text-blue-900">
+                      {stats.reduce((sum, s) => sum + s.callCount, 0).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-2 text-right text-sm font-medium text-blue-800">
+                      {stats.length > 0 ? (stats.reduce((sum, s) => sum + s.avgDurationMs, 0) / stats.length).toFixed(1) : 0}ms
+                    </td>
+                    <td className="px-4 py-2 text-right text-sm font-medium text-blue-800">
+                      {Math.max(...stats.map(s => s.maxDurationMs), 0)}ms
+                    </td>
+                    <td className="px-4 py-2 text-right text-sm font-bold text-blue-900">
+                      {(stats.reduce((sum, s) => sum + s.totalDurationMs, 0) / 1000).toFixed(1)}s
+                    </td>
+                    <td className="px-4 py-2 text-right text-sm text-blue-600">-</td>
+                  </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {stats.map((stat) => (
