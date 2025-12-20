@@ -152,6 +152,55 @@ export function OpenaiConfigForm({
           </CollapsibleSection>
 
           <CollapsibleSection
+            title="Prompt do Usuário (Template)"
+            description="Template da mensagem enviada ao modelo (suporta variáveis). Os artigos do Zendesk são adicionados automaticamente ao final."
+            defaultOpen={false}
+            badge={
+              state.promptTemplate && state.promptTemplate.trim().length > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Configurado
+                </span>
+              )
+            }
+          >
+            <div className="p-4 space-y-3">
+              <div className="flex items-center justify-end">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800"
+                  onClick={() => setShowVariablesModal(true)}
+                >
+                  <Info className="h-3.5 w-3.5" />
+                  Ver variáveis disponíveis
+                </button>
+              </div>
+              <textarea
+                value={state.promptTemplate}
+                onChange={(e) => actions.setPromptTemplate(e.target.value)}
+                rows={promptRows}
+                className="w-full px-3 py-2 border rounded-lg text-sm font-mono"
+                placeholder="Digite o template do prompt do usuário..."
+              />
+              <div className="flex flex-wrap gap-1">
+                {AVAILABLE_VARIABLES.map((v) => (
+                  <button
+                    key={`template-${v.name}`}
+                    type="button"
+                    className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-xs rounded text-gray-600 font-mono"
+                    onClick={() => {
+                      const newText = state.promptTemplate + v.name;
+                      actions.setPromptTemplate(newText);
+                    }}
+                    title={v.description}
+                  >
+                    {v.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          <CollapsibleSection
             title="Formato da Resposta"
             description="Especifique como o agente deve formatar a resposta"
             defaultOpen={false}
