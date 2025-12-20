@@ -16,9 +16,9 @@ import { BarChart3, CheckCircle } from "lucide-react";
 const agentTabs = [
   { id: "summary", label: "Resumo", icon: <FileText className="w-4 h-4" /> },
   { id: "classification", label: "Classificação", icon: <Tags className="w-4 h-4" /> },
-  { id: "response", label: "Resposta", icon: <MessageSquare className="w-4 h-4" /> },
   { id: "demand_finder", label: "Demand Finder", icon: <Search className="w-4 h-4" /> },
   { id: "solution_provider", label: "Solution Provider", icon: <Zap className="w-4 h-4" /> },
+  { id: "response", label: "Resposta", icon: <MessageSquare className="w-4 h-4" /> },
   { id: "closer", label: "Closer", icon: <CheckCircle className="w-4 h-4" /> },
   { id: "enrichment", label: "Enriquecimento", icon: <Lightbulb className="w-4 h-4" /> },
   { id: "topic_classification", label: "Temas", icon: <BarChart3 className="w-4 h-4" /> },
