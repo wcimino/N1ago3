@@ -1,8 +1,11 @@
+export type SolutionCenterDemandType = "information" | "sales" | "support";
+
 export interface SolutionCenterSearchRequest {
   textNormalizedVersions: string[];
   keywords?: string[];
   productName?: string;
   subproductName?: string;
+  demandType?: SolutionCenterDemandType;
 }
 
 export interface SolutionCenterResult {
@@ -21,6 +24,7 @@ export interface SolutionCenterSearchOptions {
   keywords?: string[];
   productName?: string;
   subproductName?: string;
+  demandType?: SolutionCenterDemandType;
 }
 
 function getConfig(): { url: string; token: string } | null {
@@ -44,7 +48,7 @@ export async function searchSolutionCenter(
     return null;
   }
 
-  const { textNormalizedVersions, keywords, productName, subproductName } = options;
+  const { textNormalizedVersions, keywords, productName, subproductName, demandType } = options;
 
   if (!textNormalizedVersions || textNormalizedVersions.length === 0) {
     console.log("[SolutionCenterClient] No text versions provided, skipping search");
@@ -67,6 +71,10 @@ export async function searchSolutionCenter(
 
   if (subproductName) {
     requestBody.subproductName = subproductName;
+  }
+
+  if (demandType) {
+    requestBody.demandType = demandType;
   }
 
   try {

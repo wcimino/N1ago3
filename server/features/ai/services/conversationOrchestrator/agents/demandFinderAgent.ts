@@ -208,7 +208,7 @@ export class DemandFinderAgent {
       limit: 10,
     });
 
-    const externalSearchPromise = this.searchSolutionCenterExternal(context, searchQueries, summaryProductContext);
+    const externalSearchPromise = this.searchSolutionCenterExternal(context, searchQueries, summaryProductContext, customerRequestType || undefined);
 
     const [searchResponse] = await Promise.all([
       internalSearchPromise,
@@ -237,10 +237,29 @@ export class DemandFinderAgent {
     return resultsForStorage;
   }
 
+  private static mapCustomerRequestTypeToDemandType(customerRequestType?: string): "information" | "sales" | "support" | undefined {
+    if (!customerRequestType) return undefined;
+    
+    const normalized = customerRequestType.toLowerCase();
+    
+    if (normalized === "information" || normalized.includes("informaç") || normalized.includes("informac") || normalized.includes("quer informaç")) {
+      return "information";
+    }
+    if (normalized === "sales" || normalized.includes("comprar") || normalized.includes("venda") || normalized.includes("contratar") || normalized.includes("quer contratar")) {
+      return "sales";
+    }
+    if (normalized === "support" || normalized.includes("suporte") || normalized.includes("quer suporte")) {
+      return "support";
+    }
+    
+    return undefined;
+  }
+
   private static async searchSolutionCenterExternal(
     context: OrchestratorContext,
     searchQueries: ReturnType<typeof getSearchQueries>,
-    summaryProductContext?: string
+    summaryProductContext?: string,
+    customerRequestType?: string
   ): Promise<void> {
     const { conversationId } = context;
 
@@ -260,6 +279,7 @@ export class DemandFinderAgent {
       }
 
       const keywords = searchQueries?.keywordQuery?.split(/\s+/).filter(k => k.length > 2) || [];
+      const demandType = this.mapCustomerRequestTypeToDemandType(customerRequestType);
 
       console.log(`[DemandFinderAgent] Searching Solution Center for conversation ${conversationId}`);
 
@@ -267,6 +287,7 @@ export class DemandFinderAgent {
         textNormalizedVersions,
         keywords: keywords.length > 0 ? keywords : undefined,
         productName: summaryProductContext || undefined,
+        demandType,
       });
 
       if (!solutionCenterResponse || !solutionCenterResponse.results || solutionCenterResponse.results.length === 0) {
