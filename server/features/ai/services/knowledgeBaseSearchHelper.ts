@@ -41,7 +41,10 @@ export interface KBSearchResult {
   productId: number | null;
 }
 
-async function applyProductMismatchPenalty(
+const SUBPRODUCT_BOOST = 1.05;
+const PRODUCT_MISMATCH_PENALTY = 0.90;
+
+async function applyProductMatchBoost(
   articles: KBArticleResult[],
   productContext?: string
 ): Promise<KBArticleResult[]> {
@@ -63,6 +66,7 @@ async function applyProductMismatchPenalty(
   }
 
   const normalizedProductContext = productContext.toLowerCase();
+  const contextHasSubproduct = normalizedProductContext.includes(" > ");
 
   return articles.map(article => {
     if (!article.productId) {
@@ -74,20 +78,31 @@ async function applyProductMismatchPenalty(
       return article;
     }
 
-    const isMatch = articleProductName.includes(normalizedProductContext) || 
-                    normalizedProductContext.includes(articleProductName);
+    const isExactMatch = articleProductName === normalizedProductContext;
+    const isPartialMatch = articleProductName.includes(normalizedProductContext) || 
+                           normalizedProductContext.includes(articleProductName);
 
-    if (isMatch) {
+    if (isExactMatch && contextHasSubproduct) {
+      const boostedScore = article.relevanceScore * SUBPRODUCT_BOOST;
+      console.log(`[KB Search] Subproduct match boost: "${articleProductName}" - score ${article.relevanceScore.toFixed(1)} -> ${boostedScore.toFixed(1)} (+5%)`);
+      return {
+        ...article,
+        relevanceScore: boostedScore,
+        matchReason: `${article.matchReason || ''} [subproduto exato: +5%]`.trim()
+      };
+    }
+
+    if (isPartialMatch) {
       return article;
     }
 
-    const penalizedScore = article.relevanceScore * 0.90;
-    console.log(`[KB Search] Product mismatch penalty: "${articleProductName}" vs "${productContext}" - score ${article.relevanceScore.toFixed(1)} -> ${penalizedScore.toFixed(1)}`);
+    const penalizedScore = article.relevanceScore * PRODUCT_MISMATCH_PENALTY;
+    console.log(`[KB Search] Product mismatch penalty: "${articleProductName}" vs "${productContext}" - score ${article.relevanceScore.toFixed(1)} -> ${penalizedScore.toFixed(1)} (-10%)`);
     
     return {
       ...article,
       relevanceScore: penalizedScore,
-      matchReason: `${article.matchReason} [produto diferente: -10%]`
+      matchReason: `${article.matchReason || ''} [produto diferente: -10%]`.trim()
     };
   });
 }
@@ -206,7 +221,7 @@ export async function runKnowledgeBaseSearch(
   }
 
   if (articles.length > 0) {
-    articles = await applyProductMismatchPenalty(articles, productContext);
+    articles = await applyProductMatchBoost(articles, productContext);
     articles = articles
       .sort((a, b) => b.relevanceScore - a.relevanceScore)
       .slice(0, limit);
