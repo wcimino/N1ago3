@@ -28,6 +28,9 @@ export interface PromptVariables {
   artigoKeywords?: string | null;
   artigoVariacoes?: string | null;
   artigoExiste?: boolean;
+  sugestaoResposta?: string | null;
+  produtoSubprodutoAssunto?: string | null;
+  perguntas?: string | null;
   customVariables?: Record<string, string>;
 }
 
@@ -65,6 +68,9 @@ export function replacePromptVariables(
   result = result.replace(/\{\{PRODUTO_E_SUBPRODUTO_MATCH\}\}/g, variables.produtoESubprodutoMatch || 'Nenhum produto/subproduto identificado.');
   result = result.replace(/\{\{TIPO_DE_DEMANDA_MATCH\}\}/g, variables.tipoDeDemandaMatch || 'Nenhum tipo de demanda identificado.');
   result = result.replace(/\{\{ARTIGO_OU_PROBLEMA_PRINCIPAL_MATCH\}\}/g, variables.artigoOuProblemaPrincipalMatch || 'Nenhum artigo ou problema principal identificado.');
+  result = result.replace(/\{\{SUGESTAO_RESPOSTA\}\}/g, variables.sugestaoResposta || 'Nenhuma sugestão de resposta disponível.');
+  result = result.replace(/\{\{PRODUTO_SUBPRODUTO_ASSUNTO\}\}/g, variables.produtoSubprodutoAssunto || '[]');
+  result = result.replace(/\{\{PERGUNTAS\}\}/g, variables.perguntas || 'Nenhuma pergunta disponível.');
 
   result = result.replace(/\{\{INTENCAO_ID\}\}/gi, variables.intencaoId || '');
   result = result.replace(/\{\{INTENCAO_NOME\}\}/gi, variables.intencaoNome || '');
@@ -253,6 +259,7 @@ export const AVAILABLE_VARIABLES = [
   { name: '{{PRODUTO_E_SUBPRODUTO_MATCH}}', description: 'Produto e Subproduto identificados com match na base' },
   { name: '{{TIPO_DE_DEMANDA_MATCH}}', description: 'Tipo de demanda identificado com match' },
   { name: '{{ARTIGO_OU_PROBLEMA_PRINCIPAL_MATCH}}', description: 'Artigo ou problema principal identificado com melhor match' },
+  { name: '{{SUGESTAO_RESPOSTA}}', description: 'Sugestão de resposta gerada pelo SolutionProvider (para ajuste de tom)' },
   { name: '{{INTENCAO_ID}}', description: 'ID da intenção (para enriquecimento de artigos)' },
   { name: '{{INTENCAO_NOME}}', description: 'Nome da intenção (para enriquecimento de artigos)' },
   { name: '{{INTENCAO_SINONIMOS}}', description: 'Sinônimos da intenção separados por vírgula' },
@@ -269,4 +276,7 @@ export const AVAILABLE_VARIABLES = [
   { name: '{{#if_artigo_nao_existe}}...{{/if_artigo_nao_existe}}', description: 'Bloco condicional: exibe conteúdo se artigo não existe' },
   { name: '{{#if_intencao_sinonimos}}...{{/if_intencao_sinonimos}}', description: 'Bloco condicional: exibe se há sinônimos de intenção' },
   { name: '{{#if_assunto_sinonimos}}...{{/if_assunto_sinonimos}}', description: 'Bloco condicional: exibe se há sinônimos de assunto' },
+  { name: '{{#if_subproduto_nome}}...{{/if_subproduto_nome}}', description: 'Bloco condicional: exibe se há nome de subproduto' },
+  { name: '{{PRODUTO_SUBPRODUTO_ASSUNTO}}', description: 'JSON de assuntos agrupados por produto/subproduto' },
+  { name: '{{PERGUNTAS}}', description: 'Lista de perguntas para classificação de temas' },
 ];
