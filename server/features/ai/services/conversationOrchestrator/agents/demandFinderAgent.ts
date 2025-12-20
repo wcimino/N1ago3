@@ -3,7 +3,7 @@ import { runCombinedKnowledgeSearch } from "../../tools/combinedKnowledgeSearchT
 import { caseDemandStorage } from "../../../storage/caseDemandStorage.js";
 import { conversationStorage } from "../../../../conversations/storage/index.js";
 import { productCatalogStorage } from "../../../../products/storage/productCatalogStorage.js";
-import { getClientRequestVersions, getSearchQueries, getCustomerRequestType, buildCleanSearchContext, buildResolvedClassification } from "../../helpers/index.js";
+import { getClientRequestVersions, getSearchQueries, getCustomerRequestType, buildCleanSearchContext, buildResolvedClassification, resolveProductById } from "../../helpers/index.js";
 import { EnrichmentService } from "../services/enrichmentService.js";
 import { StatusController } from "../statusController.js";
 import { ActionExecutor } from "../actionExecutor.js";
@@ -208,7 +208,7 @@ export class DemandFinderAgent {
       limit: 10,
     });
 
-    const externalSearchPromise = this.searchSolutionCenterExternal(context, searchQueries, summaryProductContext, customerRequestType || undefined);
+    const externalSearchPromise = this.searchSolutionCenterExternal(context, searchQueries, versions, customerRequestType || undefined);
 
     const [searchResponse] = await Promise.all([
       internalSearchPromise,
@@ -258,10 +258,10 @@ export class DemandFinderAgent {
   private static async searchSolutionCenterExternal(
     context: OrchestratorContext,
     searchQueries: ReturnType<typeof getSearchQueries>,
-    summaryProductContext?: string,
+    clientRequestVersions: ReturnType<typeof getClientRequestVersions>,
     customerRequestType?: string
   ): Promise<void> {
-    const { conversationId } = context;
+    const { conversationId, classification } = context;
 
     try {
       const textNormalizedVersions: string[] = [];
@@ -269,24 +269,26 @@ export class DemandFinderAgent {
       if (searchQueries?.normalizedQuery) {
         textNormalizedVersions.push(searchQueries.normalizedQuery);
       }
-      if (searchQueries?.verbatimQuery && searchQueries.verbatimQuery !== searchQueries.normalizedQuery) {
-        textNormalizedVersions.push(searchQueries.verbatimQuery);
-      }
 
       if (textNormalizedVersions.length === 0) {
         console.log(`[DemandFinderAgent] No text versions for Solution Center search, skipping`);
         return;
       }
 
+      const text = clientRequestVersions?.clientRequestStandardVersion;
       const keywords = searchQueries?.keywordQuery?.split(/\s+/).filter(k => k.length > 2) || [];
       const demandType = this.mapCustomerRequestTypeToDemandType(customerRequestType);
+
+      const resolvedProduct = await resolveProductById(classification?.productId);
 
       console.log(`[DemandFinderAgent] Searching Solution Center for conversation ${conversationId}`);
 
       const solutionCenterResponse = await searchSolutionCenter({
+        text: text || undefined,
         textNormalizedVersions,
         keywords: keywords.length > 0 ? keywords : undefined,
-        productName: summaryProductContext || undefined,
+        productName: resolvedProduct?.produto || undefined,
+        subproductName: resolvedProduct?.subproduto || undefined,
         demandType,
       });
 

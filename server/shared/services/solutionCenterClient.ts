@@ -1,6 +1,7 @@
 export type SolutionCenterDemandType = "information" | "sales" | "support";
 
 export interface SolutionCenterSearchRequest {
+  text?: string;
   textNormalizedVersions: string[];
   keywords?: string[];
   productName?: string;
@@ -20,6 +21,7 @@ export interface SolutionCenterSearchResponse {
 }
 
 export interface SolutionCenterSearchOptions {
+  text?: string;
   textNormalizedVersions: string[];
   keywords?: string[];
   productName?: string;
@@ -48,7 +50,7 @@ export async function searchSolutionCenter(
     return null;
   }
 
-  const { textNormalizedVersions, keywords, productName, subproductName, demandType } = options;
+  const { text, textNormalizedVersions, keywords, productName, subproductName, demandType } = options;
 
   if (!textNormalizedVersions || textNormalizedVersions.length === 0) {
     console.log("[SolutionCenterClient] No text versions provided, skipping search");
@@ -60,6 +62,10 @@ export async function searchSolutionCenter(
   const requestBody: SolutionCenterSearchRequest = {
     textNormalizedVersions,
   };
+
+  if (text) {
+    requestBody.text = text;
+  }
 
   if (keywords && keywords.length > 0) {
     requestBody.keywords = keywords;
