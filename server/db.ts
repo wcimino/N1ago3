@@ -45,4 +45,4 @@ const instrumentedPool = new Proxy(basePool, {
 });
 
 export const pool = instrumentedPool as typeof basePool;
-export const db = drizzle({ client: pool, schema });
+export const db = drizzle(pool, { schema });
