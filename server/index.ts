@@ -21,12 +21,12 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: true }));
 
-async function startServer() {
-  // Health check endpoint for autoscale deployments
-  app.get("/health", (req, res) => {
-    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
-  });
+// Health check endpoint - registered immediately for autoscale deployments
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+});
 
+async function startServer() {
   // Setup authentication
   await setupAuth(app);
 
