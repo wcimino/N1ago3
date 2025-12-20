@@ -2,7 +2,6 @@ import { knowledgeBaseStorage } from "../storage/knowledgeBaseStorage.js";
 import { KnowledgeBaseStatisticsStorage } from "../storage/knowledgeBaseStatisticsStorage.js";
 import { extractMatchedTerms } from "../../../shared/utils/matchScoring.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
-import { generateEmbedding } from "../../../shared/embeddings/index.js";
 import { 
   type MultiQuerySearchQueries,
   generateMultiQueryEmbeddings,
@@ -218,88 +217,6 @@ export async function runKnowledgeBaseSearch(
     } catch (error) {
       console.error("[KB Search] Multi-query search failed:", error);
       articles = [];
-    }
-  }
-
-  const enrichedContext = productContext && conversationContext
-    ? `Produto: ${productContext}. ${conversationContext}`
-    : conversationContext;
-
-  if (articles.length === 0 && enrichedContext && enrichedContext.trim().length > 0 && hasEmbeddings) {
-    console.log(`[KB Search] Fallback: Hybrid search using conversationContext for embedding`);
-    
-    try {
-      const { embedding } = await generateEmbedding(enrichedContext, { contextType: "query" });
-      
-      const semanticResults = await knowledgeBaseStorage.searchBySimilarity(embedding, { 
-        limit: keywordsStr ? limit * 2 : limit 
-      });
-
-      if (semanticResults.length > 0) {
-        articles = semanticResults.map((a: any) => {
-          const articleText = [
-            a.question || "",
-            a.answer || "",
-            a.keywords || "",
-            ...(Array.isArray(a.questionVariation) ? a.questionVariation : [])
-          ].join(" ");
-          const queryForMatching = conversationContext + (keywordsStr ? " " + keywordsStr : "");
-          return {
-            id: a.id,
-            question: a.question,
-            answer: a.answer,
-            keywords: a.keywords,
-            questionVariation: Array.isArray(a.questionVariation) ? a.questionVariation : [],
-            productId: a.productId,
-            intentId: a.intentId,
-            relevanceScore: a.similarity,
-            matchReason: `Similaridade semântica (contexto): ${a.similarity}%`,
-            matchedTerms: extractMatchedTerms(queryForMatching, articleText)
-          };
-        });
-        console.log(`[KB Search] Hybrid search found ${articles.length} articles`);
-      }
-    } catch (error) {
-      console.error("[KB Search] Hybrid search failed:", error);
-    }
-  }
-
-  if (articles.length === 0 && keywordsStr && hasEmbeddings) {
-    const enrichedKeywords = productContext 
-      ? `Produto: ${productContext}. ${keywordsStr}`
-      : keywordsStr;
-    console.log(`[KB Search] Fallback: Semantic search using keywords "${keywordsStr}"`);
-    
-    try {
-      const { embedding } = await generateEmbedding(enrichedKeywords, { contextType: "query" });
-      
-      const semanticResults = await knowledgeBaseStorage.searchBySimilarity(embedding, { limit });
-
-      if (semanticResults.length > 0) {
-        articles = semanticResults.map((a: any) => {
-          const articleText = [
-            a.question || "",
-            a.answer || "",
-            a.keywords || "",
-            ...(Array.isArray(a.questionVariation) ? a.questionVariation : [])
-          ].join(" ");
-          return {
-            id: a.id,
-            question: a.question,
-            answer: a.answer,
-            keywords: a.keywords,
-            questionVariation: Array.isArray(a.questionVariation) ? a.questionVariation : [],
-            productId: a.productId,
-            intentId: a.intentId,
-            relevanceScore: a.similarity,
-            matchReason: `Similaridade semântica: ${a.similarity}%`,
-            matchedTerms: extractMatchedTerms(keywordsStr, articleText)
-          };
-        });
-        console.log(`[KB Search] Keyword semantic search found ${articles.length} articles`);
-      }
-    } catch (error) {
-      console.error("[KB Search] Keyword semantic search failed:", error);
     }
   }
 
