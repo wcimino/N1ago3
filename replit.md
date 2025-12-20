@@ -49,6 +49,28 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **Shared Types and Constants Architecture:** Centralized type definitions and UI constants.
 *   **Shared Hooks and Form Components:** Reusable frontend components for common functionalities.
 *   **Backend Feature Architecture:** Each feature module contains `routes/`, `storage/`, and `services/`.
+
+**Refactored Architecture (December 2024):**
+
+*   **Backend Bootstrap Module:** Server initialization logic extracted to `server/bootstrap/index.ts` for clean separation of concerns.
+*   **Ingest Service:** Event ingestion validation, authorization, and rate limiting centralized in `server/features/events/services/ingestService.ts`.
+*   **Archive Service Modules:** Archive functionality split into specialized modules:
+    *   `scheduler.ts` - Job scheduling logic
+    *   `jobPersistence.ts` - Job state management
+    *   `parquetExporter.ts` - Parquet file export
+    *   `tableCleaner.ts` - Database cleanup operations
+*   **Paginated Sync Utility:** Generic pagination with checkpoint support in `server/features/external-sources/zendesk/services/paginatedSync.ts`.
+*   **Domain-Organized Routes:** Route registration grouped by domain (auth, events, knowledge, ai, external-sources, maintenance, routing, analytics).
+*   **Frontend Shared Hooks:**
+    *   `useProductFilter` - Shared product filtering state and utilities
+    *   `useProductHierarchy` - Generic hierarchy builder for product-based grouping
+    *   `useSolutionActions` - Solution-action relationship management
+*   **ExternalEventsTab Refactoring:** Component split into subcomponents:
+    *   `InstructionsPanel.tsx` - Usage instructions display
+    *   `SourceForm.tsx` - Add source form
+    *   `SourceListItem.tsx` - Individual source display/actions
+    *   `EditSourceModal.tsx` - Edit modal
+    *   `useExternalEventSources.ts` - Data fetching and mutations hook
 *   **Idempotent Event Creation:** Ensures unique event processing.
 *   **Modular AI Tools and Prompts:** AI tools are in individual files; prompt variables are centralized.
 *   **Unified Knowledge Base Search Helper:** Single entry point for knowledge base searches with semantic and full-text search capabilities.

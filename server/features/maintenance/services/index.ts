@@ -1,3 +1,3 @@
-export { archiveService } from "./archiveService.js";
+export { archiveService } from "./archive/index.js";
 export { duplicatesService } from "./duplicatesService.js";
 export { vacuumService } from "./vacuumService.js";

@@ -1,21 +1,17 @@
 import { 
-  upsertZendeskUsersBatch, 
   createSyncLog, 
   updateSyncLog, 
   getLatestSyncLog,
   getLatestAddNewSyncLog,
 } from "../storage/zendeskSupportUsersStorage.js";
-import type { InsertZendeskSupportUser } from "../../../../../shared/schema.js";
 import {
   SOURCE_TYPE,
   BATCH_SIZE,
-  DB_BATCH_SIZE,
   CHECKPOINT_INTERVAL,
   getBaseUrl,
   fetchUsersPage,
   fetchIncrementalUsersPage,
   mapApiUserToDbUser,
-  sleep,
 } from "./zendeskSupportUsersApiClient.js";
 import {
   getIsSyncing,
@@ -25,22 +21,14 @@ import {
   setCancelRequested,
   setSyncStartTime,
   getCurrentProgress,
-  setCurrentProgress,
   resetProgress,
-  updateProgressMetrics,
   formatDuration,
 } from "./zendeskSupportUsersProgressTracker.js";
-import { flushBufferWithRetry, resetSyncState } from "./zendeskSupportUsersSyncHelpers.js";
+import { resetSyncState } from "./zendeskSupportUsersSyncHelpers.js";
+import { runPaginatedSync, type SyncTotals } from "./paginatedSync.js";
 import type { SyncType, SyncResult, AddNewSyncResult, AddNewSyncStatus } from "./zendeskSupportUsersSyncTypes.js";
 
 export type { SyncType, SyncResult, AddNewSyncResult, AddNewSyncStatus };
-
-interface SyncTotals {
-  processed: number;
-  created: number;
-  updated: number;
-  failed: number;
-}
 
 function cleanupSyncState(includeCancelReset = true): void {
   resetSyncState(
@@ -52,143 +40,27 @@ function cleanupSyncState(includeCancelReset = true): void {
   );
 }
 
-async function runIncrementalSync(
-  syncLog: { id: number },
-  lastCompletedSync: NonNullable<Awaited<ReturnType<typeof getLatestSyncLog>>>,
-  totals: SyncTotals
-): Promise<boolean> {
-  const incrementalStartTime = lastCompletedSync.finishedAt 
-    ? Math.floor(lastCompletedSync.finishedAt.getTime() / 1000)
-    : Math.floor(lastCompletedSync.startedAt.getTime() / 1000);
-  
-  console.log(`[ZendeskSupportUsers] Starting incremental sync from ${new Date(incrementalStartTime * 1000).toISOString()}...`);
-  
-  let url: string | null = `${getBaseUrl()}/api/v2/incremental/users.json?start_time=${incrementalStartTime}`;
-  let pageCount = 0;
-  
-  while (url && !getCancelRequested()) {
-    pageCount++;
-    console.log(`[ZendeskSupportUsers] Fetching incremental page ${pageCount}...`);
-    const progress = getCurrentProgress();
-    setCurrentProgress({ ...progress, currentPage: pageCount });
-    
-    const data = await fetchIncrementalUsersPage(url);
-    
-    if (data.users.length === 0 || data.end_of_stream) {
-      if (data.users.length > 0) {
-        const usersToUpsert = data.users.map(mapApiUserToDbUser);
-        try {
-          const { created, updated } = await upsertZendeskUsersBatch(usersToUpsert);
-          totals.created += created;
-          totals.updated += updated;
-          totals.processed += usersToUpsert.length;
-        } catch (err) {
-          console.error(`[ZendeskSupportUsers] Error upserting batch:`, err);
-          totals.failed += usersToUpsert.length;
-        }
-      }
-      break;
-    }
-    
-    const usersToUpsert = data.users.map(mapApiUserToDbUser);
-    
-    try {
-      const { created, updated } = await upsertZendeskUsersBatch(usersToUpsert);
-      totals.created += created;
-      totals.updated += updated;
-      totals.processed += usersToUpsert.length;
-    } catch (err) {
-      console.error(`[ZendeskSupportUsers] Error upserting batch:`, err);
-      totals.failed += usersToUpsert.length;
-    }
-    
-    updateProgressMetrics(totals.processed, totals.created, totals.updated, totals.failed, pageCount, getCurrentProgress().estimatedTotal);
-    
-    await updateSyncLog(syncLog.id, {
+function createCheckpointHandler(syncLogId: number, metadata?: Record<string, unknown>) {
+  return async (pageCount: number, totals: SyncTotals, nextCursor: string | null) => {
+    await updateSyncLog(syncLogId, {
       recordsProcessed: totals.processed,
       recordsCreated: totals.created,
       recordsUpdated: totals.updated,
       recordsFailed: totals.failed,
+      ...(metadata ? { metadata: { ...metadata, nextCursor } } : {}),
     });
-    
-    url = data.next_page;
-    
-    if (url && !getCancelRequested()) {
-      await sleep(100);
+    if (nextCursor) {
+      console.log(`[ZendeskSupportUsers] Checkpoint saved at page ${pageCount}`);
     }
-  }
-  
-  if (getCancelRequested()) {
-    console.log(`[ZendeskSupportUsers] Sync cancelled after ${totals.processed} records`);
-    return true;
-  }
-
-  return false;
+  };
 }
 
-async function runFullSync(
-  syncLog: { id: number },
-  totals: SyncTotals,
-  maxUsers?: number
-): Promise<boolean> {
-  console.log(`[ZendeskSupportUsers] Starting full sync...${maxUsers ? ` (limit: ${maxUsers})` : ''}`);
-  
-  let url: string | null = `${getBaseUrl()}/api/v2/users.json?per_page=${BATCH_SIZE}`;
-  let pageCount = 0;
-  let estimatedTotal = maxUsers || 0;
-  
-  while (url && (!maxUsers || totals.processed < maxUsers) && !getCancelRequested()) {
-    pageCount++;
-    console.log(`[ZendeskSupportUsers] Fetching page ${pageCount}...`);
-    
-    const data = await fetchUsersPage(url);
-    
-    if (estimatedTotal === 0 && data.count) {
-      estimatedTotal = maxUsers ? Math.min(maxUsers, data.count) : data.count;
-    }
-    
-    if (data.users.length === 0) {
-      break;
-    }
-    
-    let usersToProcess = data.users;
-    if (maxUsers && totals.processed + usersToProcess.length > maxUsers) {
-      usersToProcess = usersToProcess.slice(0, maxUsers - totals.processed);
-    }
-    const usersToUpsert = usersToProcess.map(mapApiUserToDbUser);
-    
-    try {
-      const { created, updated } = await upsertZendeskUsersBatch(usersToUpsert);
-      totals.created += created;
-      totals.updated += updated;
-      totals.processed += usersToUpsert.length;
-    } catch (err) {
-      console.error(`[ZendeskSupportUsers] Error upserting batch:`, err);
-      totals.failed += usersToUpsert.length;
-    }
-    
-    updateProgressMetrics(totals.processed, totals.created, totals.updated, totals.failed, pageCount, estimatedTotal);
-    
-    await updateSyncLog(syncLog.id, {
-      recordsProcessed: totals.processed,
-      recordsCreated: totals.created,
-      recordsUpdated: totals.updated,
-      recordsFailed: totals.failed,
-    });
-    
-    url = data.next_page;
-    
-    if (url && !getCancelRequested()) {
-      await sleep(100);
-    }
-  }
-  
-  if (getCancelRequested()) {
-    console.log(`[ZendeskSupportUsers] Sync cancelled after ${totals.processed} records`);
-    return true;
-  }
-
-  return false;
+function createProgressHandler() {
+  return (totals: SyncTotals, pageCount: number, estimatedTotal: number) => {
+    const progress = getCurrentProgress();
+    const pctComplete = estimatedTotal > 0 ? Math.round((totals.processed / estimatedTotal) * 100) : 0;
+    console.log(`[ZendeskSupportUsers] Page ${pageCount}: ${totals.processed}/${estimatedTotal} (${pctComplete}%) - ${progress.usersPerMinute} users/min - ETA: ${formatDuration(progress.estimatedTimeRemainingMs)}`);
+  };
 }
 
 export async function syncZendeskUsers(syncType: SyncType = "full", maxUsers?: number): Promise<{
@@ -203,10 +75,7 @@ export async function syncZendeskUsers(syncType: SyncType = "full", maxUsers?: n
   };
 }> {
   if (getIsSyncing()) {
-    return {
-      success: false,
-      message: "Sincronização já está em andamento",
-    };
+    return { success: false, message: "Sincronização já está em andamento" };
   }
   
   let lastCompletedSync: Awaited<ReturnType<typeof getLatestSyncLog>> = null;
@@ -214,10 +83,7 @@ export async function syncZendeskUsers(syncType: SyncType = "full", maxUsers?: n
   if (syncType === "incremental") {
     lastCompletedSync = await getLatestSyncLog(SOURCE_TYPE);
     if (!lastCompletedSync || lastCompletedSync.status !== "completed") {
-      return {
-        success: false,
-        message: "Sincronização incremental requer uma sincronização completa anterior bem-sucedida",
-      };
+      return { success: false, message: "Sincronização incremental requer uma sincronização completa anterior bem-sucedida" };
     }
   }
   
@@ -243,42 +109,76 @@ export async function syncZendeskUsers(syncType: SyncType = "full", maxUsers?: n
   
   setCurrentSyncId(syncLog.id);
   
-  const totals: SyncTotals = { processed: 0, created: 0, updated: 0, failed: 0 };
-  
   try {
-    const wasCancelled = syncType === "incremental" && lastCompletedSync
-      ? await runIncrementalSync(syncLog, lastCompletedSync, totals)
-      : await runFullSync(syncLog, totals, maxUsers);
+    let result;
+    
+    if (syncType === "incremental" && lastCompletedSync) {
+      const incrementalStartTime = lastCompletedSync.finishedAt 
+        ? Math.floor(lastCompletedSync.finishedAt.getTime() / 1000)
+        : Math.floor(lastCompletedSync.startedAt.getTime() / 1000);
+      
+      console.log(`[ZendeskSupportUsers] Starting incremental sync from ${new Date(incrementalStartTime * 1000).toISOString()}...`);
+      
+      result = await runPaginatedSync(
+        `${getBaseUrl()}/api/v2/incremental/users.json?start_time=${incrementalStartTime}`,
+        async (url) => {
+          const data = await fetchIncrementalUsersPage(url);
+          return { items: data.users, nextPage: data.next_page, endOfStream: data.end_of_stream, count: data.count };
+        },
+        mapApiUserToDbUser,
+        {
+          maxItems: maxUsers,
+          onPageComplete: createCheckpointHandler(syncLog.id),
+          onProgress: createProgressHandler(),
+        }
+      );
+    } else {
+      console.log(`[ZendeskSupportUsers] Starting full sync...${maxUsers ? ` (limit: ${maxUsers})` : ''}`);
+      
+      result = await runPaginatedSync(
+        `${getBaseUrl()}/api/v2/users.json?per_page=${BATCH_SIZE}`,
+        async (url) => {
+          const data = await fetchUsersPage(url);
+          return { items: data.users, nextPage: data.next_page, count: data.count };
+        },
+        mapApiUserToDbUser,
+        {
+          maxItems: maxUsers,
+          onPageComplete: createCheckpointHandler(syncLog.id),
+          onProgress: createProgressHandler(),
+        }
+      );
+    }
 
     const durationMs = Date.now() - startTime;
-    const finalStatus = wasCancelled ? "cancelled" : "completed";
+    const finalStatus = result.wasCancelled ? "cancelled" : "completed";
     
     await updateSyncLog(syncLog.id, {
       status: finalStatus,
       finishedAt: new Date(),
       durationMs,
-      recordsProcessed: totals.processed,
-      recordsCreated: totals.created,
-      recordsUpdated: totals.updated,
-      recordsFailed: totals.failed,
+      recordsProcessed: result.totals.processed,
+      recordsCreated: result.totals.created,
+      recordsUpdated: result.totals.updated,
+      recordsFailed: result.totals.failed,
     });
     
     const syncTypeLabel = syncType === "incremental" ? "incremental" : "completa";
-    const statusLabel = wasCancelled ? "cancelada" : "concluída";
-    console.log(`[ZendeskSupportUsers] ${syncTypeLabel} sync ${statusLabel}: ${totals.processed} processed, ${totals.created} created, ${totals.updated} updated, ${totals.failed} failed in ${durationMs}ms`);
+    const statusLabel = result.wasCancelled ? "cancelada" : "concluída";
+    console.log(`[ZendeskSupportUsers] ${syncTypeLabel} sync ${statusLabel}: ${result.totals.processed} processed, ${result.totals.created} created, ${result.totals.updated} updated, ${result.totals.failed} failed in ${durationMs}ms`);
     
     cleanupSyncState(true);
     
     return {
-      success: !wasCancelled,
-      message: wasCancelled 
-        ? `Sincronização ${syncTypeLabel} cancelada. ${totals.processed} registros foram processados.`
+      success: !result.wasCancelled,
+      message: result.wasCancelled 
+        ? `Sincronização ${syncTypeLabel} cancelada. ${result.totals.processed} registros foram processados.`
         : `Sincronização ${syncTypeLabel} concluída com sucesso`,
       stats: {
-        processed: totals.processed,
-        created: totals.created,
-        updated: totals.updated,
-        failed: totals.failed,
+        processed: result.totals.processed,
+        created: result.totals.created,
+        updated: result.totals.updated,
+        failed: result.totals.failed,
         durationMs,
       },
     };
@@ -291,20 +191,12 @@ export async function syncZendeskUsers(syncType: SyncType = "full", maxUsers?: n
       finishedAt: new Date(),
       durationMs,
       errorMessage,
-      recordsProcessed: totals.processed,
-      recordsCreated: totals.created,
-      recordsUpdated: totals.updated,
-      recordsFailed: totals.failed,
     });
     
     console.error(`[ZendeskSupportUsers] Sync failed:`, error);
-    
     cleanupSyncState(false);
     
-    return {
-      success: false,
-      message: `Erro na sincronização: ${errorMessage}`,
-    };
+    return { success: false, message: `Erro na sincronização: ${errorMessage}` };
   }
 }
 
@@ -322,10 +214,7 @@ export async function syncNewUsers(maxUsers?: number): Promise<{
   isComplete?: boolean;
 }> {
   if (getIsSyncing()) {
-    return {
-      success: false,
-      message: "Sincronização já está em andamento",
-    };
+    return { success: false, message: "Sincronização já está em andamento" };
   }
   
   setIsSyncing(true);
@@ -354,187 +243,80 @@ export async function syncNewUsers(maxUsers?: number): Promise<{
   
   setCurrentSyncId(syncLog.id);
   
-  let totalProcessed = 0;
-  let totalCreated = 0;
-  let totalUpdated = 0;
-  let totalFailed = 0;
-  let wasCancelled = false;
-  let nextCursor: string | null = null;
-  let isComplete = false;
-  
-  let userBuffer: InsertZendeskSupportUser[] = [];
-  let lastPersistedCursor: string | null = startCursor ?? null;
-  
   try {
+    const initialUrl = startCursor || `${getBaseUrl()}/api/v2/users.json?per_page=${BATCH_SIZE}`;
     console.log(`[ZendeskSupportUsers] Starting add-new sync...${startCursor ? ` (resuming from cursor)` : ' (from beginning)'}${maxUsers ? ` (limit: ${maxUsers})` : ''}`);
     
-    let url: string | null = startCursor || `${getBaseUrl()}/api/v2/users.json?per_page=${BATCH_SIZE}`;
-    let pageCount = 0;
-    let estimatedTotal = maxUsers || 0;
-    let lastCheckpointPage = 0;
-    
-    while (url && (!maxUsers || totalProcessed < maxUsers) && !getCancelRequested()) {
-      pageCount++;
-      
-      const data = await fetchUsersPage(url);
-      
-      if (estimatedTotal === 0 && data.count) {
-        estimatedTotal = maxUsers ? Math.min(maxUsers, data.count) : data.count;
+    const result = await runPaginatedSync(
+      initialUrl,
+      async (url) => {
+        const data = await fetchUsersPage(url);
+        return { items: data.users, nextPage: data.next_page, count: data.count };
+      },
+      mapApiUserToDbUser,
+      {
+        maxItems: maxUsers,
+        useBuffer: true,
+        checkpointInterval: CHECKPOINT_INTERVAL,
+        onPageComplete: createCheckpointHandler(syncLog.id, { startCursor }),
+        onProgress: createProgressHandler(),
       }
-      
-      if (data.users.length === 0) {
-        isComplete = true;
-        break;
-      }
-      
-      let usersToProcess = data.users;
-      if (maxUsers && totalProcessed + usersToProcess.length > maxUsers) {
-        usersToProcess = usersToProcess.slice(0, maxUsers - totalProcessed);
-      }
-      
-      userBuffer.push(...usersToProcess.map(mapApiUserToDbUser));
-      
-      if (userBuffer.length >= DB_BATCH_SIZE || !data.next_page) {
-        const { created, updated, success } = await flushBufferWithRetry(userBuffer);
-        
-        if (success) {
-          totalCreated += created;
-          totalUpdated += updated;
-          totalProcessed += userBuffer.length;
-          userBuffer = [];
-          
-          lastPersistedCursor = data.next_page;
-          nextCursor = data.next_page;
-          
-          const currentProgress = getCurrentProgress();
-          const pctComplete = estimatedTotal > 0 ? Math.round((totalProcessed / estimatedTotal) * 100) : 0;
-          console.log(`[ZendeskSupportUsers] Page ${pageCount}: ${totalProcessed}/${estimatedTotal} (${pctComplete}%) - ${currentProgress.usersPerMinute} users/min - ETA: ${formatDuration(currentProgress.estimatedTimeRemainingMs)}`);
-        } else {
-          console.error(`[ZendeskSupportUsers] Failed to persist batch after retries. Stopping sync to prevent data loss.`);
-          totalFailed += userBuffer.length;
-          nextCursor = lastPersistedCursor;
-          break;
-        }
-      }
-      
-      updateProgressMetrics(totalProcessed, totalCreated, totalUpdated, totalFailed, pageCount, estimatedTotal);
-      
-      if (pageCount - lastCheckpointPage >= CHECKPOINT_INTERVAL) {
-        await updateSyncLog(syncLog.id, {
-          recordsProcessed: totalProcessed,
-          recordsCreated: totalCreated,
-          recordsUpdated: totalUpdated,
-          recordsFailed: totalFailed,
-          metadata: { startCursor, nextCursor: lastPersistedCursor, ...(maxUsers ? { maxUsers } : {}) },
-        });
-        lastCheckpointPage = pageCount;
-        console.log(`[ZendeskSupportUsers] Checkpoint saved at page ${pageCount}, cursor: ${lastPersistedCursor?.slice(0, 50)}...`);
-      }
-      
-      url = data.next_page;
-      
-      if (!url) {
-        isComplete = true;
-      }
-      
-      if (url && !getCancelRequested()) {
-        await sleep(100);
-      }
-    }
-    
-    if (userBuffer.length > 0) {
-      const { created, updated, success } = await flushBufferWithRetry(userBuffer);
-      if (success) {
-        totalCreated += created;
-        totalUpdated += updated;
-        totalProcessed += userBuffer.length;
-        userBuffer = [];
-      } else {
-        console.error(`[ZendeskSupportUsers] Failed to persist final batch after retries.`);
-        totalFailed += userBuffer.length;
-        nextCursor = lastPersistedCursor;
-      }
-    }
-    
-    if (getCancelRequested()) {
-      wasCancelled = true;
-      console.log(`[ZendeskSupportUsers] Add-new sync cancelled after ${totalProcessed} records`);
-    }
+    );
     
     const durationMs = Date.now() - startTime;
-    const finalStatus = wasCancelled ? "cancelled" : "completed";
+    const finalStatus = result.wasCancelled ? "cancelled" : "completed";
     
     await updateSyncLog(syncLog.id, {
       status: finalStatus,
       finishedAt: new Date(),
       durationMs,
-      recordsProcessed: totalProcessed,
-      recordsCreated: totalCreated,
-      recordsUpdated: totalUpdated,
-      recordsFailed: totalFailed,
-      metadata: { startCursor, nextCursor, isComplete, ...(maxUsers ? { maxUsers } : {}) },
+      recordsProcessed: result.totals.processed,
+      recordsCreated: result.totals.created,
+      recordsUpdated: result.totals.updated,
+      recordsFailed: result.totals.failed,
+      metadata: { startCursor, nextCursor: result.lastCursor, isComplete: result.isComplete, ...(maxUsers ? { maxUsers } : {}) },
     });
     
-    const statusLabel = wasCancelled ? "cancelada" : (isComplete ? "concluída (todos importados)" : "pausada");
-    console.log(`[ZendeskSupportUsers] Add-new sync ${statusLabel}: ${totalProcessed} processed, ${totalCreated} created, ${totalUpdated} updated, ${totalFailed} failed in ${durationMs}ms`);
+    const statusLabel = result.wasCancelled ? "cancelada" : (result.isComplete ? "concluída (todos importados)" : "pausada");
+    console.log(`[ZendeskSupportUsers] Add-new sync ${statusLabel}: ${result.totals.processed} processed, ${result.totals.created} created, ${result.totals.updated} updated, ${result.totals.failed} failed in ${durationMs}ms`);
     
     cleanupSyncState(true);
     
     return {
-      success: !wasCancelled,
-      message: wasCancelled 
-        ? `Sincronização cancelada. ${totalProcessed} registros foram processados. Cursor salvo para continuar.`
-        : (isComplete 
+      success: !result.wasCancelled,
+      message: result.wasCancelled 
+        ? `Sincronização cancelada. ${result.totals.processed} registros foram processados. Cursor salvo para continuar.`
+        : (result.isComplete 
             ? `Sincronização concluída! Todos os usuários foram importados.`
-            : `Sincronização pausada. ${totalProcessed} registros processados. Clique novamente para continuar.`),
+            : `Sincronização pausada. ${result.totals.processed} registros processados. Clique novamente para continuar.`),
       stats: {
-        processed: totalProcessed,
-        created: totalCreated,
-        updated: totalUpdated,
-        failed: totalFailed,
+        processed: result.totals.processed,
+        created: result.totals.created,
+        updated: result.totals.updated,
+        failed: result.totals.failed,
         durationMs,
       },
-      nextCursor,
-      isComplete,
+      nextCursor: result.lastCursor,
+      isComplete: result.isComplete,
     };
   } catch (error) {
     const durationMs = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    
-    if (userBuffer.length > 0) {
-      console.log(`[ZendeskSupportUsers] Attempting to flush ${userBuffer.length} buffered users before error exit...`);
-      const { created, updated, success } = await flushBufferWithRetry(userBuffer);
-      if (success) {
-        totalCreated += created;
-        totalUpdated += updated;
-        totalProcessed += userBuffer.length;
-        console.log(`[ZendeskSupportUsers] Successfully saved ${userBuffer.length} buffered users before exit.`);
-      } else {
-        console.error(`[ZendeskSupportUsers] Failed to save buffered users. Data preserved at cursor: ${lastPersistedCursor}`);
-        totalFailed += userBuffer.length;
-      }
-    }
     
     await updateSyncLog(syncLog.id, {
       status: "failed",
       finishedAt: new Date(),
       durationMs,
       errorMessage,
-      recordsProcessed: totalProcessed,
-      recordsCreated: totalCreated,
-      recordsUpdated: totalUpdated,
-      recordsFailed: totalFailed,
-      metadata: { startCursor, nextCursor: lastPersistedCursor, ...(maxUsers ? { maxUsers } : {}) },
+      metadata: { startCursor },
     });
     
     console.error(`[ZendeskSupportUsers] Add-new sync failed:`, error);
-    
     cleanupSyncState(false);
     
     return {
       success: false,
       message: `Erro na sincronização: ${errorMessage}. Cursor salvo, você pode tentar novamente.`,
-      nextCursor: lastPersistedCursor,
     };
   }
 }

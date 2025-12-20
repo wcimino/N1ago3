@@ -1,8 +1,6 @@
 import type { Express } from "express";
 
 import authRoutes from "../features/auth/routes/auth.js";
-import { conversationsRoutes } from "../features/conversations/routes/index.js";
-import productCatalogRoutes from "../features/products/routes/productCatalog.js";
 
 import webhooksRoutes from "../features/export/routes/webhooks.js";
 import webhookLogsRoutes from "../features/export/routes/webhookLogs.js";
@@ -13,8 +11,7 @@ import externalEventSourcesRoutes from "../features/events/routes/externalEventS
 import eventIngestRoutes from "../features/events/routes/eventIngest.js";
 import docsDownloadRoutes from "../features/events/routes/docsDownload.js";
 
-import usersStandardRoutes from "../features/cadastro/routes/usersStandard.js";
-import organizationsStandardRoutes from "../features/cadastro/routes/organizationsStandard.js";
+import { conversationsRoutes } from "../features/conversations/routes/index.js";
 
 import openaiConfigRoutes from "../features/ai/routes/openaiConfig.js";
 import generalSettingsRoutes from "../features/ai/routes/generalSettings.js";
@@ -24,6 +21,7 @@ import knowledgeBaseRoutes from "../features/ai/routes/knowledgeBase.js";
 import knowledgeSuggestionsRoutes from "../features/ai/routes/knowledgeSuggestions.js";
 import articleEnrichmentRoutes from "../features/ai/routes/articleEnrichment.js";
 import articleEnrichmentLogsRoutes from "../features/ai/routes/articleEnrichmentLogs.js";
+
 import knowledgeSubjectsRoutes from "../features/knowledge/routes/knowledgeSubjectsRoutes.js";
 import knowledgeIntentsRoutes from "../features/knowledge/routes/knowledgeIntentsRoutes.js";
 import objectiveProblemsRoutes from "../features/knowledge/routes/objectiveProblemsRoutes.js";
@@ -31,49 +29,105 @@ import actionsRoutes from "../features/knowledge/routes/actionsRoutes.js";
 import knowledgeSolutionsRoutes from "../features/knowledge/routes/knowledgeSolutionsRoutes.js";
 import rootCausesRoutes from "../features/knowledge/routes/rootCausesRoutes.js";
 
-import maintenanceRoutes from "../features/maintenance/routes/maintenance.js";
 import { zendeskArticlesRouter, zendeskSupportUsersRouter } from "../features/external-sources/zendesk/index.js";
+
+import usersStandardRoutes from "../features/cadastro/routes/usersStandard.js";
+import organizationsStandardRoutes from "../features/cadastro/routes/organizationsStandard.js";
+
+import productCatalogRoutes from "../features/products/routes/productCatalog.js";
+
 import routingRulesRoutes from "../features/routing/routes/routing.js";
 import transferRoutes from "../features/routing/routes/transfer.js";
+
+import maintenanceRoutes from "../features/maintenance/routes/maintenance.js";
+
 import favoritesRoutes from "../features/favorites/routes/favorites.js";
 import reportsRoutes from "../features/reports/routes/reports.js";
 import dashboardRoutes from "../features/dashboard/routes/dashboardRoutes.js";
 import queryMonitoringRoutes from "../features/monitoring/routes/queryMonitoringRoutes.js";
 
-export function registerRoutes(app: Express) {
-  app.use(webhooksRoutes);
+function registerAuthRoutes(app: Express) {
   app.use(authRoutes);
+}
+
+function registerExportRoutes(app: Express) {
+  app.use(webhooksRoutes);
   app.use(webhookLogsRoutes);
-  app.use(conversationsRoutes);
+  app.use(exportRoutes);
+}
+
+function registerEventsRoutes(app: Express) {
   app.use(eventsRoutes);
   app.use(externalEventSourcesRoutes);
   app.use(eventIngestRoutes);
   app.use(docsDownloadRoutes);
+}
+
+function registerConversationsRoutes(app: Express) {
+  app.use(conversationsRoutes);
+}
+
+function registerAiRoutes(app: Express) {
   app.use(openaiConfigRoutes);
   app.use(generalSettingsRoutes);
   app.use(openaiLogsRoutes);
   app.use(openaiStatsRoutes);
-  app.use(productCatalogRoutes);
-  app.use("/api/users-standard", usersStandardRoutes);
-  app.use("/api/organizations-standard", organizationsStandardRoutes);
-  app.use(maintenanceRoutes);
-  app.use(exportRoutes);
   app.use(knowledgeBaseRoutes);
   app.use(knowledgeSuggestionsRoutes);
   app.use(articleEnrichmentRoutes);
   app.use(articleEnrichmentLogsRoutes);
+}
+
+function registerKnowledgeRoutes(app: Express) {
   app.use(knowledgeSubjectsRoutes);
   app.use(knowledgeIntentsRoutes);
   app.use(objectiveProblemsRoutes);
   app.use(actionsRoutes);
   app.use(knowledgeSolutionsRoutes);
   app.use(rootCausesRoutes);
+}
+
+function registerExternalSourcesRoutes(app: Express) {
   app.use("/api/zendesk-articles", zendeskArticlesRouter);
   app.use("/api/external-data/zendesk-users", zendeskSupportUsersRouter);
+}
+
+function registerCadastroRoutes(app: Express) {
+  app.use("/api/users-standard", usersStandardRoutes);
+  app.use("/api/organizations-standard", organizationsStandardRoutes);
+}
+
+function registerProductsRoutes(app: Express) {
+  app.use(productCatalogRoutes);
+}
+
+function registerRoutingRoutes(app: Express) {
   app.use(routingRulesRoutes);
   app.use(transferRoutes);
+}
+
+function registerMaintenanceRoutes(app: Express) {
+  app.use(maintenanceRoutes);
+}
+
+function registerAnalyticsRoutes(app: Express) {
   app.use(favoritesRoutes);
   app.use(reportsRoutes);
   app.use("/api/dashboard", dashboardRoutes);
   app.use("/api/monitoring/queries", queryMonitoringRoutes);
+}
+
+export function registerRoutes(app: Express) {
+  registerAuthRoutes(app);
+  registerExportRoutes(app);
+  registerEventsRoutes(app);
+  registerConversationsRoutes(app);
+  registerAiRoutes(app);
+  registerKnowledgeRoutes(app);
+  registerExternalSourcesRoutes(app);
+  registerCadastroRoutes(app);
+  registerProductsRoutes(app);
+  registerRoutingRoutes(app);
+  registerMaintenanceRoutes(app);
+  registerAnalyticsRoutes(app);
 }
