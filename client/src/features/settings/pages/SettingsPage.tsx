@@ -49,6 +49,7 @@ export function SettingsPage({ activeTab = "access" }: SettingsPageProps) {
           tabs={tabs}
           activeTab={activeTab}
           onChange={handleTabChange}
+          wrapMobile
         />
       </div>
 

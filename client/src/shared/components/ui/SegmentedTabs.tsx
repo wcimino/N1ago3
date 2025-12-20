@@ -10,11 +10,16 @@ interface SegmentedTabsProps {
   onChange: (tabId: string) => void;
   className?: string;
   iconOnlyMobile?: boolean;
+  wrapMobile?: boolean;
 }
 
-export function SegmentedTabs({ tabs, activeTab, onChange, className = "", iconOnlyMobile = false }: SegmentedTabsProps) {
+export function SegmentedTabs({ tabs, activeTab, onChange, className = "", iconOnlyMobile = false, wrapMobile = false }: SegmentedTabsProps) {
+  const containerClass = wrapMobile
+    ? "bg-gray-100 p-1 rounded-lg grid grid-cols-3 sm:grid-cols-4 md:flex gap-1"
+    : "bg-gray-100 p-1 rounded-lg flex gap-1";
+
   return (
-    <div className={`bg-gray-100 p-1 rounded-lg flex gap-1 ${className}`}>
+    <div className={`${containerClass} ${className}`}>
       {tabs.map((tab) => (
         <button
           key={tab.id}
