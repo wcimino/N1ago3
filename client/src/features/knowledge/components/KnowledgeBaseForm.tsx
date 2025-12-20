@@ -369,7 +369,7 @@ export function KnowledgeBaseForm({
         onDiscard={enrichment.handleDiscard}
       />
 
-      <div className="pt-3 border-t border-gray-100 flex items-center justify-end">
+      <div className="pt-4 border-t border-gray-100">
         <FormActions
           isLoading={isLoading}
           isEditing={!!initialData}
