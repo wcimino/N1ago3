@@ -320,7 +320,7 @@ export function KnowledgeBaseForm({
         />
       </CollapsibleSection>
 
-      <div className="pt-3 border-t border-gray-100 space-y-4">
+      <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
         <InlineEnrichmentPanel
           intentId={hierarchy.selection.intentId}
           articleId={initialData?.id || null}
@@ -333,15 +333,13 @@ export function KnowledgeBaseForm({
           onApply={handleApplyEnrichment}
         />
 
-        <div className="flex justify-end">
-          <FormActions
-            isLoading={isLoading}
-            isEditing={!!initialData}
-            onCancel={onCancel}
-            disabled={!isValid}
-            submitLabel="Salvar Artigo"
-          />
-        </div>
+        <FormActions
+          isLoading={isLoading}
+          isEditing={!!initialData}
+          onCancel={onCancel}
+          disabled={!isValid}
+          submitLabel="Salvar Artigo"
+        />
       </div>
     </form>
   );
