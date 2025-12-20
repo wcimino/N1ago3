@@ -132,22 +132,6 @@ export const knowledgeSuggestions = pgTable("knowledge_suggestions", {
   createdAtIdx: index("idx_knowledge_suggestions_created_at").on(table.createdAt),
 }));
 
-export const learningAttempts = pgTable("learning_attempts", {
-  id: serial("id").primaryKey(),
-  conversationId: integer("conversation_id").notNull(),
-  externalConversationId: text("external_conversation_id"),
-  result: text("result").notNull(),
-  resultReason: text("result_reason"),
-  suggestionId: integer("suggestion_id"),
-  messageCount: integer("message_count"),
-  openaiLogId: integer("openai_log_id"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => ({
-  conversationIdx: index("idx_learning_attempts_conversation").on(table.conversationId),
-  resultIdx: index("idx_learning_attempts_result").on(table.result),
-  createdAtIdx: index("idx_learning_attempts_created_at").on(table.createdAt),
-}));
-
 export const knowledgeSubjects = pgTable("knowledge_subjects", {
   id: serial("id").primaryKey(),
   productCatalogId: integer("product_catalog_id").notNull().references(() => productsCatalog.id),
@@ -323,9 +307,6 @@ export type KnowledgeBaseObjectiveProblemsEmbedding = typeof knowledgeBaseObject
 export type InsertKnowledgeBaseObjectiveProblemsEmbedding = typeof knowledgeBaseObjectiveProblemsEmbeddings.$inferInsert;
 export type KnowledgeSuggestion = typeof knowledgeSuggestions.$inferSelect;
 export type InsertKnowledgeSuggestion = Omit<typeof knowledgeSuggestions.$inferInsert, "id" | "createdAt" | "updatedAt">;
-export type LearningAttempt = typeof learningAttempts.$inferSelect;
-export type InsertLearningAttempt = Omit<typeof learningAttempts.$inferInsert, "id" | "createdAt">;
-export type LearningAttemptResult = "suggestion_created" | "insufficient_messages" | "skipped_by_agent" | "processing_error";
 export type KnowledgeSubject = typeof knowledgeSubjects.$inferSelect;
 export type InsertKnowledgeSubject = Omit<typeof knowledgeSubjects.$inferInsert, "id" | "createdAt" | "updatedAt">;
 export type KnowledgeIntent = typeof knowledgeIntents.$inferSelect;
