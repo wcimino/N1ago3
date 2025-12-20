@@ -38,12 +38,17 @@ async function startServer() {
     });
   }
 
-  startPollingWorker();
-  vacuumService.start();
-  archiveService.start();
-
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Servidor N1ago iniciado em http://0.0.0.0:${PORT}`);
+    
+    if (process.env.DISABLE_SCHEDULERS === "true") {
+      console.log("[Schedulers] Disabled via DISABLE_SCHEDULERS env var");
+    } else {
+      console.log("[Schedulers] Starting background workers...");
+      startPollingWorker();
+      vacuumService.start();
+      archiveService.start();
+    }
   });
 }
 
