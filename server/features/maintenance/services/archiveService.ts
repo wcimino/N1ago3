@@ -10,7 +10,7 @@ import * as os from "os";
 const BATCH_SIZE = 2000;
 const MAX_UPLOAD_RETRIES = 3;
 const INITIAL_RETRY_DELAY_MS = 1000;
-const ARCHIVE_HOUR_UTC = 8; // 5am Brasília (UTC-3)
+const ARCHIVE_HOUR_UTC = 5; // 2am Brasília (UTC-3) - runs before VacuumService at 6:00 UTC
 
 function getEnvironmentPrefix(): string {
   return process.env.REPLIT_DEPLOYMENT ? "prod" : "dev";
@@ -84,7 +84,7 @@ class ArchiveService {
   private lastRunDate: string | null = null;
 
   start(): void {
-    console.log(`[ArchiveService] Starting scheduler for daily archive at ${ARCHIVE_HOUR_UTC}:00 UTC (5am Brasília)`);
+    console.log(`[ArchiveService] Starting scheduler for daily archive at ${ARCHIVE_HOUR_UTC}:00 UTC (2am Brasília)`);
     this.checkAndRunCatchUp();
     this.scheduleNextRun();
   }
