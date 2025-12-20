@@ -68,6 +68,38 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **Passport.js:** Authentication sessions management.
 *   **Express.js:** Web application framework for the backend.
 *   **Drizzle ORM:** TypeScript ORM for database interaction.
+
+## Database Migrations
+
+**Migration Strategy:**
+*   **NEVER use `db:push` in production** - It bypasses migration tracking and causes sync issues
+*   **Always use `db:migrate`** for deploying schema changes to production
+*   **Run `db:check` before deploy** to verify migration integrity
+
+**Migration Commands:**
+*   `npm run db:generate` - Generate SQL migrations from schema changes
+*   `npm run db:migrate` - Apply Drizzle + manual migrations (for production)
+*   `npm run db:push` - Quick sync for development only
+*   `npm run db:check` - Verify migration integrity before deploy
+
+**Migration Files:**
+*   `drizzle/` - Drizzle-managed migrations (auto-generated)
+*   `drizzle/meta/_journal.json` - Migration registry (must include all SQL files)
+*   `migrations/` - Manual migrations (run after Drizzle migrations)
+
+**Best Practices:**
+1. Always run `db:check` before deploying
+2. Ensure every SQL file in `drizzle/` has an entry in `_journal.json`
+3. Manual migrations in `migrations/` are tracked via `__manual_migrations` table
+4. Never manually edit auto-generated migration files
+
+**Manual Migrations (migrations/ folder):**
+*   Manual migrations run automatically after Drizzle migrations via `db:migrate`
+*   They must be **idempotent** - use `IF NOT EXISTS`, `IF EXISTS`, etc.
+*   Each migration runs in a transaction with automatic rollback on failure
+*   Tracking is via `__manual_migrations` table (name-based deduplication)
+*   If a migration fails mid-run: fix the SQL file and re-run `db:migrate`
+
 *   **React:** Frontend UI library.
 *   **Vite:** Fast frontend build tool.
 *   **Tailwind CSS:** Utility-first CSS framework.
