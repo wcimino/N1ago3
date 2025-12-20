@@ -3,7 +3,6 @@ import { ZendeskArticleStatisticsStorage } from "../../../external-sources/zende
 import { generateEmbedding as generateZendeskEmbedding, generateEnrichedQueryEmbedding } from "../../../external-sources/zendesk/services/embeddingService.js";
 import type { ToolDefinition } from "../openaiApiService.js";
 
-const RELEVANCE_THRESHOLD = 0.05;
 const PRODUCT_MISMATCH_PENALTY = 0.20;
 const MOVILE_PAY_SUBDOMAIN_PENALTY = 0.20;
 
@@ -169,48 +168,10 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
             
             console.log(`[Zendesk KB Tool] Semantic search found ${articles.length} articles (enriched=${hasContext}, product penalty applied for: ${mergedContext.produto || 'none'})`);
           } catch (error) {
-            console.error("[Zendesk KB Tool] Semantic search failed, falling back to full-text:", error);
-            const searchResults = await ZendeskArticlesStorage.searchArticlesWithRelevance(
-              args.keywords,
-              { sectionId: args.section, limit: 20 }
-            );
-            const fallbackArticles = searchResults
-              .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
-              .map(a => ({
-                id: a.id,
-                zendeskId: a.zendeskId,
-                helpCenterSubdomain: a.helpCenterSubdomain,
-                title: a.title,
-                body: a.body,
-                sectionName: a.sectionName,
-                htmlUrl: a.htmlUrl,
-                similarity: Math.round(a.relevanceScore),
-              }));
-            let penalizedFallback = applySubdomainPenalty(fallbackArticles);
-            penalizedFallback = applyProductMismatchPenalty(penalizedFallback, mergedContext.produto);
-            articles = penalizedFallback.slice(0, 5);
+            console.error("[Zendesk KB Tool] Semantic search failed:", error);
           }
         } else {
-          console.log("[Zendesk KB Tool] No embeddings available, using full-text search");
-          const searchResults = await ZendeskArticlesStorage.searchArticlesWithRelevance(
-            args.keywords,
-            { sectionId: args.section, limit: 20 }
-          );
-          const fullTextArticles = searchResults
-            .filter(a => a.relevanceScore >= RELEVANCE_THRESHOLD)
-            .map(a => ({
-              id: a.id,
-              zendeskId: a.zendeskId,
-              helpCenterSubdomain: a.helpCenterSubdomain,
-              title: a.title,
-              body: a.body,
-              sectionName: a.sectionName,
-              htmlUrl: a.htmlUrl,
-              similarity: Math.round(a.relevanceScore),
-            }));
-          let penalizedFullText = applySubdomainPenalty(fullTextArticles);
-          penalizedFullText = applyProductMismatchPenalty(penalizedFullText, mergedContext.produto);
-          articles = penalizedFullText.slice(0, 5);
+          console.log("[Zendesk KB Tool] No embeddings available - semantic search requires embeddings to be generated first");
         }
       } else {
         const allArticles = await ZendeskArticlesStorage.getAllArticles({
