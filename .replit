@@ -87,7 +87,7 @@ SOLUTION_CENTER_API_TOKEN = "41601cecf49044bc3d12262e16b3289d0b3696f006013733a63
 [deployment]
 deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
-run = ["npm", "run"]
+run = ["npm", "run", "start"]
 
 [objectStorage]
 defaultBucketID = "replit-objstore-d057708f-ac8a-4e6c-b233-8271b6c66626"
