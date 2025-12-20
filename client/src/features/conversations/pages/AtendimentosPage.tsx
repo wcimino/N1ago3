@@ -12,7 +12,6 @@ import type { ConversationListItem } from "../../../types";
 
 interface FiltersResponse {
   productStandards: string[];
-  intents: string[];
   objectiveProblems: string[];
   customerRequestTypes: string[];
 }
@@ -36,11 +35,9 @@ export function AtendimentosPage() {
 
   const urlParams = new URLSearchParams(search);
   const initialProductStandard = urlParams.get("productStandard") || "";
-  const initialIntent = urlParams.get("intent") || "";
   const initialEmotionLevel = urlParams.get("emotionLevel") || "";
 
   const [productStandardFilter, setProductStandardFilter] = useState<string>(initialProductStandard);
-  const [intentFilter, setIntentFilter] = useState<string>(initialIntent);
   const [emotionLevelFilter, setEmotionLevelFilter] = useState<string>(initialEmotionLevel);
   const [userAuthenticatedFilter, setUserAuthenticatedFilter] = useState<string>("");
   const [handledByN1agoFilter, setHandledByN1agoFilter] = useState<string>("");
@@ -63,10 +60,8 @@ export function AtendimentosPage() {
   useEffect(() => {
     const params = new URLSearchParams(search);
     const productStandard = params.get("productStandard") || "";
-    const intent = params.get("intent") || "";
     const emotionLevel = params.get("emotionLevel") || "";
     setProductStandardFilter(productStandard);
-    setIntentFilter(intent);
     setEmotionLevelFilter(emotionLevel);
   }, [search]);
 
@@ -81,7 +76,6 @@ export function AtendimentosPage() {
   const endpoint = useMemo(() => {
     const params = new URLSearchParams();
     if (productStandardFilter) params.set("productStandard", productStandardFilter);
-    if (intentFilter) params.set("intent", intentFilter);
     if (handlerFilter && handlerFilter !== "all") params.set("handler", handlerFilter);
     if (emotionLevelFilter) params.set("emotionLevel", emotionLevelFilter);
     if (clientFilterDebounced) params.set("client", clientFilterDebounced);
@@ -91,7 +85,7 @@ export function AtendimentosPage() {
     if (customerRequestTypeFilter) params.set("customerRequestType", customerRequestTypeFilter);
     const queryString = params.toString();
     return queryString ? `/api/conversations/list?${queryString}` : "/api/conversations/list";
-  }, [productStandardFilter, intentFilter, handlerFilter, emotionLevelFilter, clientFilterDebounced, userAuthenticatedFilter, handledByN1agoFilter, objectiveProblemFilter, customerRequestTypeFilter]);
+  }, [productStandardFilter, handlerFilter, emotionLevelFilter, clientFilterDebounced, userAuthenticatedFilter, handledByN1agoFilter, objectiveProblemFilter, customerRequestTypeFilter]);
 
   const {
     data: conversations,
@@ -106,17 +100,16 @@ export function AtendimentosPage() {
     showingFrom,
     showingTo,
   } = usePaginatedQuery<ConversationListItem>({
-    queryKey: `conversations-list-${productStandardFilter}-${intentFilter}-${handlerFilter}-${emotionLevelFilter}-${clientFilterDebounced}-${userAuthenticatedFilter}-${handledByN1agoFilter}-${objectiveProblemFilter}-${customerRequestTypeFilter}`,
+    queryKey: `conversations-list-${productStandardFilter}-${handlerFilter}-${emotionLevelFilter}-${clientFilterDebounced}-${userAuthenticatedFilter}-${handledByN1agoFilter}-${objectiveProblemFilter}-${customerRequestTypeFilter}`,
     endpoint,
     limit: 20,
     dataKey: "conversations",
   });
 
-  const hasFilters = productStandardFilter || intentFilter || emotionLevelFilter || clientFilterInput || userAuthenticatedFilter || handledByN1agoFilter || objectiveProblemFilter || customerRequestTypeFilter;
+  const hasFilters = productStandardFilter || emotionLevelFilter || clientFilterInput || userAuthenticatedFilter || handledByN1agoFilter || objectiveProblemFilter || customerRequestTypeFilter;
 
   const clearFilters = () => {
     setProductStandardFilter("");
-    setIntentFilter("");
     setEmotionLevelFilter("");
     setClientFilterInput("");
     setUserAuthenticatedFilter("");
@@ -176,11 +169,9 @@ export function AtendimentosPage() {
         <>
           <FilterBar
             productStandards={filters?.productStandards || []}
-            intents={filters?.intents || []}
             objectiveProblems={filters?.objectiveProblems || []}
             customerRequestTypes={filters?.customerRequestTypes || []}
             productStandardFilter={productStandardFilter}
-            intentFilter={intentFilter}
             emotionLevelFilter={emotionLevelFilter}
             clientFilter={clientFilterInput}
             userAuthenticatedFilter={userAuthenticatedFilter}
@@ -188,7 +179,6 @@ export function AtendimentosPage() {
             objectiveProblemFilter={objectiveProblemFilter}
             customerRequestTypeFilter={customerRequestTypeFilter}
             onProductStandardChange={setProductStandardFilter}
-            onIntentChange={setIntentFilter}
             onEmotionLevelChange={setEmotionLevelFilter}
             onClientChange={setClientFilterInput}
             onUserAuthenticatedChange={setUserAuthenticatedFilter}

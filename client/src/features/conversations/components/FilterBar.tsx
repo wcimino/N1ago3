@@ -3,11 +3,9 @@ import { EMOTION_OPTIONS, USER_AUTHENTICATED_OPTIONS, HANDLED_BY_N1AGO_OPTIONS }
 
 interface FilterBarProps {
   productStandards: string[];
-  intents: string[];
   objectiveProblems: string[];
   customerRequestTypes: string[];
   productStandardFilter: string;
-  intentFilter: string;
   emotionLevelFilter: string;
   clientFilter: string;
   userAuthenticatedFilter: string;
@@ -15,7 +13,6 @@ interface FilterBarProps {
   objectiveProblemFilter: string;
   customerRequestTypeFilter: string;
   onProductStandardChange: (value: string) => void;
-  onIntentChange: (value: string) => void;
   onEmotionLevelChange: (value: string) => void;
   onClientChange: (value: string) => void;
   onUserAuthenticatedChange: (value: string) => void;
@@ -27,11 +24,9 @@ interface FilterBarProps {
 
 export function FilterBar({
   productStandards,
-  intents,
   objectiveProblems,
   customerRequestTypes,
   productStandardFilter,
-  intentFilter,
   emotionLevelFilter,
   clientFilter,
   userAuthenticatedFilter,
@@ -39,7 +34,6 @@ export function FilterBar({
   objectiveProblemFilter,
   customerRequestTypeFilter,
   onProductStandardChange,
-  onIntentChange,
   onEmotionLevelChange,
   onClientChange,
   onUserAuthenticatedChange,
@@ -54,7 +48,6 @@ export function FilterBar({
         { type: "search", value: clientFilter, onChange: onClientChange, placeholder: "Buscar..." },
         { type: "select", value: productStandardFilter, onChange: onProductStandardChange, placeholder: "Produtos", options: productStandards },
         { type: "select", value: customerRequestTypeFilter, onChange: onCustomerRequestTypeChange, placeholder: "Tipo Solicitacao", options: customerRequestTypes },
-        { type: "select", value: intentFilter, onChange: onIntentChange, placeholder: "Intencoes", options: intents },
         { type: "select", value: objectiveProblemFilter, onChange: onObjectiveProblemChange, placeholder: "Problema", options: objectiveProblems },
         { type: "select", value: emotionLevelFilter, onChange: onEmotionLevelChange, placeholder: "Emocao", options: EMOTION_OPTIONS },
         { type: "select", value: userAuthenticatedFilter, onChange: onUserAuthenticatedChange, placeholder: "Usuario", options: USER_AUTHENTICATED_OPTIONS },
