@@ -180,11 +180,15 @@ router.patch("/api/knowledge/objective-problems/:id", async (req, res) => {
       return res.status(400).json({ error: "No valid fields to update" });
     }
 
-    const problem = await updateObjectiveProblem(id, updateData);
-    if (!problem) {
+    const updated = await updateObjectiveProblem(id, updateData);
+    if (!updated) {
       return res.status(404).json({ error: "Objective problem not found" });
     }
 
+    const problem = await getObjectiveProblemById(id);
+    if (!problem) {
+      return res.status(404).json({ error: "Objective problem not found after update" });
+    }
     res.json(problem);
   } catch (error) {
     console.error("Error patching objective problem:", error);

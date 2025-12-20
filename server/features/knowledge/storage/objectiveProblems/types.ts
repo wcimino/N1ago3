@@ -12,6 +12,7 @@ export interface SearchObjectiveProblemsParams {
   keywords?: string;
   productId?: number;
   onlyActive?: boolean;
+  onlyVisibleInSearch?: boolean;
   limit?: number;
 }
 
@@ -31,6 +32,7 @@ export interface SemanticSearchParams {
   queryEmbedding: number[];
   productId?: number;
   onlyActive?: boolean;
+  onlyVisibleInSearch?: boolean;
   limit?: number;
 }
 

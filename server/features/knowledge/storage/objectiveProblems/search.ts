@@ -5,7 +5,7 @@ import {
   productsCatalog,
   type KnowledgeBaseObjectiveProblem 
 } from "../../../../../shared/schema.js";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import { calculateMatchScore, parseSearchTerms, type MatchField } from "../../../../shared/utils/matchScoring.js";
 import type { 
   SearchObjectiveProblemsParams, 
@@ -41,12 +41,19 @@ function calculateProblemMatchScore(
 export async function searchObjectiveProblems(
   params: SearchObjectiveProblemsParams
 ): Promise<ObjectiveProblemSearchResult[]> {
-  const { keywords, productId, onlyActive = true, limit = 10 } = params;
+  const { keywords, productId, onlyActive = true, onlyVisibleInSearch = false, limit = 10 } = params;
+
+  const activeCondition = onlyActive ? eq(knowledgeBaseObjectiveProblems.isActive, true) : undefined;
+  const visibleCondition = onlyVisibleInSearch ? eq(knowledgeBaseObjectiveProblems.visibleInSearch, true) : undefined;
+  
+  const whereClause = activeCondition && visibleCondition 
+    ? and(activeCondition, visibleCondition)
+    : activeCondition || visibleCondition;
 
   let problems = await db
     .select()
     .from(knowledgeBaseObjectiveProblems)
-    .where(onlyActive ? eq(knowledgeBaseObjectiveProblems.isActive, true) : undefined)
+    .where(whereClause)
     .orderBy(knowledgeBaseObjectiveProblems.name);
 
   if (productId) {
@@ -110,83 +117,36 @@ export async function searchObjectiveProblems(
 export async function searchObjectiveProblemsBySimilarity(
   params: SemanticSearchParams
 ): Promise<SemanticSearchResult[]> {
-  const { queryEmbedding, productId, onlyActive = true, limit = 10 } = params;
+  const { queryEmbedding, productId, onlyActive = true, onlyVisibleInSearch = false, limit = 10 } = params;
   
   const embeddingString = `[${queryEmbedding.join(',')}]`;
   
-  let results;
+  const activeCondition = onlyActive ? sql`AND p.is_active = true` : sql``;
+  const visibleCondition = onlyVisibleInSearch ? sql`AND p.visible_in_search = true` : sql``;
+  const productCondition = productId 
+    ? sql`AND EXISTS (
+        SELECT 1 FROM knowledge_base_objective_problems_has_products_catalog pc 
+        WHERE pc.objective_problem_id = p.id AND pc.product_id = ${productId}
+      )`
+    : sql``;
   
-  if (productId && onlyActive) {
-    results = await db.execute(sql`
-      SELECT 
-        p.id,
-        p.name,
-        p.description,
-        p.synonyms,
-        p.examples,
-        ROUND((1 - (e.embedding_vector::vector <=> ${embeddingString}::vector)) * 100) as similarity
-      FROM knowledge_base_objective_problems p
-      INNER JOIN knowledge_base_objective_problems_embeddings e ON p.id = e.problem_id
-      WHERE e.embedding_vector IS NOT NULL
-        AND p.is_active = true
-        AND EXISTS (
-          SELECT 1 FROM knowledge_base_objective_problems_has_products_catalog pc 
-          WHERE pc.objective_problem_id = p.id AND pc.product_id = ${productId}
-        )
-      ORDER BY e.embedding_vector::vector <=> ${embeddingString}::vector
-      LIMIT ${limit}
-    `);
-  } else if (productId) {
-    results = await db.execute(sql`
-      SELECT 
-        p.id,
-        p.name,
-        p.description,
-        p.synonyms,
-        p.examples,
-        ROUND((1 - (e.embedding_vector::vector <=> ${embeddingString}::vector)) * 100) as similarity
-      FROM knowledge_base_objective_problems p
-      INNER JOIN knowledge_base_objective_problems_embeddings e ON p.id = e.problem_id
-      WHERE e.embedding_vector IS NOT NULL
-        AND EXISTS (
-          SELECT 1 FROM knowledge_base_objective_problems_has_products_catalog pc 
-          WHERE pc.objective_problem_id = p.id AND pc.product_id = ${productId}
-        )
-      ORDER BY e.embedding_vector::vector <=> ${embeddingString}::vector
-      LIMIT ${limit}
-    `);
-  } else if (onlyActive) {
-    results = await db.execute(sql`
-      SELECT 
-        p.id,
-        p.name,
-        p.description,
-        p.synonyms,
-        p.examples,
-        ROUND((1 - (e.embedding_vector::vector <=> ${embeddingString}::vector)) * 100) as similarity
-      FROM knowledge_base_objective_problems p
-      INNER JOIN knowledge_base_objective_problems_embeddings e ON p.id = e.problem_id
-      WHERE e.embedding_vector IS NOT NULL
-        AND p.is_active = true
-      ORDER BY e.embedding_vector::vector <=> ${embeddingString}::vector
-      LIMIT ${limit}
-    `);
-  } else {
-    results = await db.execute(sql`
-      SELECT 
-        p.id,
-        p.name,
-        p.description,
-        p.synonyms,
-        p.examples,
-        ROUND((1 - (e.embedding_vector::vector <=> ${embeddingString}::vector)) * 100) as similarity
-      FROM knowledge_base_objective_problems p
-      INNER JOIN knowledge_base_objective_problems_embeddings e ON p.id = e.problem_id
-      WHERE e.embedding_vector IS NOT NULL
-      ORDER BY e.embedding_vector::vector <=> ${embeddingString}::vector
-      LIMIT ${limit}
-    `);
-  }
+  const results = await db.execute(sql`
+    SELECT 
+      p.id,
+      p.name,
+      p.description,
+      p.synonyms,
+      p.examples,
+      ROUND((1 - (e.embedding_vector::vector <=> ${embeddingString}::vector)) * 100) as similarity
+    FROM knowledge_base_objective_problems p
+    INNER JOIN knowledge_base_objective_problems_embeddings e ON p.id = e.problem_id
+    WHERE e.embedding_vector IS NOT NULL
+      ${activeCondition}
+      ${visibleCondition}
+      ${productCondition}
+    ORDER BY e.embedding_vector::vector <=> ${embeddingString}::vector
+    LIMIT ${limit}
+  `);
   
   const allProducts = await db.select().from(productsCatalog);
   const productMap = new Map(allProducts.map((prod: typeof allProducts[number]) => [prod.id, prod.fullName]));

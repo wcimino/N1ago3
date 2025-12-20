@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, AlertCircle, ChevronRight, ChevronDown, Minus, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, AlertCircle, ChevronRight, ChevronDown, Minus, Loader2, Eye, Bot } from "lucide-react";
 import { FilterBar } from "../../../shared/components/ui/FilterBar";
 import { useCrudMutations, useCrudFormState } from "../../../shared/hooks";
-import { apiRequest } from "../../../lib/queryClient";
+import { apiRequest, queryClient } from "../../../lib/queryClient";
 import { 
   ObjectiveProblemForm, 
   emptyObjectiveProblemForm, 
@@ -74,6 +74,16 @@ export function ObjectiveProblemsPage() {
     transformUpdateData: transformObjectiveProblemFormData,
     onCreateSuccess: () => { setEditingProblem(null); resetForm(); },
     onUpdateSuccess: () => { setEditingProblem(null); resetForm(); },
+  });
+
+  const toggleVisibilityMutation = useMutation({
+    mutationFn: async ({ id, field, value }: { id: number; field: "visibleInSearch" | "availableForAutoReply"; value: boolean }) => {
+      const res = await apiRequest("PATCH", `/api/knowledge/objective-problems/${id}`, { [field]: value });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/knowledge/objective-problems"] });
+    },
   });
 
   const filteredProblems = useMemo(() => {
@@ -211,6 +221,38 @@ export function ObjectiveProblemsPage() {
         <p className="text-sm text-gray-500 truncate">{problem.description}</p>
       </div>
       <div className="flex items-center gap-1 flex-shrink-0">
+        <button
+          onClick={() => toggleVisibilityMutation.mutate({ 
+            id: problem.id, 
+            field: "visibleInSearch", 
+            value: !problem.visibleInSearch 
+          })}
+          disabled={toggleVisibilityMutation.isPending}
+          className={`p-1.5 rounded transition-colors disabled:opacity-50 ${
+            problem.visibleInSearch 
+              ? "text-emerald-500 hover:bg-emerald-50" 
+              : "text-gray-300 hover:bg-gray-50"
+          }`}
+          title={problem.visibleInSearch ? "Visível na busca" : "Oculto da busca"}
+        >
+          <Eye className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => toggleVisibilityMutation.mutate({ 
+            id: problem.id, 
+            field: "availableForAutoReply", 
+            value: !problem.availableForAutoReply 
+          })}
+          disabled={toggleVisibilityMutation.isPending}
+          className={`p-1.5 rounded transition-colors disabled:opacity-50 ${
+            problem.availableForAutoReply 
+              ? "text-emerald-500 hover:bg-emerald-50" 
+              : "text-gray-300 hover:bg-gray-50"
+          }`}
+          title={problem.availableForAutoReply ? "Disponível para resposta automática" : "Indisponível para resposta automática"}
+        >
+          <Bot className="w-4 h-4" />
+        </button>
         <button
           onClick={() => handleEdit(problem)}
           className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded"
