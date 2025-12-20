@@ -82,7 +82,7 @@ export async function syncFromProd(
       `);
     }
     if (prodProducts.length > 0) {
-      await devPool.query(`SELECT setval('products_catalog_id_seq', (SELECT COALESCE(MAX(id), 1) FROM products_catalog), true)`);
+      await devPool.query(`SELECT setval('ifood_products_id_seq', (SELECT COALESCE(MAX(id), 1) FROM products_catalog), true)`);
     }
 
     onProgress?.({ step: "subjects", current: 0, total: 1, details: "Sincronizando assuntos..." });
