@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Route, Switch, Link, Redirect, useLocation } from "wouter";
-import { Home, Sparkles, Settings, LogOut, MessageCircle, BookOpen, BarChart3, Menu, X, ChevronDown, RefreshCw } from "lucide-react";
+import { Home, Sparkles, Settings, LogOut, MessageCircle, BookOpen, BarChart3, Menu, X } from "lucide-react";
 import { useAuth, useConfirmation } from "./shared/hooks";
-import { NavLink, EnvironmentBadge, N1agoLogo, ConfirmModal, SyncModal } from "./shared/components";
+import { NavLink, EnvironmentBadge, N1agoLogo, ConfirmModal } from "./shared/components";
 import { TimezoneProvider } from "./contexts/TimezoneContext";
 import { AIPage } from "./features/ai";
 import { SettingsPage, ReprocessingPage, AutoClosePage, ProductCatalogPage, DuplicatesPage, ArchivePage, ZendeskUsersPage, ZendeskUserDetailPage } from "./features/settings";
@@ -81,15 +81,6 @@ function AuthenticatedApp() {
   const { user } = useAuth();
   const confirmation = useConfirmation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [syncModalOpen, setSyncModalOpen] = useState(false);
-  const [isDevEnvironment, setIsDevEnvironment] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/admin/sync-status")
-      .then((res) => res.json())
-      .then((data) => setIsDevEnvironment(data.available))
-      .catch(() => setIsDevEnvironment(false));
-  }, []);
 
   const handleLogout = () => {
     setMobileMenuOpen(false);
@@ -144,16 +135,6 @@ function AuthenticatedApp() {
               <span className="hidden lg:inline text-sm text-gray-600 truncate max-w-[180px]">
                 {user?.email}
               </span>
-              {isDevEnvironment && (
-                <button
-                  onClick={() => setSyncModalOpen(true)}
-                  className="hidden md:inline-flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 border border-blue-300 rounded-lg hover:bg-blue-50"
-                  title="Sincronizar dados de produção"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  <span className="hidden lg:inline">Sync</span>
-                </button>
-              )}
               <button
                 onClick={handleLogout}
                 className="hidden md:inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 border rounded-lg hover:bg-gray-50"
@@ -223,11 +204,6 @@ function AuthenticatedApp() {
         confirmLabel={confirmation.confirmLabel}
         cancelLabel={confirmation.cancelLabel}
         variant={confirmation.variant}
-      />
-
-      <SyncModal
-        isOpen={syncModalOpen}
-        onClose={() => setSyncModalOpen(false)}
       />
     </div>
   );
