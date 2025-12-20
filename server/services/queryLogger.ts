@@ -147,19 +147,19 @@ export async function getQueryStats(options: {
   if (period === "1h" || period === "24h") {
     const interval = period === "1h" ? "1 hour" : "24 hours";
     
-    let orderByColumn;
+    let orderByColumn: string;
     switch (orderBy) {
       case "avgDuration":
-        orderByColumn = sql`avg_duration_ms DESC`;
+        orderByColumn = '"avgDurationMs" DESC';
         break;
       case "totalDuration":
-        orderByColumn = sql`total_duration_ms DESC`;
+        orderByColumn = '"totalDurationMs" DESC';
         break;
       case "maxDuration":
-        orderByColumn = sql`max_duration_ms DESC`;
+        orderByColumn = '"maxDurationMs" DESC';
         break;
       default:
-        orderByColumn = sql`call_count DESC`;
+        orderByColumn = '"callCount" DESC';
     }
 
     const results = await originalDb.execute(sql`
@@ -175,7 +175,7 @@ export async function getQueryStats(options: {
       FROM query_logs
       WHERE created_at >= NOW() - INTERVAL '${sql.raw(interval)}'
       GROUP BY query_hash, query_normalized
-      ORDER BY ${orderByColumn}
+      ORDER BY ${sql.raw(orderByColumn)}
       LIMIT ${limit}
     `);
     
