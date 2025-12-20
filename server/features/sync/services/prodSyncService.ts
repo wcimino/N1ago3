@@ -128,8 +128,8 @@ export async function syncFromProd(
 
     for (const article of prodArticles) {
       await devDb.execute(sql`
-        INSERT INTO knowledge_base (id, question, question_normalized, answer, keywords, question_variation, product_id, subject_id, intent_id, is_active, created_at, updated_at)
-        VALUES (${article.id}, ${article.question}, ${article.questionNormalized}, ${article.answer}, ${article.keywords}, ${JSON.stringify(article.questionVariation)}::jsonb, ${article.productId}, ${article.subjectId}, ${article.intentId}, ${article.isActive}, ${article.createdAt}, ${article.updatedAt})
+        INSERT INTO knowledge_base (id, question, question_normalized, answer, keywords, question_variation, product_id, subject_id, intent_id, visible_in_search, available_for_auto_reply, created_at, updated_at)
+        VALUES (${article.id}, ${article.question}, ${article.questionNormalized}, ${article.answer}, ${article.keywords}, ${JSON.stringify(article.questionVariation)}::jsonb, ${article.productId}, ${article.subjectId}, ${article.intentId}, ${article.visibleInSearch}, ${article.availableForAutoReply}, ${article.createdAt}, ${article.updatedAt})
       `);
     }
     if (prodArticles.length > 0) {

@@ -25,7 +25,7 @@ export const knowledgeBaseSearch = {
     const conditions: SQL[] = [];
     
     if (onlyActive) {
-      conditions.push(eq(knowledgeBase.isActive, true));
+      conditions.push(eq(knowledgeBase.visibleInSearch, true));
     }
     
     if (productId) {
@@ -96,7 +96,7 @@ export const knowledgeBaseSearch = {
     conditions.push(sql`e.embedding_vector IS NOT NULL`);
     
     if (onlyActive) {
-      conditions.push(sql`a.is_active = true`);
+      conditions.push(sql`a.visible_in_search = true`);
     }
     
     if (options.productId) {
@@ -121,7 +121,8 @@ export const knowledgeBaseSearch = {
         a.product_id as "productId",
         a.subject_id as "subjectId",
         a.intent_id as "intentId",
-        a.is_active as "isActive",
+        a.visible_in_search as "visibleInSearch",
+        a.available_for_auto_reply as "availableForAutoReply",
         a.created_at as "createdAt",
         a.updated_at as "updatedAt",
         ROUND((1 - (e.embedding_vector::vector <=> ${embeddingString}::vector)) * 100) as similarity
@@ -141,7 +142,8 @@ export const knowledgeBaseSearch = {
       productId: row.productId,
       subjectId: row.subjectId,
       intentId: row.intentId,
-      isActive: row.isActive,
+      visibleInSearch: row.visibleInSearch,
+      availableForAutoReply: row.availableForAutoReply,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       similarity: Number(row.similarity),

@@ -28,7 +28,8 @@ export interface SemanticSearchResult {
   productId: number | null;
   subjectId: number | null;
   intentId: number | null;
-  isActive: boolean;
+  visibleInSearch: boolean;
+  availableForAutoReply: boolean;
   createdAt: Date;
   updatedAt: Date;
   similarity: number;

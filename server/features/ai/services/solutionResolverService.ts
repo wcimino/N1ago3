@@ -50,10 +50,10 @@ export class SolutionResolverService {
     }
 
     if (topMatch?.source === "article") {
-      const isArticleActive = await this.isArticleActive(topMatch.id);
+      const isAvailable = await this.isArticleAvailableForAutoReply(topMatch.id);
       
-      if (!isArticleActive) {
-        console.log(`[SolutionResolver] Article ${topMatch.id} is inactive, skipping article_default solution`);
+      if (!isAvailable) {
+        console.log(`[SolutionResolver] Article ${topMatch.id} is not available for auto-reply, skipping article_default solution`);
       } else {
         const articleDefaultSolution = await this.getArticleDefaultSolution();
         if (articleDefaultSolution) {
@@ -132,15 +132,15 @@ export class SolutionResolverService {
     return result || null;
   }
 
-  private static async isArticleActive(articleId: number): Promise<boolean> {
+  private static async isArticleAvailableForAutoReply(articleId: number): Promise<boolean> {
     const [article] = await db.select({
-      isActive: knowledgeBase.isActive,
+      availableForAutoReply: knowledgeBase.availableForAutoReply,
     })
       .from(knowledgeBase)
       .where(eq(knowledgeBase.id, articleId))
       .limit(1);
 
-    return article?.isActive ?? false;
+    return article?.availableForAutoReply ?? false;
   }
 
   static async createCaseSolutionWithActions(

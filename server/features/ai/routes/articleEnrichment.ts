@@ -174,7 +174,8 @@ router.post("/api/ai/article-enrichment/inline", isAuthenticated, requireAuthori
           productId: null,
           subjectId: null,
           intentId: intentId,
-          isActive: true,
+          visibleInSearch: true,
+          availableForAutoReply: true,
           createdAt: now,
           updatedAt: now,
         }
@@ -208,7 +209,8 @@ router.post("/api/ai/article-enrichment/inline", isAuthenticated, requireAuthori
           productId: null,
           subjectId: null,
           intentId: intentId,
-          isActive: true,
+          visibleInSearch: true,
+          availableForAutoReply: true,
           createdAt: now,
           updatedAt: now,
         }

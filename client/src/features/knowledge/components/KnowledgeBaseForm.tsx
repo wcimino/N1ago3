@@ -51,7 +51,8 @@ export function KnowledgeBaseForm({
     keywords: [] as string[],
     questionVariation: [] as string[],
     questionNormalized: [] as string[],
-    isActive: false,
+    visibleInSearch: false,
+    availableForAutoReply: false,
   });
   const [initializedForId, setInitializedForId] = useState<number | null>(null);
 
@@ -73,7 +74,8 @@ export function KnowledgeBaseForm({
         keywords: parseArrayField(initialData.keywords),
         questionVariation: initialData.questionVariation || [],
         questionNormalized: parseArrayField(initialData.questionNormalized),
-        isActive: initialData.isActive,
+        visibleInSearch: initialData.visibleInSearch,
+        availableForAutoReply: initialData.availableForAutoReply,
       });
       setInitializedForId(initialData.id);
     } else if (prefilledData && !initialData && initializedForId !== -1) {
@@ -83,7 +85,8 @@ export function KnowledgeBaseForm({
         keywords: [],
         questionVariation: [],
         questionNormalized: [],
-        isActive: false,
+        visibleInSearch: false,
+        availableForAutoReply: false,
       });
       setInitializedForId(-1);
     } else if (!initialData && !prefilledData && initializedForId !== 0) {
@@ -93,7 +96,8 @@ export function KnowledgeBaseForm({
         keywords: [],
         questionVariation: [],
         questionNormalized: [],
-        isActive: false,
+        visibleInSearch: false,
+        availableForAutoReply: false,
       });
       setInitializedForId(0);
     }
@@ -115,7 +119,8 @@ export function KnowledgeBaseForm({
       productId: prefilledData?.productId || hierarchy.selection.productId,
       subjectId: prefilledData?.subjectId || hierarchy.selection.subjectId,
       intentId: prefilledData?.intentId || hierarchy.selection.intentId,
-      isActive: formData.isActive,
+      visibleInSearch: formData.visibleInSearch,
+      availableForAutoReply: formData.availableForAutoReply,
     });
   };
 
@@ -246,23 +251,28 @@ export function KnowledgeBaseForm({
               </>
             )}
           </button>
-          <span className={`text-sm font-medium ${formData.isActive ? 'text-green-700' : 'text-gray-500'}`}>
-            {formData.isActive ? 'Ativo' : 'Inativo'}
-          </span>
-          <button
-            type="button"
-            onClick={() => setFormData(prev => ({ ...prev, isActive: !prev.isActive }))}
-            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-              formData.isActive ? 'bg-green-500' : 'bg-gray-300'
-            }`}
-          >
-            <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                formData.isActive ? 'translate-x-5' : 'translate-x-0'
-              }`}
-            />
-          </button>
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={formData.visibleInSearch}
+            onChange={(e) => setFormData(prev => ({ ...prev, visibleInSearch: e.target.checked }))}
+            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+          />
+          <span className="text-sm text-gray-700">Visível na busca de problemas e artigos</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={formData.availableForAutoReply}
+            onChange={(e) => setFormData(prev => ({ ...prev, availableForAutoReply: e.target.checked }))}
+            className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
+          />
+          <span className="text-sm text-gray-700">Disponível para resposta automática</span>
+        </label>
       </div>
 
       <div className="space-y-4">

@@ -13,7 +13,8 @@ export interface KnowledgeBaseArticle {
   productId: number | null;
   subjectId: number | null;
   intentId: number | null;
-  isActive: boolean;
+  visibleInSearch: boolean;
+  availableForAutoReply: boolean;
   createdAt: string;
   updatedAt: string;
 }
