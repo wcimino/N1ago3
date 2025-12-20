@@ -224,16 +224,15 @@ export function buildFullPrompt(
   responseFormat: string | null,
   variables: PromptVariables
 ): { systemPrompt: string; userPrompt: string } {
-  const systemWithVars = replacePromptVariables(promptSystem, variables);
+  let systemPrompt = replacePromptVariables(promptSystem, variables);
   
-  let userPrompt = '';
   if (responseFormat) {
-    userPrompt = `\n\n## Formato da Resposta\n${responseFormat}`;
+    systemPrompt += `\n\n## Formato da Resposta\n${responseFormat}`;
   }
 
   return {
-    systemPrompt: systemWithVars,
-    userPrompt: userPrompt
+    systemPrompt,
+    userPrompt: ''
   };
 }
 
