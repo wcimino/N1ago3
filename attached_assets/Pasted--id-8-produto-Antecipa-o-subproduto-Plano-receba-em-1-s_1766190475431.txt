@@ -1,0 +1,110 @@
+[
+  {
+    "id": 8,
+    "produto": "Antecipação",
+    "subproduto": "Plano receba em 1 semana (D7)",
+    "full_name": "Antecipação > Plano receba em 1 semana (D7)"
+  },
+  {
+    "id": 9,
+    "produto": "Antecipação",
+    "subproduto": "Plano receba em 4 semanas (D30)",
+    "full_name": "Antecipação > Plano receba em 4 semanas (D30)"
+  },
+  {
+    "id": 5,
+    "produto": "Antecipação",
+    "subproduto": null,
+    "full_name": "Antecipação"
+  },
+  {
+    "id": 10,
+    "produto": "Cartão",
+    "subproduto": "Cartão de Crédito",
+    "full_name": "Cartão > Cartão de Crédito"
+  },
+  {
+    "id": 11,
+    "produto": "Cartão",
+    "subproduto": "Cartão de Débito",
+    "full_name": "Cartão > Cartão de Débito"
+  },
+  {
+    "id": 2,
+    "produto": "Cartão",
+    "subproduto": null,
+    "full_name": "Cartão"
+  },
+  {
+    "id": 12,
+    "produto": "Conta Digital",
+    "subproduto": "Extrato",
+    "full_name": "Conta Digital > Extrato"
+  },
+  {
+    "id": 13,
+    "produto": "Conta Digital",
+    "subproduto": "PIX",
+    "full_name": "Conta Digital > PIX"
+  },
+  {
+    "id": 14,
+    "produto": "Conta Digital",
+    "subproduto": "Pagamento de Boleto",
+    "full_name": "Conta Digital > Pagamento de Boleto"
+  },
+  {
+    "id": 15,
+    "produto": "Conta Digital",
+    "subproduto": "TED",
+    "full_name": "Conta Digital > TED"
+  },
+  {
+    "id": 1,
+    "produto": "Conta Digital",
+    "subproduto": null,
+    "full_name": "Conta Digital"
+  },
+  {
+    "id": 4,
+    "produto": "Empréstimo / Crédito",
+    "subproduto": null,
+    "full_name": "Empréstimo / Crédito"
+  },
+  {
+    "id": 16,
+    "produto": "Maquinona",
+    "subproduto": "Antecipação",
+    "full_name": "Maquinona > Antecipação"
+  },
+  {
+    "id": 6,
+    "produto": "Maquinona",
+    "subproduto": null,
+    "full_name": "Maquinona"
+  },
+  {
+    "id": 7,
+    "produto": "Outros",
+    "subproduto": null,
+    "full_name": "Outros"
+  },
+  {
+    "id": 19,
+    "produto": "Repasse",
+    "subproduto": "Gestor de Pedidos",
+    "full_name": "Repasse > Gestor de Pedidos"
+  },
+  {
+    "id": 18,
+    "produto": "Repasse",
+    "subproduto": "Portal do Parceiro",
+    "full_name": "Repasse > Portal do Parceiro"
+  },
+  {
+    "id": 17,
+    "produto": "Repasse",
+    "subproduto": "Repasse",
+    "full_name": "Repasse > Repasse"
+  }
+]

@@ -1,0 +1,587 @@
+[
+  {
+    "id": 101,
+    "question": "Como posso contestar uma compra no meu cartão?",
+    "product_id": 2,
+    "subject_id": 10,
+    "intent_id": 5,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 102,
+    "question": "Como posso verificar minha elegibilidade para contratar um cartão?",
+    "product_id": 2,
+    "subject_id": 11,
+    "intent_id": 7,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 103,
+    "question": "Como consultar o limite do meu cartão?",
+    "product_id": 2,
+    "subject_id": 8,
+    "intent_id": 9,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 104,
+    "question": "Como posso aumentar o limite do meu cartão?",
+    "product_id": 2,
+    "subject_id": 8,
+    "intent_id": 10,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 105,
+    "question": "Como eu faço para contratar o Cartão de Crédito iFood Pago?",
+    "product_id": 2,
+    "subject_id": 11,
+    "intent_id": 11,
+    "is_active": true,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 107,
+    "question": "Por que minha compra foi negada?",
+    "product_id": 2,
+    "subject_id": 10,
+    "intent_id": 15,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 108,
+    "question": "Como resolver uma compra duplicada com meu cartão?",
+    "product_id": 2,
+    "subject_id": 10,
+    "intent_id": 14,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 109,
+    "question": "Como posso consultar e pagar minha fatura do cartão?",
+    "product_id": 2,
+    "subject_id": 3,
+    "intent_id": 17,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 110,
+    "question": "Como pagar a fatura do meu cartão?",
+    "product_id": 2,
+    "subject_id": 3,
+    "intent_id": 19,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 111,
+    "question": "O que acontece se eu pagar minha fatura do cartão com atraso?",
+    "product_id": 2,
+    "subject_id": 3,
+    "intent_id": 20,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 112,
+    "question": "Como posso parcelar o pagamento da minha fatura do cartão?",
+    "product_id": 2,
+    "subject_id": 3,
+    "intent_id": 21,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 113,
+    "question": "Como funciona o pagamento mínimo da fatura do cartão?",
+    "product_id": 2,
+    "subject_id": 3,
+    "intent_id": 22,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 115,
+    "question": "O cartão oferece programa de pontos ou cashback?",
+    "product_id": 2,
+    "subject_id": 7,
+    "intent_id": 3,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 116,
+    "question": "Quais são os benefícios do cartão no iFood Shop?",
+    "product_id": 2,
+    "subject_id": 7,
+    "intent_id": 4,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 117,
+    "question": "O que fazer se houver erro ao contratar o cartão pelo aplicativo?",
+    "product_id": 2,
+    "subject_id": 11,
+    "intent_id": 8,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 118,
+    "question": "Quais documentos são necessários para contratar o cartão de crédito?",
+    "product_id": 2,
+    "subject_id": 11,
+    "intent_id": 12,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 119,
+    "question": "Qual é a data de vencimento da minha fatura do cartão?",
+    "product_id": 2,
+    "subject_id": 3,
+    "intent_id": 18,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 120,
+    "question": "Qual o prazo de entrega do meu cartão?",
+    "product_id": 2,
+    "subject_id": 2,
+    "intent_id": 24,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 121,
+    "question": "O que fazer se meu cartão não chegou ainda?",
+    "product_id": 2,
+    "subject_id": 2,
+    "intent_id": 25,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 122,
+    "question": "O que saber sobre tarifas de benefícios no cartão?",
+    "product_id": 2,
+    "subject_id": 7,
+    "intent_id": 28,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 125,
+    "question": "Onde posso sacar meu dinheiro?",
+    "product_id": 2,
+    "subject_id": 13,
+    "intent_id": 31,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 126,
+    "question": "Como posso cadastrar a senha do meu cartão?",
+    "product_id": 2,
+    "subject_id": 5,
+    "intent_id": 33,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 127,
+    "question": "Preços e tarifas para saque com cartão",
+    "product_id": 2,
+    "subject_id": 13,
+    "intent_id": 54,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 128,
+    "question": "O que fazer em caso de perda ou roubo do meu cartão?",
+    "product_id": 2,
+    "subject_id": 5,
+    "intent_id": 34,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 129,
+    "question": "Como usar meu cartão por aproximação?",
+    "product_id": 2,
+    "subject_id": 14,
+    "intent_id": 35,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 130,
+    "question": "Como usar meu cartão com chip e senha?",
+    "product_id": 2,
+    "subject_id": 14,
+    "intent_id": 36,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 131,
+    "question": "Como usar meu cartão virtual?",
+    "product_id": 2,
+    "subject_id": 14,
+    "intent_id": 56,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 132,
+    "question": "Quais as tarifas para saque na função crédito do cartão?",
+    "product_id": 2,
+    "subject_id": 26,
+    "intent_id": 66,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 133,
+    "question": "O que fazer em caso de compra duplicada no débito?",
+    "product_id": 2,
+    "subject_id": 10,
+    "intent_id": 14,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 134,
+    "question": "Onde sacar - Débito",
+    "product_id": 2,
+    "subject_id": 13,
+    "intent_id": 31,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 135,
+    "question": "Como posso alterar o endereço de entrega do meu cartão?",
+    "product_id": 2,
+    "subject_id": 2,
+    "intent_id": 40,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 136,
+    "question": "Como ativar meu cartão?",
+    "product_id": 2,
+    "subject_id": 20,
+    "intent_id": 43,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 137,
+    "question": "Qual o prazo para ativar meu cartão?",
+    "product_id": 2,
+    "subject_id": 20,
+    "intent_id": 45,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 138,
+    "question": "Como bloquear meu cartão?",
+    "product_id": 2,
+    "subject_id": 21,
+    "intent_id": 46,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 139,
+    "question": "Como desbloquear o cartão?",
+    "product_id": 2,
+    "subject_id": 21,
+    "intent_id": 47,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 141,
+    "question": "Como posso usar minha carteira digital com o cartão? Apple Pay, Google Pay, Samsung Pay.",
+    "product_id": 2,
+    "subject_id": 24,
+    "intent_id": 48,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 142,
+    "question": "O que fazer se meu cartão for perdido ou roubado?",
+    "product_id": 2,
+    "subject_id": 22,
+    "intent_id": 49,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 143,
+    "question": "Como solicitar a segunda via do cartão?",
+    "product_id": 2,
+    "subject_id": 22,
+    "intent_id": 50,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 144,
+    "question": "Esqueci a senha do cartão, o que eu faço?",
+    "product_id": 2,
+    "subject_id": 23,
+    "intent_id": 42,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 145,
+    "question": "Como posso alterar a senha do meu cartão?",
+    "product_id": 2,
+    "subject_id": 23,
+    "intent_id": 51,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 146,
+    "question": "Recuperar a senha do Cartão",
+    "product_id": 2,
+    "subject_id": 23,
+    "intent_id": 52,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 147,
+    "question": "Como cancelar meu cartão?",
+    "product_id": 2,
+    "subject_id": 25,
+    "intent_id": 53,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 148,
+    "question": "Compras Parceladas com Cartão",
+    "product_id": 2,
+    "subject_id": 14,
+    "intent_id": 58,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 149,
+    "question": "Quais são os benefícios de cashback no cartão?",
+    "product_id": 2,
+    "subject_id": 7,
+    "intent_id": 59,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 150,
+    "question": "Como contestar uma compra não reconhecida no meu cartão?",
+    "product_id": 2,
+    "subject_id": 10,
+    "intent_id": 61,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 151,
+    "question": "Por que minha compra foi recusada?",
+    "product_id": 2,
+    "subject_id": 10,
+    "intent_id": 62,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 152,
+    "question": "Como realizar uma compra parcelada com o meu cartão?",
+    "product_id": 2,
+    "subject_id": 10,
+    "intent_id": 63,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 153,
+    "question": "Por que minha fatura do cartão não chegou?",
+    "product_id": 2,
+    "subject_id": 3,
+    "intent_id": 64,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 154,
+    "question": "Como entender minha fatura?",
+    "product_id": 2,
+    "subject_id": 3,
+    "intent_id": 65,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 155,
+    "question": "Como funciona a anuidade do cartão de crédito?",
+    "product_id": 2,
+    "subject_id": 26,
+    "intent_id": 55,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 156,
+    "question": "Consultar compra",
+    "product_id": 2,
+    "subject_id": 10,
+    "intent_id": 67,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 157,
+    "question": "Verificar saldo do cartão",
+    "product_id": 2,
+    "subject_id": 28,
+    "intent_id": 75,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 158,
+    "question": "O que fazer se meu saldo do cartão estiver insuficiente?",
+    "product_id": 2,
+    "subject_id": 28,
+    "intent_id": 76,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 159,
+    "question": "Como posso obter informações gerais sobre o cartão?",
+    "product_id": 2,
+    "subject_id": 29,
+    "intent_id": 77,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 160,
+    "question": "O cartão funciona com compras internacionais?",
+    "product_id": 2,
+    "subject_id": 14,
+    "intent_id": 60,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 162,
+    "question": "Qual é a senha do cartão?",
+    "product_id": 2,
+    "subject_id": 23,
+    "intent_id": 41,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 163,
+    "question": "O cartão funciona para compras online?",
+    "product_id": 2,
+    "subject_id": 14,
+    "intent_id": 57,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 165,
+    "question": "Como posso rastrear a entrega do cartão?",
+    "product_id": 2,
+    "subject_id": 2,
+    "intent_id": 80,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 167,
+    "question": "Como posso confirmar o endereço de entrega do cartão?",
+    "product_id": 2,
+    "subject_id": 2,
+    "intent_id": 83,
+    "is_active": false,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 168,
+    "question": "Como eu faço para contratar o cartão de débito?",
+    "product_id": 11,
+    "subject_id": 31,
+    "intent_id": 84,
+    "is_active": false,
+    "product_full_name": "Cartão > Cartão de Débito"
+  },
+  {
+    "id": 166,
+    "question": "Como autorizar um dispositivo na Conta Digital?",
+    "product_id": 1,
+    "subject_id": 30,
+    "intent_id": 81,
+    "is_active": false,
+    "product_full_name": "Conta Digital"
+  },
+  {
+    "id": 169,
+    "question": "O que é o Crédito Troca com Troco?",
+    "product_id": 4,
+    "subject_id": 32,
+    "intent_id": 86,
+    "is_active": true,
+    "product_full_name": "Empréstimo / Crédito"
+  },
+  {
+    "id": 170,
+    "question": "Como eu faço para contratar um novo empréstimo?",
+    "product_id": 4,
+    "subject_id": 32,
+    "intent_id": 85,
+    "is_active": true,
+    "product_full_name": "Empréstimo / Crédito"
+  },
+  {
+    "id": 171,
+    "question": "Como renegociar um empréstimo?",
+    "product_id": 4,
+    "subject_id": 33,
+    "intent_id": 87,
+    "is_active": false,
+    "product_full_name": "Empréstimo / Crédito"
+  },
+  {
+    "id": 172,
+    "question": "Como eu faço para ter crédito?",
+    "product_id": 4,
+    "subject_id": 34,
+    "intent_id": 88,
+    "is_active": false,
+    "product_full_name": "Empréstimo / Crédito"
+  }
+]

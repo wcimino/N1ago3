@@ -1,0 +1,158 @@
+[
+  {
+    "id": 20,
+    "name": "Ativação",
+    "product_catalog_id": 2,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 7,
+    "name": "Benefícios",
+    "product_catalog_id": 10,
+    "product_full_name": "Cartão > Cartão de Crédito"
+  },
+  {
+    "id": 21,
+    "name": "Bloqueio e desbloqueio",
+    "product_catalog_id": 2,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 25,
+    "name": "Cancelamento",
+    "product_catalog_id": 2,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 24,
+    "name": "Carteiras digitais",
+    "product_catalog_id": 2,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 14,
+    "name": "Como usar",
+    "product_catalog_id": 2,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 11,
+    "name": "Contratação",
+    "product_catalog_id": 10,
+    "product_full_name": "Cartão > Cartão de Crédito"
+  },
+  {
+    "id": 31,
+    "name": "Contratação",
+    "product_catalog_id": 11,
+    "product_full_name": "Cartão > Cartão de Débito"
+  },
+  {
+    "id": 2,
+    "name": "Entrega",
+    "product_catalog_id": 2,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 3,
+    "name": "Fatura",
+    "product_catalog_id": 10,
+    "product_full_name": "Cartão > Cartão de Crédito"
+  },
+  {
+    "id": 8,
+    "name": "Limite",
+    "product_catalog_id": 10,
+    "product_full_name": "Cartão > Cartão de Crédito"
+  },
+  {
+    "id": 29,
+    "name": "Outros",
+    "product_catalog_id": 2,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 22,
+    "name": "Perda e roubo",
+    "product_catalog_id": 2,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 28,
+    "name": "Saldo",
+    "product_catalog_id": 11,
+    "product_full_name": "Cartão > Cartão de Débito"
+  },
+  {
+    "id": 13,
+    "name": "Saque",
+    "product_catalog_id": 11,
+    "product_full_name": "Cartão > Cartão de Débito"
+  },
+  {
+    "id": 5,
+    "name": "Segurança",
+    "product_catalog_id": 2,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 23,
+    "name": "Senha",
+    "product_catalog_id": 2,
+    "product_full_name": "Cartão"
+  },
+  {
+    "id": 26,
+    "name": "Tarifas",
+    "product_catalog_id": 10,
+    "product_full_name": "Cartão > Cartão de Crédito"
+  },
+  {
+    "id": 10,
+    "name": "Transações",
+    "product_catalog_id": 10,
+    "product_full_name": "Cartão > Cartão de Crédito"
+  },
+  {
+    "id": 16,
+    "name": "Cliente enviou o PIX, mas destinatário não recebeu",
+    "product_catalog_id": 13,
+    "product_full_name": "Conta Digital > PIX"
+  },
+  {
+    "id": 17,
+    "name": "Estorno PIX",
+    "product_catalog_id": 13,
+    "product_full_name": "Conta Digital > PIX"
+  },
+  {
+    "id": 15,
+    "name": "Problema para envio de PIX",
+    "product_catalog_id": 13,
+    "product_full_name": "Conta Digital > PIX"
+  },
+  {
+    "id": 30,
+    "name": "Segurança",
+    "product_catalog_id": 1,
+    "product_full_name": "Conta Digital"
+  },
+  {
+    "id": 32,
+    "name": "Contratação",
+    "product_catalog_id": 4,
+    "product_full_name": "Empréstimo / Crédito"
+  },
+  {
+    "id": 34,
+    "name": "Outros",
+    "product_catalog_id": 4,
+    "product_full_name": "Empréstimo / Crédito"
+  },
+  {
+    "id": 33,
+    "name": "Renegociação",
+    "product_catalog_id": 4,
+    "product_full_name": "Empréstimo / Crédito"
+  }
+]
