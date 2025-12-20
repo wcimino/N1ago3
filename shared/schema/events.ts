@@ -102,6 +102,7 @@ export const caseDemand = pgTable("case_demand", {
   conversationId: integer("conversation_id").notNull().references(() => conversations.id),
   articlesAndObjectiveProblems: json("articles_and_objective_problems").$type<Array<{ source: "article" | "problem"; id: number; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; matchedTerms?: string[]; products?: string[] }>>(),
   articlesAndObjectiveProblemsTopMatch: json("articles_and_objective_problems_top_match").$type<{ source: "article" | "problem"; id: number; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; matchedTerms?: string[]; products?: string[] } | null>(),
+  solutionCenterArticlesAndProblems: json("solution_center_articles_and_problems").$type<Array<{ type: "article" | "problem"; id: string; name: string; score: number }>>(),
   interactionCount: integer("interaction_count").default(0).notNull(),
   status: text("status").default("not_started"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

@@ -8,6 +8,7 @@ import { EnrichmentService } from "../services/enrichmentService.js";
 import { StatusController } from "../statusController.js";
 import { ActionExecutor } from "../actionExecutor.js";
 import { ORCHESTRATOR_STATUS, type DemandFinderAgentResult, type OrchestratorContext, type OrchestratorAction } from "../types.js";
+import { searchSolutionCenter } from "../../../../../shared/services/solutionCenterClient.js";
 
 const CONFIG_KEY = "demand_finder";
 const MAX_INTERACTIONS = 5;
@@ -196,7 +197,7 @@ export class DemandFinderAgent {
       summaryProductContext = await productCatalogStorage.resolveProductContext(classification.productId);
     }
     
-    const searchResponse = await runCombinedKnowledgeSearch({
+    const internalSearchPromise = runCombinedKnowledgeSearch({
       productId: classification?.productId,
       conversationContext,
       articleContext,
@@ -206,6 +207,13 @@ export class DemandFinderAgent {
       summaryProductContext,
       limit: 10,
     });
+
+    const externalSearchPromise = this.searchSolutionCenterExternal(context, searchQueries, summaryProductContext);
+
+    const [searchResponse] = await Promise.all([
+      internalSearchPromise,
+      externalSearchPromise,
+    ]);
 
     if (searchResponse.results.length === 0) {
       console.log(`[DemandFinderAgent] No articles found for conversation ${conversationId}`);
@@ -227,6 +235,51 @@ export class DemandFinderAgent {
     console.log(`[DemandFinderAgent] Saved ${resultsForStorage.length} articles for conversation ${conversationId}`);
 
     return resultsForStorage;
+  }
+
+  private static async searchSolutionCenterExternal(
+    context: OrchestratorContext,
+    searchQueries: ReturnType<typeof getSearchQueries>,
+    summaryProductContext?: string
+  ): Promise<void> {
+    const { conversationId } = context;
+
+    try {
+      const textNormalizedVersions: string[] = [];
+      
+      if (searchQueries?.normalizedQuery) {
+        textNormalizedVersions.push(searchQueries.normalizedQuery);
+      }
+      if (searchQueries?.verbatimQuery && searchQueries.verbatimQuery !== searchQueries.normalizedQuery) {
+        textNormalizedVersions.push(searchQueries.verbatimQuery);
+      }
+
+      if (textNormalizedVersions.length === 0) {
+        console.log(`[DemandFinderAgent] No text versions for Solution Center search, skipping`);
+        return;
+      }
+
+      const keywords = searchQueries?.keywordQuery?.split(/\s+/).filter(k => k.length > 2) || [];
+
+      console.log(`[DemandFinderAgent] Searching Solution Center for conversation ${conversationId}`);
+
+      const solutionCenterResponse = await searchSolutionCenter({
+        textNormalizedVersions,
+        keywords: keywords.length > 0 ? keywords : undefined,
+        productName: summaryProductContext || undefined,
+      });
+
+      if (!solutionCenterResponse || !solutionCenterResponse.results || solutionCenterResponse.results.length === 0) {
+        console.log(`[DemandFinderAgent] No results from Solution Center for conversation ${conversationId}`);
+        return;
+      }
+
+      await caseDemandStorage.updateSolutionCenterResults(conversationId, solutionCenterResponse.results);
+      console.log(`[DemandFinderAgent] Saved ${solutionCenterResponse.results.length} Solution Center results for conversation ${conversationId}`);
+
+    } catch (error) {
+      console.error(`[DemandFinderAgent] Error searching Solution Center for conversation ${conversationId}:`, error);
+    }
   }
 
   private static async generateClarificationQuestion(context: OrchestratorContext): Promise<{ suggestedResponse?: string; suggestionId?: number }> {

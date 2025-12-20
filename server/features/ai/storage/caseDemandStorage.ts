@@ -8,6 +8,8 @@ const TERMINAL_DEMAND_STATUSES = ["demand_found", "demand_not_found", "completed
 
 type ArticleOrProblem = { source: "article" | "problem"; id: number; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; matchedTerms?: string[]; products?: string[] };
 
+type SolutionCenterResult = { type: "article" | "problem"; id: string; name: string; score: number };
+
 function calculateTopMatch(items: ArticleOrProblem[]): ArticleOrProblem | null {
   if (!items || items.length === 0) return null;
   
@@ -155,5 +157,29 @@ export const caseDemandStorage = {
       })
       .where(eq(caseDemand.id, existing.id));
     return newCount;
+  },
+
+  async updateSolutionCenterResults(
+    conversationId: number,
+    solutionCenterArticlesAndProblems: SolutionCenterResult[]
+  ): Promise<{ created: boolean; updated: boolean }> {
+    const existing = await this.getActiveByConversationId(conversationId);
+    
+    if (existing) {
+      await db.update(caseDemand)
+        .set({
+          solutionCenterArticlesAndProblems,
+          updatedAt: new Date(),
+        })
+        .where(eq(caseDemand.id, existing.id));
+      return { created: false, updated: true };
+    } else {
+      await db.insert(caseDemand)
+        .values({
+          conversationId,
+          solutionCenterArticlesAndProblems,
+        });
+      return { created: true, updated: false };
+    }
   },
 };

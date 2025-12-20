@@ -5,6 +5,7 @@ import {
   RequestTypeRow,
   ObjectiveProblemsCard,
   ArticlesAndProblemsCard,
+  SolutionCenterCard,
   TriageCard,
   ClientRequestVersionsTooltip,
   emotionConfig,
@@ -16,7 +17,7 @@ interface ConversationSummaryProps {
 }
 
 export function ConversationSummary({ summary }: ConversationSummaryProps) {
-  const hasStructuredData = summary?.client_request || summary?.agent_actions || summary?.current_status || summary?.important_info || summary?.objective_problems?.length || summary?.articles_and_objective_problems?.length || summary?.triage;
+  const hasStructuredData = summary?.client_request || summary?.agent_actions || summary?.current_status || summary?.important_info || summary?.objective_problems?.length || summary?.articles_and_objective_problems?.length || summary?.solution_center_articles_and_problems?.length || summary?.triage;
 
   return (
     <div className="flex-1 overflow-y-auto p-4">
@@ -158,6 +159,8 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
               <ObjectiveProblemsCard problems={summary.objective_problems} />
               
               <ArticlesAndProblemsCard items={summary.articles_and_objective_problems} />
+              
+              <SolutionCenterCard items={summary.solution_center_articles_and_problems} />
               
               {summary.triage && (
                 <TriageCard triage={summary.triage} />

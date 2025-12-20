@@ -6,6 +6,7 @@ export { ProductRow, type ProductRowProps } from "./ProductRow";
 export { RequestTypeRow, type RequestTypeRowProps } from "./RequestTypeRow";
 export { ObjectiveProblemsCard, type ObjectiveProblemsCardProps } from "./ObjectiveProblemsCard";
 export { ArticlesAndProblemsCard, type ArticlesAndProblemsCardProps } from "./ArticlesAndProblemsCard";
+export { SolutionCenterCard, type SolutionCenterCardProps } from "./SolutionCenterCard";
 export { TriageCard, type TriageCardProps } from "./TriageCard";
 export { emotionConfig, severityConfig } from "./config";
-export type { SummaryData, ClientRequestVersions } from "./types";
+export type { SummaryData, ClientRequestVersions, SolutionCenterResult } from "./types";

@@ -6,6 +6,13 @@ export interface ClientRequestVersions {
   clientRequestProblemVersion?: string;
 }
 
+export interface SolutionCenterResult {
+  type: "article" | "problem";
+  id: string;
+  name: string;
+  score: number;
+}
+
 export interface SummaryData {
   product?: string | null;
   subproduct?: string | null;
@@ -23,6 +30,7 @@ export interface SummaryData {
   customer_request_type_reason?: string | null;
   objective_problems?: ObjectiveProblemIdentified[] | null;
   articles_and_objective_problems?: ArticleAndProblemResult[] | null;
+  solution_center_articles_and_problems?: SolutionCenterResult[] | null;
   triage?: Triage | null;
   orchestrator_status?: string | null;
   demand_finder_status?: string | null;
