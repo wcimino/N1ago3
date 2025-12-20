@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { Tag, MessageSquare, CheckCircle, Plus, Trash2, X } from "lucide-react";
+import { Tag, MessageSquare, CheckCircle, Search } from "lucide-react";
 import { FormActions } from "@/shared/components/ui";
-import { ProductHierarchySelects, ProductHierarchyDisplay } from "@/shared/components/forms/ProductHierarchySelects";
+import { ProductHierarchySelects, ProductHierarchyDisplay, TagInput, CollapsibleSection } from "@/shared/components/forms";
 import { useProductHierarchySelects } from "@/shared/hooks";
 import { InlineEnrichmentPanel } from "./InlineEnrichmentPanel";
 import type { KnowledgeBaseArticle, KnowledgeBaseFormData } from "../hooks/useKnowledgeBase";
@@ -23,6 +23,20 @@ interface KnowledgeBaseFormProps {
   isLoading?: boolean;
 }
 
+function parseArrayField(value: unknown): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {
+      return value.split(",").map(k => k.trim()).filter(k => k);
+    }
+  }
+  return [];
+}
+
 export function KnowledgeBaseForm({
   initialData,
   prefilledData,
@@ -38,9 +52,6 @@ export function KnowledgeBaseForm({
     questionNormalized: [] as string[],
     isActive: false,
   });
-  const [newVariation, setNewVariation] = useState("");
-  const [newNormalized, setNewNormalized] = useState("");
-  const [newKeyword, setNewKeyword] = useState("");
   const [initializedForId, setInitializedForId] = useState<number | null>(null);
 
   const hierarchy = useProductHierarchySelects({
@@ -55,38 +66,12 @@ export function KnowledgeBaseForm({
 
   useEffect(() => {
     if (initialData && hierarchy.isReady && initializedForId !== initialData.id) {
-      let parsedNormalized: string[] = [];
-      if (initialData.questionNormalized) {
-        if (Array.isArray(initialData.questionNormalized)) {
-          parsedNormalized = initialData.questionNormalized;
-        } else if (typeof initialData.questionNormalized === 'string') {
-          try {
-            const parsed = JSON.parse(initialData.questionNormalized);
-            if (Array.isArray(parsed)) parsedNormalized = parsed;
-          } catch {
-            parsedNormalized = initialData.questionNormalized.split(",").map(k => k.trim()).filter(k => k);
-          }
-        }
-      }
-      let parsedKeywords: string[] = [];
-      if (initialData.keywords) {
-        if (Array.isArray(initialData.keywords)) {
-          parsedKeywords = initialData.keywords;
-        } else if (typeof initialData.keywords === 'string') {
-          try {
-            const parsed = JSON.parse(initialData.keywords);
-            if (Array.isArray(parsed)) parsedKeywords = parsed;
-          } catch {
-            parsedKeywords = initialData.keywords.split(",").map(k => k.trim()).filter(k => k);
-          }
-        }
-      }
       setFormData({
         question: initialData.question || "",
         answer: initialData.answer || "",
-        keywords: parsedKeywords,
+        keywords: parseArrayField(initialData.keywords),
         questionVariation: initialData.questionVariation || [],
-        questionNormalized: parsedNormalized,
+        questionNormalized: parseArrayField(initialData.questionNormalized),
         isActive: initialData.isActive,
       });
       setInitializedForId(initialData.id);
@@ -113,73 +98,17 @@ export function KnowledgeBaseForm({
     }
   }, [initialData, prefilledData, hierarchy.isReady, initializedForId]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAddVariation = () => {
-    if (newVariation.trim()) {
-      setFormData((prev) => ({
-        ...prev,
-        questionVariation: [...prev.questionVariation, newVariation.trim()],
-      }));
-      setNewVariation("");
-    }
-  };
-
-  const handleRemoveVariation = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      questionVariation: prev.questionVariation.filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleAddNormalized = () => {
-    if (newNormalized.trim()) {
-      setFormData((prev) => ({
-        ...prev,
-        questionNormalized: [...prev.questionNormalized, newNormalized.trim()],
-      }));
-      setNewNormalized("");
-    }
-  };
-
-  const handleRemoveNormalized = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      questionNormalized: prev.questionNormalized.filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleAddKeyword = () => {
-    const currentKeywords = Array.isArray(formData.keywords) ? formData.keywords : [];
-    if (newKeyword.trim() && !currentKeywords.includes(newKeyword.trim())) {
-      setFormData((prev) => ({
-        ...prev,
-        keywords: [...(Array.isArray(prev.keywords) ? prev.keywords : []), newKeyword.trim()],
-      }));
-      setNewKeyword("");
-    }
-  };
-
-  const handleRemoveKeyword = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      keywords: (Array.isArray(prev.keywords) ? prev.keywords : []).filter((_, i) => i !== index),
-    }));
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const keywordsArray = Array.isArray(formData.keywords) ? formData.keywords : [];
     onSubmit({
       question: formData.question,
       answer: formData.answer,
-      keywords: keywordsArray.length > 0 ? JSON.stringify(keywordsArray) : null,
+      keywords: formData.keywords.length > 0 ? JSON.stringify(formData.keywords) : null,
       questionVariation: formData.questionVariation.length > 0 ? formData.questionVariation : null,
       questionNormalized: formData.questionNormalized.length > 0 ? JSON.stringify(formData.questionNormalized) : null,
       productId: prefilledData?.productId || hierarchy.selection.productId,
@@ -193,26 +122,55 @@ export function KnowledgeBaseForm({
 
   const getProductName = () => {
     if (prefilledData) return prefilledData.productName;
-    if (initialData?.productId) {
-      return hierarchy.getProductName(initialData.productId);
-    }
+    if (initialData?.productId) return hierarchy.getProductName(initialData.productId);
     return "";
   };
 
   const getSubjectName = () => {
     if (prefilledData) return prefilledData.subjectName;
-    if (initialData?.subjectId) {
-      return hierarchy.getSubjectName(initialData.subjectId);
-    }
+    if (initialData?.subjectId) return hierarchy.getSubjectName(initialData.subjectId);
     return "";
   };
 
   const getIntentName = () => {
     if (prefilledData) return prefilledData.intentName;
-    if (initialData?.intentId) {
-      return hierarchy.getIntentName(initialData.intentId);
-    }
+    if (initialData?.intentId) return hierarchy.getIntentName(initialData.intentId);
     return "";
+  };
+
+  const handleApplyEnrichment = (suggestion: {
+    answer?: string;
+    keywords?: string;
+    questionVariation?: string[];
+    questionNormalized?: string[];
+  }) => {
+    setFormData(prev => {
+      const existingVariations = prev.questionVariation || [];
+      const newVariations = (suggestion.questionVariation || []).filter(
+        v => !existingVariations.includes(v)
+      );
+      
+      const currentKeywords = prev.keywords;
+      let newKeywords = currentKeywords;
+      if (suggestion.keywords) {
+        const suggestedKeywords = suggestion.keywords.split(",").map(k => k.trim()).filter(k => k);
+        const uniqueNewKeywords = suggestedKeywords.filter(k => !currentKeywords.includes(k));
+        newKeywords = [...currentKeywords, ...uniqueNewKeywords];
+      }
+      
+      const existingNormalized = prev.questionNormalized || [];
+      const newNormalized = (suggestion.questionNormalized || []).filter(
+        n => !existingNormalized.includes(n)
+      );
+      
+      return {
+        ...prev,
+        answer: suggestion.answer || prev.answer,
+        keywords: newKeywords,
+        questionVariation: [...existingVariations, ...newVariations],
+        questionNormalized: [...existingNormalized, ...newNormalized],
+      };
+    });
   };
 
   if (initialData && !isInitialized) {
@@ -222,6 +180,9 @@ export function KnowledgeBaseForm({
       </div>
     );
   }
+
+  const semanticTagsCount = formData.questionNormalized.length + formData.keywords.length;
+  const variationsCount = formData.questionVariation.length;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -309,151 +270,55 @@ export function KnowledgeBaseForm({
         </div>
       </div>
 
-      <div>
-        <label className="flex items-center gap-1.5 text-xs font-medium text-purple-600 mb-1.5">
-          <MessageSquare className="w-3.5 h-3.5" />
-          Versões Normalizadas
-          <span className="text-xs text-gray-400 font-normal ml-1">(para busca semântica)</span>
-        </label>
-        <div className="flex gap-2 mb-2">
-          <input
-            type="text"
-            value={newNormalized}
-            onChange={(e) => setNewNormalized(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleAddNormalized();
-              }
-            }}
-            className="flex-1 px-3 py-2 text-sm border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white"
+      <CollapsibleSection
+        title="Busca Semântica"
+        icon={Search}
+        badge={semanticTagsCount > 0 ? semanticTagsCount : undefined}
+        colorScheme="purple"
+        defaultExpanded={semanticTagsCount > 0}
+      >
+        <div className="space-y-4">
+          <TagInput
+            label="Versões Normalizadas"
+            labelIcon={MessageSquare}
+            labelHint="para busca semântica"
             placeholder="Digite uma versão normalizada e pressione Enter ou clique em +"
+            values={formData.questionNormalized}
+            onChange={(values) => setFormData(prev => ({ ...prev, questionNormalized: values }))}
+            colorScheme="purple"
+            maxVisible={6}
           />
-          <button
-            type="button"
-            onClick={handleAddNormalized}
-            className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
-        {formData.questionNormalized.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {formData.questionNormalized.map((item, index) => (
-              <span
-                key={index}
-                className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-purple-50 border border-purple-200 rounded-lg text-purple-700"
-              >
-                {item}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveNormalized(index)}
-                  className="hover:text-red-500"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
 
-      <div>
-        <label className="flex items-center gap-1.5 text-xs font-medium text-amber-600 mb-1.5">
-          <Tag className="w-3.5 h-3.5" />
-          Palavras-chave
-          <span className="text-xs text-gray-400 font-normal ml-1">(para busca semântica)</span>
-        </label>
-        <div className="flex gap-2 mb-2">
-          <input
-            type="text"
-            value={newKeyword}
-            onChange={(e) => setNewKeyword(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleAddKeyword();
-              }
-            }}
-            className="flex-1 px-3 py-2 text-sm border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors bg-white"
+          <TagInput
+            label="Palavras-chave"
+            labelIcon={Tag}
+            labelHint="para busca semântica"
             placeholder="Digite uma palavra-chave e pressione Enter ou clique em +"
+            values={formData.keywords}
+            onChange={(values) => setFormData(prev => ({ ...prev, keywords: values }))}
+            colorScheme="amber"
+            maxVisible={8}
           />
-          <button
-            type="button"
-            onClick={handleAddKeyword}
-            className="px-3 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
         </div>
-        {Array.isArray(formData.keywords) && formData.keywords.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {formData.keywords.map((keyword, index) => (
-              <span
-                key={index}
-                className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-amber-50 border border-amber-200 rounded-lg text-amber-700"
-              >
-                {keyword}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveKeyword(index)}
-                  className="hover:text-red-500"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      </CollapsibleSection>
 
-      <div>
-        <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
-          <MessageSquare className="w-3.5 h-3.5" />
-          Variações da Pergunta
-        </label>
-        <div className="flex gap-2 mb-2">
-          <input
-            type="text"
-            value={newVariation}
-            onChange={(e) => setNewVariation(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleAddVariation();
-              }
-            }}
-            className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
-            placeholder="Digite uma variação e pressione Enter ou clique em +"
-          />
-          <button
-            type="button"
-            onClick={handleAddVariation}
-            className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
-        {formData.questionVariation.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {formData.questionVariation.map((variation, index) => (
-              <span
-                key={index}
-                className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-blue-50 border border-blue-200 rounded-lg text-blue-700"
-              >
-                {variation}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveVariation(index)}
-                  className="hover:text-red-500"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      <CollapsibleSection
+        title="Variações da Pergunta"
+        icon={MessageSquare}
+        badge={variationsCount > 0 ? variationsCount : undefined}
+        colorScheme="amber"
+        defaultExpanded={false}
+      >
+        <TagInput
+          label="Variações"
+          labelIcon={MessageSquare}
+          placeholder="Digite uma variação e pressione Enter ou clique em +"
+          values={formData.questionVariation}
+          onChange={(values) => setFormData(prev => ({ ...prev, questionVariation: values }))}
+          colorScheme="orange"
+          maxVisible={6}
+        />
+      </CollapsibleSection>
 
       <div className="pt-3 border-t border-gray-100 space-y-4">
         <InlineEnrichmentPanel
@@ -462,35 +327,10 @@ export function KnowledgeBaseForm({
           currentData={{
             question: formData.question,
             answer: formData.answer,
-            keywords: Array.isArray(formData.keywords) ? formData.keywords.join(", ") : "",
+            keywords: formData.keywords.join(", "),
             questionVariation: formData.questionVariation,
           }}
-          onApply={(suggestion) => {
-            setFormData(prev => {
-              const existingVariations = prev.questionVariation || [];
-              const newVariations = (suggestion.questionVariation || []).filter(
-                v => !existingVariations.includes(v)
-              );
-              const currentKeywords = Array.isArray(prev.keywords) ? prev.keywords : [];
-              let newKeywords = currentKeywords;
-              if (suggestion.keywords) {
-                const suggestedKeywords = suggestion.keywords.split(",").map(k => k.trim()).filter(k => k);
-                const uniqueNewKeywords = suggestedKeywords.filter(k => !currentKeywords.includes(k));
-                newKeywords = [...currentKeywords, ...uniqueNewKeywords];
-              }
-              const existingNormalized = prev.questionNormalized || [];
-              const newNormalized = (suggestion.questionNormalized || []).filter(
-                n => !existingNormalized.includes(n)
-              );
-              return {
-                ...prev,
-                answer: suggestion.answer || prev.answer,
-                keywords: newKeywords,
-                questionVariation: [...existingVariations, ...newVariations],
-                questionNormalized: [...existingNormalized, ...newNormalized],
-              };
-            });
-          }}
+          onApply={handleApplyEnrichment}
         />
 
         <div className="flex justify-end">
