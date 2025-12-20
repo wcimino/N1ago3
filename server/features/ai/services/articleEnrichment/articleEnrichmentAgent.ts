@@ -146,8 +146,8 @@ export class ArticleEnrichmentAgent {
           // Usado apenas para penalidades de ranking
           produto: context.productName,
           // Usado para gerar o embedding de busca
-          intencao: context.intentName,
-          articleKeywords: context.article?.keywords || undefined,
+          question: context.article?.question || undefined,
+          keywords: context.article?.keywords || undefined,
         });
         const originalHandler = zendeskTool.handler;
         zendeskTool.handler = async (args) => {

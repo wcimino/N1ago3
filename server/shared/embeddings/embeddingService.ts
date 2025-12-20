@@ -57,30 +57,15 @@ export interface EnrichedQueryParams {
 }
 
 export function buildEnrichedQueryText(params: EnrichedQueryParams): string {
-  const contextParts: string[] = [];
-  
-  const produto = params.produto || params.product;
-  const subproduto = params.subproduto || params.subproduct;
-  const assunto = params.assunto || params.subject;
-  const intencao = params.intencao || params.intent;
-  
-  if (produto) contextParts.push(produto);
-  if (subproduto) contextParts.push(subproduto);
-  if (assunto) contextParts.push(assunto);
-  
+  // Embedding usa apenas question e keywords do artigo (sem produto, subproduto, assunto, intenção)
+  // Penalidades de produto são aplicadas depois da busca semântica
   const contentParts: string[] = [];
-  if (intencao) contentParts.push(intencao);
-  if (params.situacao) contentParts.push(params.situacao);
+  
   if (params.question) contentParts.push(params.question);
-  if (params.articleKeywords) {
-    contentParts.push(params.articleKeywords);
-  }
+  if (params.articleKeywords) contentParts.push(params.articleKeywords);
   contentParts.push(params.keywords);
   
-  const context = contextParts.join(" - ");
-  const content = contentParts.join(". ");
-  
-  return context ? `${context}: ${content}` : content;
+  return contentParts.join(". ");
 }
 
 export async function generateEnrichedQueryEmbedding(

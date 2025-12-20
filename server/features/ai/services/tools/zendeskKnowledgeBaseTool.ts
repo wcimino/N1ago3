@@ -63,8 +63,8 @@ export interface ZendeskSearchContext {
   // Campos usados APENAS para penalidades (não entram no embedding)
   produto?: string;
   // Campos usados para gerar o embedding de busca
-  intencao?: string;
-  articleKeywords?: string;
+  question?: string;
+  keywords?: string;
 }
 
 export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchContext): ToolDefinition {
@@ -105,10 +105,10 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
         similarity: number;
       }> = [];
       
-      // Contexto para EMBEDDING (apenas intencao e articleKeywords)
+      // Contexto para EMBEDDING (apenas question e keywords do artigo)
       const embeddingContext = {
-        intencao: args.intencao || searchContext?.intencao,
-        articleKeywords: searchContext?.articleKeywords,
+        question: searchContext?.question,
+        articleKeywords: searchContext?.keywords,
       };
       
       // Contexto para PENALIDADES (produto)
@@ -116,7 +116,7 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
         produto: args.produto || searchContext?.produto,
       };
       
-      const hasEmbeddingContext = embeddingContext.intencao || embeddingContext.articleKeywords;
+      const hasEmbeddingContext = embeddingContext.question || embeddingContext.articleKeywords;
       
       if (args.keywords && args.keywords.trim().length > 0) {
         const stats = await ZendeskArticlesStorage.getEmbeddingStats();
@@ -126,10 +126,10 @@ export function createZendeskKnowledgeBaseTool(searchContext?: ZendeskSearchCont
             let queryEmbedding: number[];
             
             if (hasEmbeddingContext) {
-              console.log(`[Zendesk KB Tool] Using enriched query with context: intencao=${embeddingContext.intencao}, articleKeywords=${embeddingContext.articleKeywords} (produto=${penaltyContext.produto} for penalties only)`);
+              console.log(`[Zendesk KB Tool] Using enriched query with context: question=${embeddingContext.question}, keywords=${embeddingContext.articleKeywords} (produto=${penaltyContext.produto} for penalties only)`);
               const enrichedResult = await generateEnrichedQueryEmbedding({
                 keywords: args.keywords,
-                intencao: embeddingContext.intencao,
+                question: embeddingContext.question,
                 articleKeywords: embeddingContext.articleKeywords,
               });
               queryEmbedding = enrichedResult.embedding;
