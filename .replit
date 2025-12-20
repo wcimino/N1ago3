@@ -5,7 +5,7 @@ integrations = ["python_openai:1.0.0", "zendesk:1.0.0", "python_database:1.0.0",
 
 [nix]
 channel = "stable-25_05"
-packages = ["cargo", "glibcLocales", "libiconv", "rustc"]
+packages = ["glibcLocales"]
 
 [workflows]
 runButton = "Project"
