@@ -55,6 +55,7 @@ interface ArticlesHierarchyViewProps {
   onDeleteSubject: (subjectId: number, subjectName: string, hasArticles: boolean) => void;
   onDeleteIntent: (intentId: number, intentName: string, hasArticles: boolean) => void;
   onToggleVisibility: (articleId: number, currentValue: boolean) => void;
+  onToggleAutoReply: (articleId: number, currentValue: boolean) => void;
 }
 
 export function ArticlesHierarchyView({
@@ -89,6 +90,7 @@ export function ArticlesHierarchyView({
   onDeleteSubject,
   onDeleteIntent,
   onToggleVisibility,
+  onToggleAutoReply,
 }: ArticlesHierarchyViewProps) {
   const allPathsCount = useMemo(() => {
     const count = (nodes: HierarchyNode[]): number => 
@@ -174,6 +176,7 @@ export function ArticlesHierarchyView({
                   onDeleteSubject={onDeleteSubject}
                   onDeleteIntent={onDeleteIntent}
                   onToggleVisibility={onToggleVisibility}
+                  onToggleAutoReply={onToggleAutoReply}
                   intentViewCountMap={intentViewCountMap}
                 />
               ))}

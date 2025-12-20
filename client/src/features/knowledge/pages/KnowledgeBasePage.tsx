@@ -174,6 +174,10 @@ export function KnowledgeBasePage() {
     patchMutation.mutate({ id: articleId, visibleInSearch: !currentValue });
   };
 
+  const handleToggleAutoReply = (articleId: number, currentValue: boolean) => {
+    patchMutation.mutate({ id: articleId, availableForAutoReply: !currentValue });
+  };
+
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <PageHeader
@@ -259,6 +263,7 @@ export function KnowledgeBasePage() {
               onDeleteSubject={handleDeleteSubject}
               onDeleteIntent={handleDeleteIntent}
               onToggleVisibility={handleToggleVisibility}
+              onToggleAutoReply={handleToggleAutoReply}
             />
           )}
         </>

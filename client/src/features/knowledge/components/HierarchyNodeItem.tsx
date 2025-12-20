@@ -1,4 +1,4 @@
-import { ChevronRight, ChevronDown, Pencil, AlertCircle, Plus, Minus, FileText, X, BarChart3, Eye } from "lucide-react";
+import { ChevronRight, ChevronDown, Pencil, AlertCircle, Plus, Minus, FileText, X, BarChart3, Eye, Bot } from "lucide-react";
 import type { HierarchyNode, KnowledgeBaseArticle } from "../hooks/useKnowledgeBase";
 import { ArticleListItem } from "./ArticleListItem";
 import { LEVEL_LABELS, LEVEL_COLORS, getNodeStats, getStatBadges } from "../utils";
@@ -18,11 +18,12 @@ interface HierarchyNodeItemProps {
   onDeleteSubject?: (subjectId: number, subjectName: string, hasArticles: boolean) => void;
   onDeleteIntent?: (intentId: number, intentName: string, hasArticles: boolean) => void;
   onToggleVisibility?: (articleId: number, currentValue: boolean) => void;
+  onToggleAutoReply?: (articleId: number, currentValue: boolean) => void;
   parentName?: string;
   intentViewCountMap?: Map<number, number>;
 }
 
-export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete, onAddArticle, onAddSubject, onAddIntent, onEditIntent, onEditSubject, onDeleteSubject, onDeleteIntent, onToggleVisibility, parentName, intentViewCountMap }: HierarchyNodeItemProps) {
+export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit, onDelete, onAddArticle, onAddSubject, onAddIntent, onEditIntent, onEditSubject, onDeleteSubject, onDeleteIntent, onToggleVisibility, onToggleAutoReply, parentName, intentViewCountMap }: HierarchyNodeItemProps) {
   const isProduct = node.level === "produto";
   const isSubproduct = node.level === "subproduto";
   const isAssunto = node.level === "assunto";
@@ -191,6 +192,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
             onEditIntent={onEditIntent}
             onDeleteIntent={onDeleteIntent}
             onToggleVisibility={onToggleVisibility}
+            onToggleAutoReply={onToggleAutoReply}
             intentViewCountMap={intentViewCountMap}
             article={isIntencao && node.articles.length > 0 ? node.articles[0] : undefined}
           />
@@ -215,6 +217,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 onDeleteSubject={onDeleteSubject}
                 onDeleteIntent={onDeleteIntent}
                 onToggleVisibility={onToggleVisibility}
+                onToggleAutoReply={onToggleAutoReply}
                 intentViewCountMap={intentViewCountMap}
               />
             ))}
@@ -248,6 +251,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
                 onDeleteSubject={onDeleteSubject}
                 onDeleteIntent={onDeleteIntent}
                 onToggleVisibility={onToggleVisibility}
+                onToggleAutoReply={onToggleAutoReply}
                 parentName={node.name}
                 intentViewCountMap={intentViewCountMap}
               />
@@ -275,6 +279,7 @@ export function HierarchyNodeItem({ node, depth, expandedPaths, onToggle, onEdit
               onDeleteSubject={onDeleteSubject}
               onDeleteIntent={onDeleteIntent}
               onToggleVisibility={onToggleVisibility}
+              onToggleAutoReply={onToggleAutoReply}
               intentViewCountMap={intentViewCountMap}
             />
           ))}
@@ -307,11 +312,12 @@ interface NodeActionButtonsProps {
   onEditIntent?: (intentId: number, intentName: string) => void;
   onDeleteIntent?: (intentId: number, intentName: string, hasArticles: boolean) => void;
   onToggleVisibility?: (articleId: number, currentValue: boolean) => void;
+  onToggleAutoReply?: (articleId: number, currentValue: boolean) => void;
   intentViewCountMap?: Map<number, number>;
   article?: KnowledgeBaseArticle;
 }
 
-function NodeActionButtons({ node, isProduct, isSubproduct, isAssunto, isIntencao, stats, onAddSubject, onAddIntent, onEditSubject, onDeleteSubject, onEditIntent, onDeleteIntent, onToggleVisibility, intentViewCountMap, article }: NodeActionButtonsProps) {
+function NodeActionButtons({ node, isProduct, isSubproduct, isAssunto, isIntencao, stats, onAddSubject, onAddIntent, onEditSubject, onDeleteSubject, onEditIntent, onDeleteIntent, onToggleVisibility, onToggleAutoReply, intentViewCountMap, article }: NodeActionButtonsProps) {
   return (
     <div className="flex items-center gap-2 shrink-0">
       {onAddSubject && (isProduct || isSubproduct) && node.productId && (
@@ -382,6 +388,22 @@ function NodeActionButtons({ node, isProduct, isSubproduct, isAssunto, isIntenca
           title={article.visibleInSearch ? "Visível na busca (clique para ocultar)" : "Oculto na busca (clique para mostrar)"}
         >
           <Eye className="w-4 h-4" />
+        </button>
+      )}
+      {isIntencao && article && onToggleAutoReply && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleAutoReply(article.id, article.availableForAutoReply);
+          }}
+          className={`p-1.5 rounded transition-colors ${
+            article.availableForAutoReply 
+              ? 'text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50' 
+              : 'text-gray-300 hover:text-gray-500 hover:bg-gray-100'
+          }`}
+          title={article.availableForAutoReply ? "Disponível para resposta automática (clique para desativar)" : "Indisponível para resposta automática (clique para ativar)"}
+        >
+          <Bot className="w-4 h-4" />
         </button>
       )}
       {onEditIntent && isIntencao && node.intentId && (
