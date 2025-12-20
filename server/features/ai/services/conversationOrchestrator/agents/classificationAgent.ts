@@ -1,8 +1,7 @@
 import { storage } from "../../../../../storage/index.js";
-import { runAgent, type AgentContext } from "../../agentFramework.js";
+import { runAgent, buildAgentContextFromEvent } from "../../agentFramework.js";
 import { productCatalogStorage } from "../../../../products/storage/productCatalogStorage.js";
 import type { ClassificationAgentResult, OrchestratorContext } from "../types.js";
-import type { ContentPayload } from "../../promptUtils.js";
 
 const CONFIG_KEY = "classification";
 
@@ -28,29 +27,12 @@ export class ClassificationAgent {
         return { success: true };
       }
 
-      const [last20Messages, existingSummary] = await Promise.all([
-        storage.getLast20MessagesForConversation(conversationId),
-        storage.getConversationSummary(conversationId),
-      ]);
+      const agentContext = await buildAgentContextFromEvent(event, {
+        includeSummary: true,
+        includeClassification: false,
+      });
 
-      const reversedMessages = [...last20Messages].reverse();
-
-      const agentContext: AgentContext = {
-        conversationId,
-        externalConversationId: event.externalConversationId,
-        lastEventId: event.id,
-        summary: existingSummary?.summary || null,
-        messages: reversedMessages.map(m => ({
-          authorType: m.authorType,
-          authorName: m.authorName,
-          contentText: m.contentText,
-          occurredAt: m.occurredAt,
-          eventSubtype: m.eventSubtype,
-          contentPayload: m.contentPayload as ContentPayload | null,
-        })),
-      };
-
-      console.log(`[ClassificationAgent] Classifying conversation ${conversationId} with ${reversedMessages.length} messages${existingSummary ? ' and existing summary' : ''}`);
+      console.log(`[ClassificationAgent] Classifying conversation ${conversationId} with ${agentContext.messages?.length || 0} messages${agentContext.summary ? ' and existing summary' : ''}`);
 
       const result = await runAgent(CONFIG_KEY, agentContext, {
         maxIterations: 5,
