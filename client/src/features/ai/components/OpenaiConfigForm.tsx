@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { CollapsibleSection, LoadingState, Button } from "../../../shared/components/ui";
 import { useOpenaiApiConfig } from "../../../shared/hooks";
 import { MODEL_OPTIONS } from "../../../lib/constants";
-import { Info } from "lucide-react";
+import { Info, ChevronDown, ChevronRight } from "lucide-react";
 import { VARIABLE_CATEGORIES } from "../constants/promptVariables";
 import { VariablesModal } from "./VariablesModal";
 import { AIToolsSection } from "./AIToolsSection";
@@ -44,6 +44,19 @@ export function OpenaiConfigForm({
 }: OpenaiConfigFormProps) {
   const { state, actions, isLoading, isSaving } = useOpenaiApiConfig(configType);
   const [showVariablesModal, setShowVariablesModal] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+  const toggleCategory = (categoryId: string) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
+      } else {
+        next.add(categoryId);
+      }
+      return next;
+    });
+  };
 
   if (isLoading) {
     return <LoadingState message="Carregando configurações..." />;
@@ -126,32 +139,45 @@ export function OpenaiConfigForm({
                 className="w-full px-3 py-2 border rounded-lg text-sm font-mono"
                 placeholder="Digite as orientações completas para o agente..."
               />
-              <div className="space-y-2">
+              <div className="space-y-1 border rounded-lg overflow-hidden">
                 {VARIABLE_CATEGORIES.map((category) => (
-                  <div key={category.id}>
-                    <div className="text-xs font-medium text-gray-500 mb-1">{category.title}</div>
-                    <div className="flex flex-wrap gap-1">
-                      {category.variables.map((v) => (
-                        <button
-                          key={v.name}
-                          type="button"
-                          className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-xs rounded text-gray-600 font-mono"
-                          onClick={() => {
-                            const textarea = document.querySelector('textarea');
-                            if (textarea) {
-                              const start = textarea.selectionStart;
-                              const end = textarea.selectionEnd;
-                              const text = state.promptSystem;
-                              const newText = text.substring(0, start) + v.name + text.substring(end);
-                              actions.setPromptSystem(newText);
-                            }
-                          }}
-                          title={v.description}
-                        >
-                          {v.name}
-                        </button>
-                      ))}
-                    </div>
+                  <div key={category.id} className="border-b last:border-b-0">
+                    <button
+                      type="button"
+                      onClick={() => toggleCategory(category.id)}
+                      className="w-full px-3 py-2 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                    >
+                      <span className="text-xs font-medium text-gray-600">{category.title}</span>
+                      {expandedCategories.has(category.id) ? (
+                        <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
+                      ) : (
+                        <ChevronRight className="h-3.5 w-3.5 text-gray-400" />
+                      )}
+                    </button>
+                    {expandedCategories.has(category.id) && (
+                      <div className="px-3 py-2 flex flex-wrap gap-1 bg-white">
+                        {category.variables.map((v) => (
+                          <button
+                            key={v.name}
+                            type="button"
+                            className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-xs rounded text-gray-600 font-mono"
+                            onClick={() => {
+                              const textarea = document.querySelector('textarea');
+                              if (textarea) {
+                                const start = textarea.selectionStart;
+                                const end = textarea.selectionEnd;
+                                const text = state.promptSystem;
+                                const newText = text.substring(0, start) + v.name + text.substring(end);
+                                actions.setPromptSystem(newText);
+                              }
+                            }}
+                            title={v.description}
+                          >
+                            {v.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -188,26 +214,39 @@ export function OpenaiConfigForm({
                 className="w-full px-3 py-2 border rounded-lg text-sm font-mono"
                 placeholder="Digite o template do prompt do usuário..."
               />
-              <div className="space-y-2">
+              <div className="space-y-1 border rounded-lg overflow-hidden">
                 {VARIABLE_CATEGORIES.map((category) => (
-                  <div key={category.id}>
-                    <div className="text-xs font-medium text-gray-500 mb-1">{category.title}</div>
-                    <div className="flex flex-wrap gap-1">
-                      {category.variables.map((v) => (
-                        <button
-                          key={`template-${v.name}`}
-                          type="button"
-                          className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-xs rounded text-gray-600 font-mono"
-                          onClick={() => {
-                            const newText = state.promptTemplate + v.name;
-                            actions.setPromptTemplate(newText);
-                          }}
-                          title={v.description}
-                        >
-                          {v.name}
-                        </button>
-                      ))}
-                    </div>
+                  <div key={category.id} className="border-b last:border-b-0">
+                    <button
+                      type="button"
+                      onClick={() => toggleCategory(`template-${category.id}`)}
+                      className="w-full px-3 py-2 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                    >
+                      <span className="text-xs font-medium text-gray-600">{category.title}</span>
+                      {expandedCategories.has(`template-${category.id}`) ? (
+                        <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
+                      ) : (
+                        <ChevronRight className="h-3.5 w-3.5 text-gray-400" />
+                      )}
+                    </button>
+                    {expandedCategories.has(`template-${category.id}`) && (
+                      <div className="px-3 py-2 flex flex-wrap gap-1 bg-white">
+                        {category.variables.map((v) => (
+                          <button
+                            key={`template-${v.name}`}
+                            type="button"
+                            className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-xs rounded text-gray-600 font-mono"
+                            onClick={() => {
+                              const newText = state.promptTemplate + v.name;
+                              actions.setPromptTemplate(newText);
+                            }}
+                            title={v.description}
+                          >
+                            {v.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
