@@ -107,36 +107,81 @@ router.post("/api/ai/article-enrichment/inline", isAuthenticated, requireAuthori
       });
     }
 
+    const sanitizeString = (val: any, maxLen: number): string => {
+      if (typeof val !== 'string') return '';
+      return val.trim().slice(0, maxLen);
+    };
+    const sanitizeStringArray = (val: any, maxLen: number): string[] => {
+      if (!Array.isArray(val)) return [];
+      return val.filter(v => typeof v === 'string').map(v => v.trim().slice(0, maxLen)).slice(0, 20);
+    };
+
     let intentWithArticle: IntentWithArticle | null = null;
 
     if (articleId) {
       intentWithArticle = await knowledgeBaseStorage.getIntentWithArticleByArticleId(articleId);
+      
+      if (intentWithArticle) {
+        console.log(`[ArticleEnrichment Inline] Found article #${articleId} with intent #${intentWithArticle.intent.id}`);
+      }
     }
 
     if (!intentWithArticle) {
-      const intents = await knowledgeBaseStorage.getIntentsWithArticles({
-        limit: 100,
-      });
-      intentWithArticle = intents.find(i => i.intent.id === intentId) || null;
-    }
+      console.log(`[ArticleEnrichment Inline] Article #${articleId || 'N/A'} not found with intent in DB, fetching intent metadata only`);
+      
+      if (!currentData || (!currentData.question && !currentData.answer)) {
+        console.warn(`[ArticleEnrichment Inline] No currentData provided for article #${articleId || 'N/A'} without DB record`);
+        return res.status(400).json({
+          success: false,
+          error: "Dados do artigo não fornecidos. Preencha a pergunta e/ou resposta antes de enriquecer."
+        });
+      }
+      
+      const intentMetadata = await knowledgeBaseStorage.getIntentMetadataById(intentId);
+      
+      if (!intentMetadata) {
+        return res.status(404).json({
+          success: false,
+          error: "Intenção não encontrada."
+        });
+      }
 
-    if (!intentWithArticle) {
-      return res.status(404).json({
-        success: false,
-        error: "Intenção não encontrada."
-      });
-    }
-
-    if (currentData && intentWithArticle) {
-      const sanitizeString = (val: any, maxLen: number): string => {
-        if (typeof val !== 'string') return '';
-        return val.trim().slice(0, maxLen);
+      const sanitizedData = {
+        question: sanitizeString(currentData?.question, 5000),
+        answer: sanitizeString(currentData?.answer, 10000),
+        keywords: sanitizeString(currentData?.keywords, 1000),
+        questionVariation: sanitizeStringArray(currentData?.questionVariation, 500),
       };
-      const sanitizeStringArray = (val: any, maxLen: number): string[] => {
-        if (!Array.isArray(val)) return [];
-        return val.filter(v => typeof v === 'string').map(v => v.trim().slice(0, maxLen)).slice(0, 20);
-      };
 
+      if (!sanitizedData.question && !sanitizedData.answer) {
+        console.warn(`[ArticleEnrichment Inline] Empty content after sanitization for article #${articleId || 'N/A'}`);
+        return res.status(400).json({
+          success: false,
+          error: "Conteúdo do artigo está vazio. Preencha a pergunta e/ou resposta antes de enriquecer."
+        });
+      }
+
+      const now = new Date();
+      intentWithArticle = {
+        intent: intentMetadata,
+        article: {
+          id: articleId || 0,
+          question: sanitizedData.question,
+          questionNormalized: null,
+          answer: sanitizedData.answer,
+          keywords: sanitizedData.keywords,
+          questionVariation: sanitizedData.questionVariation,
+          productId: null,
+          subjectId: null,
+          intentId: intentId,
+          isActive: true,
+          createdAt: now,
+          updatedAt: now,
+        }
+      };
+      
+      console.log(`[ArticleEnrichment Inline] Built article from currentData for intent #${intentId}`);
+    } else if (currentData) {
       const sanitizedData = {
         question: sanitizeString(currentData.question, 5000),
         answer: sanitizeString(currentData.answer, 10000),
@@ -168,13 +213,6 @@ router.post("/api/ai/article-enrichment/inline", isAuthenticated, requireAuthori
           updatedAt: now,
         }
       };
-    }
-
-    if (!intentWithArticle) {
-      return res.status(404).json({
-        success: false,
-        error: "Intenção não encontrada após processamento."
-      });
     }
 
     console.log(`[ArticleEnrichment Inline] Processing intent #${intentId} for inline enrichment`);

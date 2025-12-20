@@ -283,4 +283,37 @@ export const knowledgeBaseArticlesCrud = {
       article,
     };
   },
+
+  async getIntentMetadataById(intentId: number): Promise<IntentWithArticle["intent"] | null> {
+    const result = await db
+      .select({
+        intentId: knowledgeIntents.id,
+        intentName: knowledgeIntents.name,
+        intentSynonyms: knowledgeIntents.synonyms,
+        subjectId: knowledgeSubjects.id,
+        subjectName: knowledgeSubjects.name,
+        subjectSynonyms: knowledgeSubjects.synonyms,
+        productName: productsCatalog.produto,
+        subproductName: productsCatalog.subproduto,
+      })
+      .from(knowledgeIntents)
+      .innerJoin(knowledgeSubjects, eq(knowledgeIntents.subjectId, knowledgeSubjects.id))
+      .innerJoin(productsCatalog, eq(knowledgeSubjects.productCatalogId, productsCatalog.id))
+      .where(eq(knowledgeIntents.id, intentId))
+      .limit(1);
+
+    if (result.length === 0) return null;
+
+    const intent = result[0];
+    return {
+      id: intent.intentId,
+      name: intent.intentName,
+      synonyms: intent.intentSynonyms || [],
+      subjectId: intent.subjectId,
+      subjectName: intent.subjectName,
+      subjectSynonyms: intent.subjectSynonyms || [],
+      productName: intent.productName,
+      subproductName: intent.subproductName,
+    };
+  },
 };
