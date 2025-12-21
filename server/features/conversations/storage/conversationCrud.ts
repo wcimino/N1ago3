@@ -509,4 +509,27 @@ export const conversationCrud = {
     return false;
   },
 
+  async appendOrchestratorLog(conversationId: number, entry: {
+    turn: number;
+    agent: string;
+    state: { status: string; owner: string | null; waitingForCustomer: boolean };
+    solutionCenterResults: number;
+    aiDecision: string | null;
+    aiReason: string | null;
+    action: string;
+    details?: Record<string, unknown>;
+  }) {
+    const logEntry = {
+      ...entry,
+      timestamp: new Date().toISOString(),
+    };
+    
+    await db.update(conversationsSummary)
+      .set({
+        conversationOrchestratorLog: sql`COALESCE(${conversationsSummary.conversationOrchestratorLog}, '[]'::jsonb) || ${JSON.stringify(logEntry)}::jsonb`,
+        updatedAt: new Date(),
+      })
+      .where(eq(conversationsSummary.conversationId, conversationId));
+  },
+
 };
