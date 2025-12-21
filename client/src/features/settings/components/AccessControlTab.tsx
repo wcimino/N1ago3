@@ -1,60 +1,26 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, ChevronDown, ChevronRight, UserPlus } from "lucide-react";
-import { apiRequest, fetchApi } from "../../../lib/queryClient";
-import { LoadingState, EmptyState, LoadingSpinner, Button } from "../../../shared/components";
+import { LoadingState, EmptyState, Button } from "../../../shared/components";
 import { useDateFormatters } from "../../../shared/hooks";
-import type { AuthorizedUser } from "../../../types";
+import { useAuthorizedUsers } from "../hooks/useAuthorizedUsers";
 
 export function AccessControlTab() {
   const [showForm, setShowForm] = useState(false);
-  const [newEmail, setNewEmail] = useState("");
-  const [newName, setNewName] = useState("");
-  const [error, setError] = useState("");
-  const queryClient = useQueryClient();
   const { formatShortDateTime } = useDateFormatters();
-
-  const { data: authorizedUsers, isLoading } = useQuery<AuthorizedUser[]>({
-    queryKey: ["authorized-users"],
-    queryFn: () => fetchApi<AuthorizedUser[]>("/api/authorized-users"),
-  });
-
-  const addMutation = useMutation({
-    mutationFn: async ({ email, name }: { email: string; name: string }) => {
-      const res = await apiRequest("POST", "/api/authorized-users", { email, name });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["authorized-users"] });
-      setNewEmail("");
-      setNewName("");
-      setError("");
-    },
-    onError: (err: any) => {
-      setError(err.message || "Erro ao adicionar usuário");
-    },
-  });
-
-  const removeMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/authorized-users/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["authorized-users"] });
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    if (!newEmail.toLowerCase().endsWith("@ifood.com.br")) {
-      setError("Email deve ser do domínio @ifood.com.br");
-      return;
-    }
-
-    addMutation.mutate({ email: newEmail, name: newName });
-  };
+  
+  const {
+    authorizedUsers,
+    isLoading,
+    newEmail,
+    setNewEmail,
+    newName,
+    setNewName,
+    error,
+    isAdding,
+    isRemoving,
+    handleSubmit,
+    handleRemove,
+  } = useAuthorizedUsers();
 
   return (
     <div className="space-y-6">
@@ -106,9 +72,9 @@ export function AccessControlTab() {
 
               <Button
                 type="submit"
-                disabled={addMutation.isPending}
-                isLoading={addMutation.isPending}
-                leftIcon={!addMutation.isPending ? <Plus className="w-4 h-4" /> : undefined}
+                disabled={isAdding}
+                isLoading={isAdding}
+                leftIcon={!isAdding ? <Plus className="w-4 h-4" /> : undefined}
               >
                 Adicionar
               </Button>
@@ -155,8 +121,8 @@ export function AccessControlTab() {
                       </td>
                       <td className="px-4 py-3">
                         <button
-                          onClick={() => removeMutation.mutate(user.id)}
-                          disabled={removeMutation.isPending}
+                          onClick={() => handleRemove(user.id)}
+                          disabled={isRemoving}
                           className="inline-flex items-center gap-1 text-red-600 hover:text-red-800 text-sm disabled:opacity-50"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -183,8 +149,8 @@ export function AccessControlTab() {
                       </div>
                     </div>
                     <button
-                      onClick={() => removeMutation.mutate(user.id)}
-                      disabled={removeMutation.isPending}
+                      onClick={() => handleRemove(user.id)}
+                      disabled={isRemoving}
                       className="flex-shrink-0 p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg disabled:opacity-50"
                     >
                       <Trash2 className="w-5 h-5" />
