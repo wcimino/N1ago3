@@ -5,7 +5,7 @@ import { caseActionsStorage } from "../../../storage/caseActionsStorage.js";
 import { SolutionResolverService } from "../../solutionResolverService.js";
 import { conversationStorage } from "../../../../conversations/storage/index.js";
 import { ActionExecutor } from "../actionExecutor.js";
-import { ORCHESTRATOR_STATUS, type SolutionProviderAgentResult, type OrchestratorContext, type OrchestratorAction } from "../types.js";
+import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type SolutionProviderAgentResult, type OrchestratorContext, type OrchestratorAction } from "../types.js";
 import type { CaseSolutionWithDetails } from "../../../storage/caseSolutionStorage.js";
 import type { CaseActionWithDetails } from "../../../storage/caseActionsStorage.js";
 import { ACTION_TYPE_VALUES } from "../../../../../../shared/constants/actionTypes.js";
@@ -19,30 +19,6 @@ export class SolutionProviderAgent {
     try {
       console.log(`[SolutionProviderAgent] Processing conversation ${conversationId}`);
       console.log(`[SolutionProviderAgent] demandFound: ${demandFound}, rootCauseId: ${rootCauseId}, caseSolutionId: ${context.caseSolutionId}`);
-
-      // Update status to PROVIDING_SOLUTION if coming from DEMAND_CONFIRMED
-      if (currentStatus === ORCHESTRATOR_STATUS.DEMAND_CONFIRMED) {
-        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.PROVIDING_SOLUTION);
-        context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
-        console.log(`[SolutionProviderAgent] Updated status to PROVIDING_SOLUTION`);
-      }
-
-      // If already awaiting solution inputs, check if we have new data before proceeding
-      if (currentStatus === ORCHESTRATOR_STATUS.AWAITING_SOLUTION_INPUTS) {
-        if (!providedInputs || Object.keys(providedInputs).length === 0) {
-          // No new inputs from customer - stay in current status, dispatcher will stop
-          console.log(`[SolutionProviderAgent] Already awaiting inputs, no new data provided - staying in AWAITING_SOLUTION_INPUTS`);
-          return {
-            success: true,
-            resolved: false,
-            needsEscalation: false,
-          };
-        }
-        // New inputs received - move back to PROVIDING_SOLUTION to process
-        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.PROVIDING_SOLUTION);
-        context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
-        console.log(`[SolutionProviderAgent] Received new inputs, moving from AWAITING_SOLUTION_INPUTS to PROVIDING_SOLUTION`);
-      }
 
       let caseSolution = await caseSolutionStorage.getActiveByConversationId(conversationId);
 
@@ -99,13 +75,18 @@ export class SolutionProviderAgent {
           // Update status based on result
           if (analysisResult.resolved) {
             console.log(`[SolutionProviderAgent] Solution resolved from analyzeAndProgress, moving to FINALIZING`);
-            await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.FINALIZING);
+            await conversationStorage.updateOrchestratorState(conversationId, {
+              orchestratorStatus: ORCHESTRATOR_STATUS.FINALIZING,
+              conversationOwner: CONVERSATION_OWNER.CLOSER,
+              waitingForCustomer: false,
+            });
             context.currentStatus = ORCHESTRATOR_STATUS.FINALIZING;
           } else if (analysisResult.suggestedResponse) {
             // We asked for more input - wait for customer reply
-            console.log(`[SolutionProviderAgent] Awaiting customer input, moving to AWAITING_SOLUTION_INPUTS`);
-            await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.AWAITING_SOLUTION_INPUTS);
-            context.currentStatus = ORCHESTRATOR_STATUS.AWAITING_SOLUTION_INPUTS;
+            console.log(`[SolutionProviderAgent] Awaiting customer input`);
+            await conversationStorage.updateOrchestratorState(conversationId, {
+              waitingForCustomer: true,
+            });
           }
 
           if (analysisResult.suggestedResponse) {
@@ -199,7 +180,11 @@ export class SolutionProviderAgent {
       // Update status to FINALIZING if resolved
       if (resolved) {
         console.log(`[SolutionProviderAgent] Solution resolved, moving to FINALIZING`);
-        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.FINALIZING);
+        await conversationStorage.updateOrchestratorState(conversationId, {
+          orchestratorStatus: ORCHESTRATOR_STATUS.FINALIZING,
+          conversationOwner: CONVERSATION_OWNER.CLOSER,
+          waitingForCustomer: false,
+        });
         context.currentStatus = ORCHESTRATOR_STATUS.FINALIZING;
       }
 

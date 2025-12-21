@@ -3,7 +3,7 @@ import { buildResolvedClassification } from "../../helpers/index.js";
 import { conversationStorage } from "../../../../conversations/storage/index.js";
 import { caseDemandStorage } from "../../../storage/caseDemandStorage.js";
 import { ActionExecutor } from "../actionExecutor.js";
-import { ORCHESTRATOR_STATUS, type OrchestratorContext, type OrchestratorAction } from "../types.js";
+import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type OrchestratorContext, type OrchestratorAction } from "../types.js";
 
 const CONFIG_KEY = "closer";
 export const DEFAULT_CLOSING_MESSAGE = "Obrigado por entrar em contato! Tenha um otimo dia!";
@@ -118,13 +118,21 @@ export class CloserAgent {
         const newDemandRecord = await caseDemandStorage.createNewDemand(conversationId);
         console.log(`[CloserAgent] Created new demand ${newDemandRecord.id} for conversation ${conversationId}`);
 
-        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.FINDING_DEMAND);
+        await conversationStorage.updateOrchestratorState(conversationId, {
+          orchestratorStatus: ORCHESTRATOR_STATUS.FINDING_DEMAND,
+          conversationOwner: CONVERSATION_OWNER.DEMAND_FINDER,
+          waitingForCustomer: true,
+        });
         context.currentStatus = ORCHESTRATOR_STATUS.FINDING_DEMAND;
       } else {
         // Customer is done - close conversation (demand already finalized with demand_found/demand_not_found)
         console.log(`[CloserAgent] Closing conversation ${conversationId}`);
 
-        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.CLOSED);
+        await conversationStorage.updateOrchestratorState(conversationId, {
+          orchestratorStatus: ORCHESTRATOR_STATUS.CLOSED,
+          conversationOwner: null,
+          waitingForCustomer: false,
+        });
         context.currentStatus = ORCHESTRATOR_STATUS.CLOSED;
       }
 
