@@ -3,14 +3,23 @@ import { caseDemandStorage } from "../../../storage/caseDemandStorage.js";
 import { conversationStorage } from "../../../../conversations/storage/index.js";
 import { getClientRequestVersions, getSearchQueries, getCustomerRequestType, buildResolvedClassification, resolveProductById } from "../../helpers/index.js";
 import { EnrichmentService } from "../services/enrichmentService.js";
-import { StatusController } from "../statusController.js";
 import { ActionExecutor } from "../actionExecutor.js";
 import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type DemandFinderAgentResult, type OrchestratorContext, type OrchestratorAction } from "../types.js";
 import { searchSolutionCenter } from "../../../../../shared/services/solutionCenterClient.js";
 
 const CONFIG_KEY = "demand_finder";
 const MAX_INTERACTIONS = 5;
-const ARTICLE_SCORE_THRESHOLD = 80;
+
+interface DemandFinderPromptResult {
+  decision: "selected_intent" | "need_clarification";
+  selected_intent: {
+    id: string | null;
+    label: string | null;
+  };
+  top_candidates_ranked: Array<{ id: string; label: string; why: string }>;
+  clarifying_question: string | null;
+  reason: string;
+}
 
 export interface DemandFinderProcessResult {
   success: boolean;
@@ -62,12 +71,29 @@ export class DemandFinderAgent {
       const searchResults = await this.searchArticles(context);
       context.searchResults = searchResults;
 
-      // Step 4: Evaluate if demand is understood
-      const evaluation = await StatusController.evaluateDemandUnderstood(conversationId, context);
+      // Step 4: Call AI to evaluate and decide (unified evaluation + question generation)
+      const promptResult = await this.callDemandFinderPrompt(context);
 
-      // Step 5: If understood -> confirm demand and transition to solution provider
-      if (evaluation.canTransition) {
-        console.log(`[DemandFinderAgent] Demand confirmed - ${evaluation.reason}`);
+      if (!promptResult) {
+        console.log(`[DemandFinderAgent] Prompt call failed, escalating`);
+        await this.escalateConversation(conversationId, context, "Prompt call failed");
+        return {
+          success: true,
+          demandConfirmed: false,
+          needsClarification: false,
+          maxInteractionsReached: true,
+          messageSent: false,
+          suggestedResponse: "Vou te transferir para um especialista que podera te ajudar.",
+        };
+      }
+
+      console.log(`[DemandFinderAgent] AI decision: ${promptResult.decision}, reason: ${promptResult.reason}`);
+
+      // Step 5: If AI selected an intent -> confirm demand and transition to solution provider
+      if (promptResult.decision === "selected_intent" && promptResult.selected_intent?.id) {
+        console.log(`[DemandFinderAgent] Demand confirmed - selected intent: ${promptResult.selected_intent.id} (${promptResult.selected_intent.label})`);
+        
+        await caseDemandStorage.updateSelectedIntent(conversationId, promptResult.selected_intent.id);
         
         await conversationStorage.updateOrchestratorState(conversationId, {
           orchestratorStatus: ORCHESTRATOR_STATUS.PROVIDING_SOLUTION,
@@ -86,23 +112,13 @@ export class DemandFinderAgent {
         };
       }
 
-      console.log(`[DemandFinderAgent] Demand not confirmed - ${evaluation.reason}`);
-
-      // Step 6: Check interaction counter -> if limit reached, escalate and exit
+      // Step 6: AI needs clarification - check interaction counter first
       const currentInteractionCount = await caseDemandStorage.getInteractionCount(conversationId);
       console.log(`[DemandFinderAgent] Current interaction count: ${currentInteractionCount}/${MAX_INTERACTIONS}`);
 
       if (currentInteractionCount >= MAX_INTERACTIONS) {
         console.log(`[DemandFinderAgent] Max interactions already reached, escalating`);
-        
-        await conversationStorage.updateOrchestratorState(conversationId, {
-          orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
-          conversationOwner: null,
-          waitingForCustomer: false,
-        });
-        await caseDemandStorage.updateStatus(conversationId, "demand_not_found");
-        context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
-        
+        await this.escalateConversation(conversationId, context, "Max interactions reached");
         return {
           success: true,
           demandConfirmed: false,
@@ -113,20 +129,13 @@ export class DemandFinderAgent {
         };
       }
 
-      // Step 7: Generate clarification question
-      const clarificationResult = await this.generateClarificationQuestion(context);
-
-      if (!clarificationResult.suggestedResponse || !clarificationResult.suggestionId) {
-        console.log(`[DemandFinderAgent] No clarification question generated, escalating immediately`);
-        
-        await conversationStorage.updateOrchestratorState(conversationId, {
-          orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
-          conversationOwner: null,
-          waitingForCustomer: false,
-        });
-        await caseDemandStorage.updateStatus(conversationId, "demand_not_found");
-        context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
-        
+      // Step 7: Use clarifying_question from prompt result
+      const clarifyingQuestion = promptResult.clarifying_question;
+      const suggestionId = promptResult.suggestionId;
+      
+      if (!clarifyingQuestion || !suggestionId) {
+        console.log(`[DemandFinderAgent] No clarifying question or suggestionId from AI, escalating`);
+        await this.escalateConversation(conversationId, context, "No clarifying question generated");
         return {
           success: true,
           demandConfirmed: false,
@@ -145,7 +154,7 @@ export class DemandFinderAgent {
       console.log(`[DemandFinderAgent] Sending clarification question for conversation ${conversationId}`);
       const action: OrchestratorAction = {
         type: "SEND_MESSAGE",
-        payload: { suggestionId: clarificationResult.suggestionId, responsePreview: clarificationResult.suggestedResponse }
+        payload: { suggestionId, responsePreview: clarifyingQuestion }
       };
       await ActionExecutor.execute(context, [action]);
       const messageSent = true;
@@ -163,8 +172,8 @@ export class DemandFinderAgent {
         needsClarification: true,
         maxInteractionsReached: false,
         messageSent,
-        suggestedResponse: clarificationResult.suggestedResponse,
-        suggestionId: clarificationResult.suggestionId,
+        suggestedResponse: clarifyingQuestion,
+        suggestionId,
       };
 
     } catch (error: any) {
@@ -301,7 +310,22 @@ export class DemandFinderAgent {
     }
   }
 
-  private static async generateClarificationQuestion(context: OrchestratorContext): Promise<{ suggestedResponse?: string; suggestionId?: number }> {
+  private static async escalateConversation(
+    conversationId: number,
+    context: OrchestratorContext,
+    reason: string
+  ): Promise<void> {
+    console.log(`[DemandFinderAgent] Escalating conversation ${conversationId}: ${reason}`);
+    await conversationStorage.updateOrchestratorState(conversationId, {
+      orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
+      conversationOwner: null,
+      waitingForCustomer: false,
+    });
+    await caseDemandStorage.updateStatus(conversationId, "demand_not_found");
+    context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
+  }
+
+  private static async callDemandFinderPrompt(context: OrchestratorContext): Promise<(DemandFinderPromptResult & { suggestionId?: number }) | null> {
     const { event, conversationId, summary, classification, searchResults } = context;
 
     const resolvedClassification = await buildResolvedClassification(classification);
@@ -317,17 +341,23 @@ export class DemandFinderAgent {
     const result = await runAgentAndSaveSuggestion(CONFIG_KEY, agentContext, {
       skipIfDisabled: true,
       defaultModelName: "gpt-4o-mini",
-      suggestionField: "suggestedAnswerToCustomer",
+      suggestionField: "clarifying_question",
       inResponseTo: String(event.id),
     });
 
     if (!result.success) {
       console.log(`[DemandFinderAgent] Agent call failed for conversation ${conversationId}: ${result.error}`);
-      return {};
+      return null;
+    }
+
+    const parsed = result.parsedContent as DemandFinderPromptResult | undefined;
+    if (!parsed || !parsed.decision) {
+      console.log(`[DemandFinderAgent] Invalid response format from agent for conversation ${conversationId}`);
+      return null;
     }
 
     return {
-      suggestedResponse: result.parsedContent?.suggestedAnswerToCustomer,
+      ...parsed,
       suggestionId: result.suggestionId,
     };
   }
@@ -336,14 +366,24 @@ export class DemandFinderAgent {
     const { conversationId } = context;
 
     try {
-      const agentResult = await this.generateClarificationQuestion(context);
+      const promptResult = await this.callDemandFinderPrompt(context);
 
-      console.log(`[DemandFinderAgent] generateResponseOnly completed for conversation ${conversationId}, suggestionId: ${agentResult.suggestionId || 'none'}`);
+      if (!promptResult) {
+        return {
+          success: false,
+          error: "Failed to call demand finder prompt",
+        };
+      }
+
+      const suggestedResponse = promptResult.decision === "need_clarification" 
+        ? promptResult.clarifying_question 
+        : undefined;
+
+      console.log(`[DemandFinderAgent] generateResponseOnly completed for conversation ${conversationId}, decision: ${promptResult.decision}`);
 
       return {
         success: true,
-        suggestedResponse: agentResult.suggestedResponse,
-        suggestionId: agentResult.suggestionId,
+        suggestedResponse: suggestedResponse || undefined,
       };
     } catch (error: any) {
       console.error(`[DemandFinderAgent] Error in generateResponseOnly for conversation ${conversationId}:`, error);
