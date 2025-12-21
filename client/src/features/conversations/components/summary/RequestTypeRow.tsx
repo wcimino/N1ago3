@@ -4,9 +4,10 @@ export interface RequestTypeRowProps {
   requestType?: string | null;
   confidence?: number | null;
   confidenceReason?: string | null;
+  compact?: boolean;
 }
 
-export function RequestTypeRow({ requestType, confidence, confidenceReason }: RequestTypeRowProps) {
+export function RequestTypeRow({ requestType, confidence, confidenceReason, compact }: RequestTypeRowProps) {
   const getRequestTypeColor = (type: string | null | undefined) => {
     if (!type) return 'bg-gray-100 text-gray-500';
     const lower = type.toLowerCase();
@@ -14,6 +15,17 @@ export function RequestTypeRow({ requestType, confidence, confidenceReason }: Re
     if (lower.includes('contratar')) return 'bg-green-100 text-green-700';
     return 'bg-blue-100 text-blue-700';
   };
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-1">
+        <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${getRequestTypeColor(requestType)}`}>
+          {requestType || "-"}
+        </span>
+        <ConfidenceTooltip confidence={confidence} reason={confidenceReason} size="sm" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-2 flex-wrap">

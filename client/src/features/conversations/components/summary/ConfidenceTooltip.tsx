@@ -5,9 +5,10 @@ import { Info as InfoIcon } from "lucide-react";
 export interface ConfidenceTooltipProps {
   confidence?: number | null;
   reason?: string | null;
+  size?: "sm" | "md";
 }
 
-export function ConfidenceTooltip({ confidence, reason }: ConfidenceTooltipProps) {
+export function ConfidenceTooltip({ confidence, reason, size = "md" }: ConfidenceTooltipProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -46,9 +47,12 @@ export function ConfidenceTooltip({ confidence, reason }: ConfidenceTooltipProps
   
   const displayConfidence = confidence <= 1 ? Math.round(confidence * 100) : Math.round(confidence);
   
+  const textClass = size === "sm" ? "text-xs" : "text-sm";
+  const iconClass = size === "sm" ? "w-3 h-3" : "w-4 h-4";
+  
   return (
     <span className="inline-flex items-center gap-1">
-      <span className="text-sm text-gray-500">({displayConfidence}%)</span>
+      <span className={`${textClass} text-gray-500`}>({displayConfidence}%)</span>
       {reason && (
         <>
           <button
@@ -57,7 +61,7 @@ export function ConfidenceTooltip({ confidence, reason }: ConfidenceTooltipProps
             className="text-gray-400 hover:text-gray-600 transition-colors"
             title="Ver explicação"
           >
-            <InfoIcon className="w-4 h-4" />
+            <InfoIcon className={iconClass} />
           </button>
           {showTooltip && createPortal(
             <div 

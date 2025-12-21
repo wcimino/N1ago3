@@ -34,7 +34,7 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
               <h3 className="font-semibold text-purple-900">Resumo da Conversa</h3>
             </div>
             
-            <div className="space-y-2 mb-4">
+            <div className="mb-4">
               <ProductRow 
                 product={summary.product}
                 subproduct={summary.subproduct}
@@ -42,77 +42,76 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
                 confidenceReason={summary.product_confidence_reason}
               />
               
-              <RequestTypeRow
-                requestType={summary.customer_request_type}
-                confidence={summary.customer_request_type_confidence}
-                confidenceReason={summary.customer_request_type_reason}
-              />
-              
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 min-w-[110px]">Sentimento:</span>
-                {summary.customer_emotion_level && emotionConfig[summary.customer_emotion_level] ? (
-                  <span className={`px-2 py-0.5 rounded text-sm font-medium ${emotionConfig[summary.customer_emotion_level].color}`}>
-                    {emotionConfig[summary.customer_emotion_level].emoji} {emotionConfig[summary.customer_emotion_level].label}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-3 pt-3 border-t border-gray-100">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400">Tipo:</span>
+                  <RequestTypeRow
+                    requestType={summary.customer_request_type}
+                    confidence={summary.customer_request_type_confidence}
+                    confidenceReason={summary.customer_request_type_reason}
+                    compact
+                  />
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400">Sentimento:</span>
+                  {summary.customer_emotion_level && emotionConfig[summary.customer_emotion_level] ? (
+                    <span className={`text-sm ${emotionConfig[summary.customer_emotion_level].color.replace('bg-', '').replace('-100', '-700')}`}>
+                      {emotionConfig[summary.customer_emotion_level].emoji} {emotionConfig[summary.customer_emotion_level].label}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-gray-400">-</span>
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400">Fase:</span>
+                  <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                    summary.orchestrator_status === 'providing_solution' 
+                      ? 'bg-green-100 text-green-700' 
+                      : summary.orchestrator_status === 'temp_demand_understood' 
+                      ? 'bg-green-100 text-green-700' 
+                      : summary.orchestrator_status === 'demand_understanding'
+                      ? 'bg-yellow-100 text-yellow-700'
+                      : summary.orchestrator_status === 'escalated'
+                      ? 'bg-red-100 text-red-700'
+                      : summary.orchestrator_status === 'temp_demand_not_understood'
+                      ? 'bg-orange-100 text-orange-700'
+                      : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {summary.orchestrator_status === 'new' && 'Nova'}
+                    {summary.orchestrator_status === 'demand_understanding' && 'Entendendo'}
+                    {summary.orchestrator_status === 'temp_demand_understood' && 'Identificada'}
+                    {summary.orchestrator_status === 'providing_solution' && 'Solucionando'}
+                    {summary.orchestrator_status === 'demand_resolving' && 'Resolvendo'}
+                    {summary.orchestrator_status === 'temp_demand_not_understood' && 'Não compreendida'}
+                    {summary.orchestrator_status === 'escalated' && 'Escalado'}
+                    {summary.orchestrator_status === 'closed' && 'Fechado'}
+                    {!summary.orchestrator_status && '-'}
                   </span>
-                ) : (
-                  <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-sm font-medium">
-                    (vazio)
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400">Demanda:</span>
+                  <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                    summary.demand_finder_status === 'demand_found' 
+                      ? 'bg-green-100 text-green-700' 
+                      : summary.demand_finder_status === 'in_progress'
+                      ? 'bg-yellow-100 text-yellow-700'
+                      : summary.demand_finder_status === 'demand_not_found'
+                      ? 'bg-blue-100 text-blue-700'
+                      : summary.demand_finder_status === 'error'
+                      ? 'bg-red-100 text-red-700'
+                      : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {summary.demand_finder_status === 'not_started' && 'Aguardando'}
+                    {summary.demand_finder_status === 'in_progress' && `Buscando (${summary.demand_finder_interaction_count || 0}/5)`}
+                    {summary.demand_finder_status === 'demand_found' && 'Encontrada'}
+                    {summary.demand_finder_status === 'demand_not_found' && 'Não encontrada'}
+                    {summary.demand_finder_status === 'error' && 'Erro'}
+                    {!summary.demand_finder_status && 'Aguardando'}
                   </span>
-                )}
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 min-w-[110px]">Fase de análise:</span>
-                <span className={`px-2 py-0.5 rounded text-sm font-medium ${
-                  summary.orchestrator_status === 'providing_solution' 
-                    ? 'bg-green-100 text-green-700' 
-                    : summary.orchestrator_status === 'temp_demand_understood' 
-                    ? 'bg-green-100 text-green-700' 
-                    : summary.orchestrator_status === 'demand_understanding'
-                    ? 'bg-yellow-100 text-yellow-700'
-                    : summary.orchestrator_status === 'escalated'
-                    ? 'bg-red-100 text-red-700'
-                    : summary.orchestrator_status === 'temp_demand_not_understood'
-                    ? 'bg-orange-100 text-orange-700'
-                    : 'bg-gray-100 text-gray-500'
-                }`}>
-                  {summary.orchestrator_status === 'new' && 'Nova'}
-                  {summary.orchestrator_status === 'demand_understanding' && 'Entendendo demanda'}
-                  {summary.orchestrator_status === 'temp_demand_understood' && 'Demanda identificada'}
-                  {summary.orchestrator_status === 'providing_solution' && 'Provendo solução'}
-                  {summary.orchestrator_status === 'demand_resolving' && 'Resolvendo'}
-                  {summary.orchestrator_status === 'temp_demand_not_understood' && 'Demanda não compreendida'}
-                  {summary.orchestrator_status === 'escalated' && 'Escalado'}
-                  {summary.orchestrator_status === 'closed' && 'Fechado'}
-                  {!summary.orchestrator_status && '(vazio)'}
-                </span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 min-w-[110px]">Demand Finder:</span>
-                <span className={`px-2 py-0.5 rounded text-sm font-medium ${
-                  summary.demand_finder_status === 'demand_found' 
-                    ? 'bg-green-100 text-green-700' 
-                    : summary.demand_finder_status === 'in_progress'
-                    ? 'bg-yellow-100 text-yellow-700'
-                    : summary.demand_finder_status === 'demand_not_found'
-                    ? 'bg-blue-100 text-blue-700'
-                    : summary.demand_finder_status === 'error'
-                    ? 'bg-red-100 text-red-700'
-                    : 'bg-gray-100 text-gray-500'
-                }`}>
-                  {summary.demand_finder_status === 'not_started' && 'Não iniciado'}
-                  {summary.demand_finder_status === 'in_progress' && 'Em progresso'}
-                  {summary.demand_finder_status === 'demand_found' && 'Demanda encontrada'}
-                  {summary.demand_finder_status === 'demand_not_found' && 'Demanda não encontrada'}
-                  {summary.demand_finder_status === 'error' && 'Erro'}
-                  {!summary.demand_finder_status && 'Não iniciado'}
-                </span>
-                {summary.demand_finder_status === 'in_progress' && (
-                  <span className="text-xs text-gray-500">
-                    ({summary.demand_finder_interaction_count || 0}/5)
-                  </span>
-                )}
+                </div>
               </div>
             </div>
 
