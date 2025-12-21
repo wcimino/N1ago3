@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
-import { Tag, MessageSquare, CheckCircle, Search, Sparkles, Loader2, Eye, Bot } from "lucide-react";
+import { Tag, MessageSquare, CheckCircle, Search, Eye, Bot } from "lucide-react";
 import { FormActions } from "@/shared/components/ui";
 import { ProductHierarchySelects, ProductHierarchyDisplay, TagInput, FormCollapsibleSection } from "@/shared/components/forms";
 import { useProductHierarchySelects } from "@/shared/hooks";
-import { useInlineEnrichment } from "../hooks/useInlineEnrichment";
-import { EnrichmentSuggestionPanel } from "./EnrichmentSuggestionPanel";
 import type { KnowledgeBaseArticle, KnowledgeBaseFormData } from "../hooks/useKnowledgeBase";
 
 interface PrefilledArticleData {
@@ -126,17 +124,6 @@ export function KnowledgeBaseForm({
 
   const isValid = (formData.question || "").trim() && (formData.answer || "").trim();
 
-  const enrichment = useInlineEnrichment({
-    intentId: hierarchy.selection.intentId,
-    articleId: initialData?.id || null,
-    currentData: {
-      question: formData.question,
-      answer: formData.answer,
-      keywords: formData.keywords.join(", "),
-      questionVariation: formData.questionVariation,
-    },
-  });
-
   const getProductName = () => {
     if (prefilledData) return prefilledData.productName;
     if (initialData?.productId) return hierarchy.getProductName(initialData.productId);
@@ -155,41 +142,6 @@ export function KnowledgeBaseForm({
     return "";
   };
 
-  const handleApplyEnrichment = (suggestion: {
-    answer?: string;
-    keywords?: string;
-    questionVariation?: string[];
-    questionNormalized?: string[];
-  }) => {
-    setFormData(prev => {
-      const existingVariations = prev.questionVariation || [];
-      const newVariations = (suggestion.questionVariation || []).filter(
-        v => !existingVariations.includes(v)
-      );
-      
-      const currentKeywords = prev.keywords;
-      let newKeywords = currentKeywords;
-      if (suggestion.keywords) {
-        const suggestedKeywords = suggestion.keywords.split(",").map(k => k.trim()).filter(k => k);
-        const uniqueNewKeywords = suggestedKeywords.filter(k => !currentKeywords.includes(k));
-        newKeywords = [...currentKeywords, ...uniqueNewKeywords];
-      }
-      
-      const existingNormalized = prev.questionNormalized || [];
-      const newNormalized = (suggestion.questionNormalized || []).filter(
-        n => !existingNormalized.includes(n)
-      );
-      
-      return {
-        ...prev,
-        answer: suggestion.answer || prev.answer,
-        keywords: newKeywords,
-        questionVariation: [...existingVariations, ...newVariations],
-        questionNormalized: [...existingNormalized, ...newNormalized],
-      };
-    });
-  };
-
   const semanticTagsCount = formData.questionNormalized.length + formData.keywords.length;
   const variationsCount = formData.questionVariation.length;
 
@@ -203,55 +155,32 @@ export function KnowledgeBaseForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
-            <Tag className="w-3.5 h-3.5" />
-            Classificação
-          </label>
-          {prefilledData || initialData ? (
-            <ProductHierarchyDisplay
-              productName={getProductName()}
-              subjectName={getSubjectName()}
-              intentName={getIntentName()}
-            />
-          ) : (
-            <ProductHierarchySelects
-              productId={hierarchy.selection.productId}
-              subjectId={hierarchy.selection.subjectId}
-              intentId={hierarchy.selection.intentId}
-              onProductChange={hierarchy.setProductId}
-              onSubjectChange={hierarchy.setSubjectId}
-              onIntentChange={hierarchy.setIntentId}
-              products={hierarchy.products}
-              subjects={hierarchy.subjects}
-              intents={hierarchy.intents}
-              showLabel={false}
-              required
-            />
-          )}
-        </div>
-        <div className="flex items-center gap-3 pt-5">
-          <button
-            type="button"
-            onClick={enrichment.handleEnrich}
-            disabled={enrichment.isLoading || !enrichment.isEnabled}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            title={!enrichment.isEnabled ? "Selecione uma intenção para habilitar" : "Enriquecer artigo com IA"}
-          >
-            {enrichment.isLoading ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Analisando...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-3.5 h-3.5" />
-                Enriquecer com IA
-              </>
-            )}
-          </button>
-        </div>
+      <div>
+        <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
+          <Tag className="w-3.5 h-3.5" />
+          Classificação
+        </label>
+        {prefilledData || initialData ? (
+          <ProductHierarchyDisplay
+            productName={getProductName()}
+            subjectName={getSubjectName()}
+            intentName={getIntentName()}
+          />
+        ) : (
+          <ProductHierarchySelects
+            productId={hierarchy.selection.productId}
+            subjectId={hierarchy.selection.subjectId}
+            intentId={hierarchy.selection.intentId}
+            onProductChange={hierarchy.setProductId}
+            onSubjectChange={hierarchy.setSubjectId}
+            onIntentChange={hierarchy.setIntentId}
+            products={hierarchy.products}
+            subjects={hierarchy.subjects}
+            intents={hierarchy.intents}
+            showLabel={false}
+            required
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -407,24 +336,6 @@ export function KnowledgeBaseForm({
           maxVisible={6}
         />
       </FormCollapsibleSection>
-
-      <EnrichmentSuggestionPanel
-        suggestion={enrichment.suggestion}
-        skipReason={enrichment.skipReason}
-        apiError={enrichment.apiError}
-        isError={enrichment.isError}
-        error={enrichment.error}
-        expanded={enrichment.expanded}
-        setExpanded={enrichment.setExpanded}
-        currentData={{
-          question: formData.question,
-          answer: formData.answer,
-          keywords: formData.keywords.join(", "),
-          questionVariation: formData.questionVariation,
-        }}
-        onApply={handleApplyEnrichment}
-        onDiscard={enrichment.handleDiscard}
-      />
 
       <div className="pt-4 border-t border-gray-100">
         <FormActions

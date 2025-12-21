@@ -1,15 +1,11 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useKnowledgeSuggestions } from "../hooks/useKnowledgeSuggestions";
 import { SuggestionCard } from "../components/SuggestionCard";
-import { EnrichmentPanel } from "../components/EnrichmentPanel";
-import { EnrichmentLogsList } from "../components/EnrichmentLogsList";
 
-type StatusFilter = "pending" | "approved" | "rejected" | "merged" | "skipped" | "all";
+type StatusFilter = "pending" | "approved" | "rejected" | "merged" | "all";
 
 export function SuggestionsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending");
-  const queryClient = useQueryClient();
   const { 
     suggestions, 
     stats, 
@@ -18,25 +14,15 @@ export function SuggestionsPage() {
     reject, 
     isApproving, 
     isRejecting,
-  } = useKnowledgeSuggestions(statusFilter === "all" || statusFilter === "skipped" ? undefined : statusFilter);
-
-  const handleStatusChange = (status: StatusFilter) => {
-    setStatusFilter(status);
-    if (status === "skipped") {
-      queryClient.invalidateQueries({ queryKey: ["enrichment-logs"] });
-      queryClient.invalidateQueries({ queryKey: ["enrichment-logs-stats"] });
-    }
-  };
+  } = useKnowledgeSuggestions(statusFilter === "all" ? undefined : statusFilter);
 
   return (
     <div className="space-y-4">
-      <EnrichmentPanel />
-      
       <div className="flex flex-wrap gap-2">
-        {(["pending", "approved", "rejected", "merged", "skipped", "all"] as StatusFilter[]).map((status) => (
+        {(["pending", "approved", "rejected", "merged", "all"] as StatusFilter[]).map((status) => (
           <button
             key={status}
-            onClick={() => handleStatusChange(status)}
+            onClick={() => setStatusFilter(status)}
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               statusFilter === status
                 ? "bg-purple-600 text-white"
@@ -47,15 +33,12 @@ export function SuggestionsPage() {
             {status === "approved" && `Aprovados${stats ? ` (${stats.approved})` : ""}`}
             {status === "rejected" && `Rejeitados${stats ? ` (${stats.rejected})` : ""}`}
             {status === "merged" && `Mesclados${stats ? ` (${stats.merged})` : ""}`}
-            {status === "skipped" && "Sem melhoria"}
             {status === "all" && "Todos"}
           </button>
         ))}
       </div>
 
-      {statusFilter === "skipped" ? (
-        <EnrichmentLogsList />
-      ) : isLoading ? (
+      {isLoading ? (
         <div className="text-center py-8 text-gray-500">Carregando sugestões...</div>
       ) : suggestions.length === 0 ? (
         <div className="text-center py-8 text-gray-500">

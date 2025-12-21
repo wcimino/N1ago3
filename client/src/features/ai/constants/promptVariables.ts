@@ -68,23 +68,6 @@ export const VARIABLE_CATEGORIES: PromptVariableCategory[] = [
     ],
   },
   {
-    id: 'article-enrichment',
-    title: 'Enriquecimento de Artigos',
-    description: 'Dados para geração e enriquecimento de artigos',
-    variables: [
-      { name: '{{INTENCAO_ID}}', description: 'ID da intenção' },
-      { name: '{{INTENCAO_NOME}}', description: 'Nome da intenção' },
-      { name: '{{INTENCAO_SINONIMOS}}', description: 'Sinônimos da intenção separados por vírgula' },
-      { name: '{{ASSUNTO_NOME}}', description: 'Nome do assunto' },
-      { name: '{{ASSUNTO_SINONIMOS}}', description: 'Sinônimos do assunto separados por vírgula' },
-      { name: '{{ARTIGO_ID}}', description: 'ID do artigo existente' },
-      { name: '{{ARTIGO_PERGUNTA}}', description: 'Pergunta do artigo existente' },
-      { name: '{{ARTIGO_RESPOSTA}}', description: 'Resposta do artigo existente' },
-      { name: '{{ARTIGO_KEYWORDS}}', description: 'Keywords do artigo existente' },
-      { name: '{{ARTIGO_VARIACOES}}', description: 'Variações de pergunta do artigo existente' },
-    ],
-  },
-  {
     id: 'conditionals',
     title: 'Blocos Condicionais',
     description: 'Estruturas para exibir conteúdo condicionalmente',
