@@ -88,6 +88,7 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **Zendesk Articles Integration:** Removed - knowledge retrieval now uses exclusively Solution Center API.
 *   **Knowledge Suggestions Feature:** Removed - UI, backend routes, storage, and `knowledge_suggestions` table dropped.
 *   **Article Enrichment Agent:** Removed - no longer needed without Zendesk articles.
+*   **Internal Knowledge Base (Articles, Subjects, Intents):** Removed (December 2024) - The internal Q&A knowledge base functionality was migrated to an external system. Dropped tables: `knowledge_base`, `knowledge_base_embeddings`, `knowledge_base_statistics`, `knowledge_subjects`, `knowledge_intents`. Removed related routes, storage, services, AI tools (knowledgeBaseTool, subjectIntentTool), and frontend pages (KnowledgeBasePage, KnowledgeBaseArticlePage). The combined knowledge search tool now only searches objective problems.
 
 **Server Bootstrap & Initialization (December 2024):**
 
