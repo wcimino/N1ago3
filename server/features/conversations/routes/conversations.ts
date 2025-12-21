@@ -94,75 +94,83 @@ router.get("/api/conversations/list", isAuthenticated, requireAuthorizedUser, as
 });
 
 router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  const result = await storage.getUserConversationsWithMessages(req.params.userId);
+  const [result, user] = await Promise.all([
+    storage.getUserConversationsWithMessagesOptimized(req.params.userId),
+    storage.getUserBySunshineId(req.params.userId),
+  ]);
 
   if (!result) {
     return res.status(404).json({ error: "No conversations found for this user" });
   }
 
-  const user = await storage.getUserBySunshineId(req.params.userId);
+  const conversationIds = result.map((row: any) => row.conv_id);
+  const suggestedResponsesRaw = await storage.getSuggestedResponsesBatch(conversationIds);
+  
+  const suggestedResponsesByConversation = new Map<number, any[]>();
+  for (const sr of suggestedResponsesRaw as any[]) {
+    const convId = sr.conversation_id;
+    if (!suggestedResponsesByConversation.has(convId)) {
+      suggestedResponsesByConversation.set(convId, []);
+    }
+    suggestedResponsesByConversation.get(convId)!.push(sr);
+  }
 
-  const conversationsWithSummary = await Promise.all(
-    result.map(async (item) => {
-      const [summary, suggestedResponses, caseDemandData] = await Promise.all([
-        storage.getConversationSummary(item.conversation.id),
-        storage.getAllSuggestedResponses(item.conversation.id),
-        caseDemandStorage.getFirstByConversationId(item.conversation.id),
-      ]);
-      const productNames = summary ? await getProductNames(summary.productId) : { product: null, subproduct: null };
-      return {
-        conversation: {
-          id: item.conversation.id,
-          external_conversation_id: item.conversation.externalConversationId,
-          status: item.conversation.status,
-          current_handler: item.conversation.currentHandler,
-          current_handler_name: item.conversation.currentHandlerName,
-          closed_at: item.conversation.closedAt,
-          closed_reason: item.conversation.closedReason,
-          created_at: item.conversation.createdAt,
-          updated_at: item.conversation.updatedAt,
-          autopilot_enabled: item.conversation.autopilotEnabled,
-        },
-        messages: item.messages,
-        summary: summary ? {
-          text: summary.summary,
-          generated_at: summary.generatedAt?.toISOString(),
-          updated_at: summary.updatedAt?.toISOString(),
-          product_id: summary.productId,
-          product: productNames.product,
-          subproduct: productNames.subproduct,
-          product_confidence: summary.productConfidence,
-          product_confidence_reason: summary.productConfidenceReason,
-          classified_at: summary.classifiedAt?.toISOString(),
-          client_request: summary.clientRequest,
-          client_request_versions: summary.clientRequestVersions || null,
-          agent_actions: summary.agentActions,
-          current_status: summary.currentStatus,
-          important_info: summary.importantInfo,
-          customer_emotion_level: summary.customerEmotionLevel,
-          customer_request_type: summary.customerRequestType,
-          customer_request_type_confidence: summary.customerRequestTypeConfidence,
-          customer_request_type_reason: summary.customerRequestTypeReason,
-          objective_problems: summary.objectiveProblems || null,
-          articles_and_objective_problems: caseDemandData?.articlesAndObjectiveProblems || null,
-          solution_center_articles_and_problems: caseDemandData?.solutionCenterArticlesAndProblems || null,
-          solution_center_selected_id: caseDemandData?.solutionCenterArticleAndProblemsIdSelected || null,
-          triage: extractTriageFromSummary(summary.summary),
-          orchestrator_status: summary.orchestratorStatus || null,
-          demand_finder_status: caseDemandData?.status || null,
-          demand_finder_interaction_count: caseDemandData?.interactionCount || 0,
-          conversation_orchestrator_log: summary.conversationOrchestratorLog || null,
-        } : null,
-        suggested_responses: suggestedResponses.map(sr => ({
-          text: sr.suggestedResponse,
-          created_at: sr.createdAt?.toISOString(),
-          last_event_id: sr.lastEventId,
-          status: sr.status,
-          articles_used: sr.articlesUsed || null,
-        })),
-      };
-    })
-  );
+  const conversationsWithSummary = result.map((row: any) => {
+    const hasSummary = row.summary_id != null;
+    const suggestedResponses = suggestedResponsesByConversation.get(row.conv_id) || [];
+    
+    return {
+      conversation: {
+        id: row.conv_id,
+        external_conversation_id: row.external_conversation_id,
+        status: row.status,
+        current_handler: row.current_handler,
+        current_handler_name: row.current_handler_name,
+        closed_at: row.closed_at,
+        closed_reason: row.closed_reason,
+        created_at: row.conv_created_at,
+        updated_at: row.conv_updated_at,
+        autopilot_enabled: row.autopilot_enabled,
+      },
+      messages: row.messages || [],
+      summary: hasSummary ? {
+        text: row.summary_text,
+        generated_at: row.summary_generated_at,
+        updated_at: row.summary_updated_at,
+        product_id: row.product_id,
+        product: row.product_name,
+        subproduct: row.subproduct_name,
+        product_confidence: row.product_confidence,
+        product_confidence_reason: row.product_confidence_reason,
+        classified_at: row.classified_at,
+        client_request: row.client_request,
+        client_request_versions: row.client_request_versions || null,
+        agent_actions: row.agent_actions,
+        current_status: row.current_status,
+        important_info: row.important_info,
+        customer_emotion_level: row.customer_emotion_level,
+        customer_request_type: row.customer_request_type,
+        customer_request_type_confidence: row.customer_request_type_confidence,
+        customer_request_type_reason: row.customer_request_type_reason,
+        objective_problems: row.objective_problems || null,
+        articles_and_objective_problems: row.articles_and_objective_problems || null,
+        solution_center_articles_and_problems: row.solution_center_articles_and_problems || null,
+        solution_center_selected_id: row.solution_center_article_and_problems_id_selected || null,
+        triage: extractTriageFromSummary(row.summary_text),
+        orchestrator_status: row.orchestrator_status || null,
+        demand_finder_status: row.demand_finder_status || null,
+        demand_finder_interaction_count: row.demand_finder_interaction_count || 0,
+        conversation_orchestrator_log: row.conversation_orchestrator_log || null,
+      } : null,
+      suggested_responses: suggestedResponses.map((sr: any) => ({
+        text: sr.suggested_response,
+        created_at: sr.created_at,
+        last_event_id: sr.last_event_id,
+        status: sr.status,
+        articles_used: sr.articles_used || null,
+      })),
+    };
+  });
 
   res.json({
     user_id: req.params.userId,

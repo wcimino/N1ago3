@@ -1,7 +1,7 @@
 import { db } from "../../../db.js";
 import { conversations, eventsStandard } from "../../../../shared/schema.js";
 import { sql } from "drizzle-orm";
-import { getConversationsList, getUserConversationsWithMessages } from "./conversationQueries.js";
+import { getConversationsList, getUserConversationsWithMessages, getUserConversationsWithMessagesOptimized, getSuggestedResponsesBatch } from "./conversationQueries.js";
 
 export { type ConversationFilterParams } from "./conversationFilters.js";
 
@@ -52,4 +52,6 @@ export const conversationStats = {
   },
 
   getUserConversationsWithMessages,
+  getUserConversationsWithMessagesOptimized,
+  getSuggestedResponsesBatch,
 };

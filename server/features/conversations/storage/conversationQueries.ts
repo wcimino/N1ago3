@@ -165,3 +165,110 @@ export async function getUserConversationsWithMessages(userId: string) {
     messages: row.messages || [],
   }));
 }
+
+export async function getUserConversationsWithMessagesOptimized(userId: string) {
+  const result = await db.execute(sql`
+    SELECT 
+      c.id as conv_id,
+      c.external_conversation_id,
+      c.external_app_id,
+      c.user_id,
+      c.user_external_id,
+      c.status,
+      c.current_handler,
+      c.current_handler_name,
+      c.closed_at,
+      c.closed_reason,
+      c.created_at as conv_created_at,
+      c.updated_at as conv_updated_at,
+      c.metadata_json,
+      c.autopilot_enabled,
+      -- Messages aggregation
+      COALESCE(
+        JSON_AGG(
+          CASE WHEN e.id IS NOT NULL THEN
+            JSON_BUILD_OBJECT(
+              'id', e.id,
+              'author_type', e.author_type,
+              'author_id', e.author_id,
+              'author_name', e.author_name,
+              'content_type', COALESCE(e.event_subtype, 'text'),
+              'content_text', e.content_text,
+              'content_payload', e.content_payload,
+              'received_at', TO_CHAR(e.received_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+              'zendesk_timestamp', TO_CHAR(e.occurred_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+            )
+          END ORDER BY e.occurred_at
+        ) FILTER (WHERE e.id IS NOT NULL),
+        '[]'::json
+      ) as messages,
+      -- Summary fields
+      cs.id as summary_id,
+      cs.summary as summary_text,
+      TO_CHAR(cs.generated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as summary_generated_at,
+      TO_CHAR(cs.updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as summary_updated_at,
+      cs.product_id,
+      cs.product_confidence,
+      cs.product_confidence_reason,
+      TO_CHAR(cs.classified_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as classified_at,
+      cs.client_request,
+      cs.client_request_versions,
+      cs.agent_actions,
+      cs.current_status,
+      cs.important_info,
+      cs.customer_emotion_level,
+      cs.customer_request_type,
+      cs.customer_request_type_confidence,
+      cs.customer_request_type_reason,
+      cs.objective_problems,
+      cs.orchestrator_status,
+      cs.conversation_orchestrator_log,
+      -- Product names from catalog
+      pc.produto as product_name,
+      pc.subproduto as subproduct_name,
+      -- Case demand fields (using lateral join to get only first row)
+      cd_first.status as demand_finder_status,
+      cd_first.interaction_count as demand_finder_interaction_count,
+      cd_first.articles_and_objective_problems,
+      cd_first.solution_center_articles_and_problems,
+      cd_first.solution_center_article_and_problems_id_selected
+    FROM conversations c
+    LEFT JOIN events_standard e ON e.conversation_id = c.id AND e.event_type = 'message'
+    LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
+    LEFT JOIN products_catalog pc ON pc.id = cs.product_id
+    LEFT JOIN LATERAL (
+      SELECT * FROM case_demand cd 
+      WHERE cd.conversation_id = c.id 
+      ORDER BY cd.id 
+      LIMIT 1
+    ) cd_first ON true
+    WHERE c.user_id = ${userId}
+    GROUP BY c.id, cs.id, pc.id, cd_first.id, cd_first.status, cd_first.interaction_count, 
+             cd_first.articles_and_objective_problems, cd_first.solution_center_articles_and_problems,
+             cd_first.solution_center_article_and_problems_id_selected
+    ORDER BY c.created_at
+  `);
+
+  if (result.rows.length === 0) return null;
+
+  return result.rows;
+}
+
+export async function getSuggestedResponsesBatch(conversationIds: number[]) {
+  if (conversationIds.length === 0) return [];
+  
+  const result = await db.execute(sql`
+    SELECT 
+      conversation_id,
+      suggested_response,
+      TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
+      last_event_id,
+      status,
+      articles_used
+    FROM responses_suggested
+    WHERE conversation_id = ANY(${conversationIds})
+    ORDER BY conversation_id, created_at
+  `);
+  
+  return result.rows;
+}
