@@ -31,34 +31,27 @@ export async function getConversationsList(params: ConversationsListParams = {})
   } = buildFiltersForConversationList(params);
 
   const conversationsResult = await db.execute(sql`
-    WITH message_count_per_conv AS (
-      SELECT 
-        conversation_id,
-        COUNT(*) as message_count
-      FROM events_standard
-      WHERE event_type = 'message'
-      GROUP BY conversation_id
-    ),
-    last_message_per_conv AS (
-      SELECT 
-        conversation_id,
-        MAX(occurred_at) as last_message_at
-      FROM events_standard
-      WHERE event_type = 'message'
-      GROUP BY conversation_id
-    )
     SELECT 
       c.id,
       c.external_conversation_id,
       c.user_id,
       c.status,
       TO_CHAR(c.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
-      TO_CHAR(COALESCE(lm.last_message_at, c.created_at), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at,
+      TO_CHAR(
+        COALESCE(
+          (SELECT MAX(occurred_at) FROM events_standard e WHERE e.conversation_id = c.id AND e.event_type = 'message'),
+          c.created_at
+        ), 
+        'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'
+      ) as updated_at,
       TO_CHAR(c.closed_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as closed_at,
       c.closed_reason,
       c.current_handler,
       c.current_handler_name,
-      COALESCE(mc.message_count, 0) as message_count,
+      COALESCE(
+        (SELECT COUNT(*) FROM events_standard e WHERE e.conversation_id = c.id AND e.event_type = 'message'),
+        0
+      ) as message_count,
       pc.produto as product_standard,
       pc.subproduto as subproduct_standard,
       cs.customer_emotion_level,
@@ -71,8 +64,6 @@ export async function getConversationsList(params: ConversationsListParams = {})
     FROM conversations c
     LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
     LEFT JOIN products_catalog pc ON pc.id = cs.product_id
-    LEFT JOIN last_message_per_conv lm ON lm.conversation_id = c.id
-    LEFT JOIN message_count_per_conv mc ON mc.conversation_id = c.id
     LEFT JOIN users u ON c.user_id = u.sunshine_id
     WHERE c.user_id IS NOT NULL
       ${productCondition}
