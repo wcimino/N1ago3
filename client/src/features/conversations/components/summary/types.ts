@@ -50,6 +50,7 @@ export interface SummaryData {
   triage?: Triage | null;
   orchestrator_status?: string | null;
   demand_finder_status?: string | null;
+  demand_finder_interaction_count?: number | null;
   conversation_orchestrator_log?: OrchestratorLogEntry[] | null;
 }
 

@@ -108,6 +108,11 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
                   {summary.demand_finder_status === 'error' && 'Erro'}
                   {!summary.demand_finder_status && 'Não iniciado'}
                 </span>
+                {summary.demand_finder_status === 'in_progress' && (
+                  <span className="text-xs text-gray-500">
+                    ({summary.demand_finder_interaction_count || 0}/5)
+                  </span>
+                )}
               </div>
             </div>
 
