@@ -44,9 +44,11 @@ export function ConfidenceTooltip({ confidence, reason }: ConfidenceTooltipProps
   
   if (confidence === null || confidence === undefined) return null;
   
+  const displayConfidence = confidence <= 1 ? Math.round(confidence * 100) : Math.round(confidence);
+  
   return (
     <span className="inline-flex items-center gap-1">
-      <span className="text-sm text-gray-500">({confidence}%)</span>
+      <span className="text-sm text-gray-500">({displayConfidence}%)</span>
       {reason && (
         <>
           <button
