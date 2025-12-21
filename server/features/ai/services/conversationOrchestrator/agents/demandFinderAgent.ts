@@ -250,8 +250,11 @@ export class DemandFinderAgent {
 
       const resolvedProduct = await resolveProductById(classification?.productId);
 
+      const textVerbatim = searchQueries?.verbatimQuery;
+
       const solutionCenterResponse = await searchSolutionCenter({
         text: text || undefined,
+        textVerbatim: textVerbatim || undefined,
         textNormalizedVersions,
         keywords: keywords.length > 0 ? keywords : undefined,
         productName: resolvedProduct?.produto || undefined,
