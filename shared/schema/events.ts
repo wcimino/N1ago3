@@ -1,6 +1,22 @@
 import { pgTable, serial, text, timestamp, json, integer, boolean, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { productsCatalog } from "./knowledge";
 
+export interface OrchestratorLogEntry {
+  turn: number;
+  timestamp: string;
+  agent: string;
+  state: {
+    status: string;
+    owner: string | null;
+    waitingForCustomer: boolean;
+  };
+  solutionCenterResults: number;
+  aiDecision: string | null;
+  aiReason: string | null;
+  action: string;
+  details?: Record<string, unknown>;
+}
+
 export const eventsStandard = pgTable("events_standard", {
   id: serial("id").primaryKey(),
   eventType: text("event_type").notNull(),
@@ -93,6 +109,7 @@ export const conversationsSummary = pgTable("conversations_summary", {
   customerRequestTypeReason: text("customer_request_type_reason"),
   objectiveProblems: json("objective_problems").$type<Array<{ id: number; name: string; matchScore?: number; matchedTerms?: string[] }>>(),
   clientRequestVersions: json("client_request_versions").$type<{ clientRequestStandardVersion?: string; clientRequestQuestionVersion?: string; clientRequestProblemVersion?: string }>(),
+  conversationOrchestratorLog: json("conversation_orchestrator_log").$type<OrchestratorLogEntry[]>().default([]),
   generatedAt: timestamp("generated_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
