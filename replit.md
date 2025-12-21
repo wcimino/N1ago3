@@ -83,6 +83,12 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **External Sources & Knowledge Base Architecture:** Internal Q&A articles with embeddings. Solution Center API provides external knowledge retrieval.
 *   **RAG (Retrieval Augmented Generation):** Implements semantic search using OpenAI embeddings with pgvector and HNSW indexing, with fallbacks to full-text search.
 
+**Removed Features (December 2024):**
+
+*   **Zendesk Articles Integration:** Removed - knowledge retrieval now uses exclusively Solution Center API.
+*   **Knowledge Suggestions Feature:** Removed - UI, backend routes, storage, and `knowledge_suggestions` table dropped.
+*   **Article Enrichment Agent:** Removed - no longer needed without Zendesk articles.
+
 **Server Bootstrap & Initialization (December 2024):**
 
 *   **Preflight Checks:** `server/bootstrap/preflight.ts` validates critical environment variables (DATABASE_URL, PRIVATE_OBJECT_DIR) before starting schedulers. If validation fails, schedulers are disabled and the server runs in API-only mode.
