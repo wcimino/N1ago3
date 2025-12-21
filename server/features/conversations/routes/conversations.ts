@@ -45,48 +45,6 @@ router.get("/api/conversations/filters", isAuthenticated, requireAuthorizedUser,
   res.json(filters);
 });
 
-router.get("/api/conversations/grouped", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  const limit = parseInt(req.query.limit as string) || 50;
-  const offset = parseInt(req.query.offset as string) || 0;
-  const productStandard = req.query.productStandard as string | undefined;
-  const handler = req.query.handler as string | undefined;
-  const emotionLevel = req.query.emotionLevel ? parseInt(req.query.emotionLevel as string) : undefined;
-  const client = req.query.client as string | undefined;
-  const userAuthenticated = req.query.userAuthenticated as string | undefined;
-  const handledByN1ago = req.query.handledByN1ago as string | undefined;
-
-  const { userGroups, total } = await storage.getConversationsGroupedByUser(limit, offset, productStandard, handler, emotionLevel, client, userAuthenticated, handledByN1ago);
-
-  const enrichedGroups = await Promise.all(
-    userGroups.map(async (group: any) => {
-      const user = await storage.getUserBySunshineId(group.user_id);
-      return {
-        user_id: group.user_id,
-        conversation_count: Number(group.conversation_count),
-        last_activity: group.last_activity,
-        first_activity: group.first_activity,
-        conversations: group.conversations,
-        last_product_standard: group.last_product_standard || null,
-        last_subproduct_standard: group.last_subproduct_standard || null,
-        last_customer_emotion_level: group.last_customer_emotion_level || null,
-        user_info: user ? {
-          id: user.id,
-          external_id: user.externalId,
-          authenticated: user.authenticated,
-          profile: user.profile,
-        } : null,
-      };
-    })
-  );
-
-  res.json({
-    total,
-    offset,
-    limit,
-    user_groups: enrichedGroups,
-  });
-});
-
 router.get("/api/conversations/list", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 50;
   const offset = parseInt(req.query.offset as string) || 0;

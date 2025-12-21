@@ -173,20 +173,4 @@ export const webhookStorage = {
       .where(eq(zendeskConversationsWebhookRaw.id, id));
   },
 
-  async getWebhookRawsStats() {
-    const stats = await db.select({
-      status: zendeskConversationsWebhookRaw.processingStatus,
-      source: zendeskConversationsWebhookRaw.source,
-      count: sql<number>`count(*)`,
-    })
-      .from(zendeskConversationsWebhookRaw)
-      .groupBy(zendeskConversationsWebhookRaw.processingStatus, zendeskConversationsWebhookRaw.source);
-    
-    const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(zendeskConversationsWebhookRaw);
-    
-    return {
-      total: Number(total),
-      byStatusAndSource: stats,
-    };
-  },
 };

@@ -56,9 +56,4 @@ router.get("/api/webhook-logs/:id", isAuthenticated, requireAuthorizedUser, asyn
   });
 });
 
-router.get("/api/webhook-raws/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  const stats = await storage.getWebhookRawsStats();
-  res.json(stats);
-});
-
 export default router;

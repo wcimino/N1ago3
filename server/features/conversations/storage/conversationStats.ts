@@ -1,7 +1,7 @@
 import { db } from "../../../db.js";
 import { conversations, eventsStandard } from "../../../../shared/schema.js";
 import { sql } from "drizzle-orm";
-import { getConversationsGroupedByUser, getConversationsList, getUserConversationsWithMessages } from "./conversationQueries.js";
+import { getConversationsList, getUserConversationsWithMessages } from "./conversationQueries.js";
 
 export { type ConversationFilterParams } from "./conversationFilters.js";
 
@@ -21,28 +21,6 @@ export const conversationStats = {
       closed: Number(total) - Number(active),
       totalMessages: Number(totalMessages),
     };
-  },
-
-  getConversationsGroupedByUser(
-    limit = 50,
-    offset = 0,
-    productStandardFilter?: string,
-    handlerFilter?: string,
-    emotionLevelFilter?: number,
-    clientFilter?: string,
-    userAuthenticatedFilter?: string,
-    handledByN1agoFilter?: string
-  ) {
-    return getConversationsGroupedByUser({
-      limit,
-      offset,
-      productStandardFilter,
-      handlerFilter,
-      emotionLevelFilter,
-      clientFilter,
-      userAuthenticatedFilter,
-      handledByN1agoFilter,
-    });
   },
 
   getConversationsList(
