@@ -54,67 +54,6 @@ export const zendeskApiLogs = pgTable("zendesk_api_logs", {
   createdAtIdx: index("idx_zendesk_api_logs_created_at").on(table.createdAt),
 }));
 
-export const zendeskArticles = pgTable("zendesk_articles", {
-  id: serial("id").primaryKey(),
-  zendeskId: text("zendesk_id").notNull(),
-  helpCenterSubdomain: text("help_center_subdomain").notNull(),
-  title: text("title").notNull(),
-  body: text("body"),
-  sectionId: text("section_id"),
-  sectionName: text("section_name"),
-  categoryId: text("category_id"),
-  categoryName: text("category_name"),
-  authorId: text("author_id"),
-  locale: text("locale"),
-  htmlUrl: text("html_url"),
-  draft: boolean("draft").default(false).notNull(),
-  promoted: boolean("promoted").default(false).notNull(),
-  position: integer("position"),
-  voteSum: integer("vote_sum"),
-  voteCount: integer("vote_count"),
-  labelNames: json("label_names").$type<string[]>(),
-  zendeskCreatedAt: timestamp("zendesk_created_at"),
-  zendeskUpdatedAt: timestamp("zendesk_updated_at"),
-  syncedAt: timestamp("synced_at").defaultNow().notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  zendeskIdSubdomainUnique: uniqueIndex("idx_zendesk_articles_zendesk_id_subdomain").on(table.zendeskId, table.helpCenterSubdomain),
-  sectionIdIdx: index("idx_zendesk_articles_section_id").on(table.sectionId),
-  localeIdx: index("idx_zendesk_articles_locale").on(table.locale),
-  titleIdx: index("idx_zendesk_articles_title").on(table.title),
-  helpCenterSubdomainIdx: index("idx_zendesk_articles_help_center_subdomain").on(table.helpCenterSubdomain),
-}));
-
-export const zendeskArticleEmbeddings = pgTable("zendesk_article_embeddings", {
-  id: serial("id").primaryKey(),
-  articleId: integer("article_id").notNull().references(() => zendeskArticles.id, { onDelete: "cascade" }),
-  contentHash: text("content_hash").notNull(),
-  embeddingVector: text("embedding_vector"),
-  modelUsed: text("model_used").notNull().default("text-embedding-3-small"),
-  tokensUsed: integer("tokens_used"),
-  openaiLogId: integer("openai_log_id"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  articleIdUnique: uniqueIndex("idx_zendesk_article_embeddings_article_id").on(table.articleId),
-  contentHashIdx: index("idx_zendesk_article_embeddings_content_hash").on(table.contentHash),
-}));
-
-export const zendeskArticlesStatistics = pgTable("zendesk_articles_statistics", {
-  id: serial("id").primaryKey(),
-  zendeskArticleId: integer("zendesk_article_id").notNull(),
-  keywords: text("keywords"),
-  sectionId: text("section_id"),
-  conversationId: integer("conversation_id"),
-  externalConversationId: text("external_conversation_id"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => ({
-  zendeskArticleIdIdx: index("idx_zendesk_articles_statistics_article_id").on(table.zendeskArticleId),
-  createdAtIdx: index("idx_zendesk_articles_statistics_created_at").on(table.createdAt),
-  conversationIdIdx: index("idx_zendesk_articles_statistics_conversation_id").on(table.conversationId),
-}));
-
 export const zendeskSupportUsers = pgTable("zendesk_support_users", {
   id: serial("id").primaryKey(),
   zendeskId: bigint("zendesk_id", { mode: "number" }).notNull().unique(),
@@ -171,11 +110,5 @@ export type ZendeskConversationsWebhookRaw = typeof zendeskConversationsWebhookR
 export type InsertZendeskConversationsWebhookRaw = Omit<typeof zendeskConversationsWebhookRaw.$inferInsert, "id" | "receivedAt">;
 export type ZendeskApiLog = typeof zendeskApiLogs.$inferSelect;
 export type InsertZendeskApiLog = Omit<typeof zendeskApiLogs.$inferInsert, "id" | "createdAt">;
-export type ZendeskArticle = typeof zendeskArticles.$inferSelect;
-export type InsertZendeskArticle = Omit<typeof zendeskArticles.$inferInsert, "id" | "createdAt" | "updatedAt" | "syncedAt">;
-export type ZendeskArticleEmbedding = typeof zendeskArticleEmbeddings.$inferSelect;
-export type InsertZendeskArticleEmbedding = Omit<typeof zendeskArticleEmbeddings.$inferInsert, "id" | "createdAt" | "updatedAt">;
-export type ZendeskArticleStatistic = typeof zendeskArticlesStatistics.$inferSelect;
-export type InsertZendeskArticleStatistic = Omit<typeof zendeskArticlesStatistics.$inferInsert, "id" | "createdAt">;
 export type ZendeskSupportUser = typeof zendeskSupportUsers.$inferSelect;
 export type InsertZendeskSupportUser = Omit<typeof zendeskSupportUsers.$inferInsert, "id" | "createdAt" | "updatedAt">;
