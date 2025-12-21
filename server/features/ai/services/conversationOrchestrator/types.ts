@@ -2,7 +2,6 @@ import type { EventStandard } from "../../../../../shared/schema.js";
 
 export const CONVERSATION_OWNER = {
   DEMAND_FINDER: "demand_finder",
-  SOLUTION_PROVIDER: "solution_provider",
   CLOSER: "closer",
 } as const;
 
@@ -10,8 +9,7 @@ export type ConversationOwner = typeof CONVERSATION_OWNER[keyof typeof CONVERSAT
 
 const VALID_OWNER_TRANSITIONS: Record<ConversationOwner | "null", (ConversationOwner | null)[]> = {
   "null": [CONVERSATION_OWNER.DEMAND_FINDER],
-  [CONVERSATION_OWNER.DEMAND_FINDER]: [CONVERSATION_OWNER.SOLUTION_PROVIDER, null],
-  [CONVERSATION_OWNER.SOLUTION_PROVIDER]: [CONVERSATION_OWNER.CLOSER, CONVERSATION_OWNER.DEMAND_FINDER, null],
+  [CONVERSATION_OWNER.DEMAND_FINDER]: [CONVERSATION_OWNER.CLOSER, null],
   [CONVERSATION_OWNER.CLOSER]: [CONVERSATION_OWNER.DEMAND_FINDER, null],
 };
 
@@ -41,7 +39,6 @@ export interface DispatchResult {
 export const ORCHESTRATOR_STATUS = {
   NEW: "new",
   FINDING_DEMAND: "finding_demand",
-  PROVIDING_SOLUTION: "providing_solution",
   FINALIZING: "finalizing",
   CLOSED: "closed",
   ESCALATED: "escalated",

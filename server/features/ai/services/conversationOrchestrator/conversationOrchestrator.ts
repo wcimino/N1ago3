@@ -1,6 +1,5 @@
 import { conversationStorage } from "../../../conversations/storage/index.js";
 import { DemandFinderAgent } from "./agents/demandFinderAgent.js";
-import { SolutionProviderAgent } from "./agents/solutionProviderAgent.js";
 import { CloserAgent } from "./agents/closerAgent.js";
 import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type OrchestratorStatus, type ConversationOwner, type OrchestratorContext, type DispatchResult } from "./types.js";
 import type { EventStandard } from "../../../../../shared/schema.js";
@@ -158,10 +157,6 @@ export class ConversationOrchestrator {
       switch (owner) {
         case CONVERSATION_OWNER.DEMAND_FINDER:
           await DemandFinderAgent.process(context);
-          break;
-
-        case CONVERSATION_OWNER.SOLUTION_PROVIDER:
-          await SolutionProviderAgent.process(context);
           break;
 
         case CONVERSATION_OWNER.CLOSER:

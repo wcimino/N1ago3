@@ -1,4 +1,4 @@
-export type AgentConfigType = "summary" | "classification" | "response" | "demand_finder" | "solution_provider" | "topic_classification" | "closer";
+export type AgentConfigType = "summary" | "classification" | "response" | "demand_finder" | "topic_classification" | "closer";
 
 export interface AgentToolsConfig {
   showKnowledgeBaseTool?: boolean;
@@ -75,18 +75,6 @@ export const agentConfigMetadata: Record<AgentConfigType, AgentConfigMetadata> =
     responseFormatRows: 8,
     recommendedModel: "gpt-4o",
     tools: {},
-  },
-
-  solution_provider: {
-    configType: "solution_provider",
-    title: "Configuração do Solution Provider",
-    description: "Configure o agente que fornece soluções para as demandas identificadas do cliente",
-    enabledLabel: "Ativar Solution Provider",
-    enabledDescription: "Quando ativado, o sistema sugere soluções baseadas na demanda identificada",
-    promptRows: 20,
-    responseFormatRows: 8,
-    recommendedModel: "gpt-4o",
-    tools: allToolsEnabled,
   },
 
   topic_classification: {

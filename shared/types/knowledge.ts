@@ -34,68 +34,6 @@ export interface KnowledgeArticle {
   questionVariation: string[] | null;
 }
 
-export interface KnowledgeBaseAction {
-  id: number;
-  actionType: string;
-  description: string;
-  requiredInput: string | null;
-  messageTemplate: string | null;
-  ownerTeam: string | null;
-  sla: string | null;
-  isActive: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface SolutionAction extends KnowledgeBaseAction {
-  actionSequence: number;
-}
-
-export interface KnowledgeBaseSolution {
-  id: number;
-  name: string;
-  description: string | null;
-  productId: number | null;
-  isActive: boolean;
-  isFallback: boolean;
-  isArticleDefault: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface SolutionWithActions extends KnowledgeBaseSolution {
-  actions: SolutionAction[];
-}
-
-export interface ObjectiveProblem {
-  id: number;
-  name: string;
-  problemNormalized: string | null;
-  description: string;
-  synonyms: string[];
-  examples: string[];
-  presentedBy: "customer" | "system" | "both";
-  isActive: boolean;
-  visibleInSearch: boolean;
-  availableForAutoReply: boolean;
-  productIds: number[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ObjectiveProblemStats {
-  totalProblems: number;
-  activeProblems: number;
-  withEmbedding: number;
-  withoutEmbedding: number;
-}
-
-export interface ActionStats {
-  total: number;
-  active: number;
-  inactive: number;
-}
-
 export interface EnrichmentLog {
   id: number;
   intentId: number;

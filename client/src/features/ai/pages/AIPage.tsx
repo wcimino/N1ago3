@@ -1,22 +1,19 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
-import { FileText, Tags, MessageSquare, Wrench, Sparkles, Search, Zap, Database, Target, Lightbulb, Cog, BarChart3, CheckCircle } from "lucide-react";
+import { FileText, Tags, MessageSquare, Wrench, Sparkles, Search, BarChart3, CheckCircle } from "lucide-react";
 import { PageHeader } from "../../../shared/components/ui";
 import { OpenaiSummaryConfigPage } from "./OpenaiSummaryConfigPage";
 import { ClassificationConfigPage } from "./ClassificationConfigPage";
 import { ResponseConfigPage } from "./ResponseConfigPage";
 import { DemandFinderConfigPage } from "./DemandFinderConfigPage";
-import { SolutionProviderConfigPage } from "./SolutionProviderConfigPage";
 import { TopicClassificationConfigPage } from "./TopicClassificationConfigPage";
 import { CloserConfigPage } from "./CloserConfigPage";
 import { ToolsPage } from "./ToolsPage";
-import { ObjectiveProblemsPage, RootCausesPage, SolutionsPage, ActionsPage } from "../../knowledge";
 
 const agentTabs = [
   { id: "summary", label: "Resumo", icon: <FileText className="w-4 h-4" /> },
   { id: "classification", label: "Classificação", icon: <Tags className="w-4 h-4" /> },
   { id: "demand_finder", label: "Demand Finder", icon: <Search className="w-4 h-4" /> },
-  { id: "solution_provider", label: "Solution Provider", icon: <Zap className="w-4 h-4" /> },
   { id: "response", label: "Resposta", icon: <MessageSquare className="w-4 h-4" /> },
   { id: "closer", label: "Closer", icon: <CheckCircle className="w-4 h-4" /> },
   { id: "topic_classification", label: "Temas", icon: <BarChart3 className="w-4 h-4" /> },
@@ -24,13 +21,6 @@ const agentTabs = [
 
 const utilityTabs = [
   { id: "tools", label: "Ferramentas", icon: <Wrench className="w-4 h-4" /> },
-];
-
-const knowledgeTabs = [
-  { id: "objective_problems", label: "Problemas", icon: <Target className="w-4 h-4" /> },
-  { id: "root_causes", label: "Causas Raiz", icon: <Database className="w-4 h-4" /> },
-  { id: "solutions", label: "Soluções", icon: <Lightbulb className="w-4 h-4" /> },
-  { id: "actions", label: "Ações", icon: <Cog className="w-4 h-4" /> },
 ];
 
 export function AIPage() {
@@ -47,20 +37,14 @@ export function AIPage() {
     if (location.includes("/classification")) return "classification";
     if (location.includes("/response")) return "response";
     if (location.includes("/demand_finder")) return "demand_finder";
-    if (location.includes("/solution_provider")) return "solution_provider";
     if (location.includes("/closer")) return "closer";
     if (location.includes("/tools")) return "tools";
-    if (location.includes("/objective_problems")) return "objective_problems";
-    if (location.includes("/root_causes")) return "root_causes";
-    if (location.includes("/solutions")) return "solutions";
-    if (location.includes("/actions")) return "actions";
     if (location.includes("/summary")) return "summary";
     return "summary";
   };
 
   const activeTab = getActiveTab();
   const isUtilityTab = activeTab === "tools";
-  const isKnowledgeTab = ["objective_problems", "root_causes", "solutions", "actions"].includes(activeTab);
 
   const handleTabChange = (tabId: string) => {
     navigate(`/ai/settings/${tabId}`);
@@ -75,12 +59,8 @@ export function AIPage() {
         primaryActiveTab={isUtilityTab ? activeTab : ""}
         onPrimaryTabChange={handleTabChange}
         secondaryTabs={agentTabs}
-        secondaryActiveTab={!isUtilityTab && !isKnowledgeTab ? activeTab : ""}
+        secondaryActiveTab={!isUtilityTab ? activeTab : ""}
         onSecondaryTabChange={handleTabChange}
-        tertiaryTabs={knowledgeTabs}
-        tertiaryActiveTab={isKnowledgeTab ? activeTab : ""}
-        onTertiaryTabChange={handleTabChange}
-        tertiaryLabel="Base de Conhecimento"
       />
 
       <div className="p-4">
@@ -88,14 +68,9 @@ export function AIPage() {
         {activeTab === "classification" && <ClassificationConfigPage />}
         {activeTab === "response" && <ResponseConfigPage />}
         {activeTab === "demand_finder" && <DemandFinderConfigPage />}
-        {activeTab === "solution_provider" && <SolutionProviderConfigPage />}
         {activeTab === "closer" && <CloserConfigPage />}
         {activeTab === "topic_classification" && <TopicClassificationConfigPage />}
         {activeTab === "tools" && <ToolsPage />}
-        {activeTab === "objective_problems" && <ObjectiveProblemsPage />}
-        {activeTab === "root_causes" && <RootCausesPage />}
-        {activeTab === "solutions" && <SolutionsPage />}
-        {activeTab === "actions" && <ActionsPage />}
       </div>
     </div>
   );

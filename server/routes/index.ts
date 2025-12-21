@@ -18,11 +18,6 @@ import generalSettingsRoutes from "../features/ai/routes/generalSettings.js";
 import openaiLogsRoutes from "../features/ai/routes/openaiLogs.js";
 import openaiStatsRoutes from "../features/ai/routes/openaiStats.js";
 
-import objectiveProblemsRoutes from "../features/knowledge/routes/objectiveProblemsRoutes.js";
-import actionsRoutes from "../features/knowledge/routes/actionsRoutes.js";
-import knowledgeSolutionsRoutes from "../features/knowledge/routes/knowledgeSolutionsRoutes.js";
-import rootCausesRoutes from "../features/knowledge/routes/rootCausesRoutes.js";
-
 import { zendeskSupportUsersRouter } from "../features/external-sources/zendesk/index.js";
 
 import usersStandardRoutes from "../features/cadastro/routes/usersStandard.js";
@@ -68,13 +63,6 @@ function registerAiRoutes(app: Express) {
   app.use(openaiStatsRoutes);
 }
 
-function registerKnowledgeRoutes(app: Express) {
-  app.use(objectiveProblemsRoutes);
-  app.use(actionsRoutes);
-  app.use(knowledgeSolutionsRoutes);
-  app.use(rootCausesRoutes);
-}
-
 function registerExternalSourcesRoutes(app: Express) {
   app.use("/api/external-data/zendesk-users", zendeskSupportUsersRouter);
 }
@@ -110,7 +98,6 @@ export function registerRoutes(app: Express) {
   registerEventsRoutes(app);
   registerConversationsRoutes(app);
   registerAiRoutes(app);
-  registerKnowledgeRoutes(app);
   registerExternalSourcesRoutes(app);
   registerCadastroRoutes(app);
   registerProductsRoutes(app);
