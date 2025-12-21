@@ -300,6 +300,13 @@ export class DemandFinderAgent {
 
       const textVerbatim = searchQueries?.verbatimQuery;
 
+      const productConfidenceValue = context.classification?.productConfidence 
+        ? context.classification.productConfidence / 100 
+        : undefined;
+      const demandTypeConfidenceValue = context.classification?.customerRequestTypeConfidence 
+        ? context.classification.customerRequestTypeConfidence / 100 
+        : undefined;
+
       const solutionCenterResponse = await searchSolutionCenter({
         text: text || undefined,
         textVerbatim: textVerbatim || undefined,
@@ -307,7 +314,10 @@ export class DemandFinderAgent {
         keywords: keywords.length > 0 ? keywords : undefined,
         productName: resolvedProduct?.produto || undefined,
         subproductName: resolvedProduct?.subproduto || undefined,
+        productConfidence: productConfidenceValue,
+        subproductConfidence: productConfidenceValue,
         demandType,
+        demandTypeConfidence: demandTypeConfidenceValue,
       });
 
       if (!solutionCenterResponse || !solutionCenterResponse.results || solutionCenterResponse.results.length === 0) {
