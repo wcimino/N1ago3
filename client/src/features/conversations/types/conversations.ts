@@ -6,8 +6,6 @@ export type {
   Message,
   ConversationMessagesResponse,
   UserConversation,
-  UserGroup,
-  GroupedConversationsResponse,
   ConversationSummary,
   SuggestedResponse,
   ConversationWithMessages,
