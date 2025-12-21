@@ -68,8 +68,23 @@ export class DemandFinderAgent {
       }
 
       // Step 3: Search articles/problems
-      const searchResults = await this.searchArticles(context);
-      context.searchResults = searchResults;
+      const searchResult = await this.searchArticles(context);
+      
+      if (searchResult.failed) {
+        console.log(`[DemandFinderAgent] Solution Center API failed after 3 retries, escalating`);
+        await this.escalateConversation(conversationId, context, "Solution Center API failed after 3 retries");
+        return {
+          success: true,
+          demandConfirmed: false,
+          needsClarification: false,
+          maxInteractionsReached: true,
+          messageSent: false,
+          suggestedResponse: "Vou te transferir para um especialista que podera te ajudar.",
+          error: "Solution Center API failed after 3 retries",
+        };
+      }
+      
+      context.searchResults = searchResult.results;
 
       // Step 4: Call AI to evaluate and decide (unified evaluation + question generation)
       const promptResult = await this.callDemandFinderPrompt(context);
@@ -218,7 +233,7 @@ export class DemandFinderAgent {
     }
   }
 
-  private static async searchArticles(context: OrchestratorContext): Promise<DemandFinderAgentResult["searchResults"]> {
+  private static async searchArticles(context: OrchestratorContext): Promise<{ results: DemandFinderAgentResult["searchResults"]; failed: boolean }> {
     const { conversationId, summary, classification } = context;
 
     const versions = getClientRequestVersions(summary);
@@ -233,14 +248,19 @@ export class DemandFinderAgent {
       console.log(`[DemandFinderAgent] Customer request type: ${customerRequestType}`);
     }
 
-    const solutionCenterResults = await this.searchSolutionCenterExternal(context, searchQueries, versions, customerRequestType || undefined);
+    const solutionCenterResult = await this.searchSolutionCenterExternal(context, searchQueries, versions, customerRequestType || undefined);
 
-    if (!solutionCenterResults || solutionCenterResults.length === 0) {
-      console.log(`[DemandFinderAgent] No results from Solution Center for conversation ${conversationId}`);
-      return [];
+    if (solutionCenterResult.failed) {
+      console.log(`[DemandFinderAgent] Solution Center API failed after retries for conversation ${conversationId}`);
+      return { results: [], failed: true };
     }
 
-    const resultsForStorage = solutionCenterResults.map((r) => ({
+    if (!solutionCenterResult.results || solutionCenterResult.results.length === 0) {
+      console.log(`[DemandFinderAgent] No results from Solution Center for conversation ${conversationId}`);
+      return { results: [], failed: false };
+    }
+
+    const resultsForStorage = solutionCenterResult.results.map((r) => ({
       source: r.type as "article" | "problem",
       id: r.id,
       name: r.name,
@@ -251,7 +271,7 @@ export class DemandFinderAgent {
     await caseDemandStorage.updateArticlesAndProblems(conversationId, resultsForStorage);
     console.log(`[DemandFinderAgent] Saved ${resultsForStorage.length} Solution Center results to articlesAndProblems for conversation ${conversationId}`);
 
-    return resultsForStorage;
+    return { results: resultsForStorage, failed: false };
   }
 
   private static mapCustomerRequestTypeToDemandType(customerRequestType?: string): "information" | "sales" | "support" | undefined {
@@ -277,62 +297,78 @@ export class DemandFinderAgent {
     searchQueries: ReturnType<typeof getSearchQueries>,
     clientRequestVersions: ReturnType<typeof getClientRequestVersions>,
     customerRequestType?: string
-  ): Promise<Array<{ type: "article" | "problem"; id: string; name: string; score: number }>> {
+  ): Promise<{ results: Array<{ type: "article" | "problem"; id: string; name: string; score: number }>; failed: boolean }> {
     const { conversationId, classification } = context;
+    const MAX_RETRIES = 3;
 
-    try {
-      const textNormalizedVersions: string[] = [];
-      
-      if (searchQueries?.normalizedQuery) {
-        textNormalizedVersions.push(searchQueries.normalizedQuery);
-      }
-
-      if (textNormalizedVersions.length === 0) {
-        console.log(`[DemandFinderAgent] No text versions for Solution Center search, skipping`);
-        return [];
-      }
-
-      const text = clientRequestVersions?.clientRequestStandardVersion;
-      const keywords = searchQueries?.keywordQuery?.split(/\s+/).filter(k => k.length > 2) || [];
-      const demandType = this.mapCustomerRequestTypeToDemandType(customerRequestType);
-
-      const resolvedProduct = await resolveProductById(classification?.productId);
-
-      const textVerbatim = searchQueries?.verbatimQuery;
-
-      const productConfidenceValue = context.classification?.productConfidence 
-        ? context.classification.productConfidence / 100 
-        : undefined;
-      const demandTypeConfidenceValue = context.classification?.customerRequestTypeConfidence 
-        ? context.classification.customerRequestTypeConfidence / 100 
-        : undefined;
-
-      const solutionCenterResponse = await searchSolutionCenter({
-        text: text || undefined,
-        textVerbatim: textVerbatim || undefined,
-        textNormalizedVersions,
-        keywords: keywords.length > 0 ? keywords : undefined,
-        productName: resolvedProduct?.produto || undefined,
-        subproductName: resolvedProduct?.subproduto || undefined,
-        productConfidence: productConfidenceValue,
-        subproductConfidence: productConfidenceValue,
-        demandType,
-        demandTypeConfidence: demandTypeConfidenceValue,
-      });
-
-      if (!solutionCenterResponse || !solutionCenterResponse.results || solutionCenterResponse.results.length === 0) {
-        return [];
-      }
-
-      await caseDemandStorage.updateSolutionCenterResults(conversationId, solutionCenterResponse.results);
-      console.log(`[DemandFinderAgent] Saved ${solutionCenterResponse.results.length} Solution Center results for conversation ${conversationId}`);
-
-      return solutionCenterResponse.results;
-
-    } catch (error) {
-      console.error(`[DemandFinderAgent] Error searching Solution Center for conversation ${conversationId}:`, error);
-      return [];
+    const textNormalizedVersions: string[] = [];
+    
+    if (searchQueries?.normalizedQuery) {
+      textNormalizedVersions.push(searchQueries.normalizedQuery);
     }
+
+    if (textNormalizedVersions.length === 0) {
+      console.log(`[DemandFinderAgent] No text versions for Solution Center search, skipping`);
+      return { results: [], failed: false };
+    }
+
+    const text = clientRequestVersions?.clientRequestStandardVersion;
+    const keywords = searchQueries?.keywordQuery?.split(/\s+/).filter(k => k.length > 2) || [];
+    const demandType = this.mapCustomerRequestTypeToDemandType(customerRequestType);
+
+    const resolvedProduct = await resolveProductById(classification?.productId);
+
+    const textVerbatim = searchQueries?.verbatimQuery;
+
+    const productConfidenceValue = context.classification?.productConfidence 
+      ? context.classification.productConfidence / 100 
+      : undefined;
+    const demandTypeConfidenceValue = context.classification?.customerRequestTypeConfidence 
+      ? context.classification.customerRequestTypeConfidence / 100 
+      : undefined;
+
+    let lastError: unknown = null;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        console.log(`[DemandFinderAgent] Solution Center search attempt ${attempt}/${MAX_RETRIES} for conversation ${conversationId}`);
+
+        const solutionCenterResponse = await searchSolutionCenter({
+          text: text || undefined,
+          textVerbatim: textVerbatim || undefined,
+          textNormalizedVersions,
+          keywords: keywords.length > 0 ? keywords : undefined,
+          productName: resolvedProduct?.produto || undefined,
+          subproductName: resolvedProduct?.subproduto || undefined,
+          productConfidence: productConfidenceValue,
+          subproductConfidence: productConfidenceValue,
+          demandType,
+          demandTypeConfidence: demandTypeConfidenceValue,
+        });
+
+        if (!solutionCenterResponse || !solutionCenterResponse.results || solutionCenterResponse.results.length === 0) {
+          return { results: [], failed: false };
+        }
+
+        await caseDemandStorage.updateSolutionCenterResults(conversationId, solutionCenterResponse.results);
+        console.log(`[DemandFinderAgent] Saved ${solutionCenterResponse.results.length} Solution Center results for conversation ${conversationId}`);
+
+        return { results: solutionCenterResponse.results, failed: false };
+
+      } catch (error) {
+        lastError = error;
+        console.error(`[DemandFinderAgent] Solution Center search attempt ${attempt}/${MAX_RETRIES} failed for conversation ${conversationId}:`, error);
+        
+        if (attempt < MAX_RETRIES) {
+          const delayMs = attempt * 500;
+          console.log(`[DemandFinderAgent] Retrying in ${delayMs}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+      }
+    }
+
+    console.error(`[DemandFinderAgent] All ${MAX_RETRIES} Solution Center search attempts failed for conversation ${conversationId}:`, lastError);
+    return { results: [], failed: true };
   }
 
   private static async escalateConversation(
