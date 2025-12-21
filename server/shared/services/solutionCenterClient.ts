@@ -7,7 +7,10 @@ export interface SolutionCenterSearchRequest {
   keywords?: string[];
   productName?: string;
   subproductName?: string;
+  productConfidence?: number;
+  subproductConfidence?: number;
   demandType?: SolutionCenterDemandType;
+  demandTypeConfidence?: number;
 }
 
 export interface SolutionCenterResult {
@@ -28,7 +31,10 @@ export interface SolutionCenterSearchOptions {
   keywords?: string[];
   productName?: string;
   subproductName?: string;
+  productConfidence?: number;
+  subproductConfidence?: number;
   demandType?: SolutionCenterDemandType;
+  demandTypeConfidence?: number;
 }
 
 function getConfig(): { url: string; token: string } | null {
@@ -52,7 +58,7 @@ export async function searchSolutionCenter(
     return null;
   }
 
-  const { text, textVerbatim, textNormalizedVersions, keywords, productName, subproductName, demandType } = options;
+  const { text, textVerbatim, textNormalizedVersions, keywords, productName, subproductName, productConfidence, subproductConfidence, demandType, demandTypeConfidence } = options;
 
   if (!textNormalizedVersions || textNormalizedVersions.length === 0) {
     console.log("[SolutionCenterClient] No text versions provided, skipping search");
@@ -85,8 +91,20 @@ export async function searchSolutionCenter(
     requestBody.subproductName = subproductName;
   }
 
+  if (productConfidence !== undefined) {
+    requestBody.productConfidence = productConfidence;
+  }
+
+  if (subproductConfidence !== undefined) {
+    requestBody.subproductConfidence = subproductConfidence;
+  }
+
   if (demandType) {
     requestBody.demandType = demandType;
+  }
+
+  if (demandTypeConfidence !== undefined) {
+    requestBody.demandTypeConfidence = demandTypeConfidence;
   }
 
   try {
