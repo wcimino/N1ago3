@@ -155,12 +155,12 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
                 />
               )}
               
-              <ObjectiveProblemsCard problems={summary.objective_problems} />
-              
               <SolutionCenterCard 
                 items={summary.solution_center_articles_and_problems} 
                 selectedId={summary.solution_center_selected_id}
               />
+              
+              <ObjectiveProblemsCard problems={summary.objective_problems} />
               
               {summary.triage && (
                 <TriageCard triage={summary.triage} />
