@@ -44,7 +44,11 @@ export class SolutionProviderAgent {
           // Handle escalation from analyzeAndProgress
           if (analysisResult.needsEscalation) {
             console.log(`[SolutionProviderAgent] Escalating from analyzeAndProgress`);
-            await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
+            await conversationStorage.updateOrchestratorState(conversationId, {
+              orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
+              conversationOwner: null,
+              waitingForCustomer: false,
+            });
             context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
             return {
               success: true,
@@ -63,7 +67,11 @@ export class SolutionProviderAgent {
           } else if (analysisResult.suggestedResponse && !analysisResult.suggestionId) {
             // Failed to save suggestion - escalate
             console.log(`[SolutionProviderAgent] Failed to save suggestion (no suggestionId), escalating`);
-            await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
+            await conversationStorage.updateOrchestratorState(conversationId, {
+              orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
+              conversationOwner: null,
+              waitingForCustomer: false,
+            });
             context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
             return {
               success: true,
@@ -117,7 +125,11 @@ export class SolutionProviderAgent {
 
       if (!result.success) {
         console.log(`[SolutionProviderAgent] Agent call failed for conversation ${conversationId}: ${result.error}, escalating`);
-        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
+        await conversationStorage.updateOrchestratorState(conversationId, {
+          orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
+          conversationOwner: null,
+          waitingForCustomer: false,
+        });
         context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
         return {
           success: false,
@@ -129,7 +141,11 @@ export class SolutionProviderAgent {
 
       if (!result.responseContent) {
         console.log(`[SolutionProviderAgent] No response for conversation ${conversationId}, escalating`);
-        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
+        await conversationStorage.updateOrchestratorState(conversationId, {
+          orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
+          conversationOwner: null,
+          waitingForCustomer: false,
+        });
         context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
         return {
           success: true,
@@ -147,7 +163,11 @@ export class SolutionProviderAgent {
       // Handle escalation
       if (needsEscalation) {
         console.log(`[SolutionProviderAgent] Escalating conversation ${conversationId}: ${parsedContent.escalationReason}`);
-        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
+        await conversationStorage.updateOrchestratorState(conversationId, {
+          orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
+          conversationOwner: null,
+          waitingForCustomer: false,
+        });
         context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
         return {
           success: true,
@@ -168,7 +188,11 @@ export class SolutionProviderAgent {
       } else if (parsedContent.suggestedResponse && !result.suggestionId) {
         // Failed to save suggestion - escalate
         console.log(`[SolutionProviderAgent] Failed to save suggestion (no suggestionId) from AI agent, escalating`);
-        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
+        await conversationStorage.updateOrchestratorState(conversationId, {
+          orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
+          conversationOwner: null,
+          waitingForCustomer: false,
+        });
         context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
         return {
           success: true,
@@ -201,7 +225,11 @@ export class SolutionProviderAgent {
       console.error(`[SolutionProviderAgent] Error processing conversation ${conversationId}:`, error);
       
       try {
-        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
+        await conversationStorage.updateOrchestratorState(conversationId, {
+          orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
+          conversationOwner: null,
+          waitingForCustomer: false,
+        });
         context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
         console.log(`[SolutionProviderAgent] Escalated conversation ${conversationId} due to error`);
       } catch (statusError) {

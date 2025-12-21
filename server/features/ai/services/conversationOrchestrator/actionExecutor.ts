@@ -107,7 +107,11 @@ export class ActionExecutor {
 
     if (passControlResult.success) {
       console.log(`[ActionExecutor] Control passed to agent workspace successfully`);
-      await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
+      await conversationStorage.updateOrchestratorState(conversationId, {
+        orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
+        conversationOwner: null,
+        waitingForCustomer: false,
+      });
       context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
       console.log(`[ActionExecutor] Status updated to ESCALATED after successful transfer`);
     } else {

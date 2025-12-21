@@ -98,15 +98,6 @@ export class ConversationOrchestrator {
     }
     return ORCHESTRATOR_STATUS.NEW;
   }
-
-  static async updateStatus(conversationId: number, status: OrchestratorStatus): Promise<void> {
-    try {
-      await conversationStorage.updateOrchestratorStatus(conversationId, status);
-      console.log(`[ConversationOrchestrator] Updated conversation ${conversationId} status to: ${status}`);
-    } catch (error) {
-      console.error(`[ConversationOrchestrator] Error updating status for ${conversationId}:`, error);
-    }
-  }
 }
 
 export async function processConversationEvent(event: EventStandard): Promise<void> {

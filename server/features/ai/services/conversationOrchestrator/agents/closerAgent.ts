@@ -59,7 +59,11 @@ export class CloserAgent {
           await ActionExecutor.execute(context, [action]);
         }
 
-        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.CLOSED);
+        await conversationStorage.updateOrchestratorState(conversationId, {
+          orchestratorStatus: ORCHESTRATOR_STATUS.CLOSED,
+          conversationOwner: null,
+          waitingForCustomer: false,
+        });
         context.currentStatus = ORCHESTRATOR_STATUS.CLOSED;
         
         return {
@@ -92,7 +96,11 @@ export class CloserAgent {
       // Require suggestionId for message sending
       if (!suggestionId && suggestedResponse) {
         console.log(`[CloserAgent] Failed to save suggestion (no suggestionId), escalating`);
-        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
+        await conversationStorage.updateOrchestratorState(conversationId, {
+          orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
+          conversationOwner: null,
+          waitingForCustomer: false,
+        });
         context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
         return {
           success: true,
@@ -162,7 +170,11 @@ export class CloserAgent {
           await ActionExecutor.execute(context, [action]);
         }
 
-        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.CLOSED);
+        await conversationStorage.updateOrchestratorState(conversationId, {
+          orchestratorStatus: ORCHESTRATOR_STATUS.CLOSED,
+          conversationOwner: null,
+          waitingForCustomer: false,
+        });
         context.currentStatus = ORCHESTRATOR_STATUS.CLOSED;
         
         return {

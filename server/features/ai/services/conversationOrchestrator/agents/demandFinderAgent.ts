@@ -39,7 +39,11 @@ export class DemandFinderAgent {
       if (!enrichmentResult.success) {
         console.log(`[DemandFinderAgent] Enrichment failed: ${enrichmentResult.error}, escalating`);
         
-        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
+        await conversationStorage.updateOrchestratorState(conversationId, {
+          orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
+          conversationOwner: null,
+          waitingForCustomer: false,
+        });
         await caseDemandStorage.updateStatus(conversationId, "error");
         context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
         
@@ -91,7 +95,11 @@ export class DemandFinderAgent {
       if (currentInteractionCount >= MAX_INTERACTIONS) {
         console.log(`[DemandFinderAgent] Max interactions already reached, escalating`);
         
-        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
+        await conversationStorage.updateOrchestratorState(conversationId, {
+          orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
+          conversationOwner: null,
+          waitingForCustomer: false,
+        });
         await caseDemandStorage.updateStatus(conversationId, "demand_not_found");
         context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
         
@@ -111,7 +119,11 @@ export class DemandFinderAgent {
       if (!clarificationResult.suggestedResponse || !clarificationResult.suggestionId) {
         console.log(`[DemandFinderAgent] No clarification question generated, escalating immediately`);
         
-        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
+        await conversationStorage.updateOrchestratorState(conversationId, {
+          orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
+          conversationOwner: null,
+          waitingForCustomer: false,
+        });
         await caseDemandStorage.updateStatus(conversationId, "demand_not_found");
         context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
         
@@ -159,7 +171,11 @@ export class DemandFinderAgent {
       console.error(`[DemandFinderAgent] Error processing conversation ${conversationId}:`, error);
       
       try {
-        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.ESCALATED);
+        await conversationStorage.updateOrchestratorState(conversationId, {
+          orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
+          conversationOwner: null,
+          waitingForCustomer: false,
+        });
         await caseDemandStorage.updateStatus(conversationId, "error");
         context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
       } catch (statusError) {
