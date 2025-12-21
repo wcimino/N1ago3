@@ -9,17 +9,6 @@ import { ORCHESTRATOR_STATUS, type DemandFinderAgentResult, type OrchestratorCon
 import { searchSolutionCenter } from "../../../../../shared/services/solutionCenterClient.js";
 
 const CONFIG_KEY = "demand_finder";
-
-function stableHashToNumber(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return Math.abs(hash);
-}
-
 const MAX_INTERACTIONS = 5;
 const ARTICLE_SCORE_THRESHOLD = 80;
 
@@ -205,9 +194,9 @@ export class DemandFinderAgent {
 
     const resultsForStorage = solutionCenterResults.map((r) => ({
       source: r.type as "article" | "problem",
-      id: stableHashToNumber(`${r.type}_${r.id}`),
+      id: r.id,
       name: r.name,
-      description: `[Solution Center ID: ${r.id}]`,
+      description: "",
       matchScore: r.score,
     }));
 

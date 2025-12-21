@@ -18,7 +18,7 @@ export interface AgentContext {
   demand?: string | null;
   searchResults?: Array<{
     source: string;
-    id: number;
+    id: string;
     name: string | null;
     description: string;
     matchScore?: number;

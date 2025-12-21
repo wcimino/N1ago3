@@ -6,7 +6,7 @@ import type { CaseDemand, InsertCaseDemand } from "../../../../shared/schema.js"
 // Terminal statuses - demand cycle is finished
 const TERMINAL_DEMAND_STATUSES = ["demand_found", "demand_not_found", "completed"] as const;
 
-type ArticleOrProblem = { source: "article" | "problem"; id: number; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; matchedTerms?: string[]; products?: string[] };
+type ArticleOrProblem = { source: "article" | "problem"; id: string; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; matchedTerms?: string[]; products?: string[] };
 
 type SolutionCenterResult = { type: "article" | "problem"; id: string; name: string; score: number };
 

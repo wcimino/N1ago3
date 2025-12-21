@@ -46,7 +46,7 @@ export interface ClassificationAgentResult extends AgentResult {
 export interface DemandFinderAgentResult extends AgentResult {
   searchResults?: Array<{
     source: string;
-    id: number;
+    id: string;
     name: string | null;
     description: string;
     matchScore?: number;
