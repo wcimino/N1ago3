@@ -36,7 +36,7 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **SendMessageService:** Centralized message sending controller for all outbound messages to customers, including validation and handling of transfer messages.
 *   **ResponseFormatterService:** Adjusts tone of voice for outbound messages using an AI agent's configuration.
 *   **Objective Problems Catalog:** Normalized catalog of evidence-based problems.
-*   **Solution Center Integration:** External KB API integration ("Central de Soluções") that runs in parallel with internal KB search during DemandFinder execution. Results are stored separately in `solution_center_articles_and_problems` column for comparison. Configured via `SOLUTION_CENTER_API_URL` and `SOLUTION_CENTER_API_TOKEN` environment variables.
+*   **Solution Center Integration:** External KB API integration ("Central de Soluções") that powers the DemandFinder's article and problem search. The DemandFinder uses exclusively the Solution Center API for knowledge retrieval (internal KB search was removed). Results are stored in `solution_center_articles_and_problems` column and used for demand evaluation. Configured via `SOLUTION_CENTER_API_URL` and `SOLUTION_CENTER_API_TOKEN` environment variables.
 *   **Scheduled Maintenance Services:** Daily scheduled tasks for system maintenance:
     *   **ArchiveService:** Runs daily at 5:00 UTC (2am Brasília) - Archives old data to Parquet files in object storage and removes from database. Only runs at the scheduled time (no catch-up on startup).
     *   **VacuumService:** Runs daily at 6:00 UTC (3am Brasília) - VACUUM FULL on main tables. Runs after ArchiveService to reclaim space from deleted records.

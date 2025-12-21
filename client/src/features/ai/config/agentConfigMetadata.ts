@@ -92,13 +92,13 @@ export const agentConfigMetadata: Record<AgentConfigType, AgentConfigMetadata> =
   demand_finder: {
     configType: "demand_finder",
     title: "Configuração do Demand Finder",
-    description: "Configure o agente que identifica e entende qual é a demanda/necessidade do cliente na conversa",
+    description: "Configure o agente que identifica e entende qual é a demanda/necessidade do cliente na conversa. Usa a Central de Soluções para buscar artigos e problemas.",
     enabledLabel: "Ativar Demand Finder",
     enabledDescription: "Quando ativado, o sistema identifica automaticamente o que o cliente precisa",
     promptRows: 20,
     responseFormatRows: 8,
     recommendedModel: "gpt-4o",
-    tools: allToolsEnabled,
+    tools: {},
   },
 
   solution_provider: {

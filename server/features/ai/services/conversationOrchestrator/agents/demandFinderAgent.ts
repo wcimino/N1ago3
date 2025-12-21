@@ -1,9 +1,7 @@
 import { runAgentAndSaveSuggestion, buildAgentContextFromEvent } from "../../agentFramework.js";
-import { runCombinedKnowledgeSearch } from "../../tools/combinedKnowledgeSearchTool.js";
 import { caseDemandStorage } from "../../../storage/caseDemandStorage.js";
 import { conversationStorage } from "../../../../conversations/storage/index.js";
-import { productCatalogStorage } from "../../../../products/storage/productCatalogStorage.js";
-import { getClientRequestVersions, getSearchQueries, getCustomerRequestType, buildCleanSearchContext, buildResolvedClassification, resolveProductById } from "../../helpers/index.js";
+import { getClientRequestVersions, getSearchQueries, getCustomerRequestType, buildResolvedClassification, resolveProductById } from "../../helpers/index.js";
 import { EnrichmentService } from "../services/enrichmentService.js";
 import { StatusController } from "../statusController.js";
 import { ActionExecutor } from "../actionExecutor.js";
@@ -11,6 +9,17 @@ import { ORCHESTRATOR_STATUS, type DemandFinderAgentResult, type OrchestratorCon
 import { searchSolutionCenter } from "../../../../../shared/services/solutionCenterClient.js";
 
 const CONFIG_KEY = "demand_finder";
+
+function stableHashToNumber(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash);
+}
+
 const MAX_INTERACTIONS = 5;
 const ARTICLE_SCORE_THRESHOLD = 80;
 
@@ -175,64 +184,35 @@ export class DemandFinderAgent {
   private static async searchArticles(context: OrchestratorContext): Promise<DemandFinderAgentResult["searchResults"]> {
     const { conversationId, summary, classification } = context;
 
-    const conversationContext = await buildCleanSearchContext(summary, classification);
-    
     const versions = getClientRequestVersions(summary);
-    const articleContext = versions?.clientRequestQuestionVersion;
-    const problemContext = versions?.clientRequestProblemVersion;
-    
     const searchQueries = getSearchQueries(summary);
     const customerRequestType = getCustomerRequestType(summary);
     
-    console.log(`[DemandFinderAgent] Searching articles for conversation ${conversationId}`);
+    console.log(`[DemandFinderAgent] Searching Solution Center for conversation ${conversationId}`);
     if (searchQueries) {
-      console.log(`[DemandFinderAgent] Using multi-query search: verbatim=${!!searchQueries.verbatimQuery}, keyword=${!!searchQueries.keywordQuery}, normalized=${!!searchQueries.normalizedQuery}`);
+      console.log(`[DemandFinderAgent] Using queries: verbatim=${!!searchQueries.verbatimQuery}, keyword=${!!searchQueries.keywordQuery}, normalized=${!!searchQueries.normalizedQuery}`);
     }
     if (customerRequestType) {
       console.log(`[DemandFinderAgent] Customer request type: ${customerRequestType}`);
     }
-    
-    let summaryProductContext: string | undefined;
-    if (classification?.productId) {
-      summaryProductContext = await productCatalogStorage.resolveProductContext(classification.productId);
-    }
-    
-    const internalSearchPromise = runCombinedKnowledgeSearch({
-      productId: classification?.productId,
-      conversationContext,
-      articleContext,
-      problemContext,
-      searchQueries: searchQueries || undefined,
-      demandType: customerRequestType || undefined,
-      summaryProductContext,
-      limit: 10,
-    });
 
-    const externalSearchPromise = this.searchSolutionCenterExternal(context, searchQueries, versions, customerRequestType || undefined);
+    const solutionCenterResults = await this.searchSolutionCenterExternal(context, searchQueries, versions, customerRequestType || undefined);
 
-    const [searchResponse] = await Promise.all([
-      internalSearchPromise,
-      externalSearchPromise,
-    ]);
-
-    if (searchResponse.results.length === 0) {
-      console.log(`[DemandFinderAgent] No articles found for conversation ${conversationId}`);
+    if (!solutionCenterResults || solutionCenterResults.length === 0) {
+      console.log(`[DemandFinderAgent] No results from Solution Center for conversation ${conversationId}`);
       return [];
     }
 
-    const resultsForStorage = searchResponse.results.map(r => ({
-      source: r.source,
-      id: r.id,
-      name: r.question || r.answer || "",
-      description: r.answer || "",
-      matchScore: r.matchScore,
-      matchReason: r.matchReason,
-      matchedTerms: r.matchedTerms,
-      products: r.products,
+    const resultsForStorage = solutionCenterResults.map((r) => ({
+      source: r.type as "article" | "problem",
+      id: stableHashToNumber(`${r.type}_${r.id}`),
+      name: r.name,
+      description: `[Solution Center ID: ${r.id}]`,
+      matchScore: r.score,
     }));
 
     await caseDemandStorage.updateArticlesAndProblems(conversationId, resultsForStorage);
-    console.log(`[DemandFinderAgent] Saved ${resultsForStorage.length} articles for conversation ${conversationId}`);
+    console.log(`[DemandFinderAgent] Saved ${resultsForStorage.length} Solution Center results to articlesAndProblems for conversation ${conversationId}`);
 
     return resultsForStorage;
   }
@@ -260,7 +240,7 @@ export class DemandFinderAgent {
     searchQueries: ReturnType<typeof getSearchQueries>,
     clientRequestVersions: ReturnType<typeof getClientRequestVersions>,
     customerRequestType?: string
-  ): Promise<void> {
+  ): Promise<Array<{ type: "article" | "problem"; id: string; name: string; score: number }>> {
     const { conversationId, classification } = context;
 
     try {
@@ -272,7 +252,7 @@ export class DemandFinderAgent {
 
       if (textNormalizedVersions.length === 0) {
         console.log(`[DemandFinderAgent] No text versions for Solution Center search, skipping`);
-        return;
+        return [];
       }
 
       const text = clientRequestVersions?.clientRequestStandardVersion;
@@ -280,8 +260,6 @@ export class DemandFinderAgent {
       const demandType = this.mapCustomerRequestTypeToDemandType(customerRequestType);
 
       const resolvedProduct = await resolveProductById(classification?.productId);
-
-      console.log(`[DemandFinderAgent] Searching Solution Center for conversation ${conversationId}`);
 
       const solutionCenterResponse = await searchSolutionCenter({
         text: text || undefined,
@@ -293,15 +271,17 @@ export class DemandFinderAgent {
       });
 
       if (!solutionCenterResponse || !solutionCenterResponse.results || solutionCenterResponse.results.length === 0) {
-        console.log(`[DemandFinderAgent] No results from Solution Center for conversation ${conversationId}`);
-        return;
+        return [];
       }
 
       await caseDemandStorage.updateSolutionCenterResults(conversationId, solutionCenterResponse.results);
       console.log(`[DemandFinderAgent] Saved ${solutionCenterResponse.results.length} Solution Center results for conversation ${conversationId}`);
 
+      return solutionCenterResponse.results;
+
     } catch (error) {
       console.error(`[DemandFinderAgent] Error searching Solution Center for conversation ${conversationId}:`, error);
+      return [];
     }
   }
 

@@ -18,9 +18,9 @@ export class StatusController {
     const productConfidence = context?.classification?.productConfidence ?? null;
     const customerRequestTypeConfidence = context?.classification?.customerRequestTypeConfidence ?? null;
 
-    const articles = caseDemandData?.articlesAndObjectiveProblems || [];
-    const bestArticleMatchScore = articles.length > 0
-      ? Math.max(...articles.map(a => a.matchScore || 0))
+    const solutionCenterResults = caseDemandData?.solutionCenterArticlesAndProblems || [];
+    const bestArticleMatchScore = solutionCenterResults.length > 0
+      ? Math.max(...solutionCenterResults.map((r: { score?: number }) => r.score || 0))
       : 0;
 
     const productMatch = productConfidence !== null && productConfidence >= 90;
@@ -32,13 +32,13 @@ export class StatusController {
     const reasons: string[] = [];
     if (!productMatch) reasons.push(`productConfidence=${productConfidence} (need >=90)`);
     if (!requestTypeMatch) reasons.push(`customerRequestTypeConfidence=${customerRequestTypeConfidence} (need >=90)`);
-    if (!articleMatch) reasons.push(`bestArticleMatchScore=${bestArticleMatchScore} (need >=80)`);
+    if (!articleMatch) reasons.push(`bestSolutionCenterScore=${bestArticleMatchScore} (need >=80)`);
 
     const reason = canTransition
-      ? `All criteria met: productConfidence>=${productConfidence}, customerRequestTypeConfidence>=${customerRequestTypeConfidence}, bestArticleMatchScore=${bestArticleMatchScore}`
+      ? `All criteria met: productConfidence>=${productConfidence}, customerRequestTypeConfidence>=${customerRequestTypeConfidence}, bestSolutionCenterScore=${bestArticleMatchScore}`
       : `Criteria not met: ${reasons.join(", ")}`;
 
-    console.log(`[StatusController] Evaluating conversation ${conversationId}: ${reason}`);
+    console.log(`[StatusController] Evaluating conversation ${conversationId} (using Solution Center): ${reason}`);
 
     return {
       canTransition,
