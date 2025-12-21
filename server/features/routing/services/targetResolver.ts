@@ -42,10 +42,15 @@ export function isValidTarget(target: string): target is ValidTarget {
   return VALID_TARGETS.includes(target.toLowerCase() as ValidTarget);
 }
 
+export function isHuman(target: string): boolean {
+  return target.toLowerCase() === "human";
+}
+
 export const TargetResolver = {
   getIntegrationId,
   getHandlerName,
   isN1ago,
+  isHuman,
   isValidTarget,
   VALID_TARGETS,
 };

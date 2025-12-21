@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
 import { ZendeskApiService } from "../../external-sources/zendesk/services/zendeskApiService.js";
 import { TargetResolver } from "../services/targetResolver.js";
+import { SendMessageService } from "../../send-message/index.js";
 
 const router = Router();
 
@@ -33,6 +34,28 @@ router.post("/api/conversations/:conversationId/transfer", isAuthenticated, requ
 
     if (!targetIntegrationId) {
       return res.status(400).json({ error: "Could not resolve target integration" });
+    }
+
+    const currentHandlerIsN1ago = TargetResolver.isN1ago(conversation.currentHandler || "") || 
+                                   TargetResolver.isN1ago(conversation.currentHandlerName || "");
+    const targetIsHuman = TargetResolver.isHuman(target);
+
+    if (currentHandlerIsN1ago && targetIsHuman) {
+      console.log(`[TransferRoutes] Sending farewell message before transfer to human`);
+      const sendResult = await SendMessageService.send({
+        conversationId: parseInt(conversationId),
+        externalConversationId,
+        message: "Vou te transferir para um humano continuar o atendimento, aguarde um momento...",
+        type: "transfer",
+        source: "orchestrator",
+        skipFormatting: true,
+      });
+      
+      if (sendResult.sent) {
+        console.log(`[TransferRoutes] Farewell message sent successfully`);
+      } else {
+        console.log(`[TransferRoutes] Farewell message not sent: ${sendResult.reason}`);
+      }
     }
 
     const result = await ZendeskApiService.passControl(
