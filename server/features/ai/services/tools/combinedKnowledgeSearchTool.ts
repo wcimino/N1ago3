@@ -1,4 +1,3 @@
-import { runKnowledgeBaseSearch } from "../knowledgeBaseSearchHelper.js";
 import { runProblemObjectiveSearch } from "./problemObjectiveTool.js";
 import { productCatalogStorage } from "../../../products/storage/productCatalogStorage.js";
 import type { ToolDefinition } from "../openaiApiService.js";
@@ -6,7 +5,7 @@ import { caseDemandStorage } from "../../storage/caseDemandStorage.js";
 import type { MultiQuerySearchQueries } from "../../../../shared/embeddings/multiQuerySearch.js";
 
 export interface CombinedSearchResult {
-  source: "article" | "problem";
+  source: "problem";
   id: number;
   question: string | null;
   answer: string | null;
@@ -25,7 +24,6 @@ export interface CombinedSearchParams {
   productId?: number;
   productContext?: string;
   conversationContext?: string;
-  articleContext?: string;
   problemContext?: string;
   searchQueries?: MultiQuerySearchQueries;
   limit?: number;
@@ -34,20 +32,7 @@ export interface CombinedSearchParams {
   summaryProductContext?: string;
 }
 
-const REQUEST_TYPE_MULTIPLIER = 0.9;
 const PRODUCT_MISMATCH_MULTIPLIER = 0.9;
-
-function isArticlePenalized(requestType: string): boolean {
-  const normalized = requestType.toLowerCase().trim();
-  return normalized.includes("suporte");
-}
-
-function isProblemPenalized(requestType: string): boolean {
-  const normalized = requestType.toLowerCase().trim();
-  return normalized.includes("informações") || 
-         normalized.includes("informacoes") || 
-         normalized.includes("contratar");
-}
 
 interface ScoreAdjustmentParams {
   demandType?: DemandType;
@@ -72,31 +57,17 @@ function applyScoreAdjustments(
   results: CombinedSearchResult[],
   params: ScoreAdjustmentParams
 ): CombinedSearchResult[] {
-  const { demandType, summaryProductContext } = params;
+  const { summaryProductContext } = params;
 
   return results.map(result => {
     const originalScore = result.matchScore || 0;
     let adjustedScore = originalScore;
     const adjustments: string[] = [];
 
-    if (demandType) {
-      if (result.source === "article" && isArticlePenalized(demandType)) {
-        adjustedScore *= REQUEST_TYPE_MULTIPLIER;
-        adjustments.push('0.9x (Quer Suporte → Artigo)');
-      }
-      
-      if (result.source === "problem" && isProblemPenalized(demandType)) {
-        adjustedScore *= REQUEST_TYPE_MULTIPLIER;
-        adjustments.push('0.9x (Quer informações/contratar → Problema)');
-      }
-    }
-
     if (summaryProductContext) {
       let hasProductMismatch = false;
       
-      if (result.source === "article" && result.productContext) {
-        hasProductMismatch = !isProductMatch(result.productContext, summaryProductContext);
-      } else if (result.source === "problem" && result.products && result.products.length > 0) {
+      if (result.source === "problem" && result.products && result.products.length > 0) {
         hasProductMismatch = !result.products.some(p => isProductMatch(p, summaryProductContext));
       }
       
@@ -120,7 +91,6 @@ export interface CombinedSearchResponse {
   message: string;
   results: CombinedSearchResult[];
   productId?: number;
-  articleCount: number;
   problemCount: number;
 }
 
@@ -128,57 +98,23 @@ const DEFAULT_COMBINED_LIMIT = 10;
 const PER_SOURCE_FETCH_LIMIT = 10;
 
 export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): Promise<CombinedSearchResponse> {
-  const { productId, conversationContext, articleContext, problemContext, searchQueries, limit = DEFAULT_COMBINED_LIMIT, demandType, summaryProductContext } = params;
+  const { productId, conversationContext, problemContext, searchQueries, limit = DEFAULT_COMBINED_LIMIT, summaryProductContext } = params;
   
   let productContext = params.productContext;
   if (!productContext && productId) {
     productContext = await productCatalogStorage.resolveProductContext(productId);
   }
 
-  const effectiveArticleContext = articleContext || conversationContext;
   const effectiveProblemContext = problemContext || conversationContext;
 
-  const [articlesResult, problemsResult] = await Promise.all([
-    runKnowledgeBaseSearch({
-      productContext,
-      conversationContext: effectiveArticleContext,
-      searchQueries,
-      limit: PER_SOURCE_FETCH_LIMIT
-    }),
-    runProblemObjectiveSearch({
-      productContext,
-      conversationContext: effectiveProblemContext,
-      searchQueries,
-      limit: PER_SOURCE_FETCH_LIMIT
-    })
-  ]);
+  const problemsResult = await runProblemObjectiveSearch({
+    productContext,
+    conversationContext: effectiveProblemContext,
+    searchQueries,
+    limit: PER_SOURCE_FETCH_LIMIT
+  });
 
   const results: CombinedSearchResult[] = [];
-
-  const articleProductIds = articlesResult.articles
-    .map(a => a.productId)
-    .filter((id): id is number => id !== null && id !== undefined);
-  const uniqueProductIds = [...new Set(articleProductIds)];
-  
-  const productContextMap: Record<number, string> = {};
-  for (const pid of uniqueProductIds) {
-    const ctx = await productCatalogStorage.resolveProductContext(pid);
-    if (ctx) productContextMap[pid] = ctx;
-  }
-
-  for (const article of articlesResult.articles) {
-    results.push({
-      source: "article",
-      id: article.id,
-      question: article.question,
-      answer: article.answer,
-      matchScore: article.relevanceScore,
-      matchReason: article.matchReason,
-      matchedTerms: article.matchedTerms,
-      productId: article.productId ?? undefined,
-      productContext: article.productId ? productContextMap[article.productId] : undefined,
-    });
-  }
 
   for (const problem of problemsResult.problems) {
     results.push({
@@ -194,7 +130,7 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
     });
   }
 
-  const adjustedResults = applyScoreAdjustments(results, { demandType, summaryProductContext });
+  const adjustedResults = applyScoreAdjustments(results, { summaryProductContext });
   adjustedResults.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
   
   const limitedResults = adjustedResults.slice(0, limit);
@@ -204,19 +140,16 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
       message: "Nenhum resultado encontrado na base de conhecimento",
       results: [],
       productId,
-      articleCount: 0,
       problemCount: 0
     };
   }
 
-  const articleCount = limitedResults.filter(r => r.source === "article").length;
   const problemCount = limitedResults.filter(r => r.source === "problem").length;
 
   return {
-    message: `Retornando ${limitedResults.length} resultados (${articleCount} artigos, ${problemCount} problemas)`,
+    message: `Retornando ${limitedResults.length} resultados (${problemCount} problemas)`,
     results: limitedResults,
     productId,
-    articleCount,
     problemCount
   };
 }
@@ -228,7 +161,7 @@ export function createCombinedKnowledgeSearchTool(): ToolDefinition {
 export function createCombinedKnowledgeSearchToolWithContext(conversationId?: number): ToolDefinition {
   return {
     name: "search_knowledge_base_articles_and_problems",
-    description: "Busca artigos e problemas objetivos na base de conhecimento. Retorna resultados de ambas as fontes com indicação de origem (source: article | problem).",
+    description: "Busca problemas objetivos na base de conhecimento. Retorna resultados com indicação de origem (source: problem).",
     parameters: {
       type: "object",
       properties: {
@@ -273,9 +206,9 @@ export function createCombinedKnowledgeSearchToolWithContext(conversationId?: nu
           }));
           const saveResult = await caseDemandStorage.updateArticlesAndProblems(conversationId, resultsForStorage);
           if (saveResult.created) {
-            console.log(`[Combined Knowledge Search Tool] Created case_demand with ${result.articleCount} articles and ${result.problemCount} problems for conversation ${conversationId}`);
+            console.log(`[Combined Knowledge Search Tool] Created case_demand with ${result.problemCount} problems for conversation ${conversationId}`);
           } else if (saveResult.updated) {
-            console.log(`[Combined Knowledge Search Tool] Updated case_demand with ${result.articleCount} articles and ${result.problemCount} problems for conversation ${conversationId}`);
+            console.log(`[Combined Knowledge Search Tool] Updated case_demand with ${result.problemCount} problems for conversation ${conversationId}`);
           }
         } catch (error) {
           console.error(`[Combined Knowledge Search Tool] Error saving results for conversation ${conversationId}:`, error);

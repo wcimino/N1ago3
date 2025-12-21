@@ -1,5 +1,5 @@
 import { db } from "../../../db.js";
-import { knowledgeBaseSolutions, knowledgeBaseRootCauseHasKnowledgeBaseSolutions, knowledgeBase } from "../../../../shared/schema.js";
+import { knowledgeBaseSolutions, knowledgeBaseRootCauseHasKnowledgeBaseSolutions } from "../../../../shared/schema.js";
 import { eq, and } from "drizzle-orm";
 import { caseDemandStorage } from "../storage/caseDemandStorage.js";
 import { caseSolutionStorage } from "../storage/caseSolutionStorage.js";
@@ -8,10 +8,8 @@ import type { CaseSolution } from "../../../../shared/schema.js";
 export interface ResolvedSolution {
   solutionId: number;
   solutionName: string;
-  solutionType: "specific" | "article_default" | "fallback";
+  solutionType: "specific" | "fallback";
   rootCauseId?: number;
-  articleId?: number;
-  articleContent?: string;
 }
 
 export class SolutionResolverService {
@@ -23,7 +21,7 @@ export class SolutionResolverService {
 
     const caseDemand = await caseDemandStorage.getFirstByConversationId(conversationId);
     const topMatch = caseDemand?.articlesAndObjectiveProblemsTopMatch as {
-      source: "article" | "problem";
+      source: "problem";
       id: number;
       name: string | null;
       description: string;
@@ -47,26 +45,6 @@ export class SolutionResolverService {
 
     if (topMatch?.source === "problem") {
       console.log(`[SolutionResolver] TopMatch is problem, but no rootCauseId or specific solution found - using fallback`);
-    }
-
-    if (topMatch?.source === "article") {
-      const isAvailable = await this.isArticleAvailableForAutoReply(topMatch.id);
-      
-      if (!isAvailable) {
-        console.log(`[SolutionResolver] Article ${topMatch.id} is not available for auto-reply, skipping article_default solution`);
-      } else {
-        const articleDefaultSolution = await this.getArticleDefaultSolution();
-        if (articleDefaultSolution) {
-          console.log(`[SolutionResolver] Using article_default solution for article ${topMatch.id}`);
-          return {
-            solutionId: articleDefaultSolution.id,
-            solutionName: articleDefaultSolution.name,
-            solutionType: "article_default",
-            articleId: topMatch.id,
-            articleContent: topMatch.description + (topMatch.resolution ? `\n\nResolução: ${topMatch.resolution}` : ""),
-          };
-        }
-      }
     }
 
     const fallbackSolution = await this.getFallbackSolution();
@@ -102,21 +80,6 @@ export class SolutionResolverService {
     return result || null;
   }
 
-  private static async getArticleDefaultSolution(): Promise<{ id: number; name: string } | null> {
-    const [result] = await db.select({
-      id: knowledgeBaseSolutions.id,
-      name: knowledgeBaseSolutions.name,
-    })
-      .from(knowledgeBaseSolutions)
-      .where(and(
-        eq(knowledgeBaseSolutions.isArticleDefault, true),
-        eq(knowledgeBaseSolutions.isActive, true)
-      ))
-      .limit(1);
-
-    return result || null;
-  }
-
   private static async getFallbackSolution(): Promise<{ id: number; name: string } | null> {
     const [result] = await db.select({
       id: knowledgeBaseSolutions.id,
@@ -132,17 +95,6 @@ export class SolutionResolverService {
     return result || null;
   }
 
-  private static async isArticleAvailableForAutoReply(articleId: number): Promise<boolean> {
-    const [article] = await db.select({
-      availableForAutoReply: knowledgeBase.availableForAutoReply,
-    })
-      .from(knowledgeBase)
-      .where(eq(knowledgeBase.id, articleId))
-      .limit(1);
-
-    return article?.availableForAutoReply ?? false;
-  }
-
   static async createCaseSolutionWithActions(
     conversationId: number,
     resolvedSolution: ResolvedSolution,
@@ -153,11 +105,6 @@ export class SolutionResolverService {
     const inputs: Record<string, unknown> = {
       ...providedInputs,
     };
-
-    if (resolvedSolution.articleId) {
-      inputs.articleId = resolvedSolution.articleId;
-      inputs.articleContent = resolvedSolution.articleContent;
-    }
 
     const caseSolution = await caseSolutionStorage.createWithActions({
       conversationId,

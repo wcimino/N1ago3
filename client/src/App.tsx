@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Route, Switch, Link, Redirect, useLocation } from "wouter";
-import { Home, Sparkles, Settings, LogOut, MessageCircle, BookOpen, BarChart3, Menu, X } from "lucide-react";
+import { Home, Sparkles, Settings, LogOut, MessageCircle, BarChart3, Menu, X } from "lucide-react";
 import { useAuth, useConfirmation } from "./shared/hooks";
 import { NavLink, EnvironmentBadge, N1agoLogo, ConfirmModal } from "./shared/components";
 import { TimezoneProvider } from "./contexts/TimezoneContext";
@@ -10,7 +10,6 @@ import { EventsLayout } from "./features/events";
 import { AtendimentosPage, UserConversationsPage } from "./features/conversations";
 import { CadastroPage, UserStandardDetailPage, OrganizationStandardDetailPage } from "./features/cadastro";
 import { ExportPage } from "./features/export";
-import { KnowledgeBasePage, KnowledgeBaseArticlePage } from "./features/knowledge";
 import { ReportsPage, QuestionTopicsPage } from "./features/reports";
 import { RoutingRulesPage } from "./features/routing";
 import { LandingPage, LoadingPage, UnauthorizedPage, HomePage } from "./shared/pages";
@@ -19,7 +18,6 @@ const navItems = [
   { href: "/", label: "Home", icon: Home },
   { href: "/atendimentos", label: "Atendimentos", icon: MessageCircle },
   { href: "/ai", label: "Config. IA", icon: Sparkles },
-  { href: "/knowledge-base", label: "Conhecimento", icon: BookOpen },
   { href: "/reports", label: "Relatórios", icon: BarChart3 },
   { href: "/settings", label: "Config.", icon: Settings },
 ];
@@ -116,7 +114,7 @@ function AuthenticatedApp() {
             
             <nav className="hidden md:flex items-center flex-1">
               <div className="flex gap-0.5">
-                {navItems.slice(0, 5).map(({ href, label, icon: Icon }) => (
+                {navItems.slice(0, 4).map(({ href, label, icon: Icon }) => (
                   <NavLink key={href} href={href}>
                     <Icon className="w-4 h-4" />
                     <span className="hidden lg:inline">{label}</span>
@@ -168,8 +166,6 @@ function AuthenticatedApp() {
           <Route path="/atendimentos/:userId">{(params) => <UserConversationsPage params={params} />}</Route>
           <Route path="/settings/maintenance/export" component={ExportPage} />
           <Route path="/settings/maintenance/export/:rest*" component={ExportPage} />
-          <Route path="/knowledge-base" component={KnowledgeBasePage} />
-          <Route path="/knowledge-base/article/:id" component={KnowledgeBaseArticlePage} />
           <Route path="/reports" component={ReportsPage} />
           <Route path="/reports/question-topics" component={QuestionTopicsPage} />
           <Route path="/routing-rules" component={RoutingRulesPage} />

@@ -17,10 +17,7 @@ import openaiConfigRoutes from "../features/ai/routes/openaiConfig.js";
 import generalSettingsRoutes from "../features/ai/routes/generalSettings.js";
 import openaiLogsRoutes from "../features/ai/routes/openaiLogs.js";
 import openaiStatsRoutes from "../features/ai/routes/openaiStats.js";
-import knowledgeBaseRoutes from "../features/ai/routes/knowledgeBase.js";
 
-import knowledgeSubjectsRoutes from "../features/knowledge/routes/knowledgeSubjectsRoutes.js";
-import knowledgeIntentsRoutes from "../features/knowledge/routes/knowledgeIntentsRoutes.js";
 import objectiveProblemsRoutes from "../features/knowledge/routes/objectiveProblemsRoutes.js";
 import actionsRoutes from "../features/knowledge/routes/actionsRoutes.js";
 import knowledgeSolutionsRoutes from "../features/knowledge/routes/knowledgeSolutionsRoutes.js";
@@ -69,12 +66,9 @@ function registerAiRoutes(app: Express) {
   app.use(generalSettingsRoutes);
   app.use(openaiLogsRoutes);
   app.use(openaiStatsRoutes);
-  app.use(knowledgeBaseRoutes);
 }
 
 function registerKnowledgeRoutes(app: Express) {
-  app.use(knowledgeSubjectsRoutes);
-  app.use(knowledgeIntentsRoutes);
   app.use(objectiveProblemsRoutes);
   app.use(actionsRoutes);
   app.use(knowledgeSolutionsRoutes);

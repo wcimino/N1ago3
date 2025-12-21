@@ -5,7 +5,6 @@ import { conversationStorage } from "../features/conversations/storage/index.js"
 import { eventStorage } from "../features/events/storage/eventStorage.js";
 import { usersStandardStorage } from "../features/cadastro/storage/usersStandardStorage.js";
 import { organizationsStandardStorage } from "../features/cadastro/storage/organizationsStandardStorage.js";
-import { knowledgeBaseStorage } from "../features/ai/storage/knowledgeBaseStorage.js";
 import { configStorage } from "../features/ai/storage/configStorage.js";
 import { classificationStorage } from "../features/ai/storage/classificationStorage.js";
 import { summaryStorage } from "../features/ai/storage/summaryStorage.js";
@@ -21,7 +20,6 @@ export const storage = {
   ...classificationStorage,
   ...summaryStorage,
   ...usersStandardStorage,
-  ...knowledgeBaseStorage,
   ...organizationsStandardStorage,
 };
 
@@ -32,6 +30,5 @@ export { conversationStorage } from "../features/conversations/storage/index.js"
 export { eventStorage } from "../features/events/storage/eventStorage.js";
 export { usersStandardStorage } from "../features/cadastro/storage/usersStandardStorage.js";
 export { organizationsStandardStorage } from "../features/cadastro/storage/organizationsStandardStorage.js";
-export { knowledgeBaseStorage } from "../features/ai/storage/knowledgeBaseStorage.js";
 export { configStorage } from "../features/ai/storage/configStorage.js";
 export { webhookStorage } from "../features/export/storage/webhookStorage.js";

@@ -12,43 +12,6 @@ export const productsCatalog = pgTable("products_catalog", {
   fullNameIdx: uniqueIndex("idx_ifood_products_full_name").on(table.fullName),
 }));
 
-export const knowledgeBase = pgTable("knowledge_base", {
-  id: serial("id").primaryKey(),
-  question: text("question"),
-  questionNormalized: text("question_normalized"),
-  answer: text("answer"),
-  keywords: text("keywords"),
-  questionVariation: json("question_variation").$type<string[]>().default([]),
-  productId: integer("product_id").references(() => productsCatalog.id, { onDelete: "set null" }),
-  subjectId: integer("subject_id"),
-  intentId: integer("intent_id"),
-  visibleInSearch: boolean("visible_in_search").default(false).notNull(),
-  availableForAutoReply: boolean("available_for_auto_reply").default(false).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  productIdIdx: index("idx_knowledge_base_product_id").on(table.productId),
-  subjectIdx: index("idx_knowledge_base_subject").on(table.subjectId),
-  intentIdIdx: index("idx_knowledge_base_intent_id").on(table.intentId),
-  visibleInSearchIdx: index("idx_knowledge_base_visible_in_search").on(table.visibleInSearch),
-  availableForAutoReplyIdx: index("idx_knowledge_base_available_for_auto_reply").on(table.availableForAutoReply),
-}));
-
-export const knowledgeBaseEmbeddings = pgTable("knowledge_base_embeddings", {
-  id: serial("id").primaryKey(),
-  articleId: integer("article_id").notNull().references(() => knowledgeBase.id, { onDelete: "cascade" }),
-  contentHash: text("content_hash").notNull(),
-  embeddingVector: text("embedding_vector"),
-  modelUsed: text("model_used").notNull().default("text-embedding-3-small"),
-  tokensUsed: integer("tokens_used"),
-  openaiLogId: integer("openai_log_id"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  articleIdUnique: uniqueIndex("idx_knowledge_base_embeddings_article_id").on(table.articleId),
-  contentHashIdx: index("idx_knowledge_base_embeddings_content_hash").on(table.contentHash),
-}));
-
 export const knowledgeBaseObjectiveProblems = pgTable("knowledge_base_objective_problems", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -93,43 +56,6 @@ export const knowledgeBaseObjectiveProblemsEmbeddings = pgTable("knowledge_base_
 }, (table) => ({
   problemIdUnique: uniqueIndex("idx_kb_objective_problems_embeddings_problem_id").on(table.problemId),
   contentHashIdx: index("idx_kb_objective_problems_embeddings_content_hash").on(table.contentHash),
-}));
-
-export const knowledgeSubjects = pgTable("knowledge_subjects", {
-  id: serial("id").primaryKey(),
-  productCatalogId: integer("product_catalog_id").notNull().references(() => productsCatalog.id),
-  name: text("name").notNull(),
-  synonyms: json("synonyms").$type<string[]>().default([]).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  productCatalogIdx: index("idx_knowledge_subjects_product_catalog").on(table.productCatalogId),
-  nameIdx: index("idx_knowledge_subjects_name").on(table.name),
-}));
-
-export const knowledgeIntents = pgTable("knowledge_intents", {
-  id: serial("id").primaryKey(),
-  subjectId: integer("subject_id").notNull().references(() => knowledgeSubjects.id),
-  name: text("name").notNull(),
-  synonyms: json("synonyms").$type<string[]>().default([]).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  subjectIdx: index("idx_knowledge_intents_subject").on(table.subjectId),
-  nameIdx: index("idx_knowledge_intents_name").on(table.name),
-}));
-
-export const knowledgeBaseStatistics = pgTable("knowledge_base_statistics", {
-  id: serial("id").primaryKey(),
-  articleId: integer("article_id").notNull().references(() => knowledgeBase.id, { onDelete: "cascade" }),
-  keywords: text("keywords"),
-  conversationId: integer("conversation_id"),
-  externalConversationId: text("external_conversation_id"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => ({
-  articleIdIdx: index("idx_knowledge_base_statistics_article_id").on(table.articleId),
-  createdAtIdx: index("idx_knowledge_base_statistics_created_at").on(table.createdAt),
-  conversationIdIdx: index("idx_knowledge_base_statistics_conversation_id").on(table.conversationId),
 }));
 
 export const knowledgeEnrichmentLog = pgTable("knowledge_enrichment_log", {
@@ -258,22 +184,12 @@ export const knowledgeBaseRootCauseHasKnowledgeBaseSolutions = pgTable("knowledg
 
 export type ProductCatalog = typeof productsCatalog.$inferSelect;
 export type InsertProductCatalog = Omit<typeof productsCatalog.$inferInsert, "id" | "createdAt" | "updatedAt">;
-export type KnowledgeBaseArticle = typeof knowledgeBase.$inferSelect;
-export type InsertKnowledgeBaseArticle = Omit<typeof knowledgeBase.$inferInsert, "id" | "createdAt" | "updatedAt">;
-export type KnowledgeBaseEmbedding = typeof knowledgeBaseEmbeddings.$inferSelect;
-export type InsertKnowledgeBaseEmbedding = Omit<typeof knowledgeBaseEmbeddings.$inferInsert, "id" | "createdAt" | "updatedAt">;
 export type KnowledgeBaseObjectiveProblem = typeof knowledgeBaseObjectiveProblems.$inferSelect;
 export type InsertKnowledgeBaseObjectiveProblem = typeof knowledgeBaseObjectiveProblems.$inferInsert;
 export type KnowledgeBaseObjectiveProblemsHasProductsCatalog = typeof knowledgeBaseObjectiveProblemsHasProductsCatalog.$inferSelect;
 export type InsertKnowledgeBaseObjectiveProblemsHasProductsCatalog = Omit<typeof knowledgeBaseObjectiveProblemsHasProductsCatalog.$inferInsert, "id" | "createdAt">;
 export type KnowledgeBaseObjectiveProblemsEmbedding = typeof knowledgeBaseObjectiveProblemsEmbeddings.$inferSelect;
 export type InsertKnowledgeBaseObjectiveProblemsEmbedding = typeof knowledgeBaseObjectiveProblemsEmbeddings.$inferInsert;
-export type KnowledgeSubject = typeof knowledgeSubjects.$inferSelect;
-export type InsertKnowledgeSubject = Omit<typeof knowledgeSubjects.$inferInsert, "id" | "createdAt" | "updatedAt">;
-export type KnowledgeIntent = typeof knowledgeIntents.$inferSelect;
-export type InsertKnowledgeIntent = Omit<typeof knowledgeIntents.$inferInsert, "id" | "createdAt" | "updatedAt">;
-export type KnowledgeBaseStatistic = typeof knowledgeBaseStatistics.$inferSelect;
-export type InsertKnowledgeBaseStatistic = Omit<typeof knowledgeBaseStatistics.$inferInsert, "id" | "createdAt">;
 export type KnowledgeEnrichmentLog = typeof knowledgeEnrichmentLog.$inferSelect;
 export type InsertKnowledgeEnrichmentLog = Omit<typeof knowledgeEnrichmentLog.$inferInsert, "id" | "createdAt">;
 export type EmbeddingGenerationLog = typeof embeddingGenerationLogs.$inferSelect;
