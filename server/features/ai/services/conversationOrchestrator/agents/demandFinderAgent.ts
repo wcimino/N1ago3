@@ -93,7 +93,13 @@ export class DemandFinderAgent {
       if (promptResult.decision === "selected_intent" && promptResult.selected_intent?.id) {
         console.log(`[DemandFinderAgent] Demand confirmed - selected intent: ${promptResult.selected_intent.id} (${promptResult.selected_intent.label})`);
         
-        await caseDemandStorage.updateSelectedIntent(conversationId, promptResult.selected_intent.id);
+        await caseDemandStorage.updateSelectedIntent(conversationId, promptResult.selected_intent.id, {
+          decision: promptResult.decision,
+          selected_intent: promptResult.selected_intent,
+          top_candidates_ranked: promptResult.top_candidates_ranked || [],
+          clarifying_question: promptResult.clarifying_question,
+          reason: promptResult.reason,
+        });
         
         await conversationStorage.updateOrchestratorState(conversationId, {
           orchestratorStatus: ORCHESTRATOR_STATUS.PROVIDING_SOLUTION,
@@ -132,6 +138,15 @@ export class DemandFinderAgent {
       // Step 7: Use clarifying_question from prompt result
       const clarifyingQuestion = promptResult.clarifying_question;
       const suggestionId = promptResult.suggestionId;
+
+      // Save the AI response for debugging/auditing
+      await caseDemandStorage.updateDemandFinderAiResponse(conversationId, {
+        decision: promptResult.decision,
+        selected_intent: promptResult.selected_intent,
+        top_candidates_ranked: promptResult.top_candidates_ranked || [],
+        clarifying_question: promptResult.clarifying_question,
+        reason: promptResult.reason,
+      });
       
       if (!clarifyingQuestion || !suggestionId) {
         console.log(`[DemandFinderAgent] No clarifying question or suggestionId from AI, escalating`);

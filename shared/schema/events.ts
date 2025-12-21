@@ -107,6 +107,13 @@ export const caseDemand = pgTable("case_demand", {
   articlesAndObjectiveProblemsTopMatch: json("articles_and_objective_problems_top_match").$type<{ source: "article" | "problem"; id: string; name: string | null; description: string; resolution?: string; matchScore?: number; matchReason?: string; matchedTerms?: string[]; products?: string[] } | null>(),
   solutionCenterArticlesAndProblems: json("solution_center_articles_and_problems").$type<Array<{ type: "article" | "problem"; id: string; name: string; score: number }>>(),
   solutionCenterArticleAndProblemsIdSelected: text("solution_center_article_and_problems_id_selected"),
+  demandFinderAiResponse: json("demand_finder_ai_response").$type<{
+    decision: "selected_intent" | "need_clarification";
+    selected_intent: { id: string | null; label: string | null };
+    top_candidates_ranked: Array<{ id: string; label: string; why: string }>;
+    clarifying_question: string | null;
+    reason: string;
+  }>(),
   interactionCount: integer("interaction_count").default(0).notNull(),
   status: text("status").default("not_started"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

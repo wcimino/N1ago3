@@ -185,7 +185,14 @@ export const caseDemandStorage = {
 
   async updateSelectedIntent(
     conversationId: number,
-    selectedId: string
+    selectedId: string,
+    demandFinderAiResponse?: {
+      decision: "selected_intent" | "need_clarification";
+      selected_intent: { id: string | null; label: string | null };
+      top_candidates_ranked: Array<{ id: string; label: string; why: string }>;
+      clarifying_question: string | null;
+      reason: string;
+    }
   ): Promise<void> {
     const existing = await this.getActiveByConversationId(conversationId);
     
@@ -193,6 +200,7 @@ export const caseDemandStorage = {
       await db.update(caseDemand)
         .set({
           solutionCenterArticleAndProblemsIdSelected: selectedId,
+          demandFinderAiResponse: demandFinderAiResponse || undefined,
           updatedAt: new Date(),
         })
         .where(eq(caseDemand.id, existing.id));
@@ -201,6 +209,35 @@ export const caseDemandStorage = {
         .values({
           conversationId,
           solutionCenterArticleAndProblemsIdSelected: selectedId,
+          demandFinderAiResponse: demandFinderAiResponse || undefined,
+        });
+    }
+  },
+
+  async updateDemandFinderAiResponse(
+    conversationId: number,
+    demandFinderAiResponse: {
+      decision: "selected_intent" | "need_clarification";
+      selected_intent: { id: string | null; label: string | null };
+      top_candidates_ranked: Array<{ id: string; label: string; why: string }>;
+      clarifying_question: string | null;
+      reason: string;
+    }
+  ): Promise<void> {
+    const existing = await this.getActiveByConversationId(conversationId);
+    
+    if (existing) {
+      await db.update(caseDemand)
+        .set({
+          demandFinderAiResponse,
+          updatedAt: new Date(),
+        })
+        .where(eq(caseDemand.id, existing.id));
+    } else {
+      await db.insert(caseDemand)
+        .values({
+          conversationId,
+          demandFinderAiResponse,
         });
     }
   },
