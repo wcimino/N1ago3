@@ -182,4 +182,26 @@ export const caseDemandStorage = {
       return { created: true, updated: false };
     }
   },
+
+  async updateSelectedIntent(
+    conversationId: number,
+    selectedId: string
+  ): Promise<void> {
+    const existing = await this.getActiveByConversationId(conversationId);
+    
+    if (existing) {
+      await db.update(caseDemand)
+        .set({
+          solutionCenterArticleAndProblemsIdSelected: selectedId,
+          updatedAt: new Date(),
+        })
+        .where(eq(caseDemand.id, existing.id));
+    } else {
+      await db.insert(caseDemand)
+        .values({
+          conversationId,
+          solutionCenterArticleAndProblemsIdSelected: selectedId,
+        });
+    }
+  },
 };
