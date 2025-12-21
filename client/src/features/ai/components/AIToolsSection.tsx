@@ -1,8 +1,6 @@
 import { CheckboxListItem, CollapsibleSection } from "../../../shared/components/ui";
 
 interface AIToolsState {
-  useKnowledgeBaseTool: boolean;
-  useSubjectIntentTool: boolean;
   useZendeskKnowledgeBaseTool: boolean;
   useObjectiveProblemTool: boolean;
   useCombinedKnowledgeSearchTool: boolean;
@@ -10,13 +8,9 @@ interface AIToolsState {
 
 interface AIToolsSectionProps {
   state: AIToolsState;
-  showKnowledgeBaseTool?: boolean;
-  showSubjectIntentTool?: boolean;
   showZendeskKnowledgeBaseTool?: boolean;
   showObjectiveProblemTool?: boolean;
   showCombinedKnowledgeSearchTool?: boolean;
-  onToggleKnowledgeBase: () => void;
-  onToggleSubjectIntent: () => void;
   onToggleZendeskKnowledgeBase: () => void;
   onToggleObjectiveProblem: () => void;
   onToggleCombinedKnowledgeSearch: () => void;
@@ -24,25 +18,18 @@ interface AIToolsSectionProps {
 
 export function AIToolsSection({
   state,
-  showKnowledgeBaseTool = false,
-  showSubjectIntentTool = false,
   showZendeskKnowledgeBaseTool = false,
   showObjectiveProblemTool = false,
   showCombinedKnowledgeSearchTool = false,
-  onToggleKnowledgeBase,
-  onToggleSubjectIntent,
   onToggleZendeskKnowledgeBase,
   onToggleObjectiveProblem,
   onToggleCombinedKnowledgeSearch,
 }: AIToolsSectionProps) {
-  const hasAnyTool = showKnowledgeBaseTool || showSubjectIntentTool || 
-                     showZendeskKnowledgeBaseTool || showObjectiveProblemTool || showCombinedKnowledgeSearchTool;
+  const hasAnyTool = showZendeskKnowledgeBaseTool || showObjectiveProblemTool || showCombinedKnowledgeSearchTool;
 
   if (!hasAnyTool) return null;
 
   const activeCount = [
-    state.useKnowledgeBaseTool,
-    state.useSubjectIntentTool,
     state.useZendeskKnowledgeBaseTool,
     state.useObjectiveProblemTool,
     state.useCombinedKnowledgeSearchTool,
@@ -62,22 +49,6 @@ export function AIToolsSection({
       }
     >
       <div className="divide-y">
-        {showKnowledgeBaseTool && (
-          <CheckboxListItem
-            label="Usar Base de Conhecimento"
-            sublabel="Permite buscar artigos da base antes de gerar resposta"
-            checked={state.useKnowledgeBaseTool}
-            onChange={onToggleKnowledgeBase}
-          />
-        )}
-        {showSubjectIntentTool && (
-          <CheckboxListItem
-            label="Usar Assuntos e Intenções"
-            sublabel="Permite buscar assuntos e intenções válidos para classificação"
-            checked={state.useSubjectIntentTool}
-            onChange={onToggleSubjectIntent}
-          />
-        )}
         {showZendeskKnowledgeBaseTool && (
           <CheckboxListItem
             label="Usar Base de Conhecimento Zendesk"
@@ -96,8 +67,8 @@ export function AIToolsSection({
         )}
         {showCombinedKnowledgeSearchTool && (
           <CheckboxListItem
-            label="Usar Busca Combinada de Artigos e Problemas"
-            sublabel="Após classificar, busca artigos e problemas objetivos relacionados ao produto"
+            label="Usar Busca Combinada de Problemas"
+            sublabel="Após classificar, busca problemas objetivos relacionados ao produto"
             checked={state.useCombinedKnowledgeSearchTool}
             onChange={onToggleCombinedKnowledgeSearch}
           />

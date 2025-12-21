@@ -1,4 +1,4 @@
-import type { Triage, ObjectiveProblemIdentified, ArticleAndProblemResult } from "../../types/conversations";
+import type { Triage, ObjectiveProblemIdentified } from "../../types/conversations";
 
 export interface ClientRequestVersions {
   clientRequestStandardVersion?: string;
@@ -29,11 +29,10 @@ export interface SummaryData {
   customer_request_type_confidence?: number | null;
   customer_request_type_reason?: string | null;
   objective_problems?: ObjectiveProblemIdentified[] | null;
-  articles_and_objective_problems?: ArticleAndProblemResult[] | null;
   solution_center_articles_and_problems?: SolutionCenterResult[] | null;
   triage?: Triage | null;
   orchestrator_status?: string | null;
   demand_finder_status?: string | null;
 }
 
-export type { Triage, ObjectiveProblemIdentified, ArticleAndProblemResult };
+export type { Triage, ObjectiveProblemIdentified };

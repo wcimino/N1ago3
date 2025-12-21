@@ -16,8 +16,6 @@ export interface OpenaiConfigFormProps {
   promptRows?: number;
   responseFormatRows?: number;
   recommendedModel?: string;
-  showKnowledgeBaseTool?: boolean;
-  showSubjectIntentTool?: boolean;
   showZendeskKnowledgeBaseTool?: boolean;
   showObjectiveProblemTool?: boolean;
   showCombinedKnowledgeSearchTool?: boolean;
@@ -33,8 +31,6 @@ export function OpenaiConfigForm({
   promptRows = 16,
   responseFormatRows = 8,
   recommendedModel = "gpt-4o-mini",
-  showKnowledgeBaseTool = false,
-  showSubjectIntentTool = false,
   showZendeskKnowledgeBaseTool = false,
   showObjectiveProblemTool = false,
   showCombinedKnowledgeSearchTool = false,
@@ -93,13 +89,9 @@ export function OpenaiConfigForm({
 
           <AIToolsSection
             state={state}
-            showKnowledgeBaseTool={showKnowledgeBaseTool}
-            showSubjectIntentTool={showSubjectIntentTool}
             showZendeskKnowledgeBaseTool={showZendeskKnowledgeBaseTool}
             showObjectiveProblemTool={showObjectiveProblemTool}
             showCombinedKnowledgeSearchTool={showCombinedKnowledgeSearchTool}
-            onToggleKnowledgeBase={() => actions.setUseKnowledgeBaseTool(!state.useKnowledgeBaseTool)}
-            onToggleSubjectIntent={() => actions.setUseSubjectIntentTool(!state.useSubjectIntentTool)}
             onToggleZendeskKnowledgeBase={() => actions.setUseZendeskKnowledgeBaseTool(!state.useZendeskKnowledgeBaseTool)}
             onToggleObjectiveProblem={() => actions.setUseObjectiveProblemTool(!state.useObjectiveProblemTool)}
             onToggleCombinedKnowledgeSearch={() => actions.setUseCombinedKnowledgeSearchTool(!state.useCombinedKnowledgeSearchTool)}
