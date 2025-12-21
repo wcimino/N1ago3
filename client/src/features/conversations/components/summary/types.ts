@@ -30,6 +30,7 @@ export interface SummaryData {
   customer_request_type_reason?: string | null;
   objective_problems?: ObjectiveProblemIdentified[] | null;
   solution_center_articles_and_problems?: SolutionCenterResult[] | null;
+  solution_center_selected_id?: string | null;
   triage?: Triage | null;
   orchestrator_status?: string | null;
   demand_finder_status?: string | null;

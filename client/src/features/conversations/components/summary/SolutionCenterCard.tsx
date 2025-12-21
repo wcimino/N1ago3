@@ -1,11 +1,12 @@
-import { Lightbulb } from "lucide-react";
+import { Lightbulb, Check } from "lucide-react";
 import type { SolutionCenterResult } from "./types";
 
 export interface SolutionCenterCardProps {
   items?: SolutionCenterResult[] | null;
+  selectedId?: string | null;
 }
 
-export function SolutionCenterCard({ items }: SolutionCenterCardProps) {
+export function SolutionCenterCard({ items, selectedId }: SolutionCenterCardProps) {
   const itemsList = [...(items || [])].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   const hasItems = itemsList.length > 0;
   const articleCount = itemsList.filter(i => i.type === "article").length;
@@ -25,27 +26,48 @@ export function SolutionCenterCard({ items }: SolutionCenterCardProps) {
       
       {hasItems ? (
         <div className="space-y-2">
-          {itemsList.map((item) => (
-            <div key={`${item.type}-${item.id}`} className="bg-white rounded px-3 py-2 border border-violet-100">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
-                    item.type === "article" 
-                      ? "bg-indigo-100 text-indigo-700" 
-                      : "bg-fuchsia-100 text-fuchsia-700"
-                  }`}>
-                    {item.type === "article" ? "Artigo" : "Problema"}
-                  </span>
-                  <span className="text-sm text-gray-700 font-medium">{item.name}</span>
+          {itemsList.map((item) => {
+            const isSelected = selectedId === item.id;
+            return (
+              <div 
+                key={`${item.type}-${item.id}`} 
+                className={`rounded px-3 py-2 ${
+                  isSelected 
+                    ? "bg-green-50 border-2 border-green-400 ring-1 ring-green-200" 
+                    : "bg-white border border-violet-100"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    {isSelected && (
+                      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-green-500 text-white">
+                        <Check className="w-3 h-3" />
+                      </span>
+                    )}
+                    <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                      item.type === "article" 
+                        ? "bg-indigo-100 text-indigo-700" 
+                        : "bg-fuchsia-100 text-fuchsia-700"
+                    }`}>
+                      {item.type === "article" ? "Artigo" : "Problema"}
+                    </span>
+                    <span className={`text-sm font-medium ${isSelected ? "text-green-800" : "text-gray-700"}`}>
+                      {item.name}
+                    </span>
+                  </div>
+                  {item.score !== undefined && (
+                    <span className={`text-xs px-2 py-0.5 rounded ${
+                      isSelected 
+                        ? "text-green-700 bg-green-100" 
+                        : "text-violet-600 bg-violet-100"
+                    }`}>
+                      {Math.round(item.score * 100)}%
+                    </span>
+                  )}
                 </div>
-                {item.score !== undefined && (
-                  <span className="text-xs text-violet-600 bg-violet-100 px-2 py-0.5 rounded">
-                    {Math.round(item.score * 100)}%
-                  </span>
-                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="text-sm text-gray-500 italic">
