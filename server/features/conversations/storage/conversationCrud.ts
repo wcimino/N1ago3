@@ -446,4 +446,58 @@ export const conversationCrud = {
     return insertResult[0] || null;
   },
 
+  async tryClaimEventForProcessing(
+    conversationId: number,
+    eventId: number,
+    expectedLastEventId: number | null
+  ): Promise<boolean> {
+    const condition = expectedLastEventId === null
+      ? and(
+          eq(conversationsSummary.conversationId, conversationId),
+          sql`${conversationsSummary.lastProcessedEventId} IS NULL`
+        )
+      : and(
+          eq(conversationsSummary.conversationId, conversationId),
+          eq(conversationsSummary.lastProcessedEventId, expectedLastEventId)
+        );
+    
+    const result = await db.update(conversationsSummary)
+      .set({
+        lastProcessedEventId: eventId,
+        waitingForCustomer: false,
+        updatedAt: new Date(),
+      })
+      .where(condition)
+      .returning({ id: conversationsSummary.id });
+    
+    if (result.length > 0) {
+      return true;
+    }
+    
+    const existing = await db.select({ id: conversationsSummary.id })
+      .from(conversationsSummary)
+      .where(eq(conversationsSummary.conversationId, conversationId))
+      .limit(1);
+    
+    if (existing.length === 0) {
+      const now = new Date();
+      await db.insert(conversationsSummary)
+        .values({
+          conversationId,
+          summary: "",
+          orchestratorStatus: "new",
+          conversationOwner: null,
+          waitingForCustomer: false,
+          lastProcessedEventId: eventId,
+          generatedAt: now,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .onConflictDoNothing();
+      return true;
+    }
+    
+    return false;
+  },
+
 };

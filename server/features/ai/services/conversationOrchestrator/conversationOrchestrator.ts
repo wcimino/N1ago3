@@ -24,19 +24,30 @@ export class ConversationOrchestrator {
     const currentStatus = (state.orchestratorStatus || ORCHESTRATOR_STATUS.NEW) as OrchestratorStatus;
     let owner = state.conversationOwner as ConversationOwner | null;
 
-    console.log(`[ConversationOrchestrator] State: status=${currentStatus}, owner=${owner}, waitingForCustomer=${state.waitingForCustomer}`);
+    console.log(`[ConversationOrchestrator] State: status=${currentStatus}, owner=${owner}, waitingForCustomer=${state.waitingForCustomer}, lastProcessedEventId=${state.lastProcessedEventId}`);
 
     if (this.isTerminalStatus(currentStatus)) {
       console.log(`[ConversationOrchestrator] Conversation in terminal status ${currentStatus}, skipping`);
       return;
     }
 
-    if (state.waitingForCustomer) {
-      console.log(`[ConversationOrchestrator] Customer replied, resetting waitingForCustomer`);
-      await conversationStorage.updateOrchestratorState(conversationId, {
-        waitingForCustomer: false,
-      });
+    if (state.lastProcessedEventId === event.id) {
+      console.log(`[ConversationOrchestrator] Event ${event.id} already processed, skipping`);
+      return;
     }
+
+    const claimed = await conversationStorage.tryClaimEventForProcessing(
+      conversationId,
+      event.id,
+      state.lastProcessedEventId
+    );
+
+    if (!claimed) {
+      console.log(`[ConversationOrchestrator] Failed to claim event ${event.id} (concurrent processing), skipping`);
+      return;
+    }
+
+    console.log(`[ConversationOrchestrator] Claimed event ${event.id} for processing`);
 
     if (!owner) {
       owner = CONVERSATION_OWNER.DEMAND_FINDER;
@@ -50,11 +61,6 @@ export class ConversationOrchestrator {
     };
 
     await this.dispatchToOwner(context, owner);
-
-    await conversationStorage.updateOrchestratorState(conversationId, {
-      lastProcessedEventId: event.id,
-    });
-
     console.log(`[ConversationOrchestrator] Completed processing for conversation ${conversationId}`);
   }
 
