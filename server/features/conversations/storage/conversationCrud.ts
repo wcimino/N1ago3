@@ -362,4 +362,88 @@ export const conversationCrud = {
     return result[0]?.orchestratorStatus || null;
   },
 
+  async getOrchestratorState(conversationId: number): Promise<{
+    orchestratorStatus: string | null;
+    conversationOwner: string | null;
+    waitingForCustomer: boolean;
+    lastProcessedEventId: number | null;
+  }> {
+    const result = await db.select({
+      orchestratorStatus: conversationsSummary.orchestratorStatus,
+      conversationOwner: conversationsSummary.conversationOwner,
+      waitingForCustomer: conversationsSummary.waitingForCustomer,
+      lastProcessedEventId: conversationsSummary.lastProcessedEventId,
+    })
+      .from(conversationsSummary)
+      .where(eq(conversationsSummary.conversationId, conversationId))
+      .limit(1);
+    
+    if (result[0]) {
+      return {
+        orchestratorStatus: result[0].orchestratorStatus,
+        conversationOwner: result[0].conversationOwner,
+        waitingForCustomer: result[0].waitingForCustomer ?? false,
+        lastProcessedEventId: result[0].lastProcessedEventId,
+      };
+    }
+    return {
+      orchestratorStatus: null,
+      conversationOwner: null,
+      waitingForCustomer: false,
+      lastProcessedEventId: null,
+    };
+  },
+
+  async updateOrchestratorState(conversationId: number, state: {
+    orchestratorStatus?: string;
+    conversationOwner?: string | null;
+    waitingForCustomer?: boolean;
+    lastProcessedEventId?: number;
+  }) {
+    const updateData: Record<string, unknown> = { updatedAt: new Date() };
+    
+    if (state.orchestratorStatus !== undefined) {
+      updateData.orchestratorStatus = state.orchestratorStatus;
+    }
+    if (state.conversationOwner !== undefined) {
+      updateData.conversationOwner = state.conversationOwner;
+    }
+    if (state.waitingForCustomer !== undefined) {
+      updateData.waitingForCustomer = state.waitingForCustomer;
+    }
+    if (state.lastProcessedEventId !== undefined) {
+      updateData.lastProcessedEventId = state.lastProcessedEventId;
+    }
+    
+    const result = await db.update(conversationsSummary)
+      .set(updateData)
+      .where(eq(conversationsSummary.conversationId, conversationId))
+      .returning();
+    
+    if (result[0]) {
+      return result[0];
+    }
+    
+    const now = new Date();
+    const insertResult = await db.insert(conversationsSummary)
+      .values({
+        conversationId,
+        summary: "",
+        orchestratorStatus: state.orchestratorStatus || "new",
+        conversationOwner: state.conversationOwner || null,
+        waitingForCustomer: state.waitingForCustomer || false,
+        lastProcessedEventId: state.lastProcessedEventId || null,
+        generatedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: conversationsSummary.conversationId,
+        set: updateData,
+      })
+      .returning();
+    
+    return insertResult[0] || null;
+  },
+
 };

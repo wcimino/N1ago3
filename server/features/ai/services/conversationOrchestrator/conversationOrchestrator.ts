@@ -2,10 +2,8 @@ import { conversationStorage } from "../../../conversations/storage/index.js";
 import { DemandFinderAgent } from "./agents/demandFinderAgent.js";
 import { SolutionProviderAgent } from "./agents/solutionProviderAgent.js";
 import { CloserAgent } from "./agents/closerAgent.js";
-import { ORCHESTRATOR_STATUS, type OrchestratorStatus, type OrchestratorContext } from "./types.js";
+import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type OrchestratorStatus, type ConversationOwner, type OrchestratorContext } from "./types.js";
 import type { EventStandard } from "../../../../../shared/schema.js";
-
-const MAX_DISPATCH_ITERATIONS = 5;
 
 export class ConversationOrchestrator {
   static async processMessageEvent(event: EventStandard): Promise<void> {
@@ -20,77 +18,71 @@ export class ConversationOrchestrator {
     }
 
     const conversationId = event.conversationId;
-    let iterations = 0;
+    console.log(`[ConversationOrchestrator] Processing message for conversation ${conversationId}`);
 
-    console.log(`[ConversationOrchestrator] Starting dispatch loop for conversation ${conversationId}`);
+    const state = await conversationStorage.getOrchestratorState(conversationId);
+    const currentStatus = (state.orchestratorStatus || ORCHESTRATOR_STATUS.NEW) as OrchestratorStatus;
+    let owner = state.conversationOwner as ConversationOwner | null;
 
-    while (iterations < MAX_DISPATCH_ITERATIONS) {
-      const currentStatus = await this.getConversationStatus(conversationId);
+    console.log(`[ConversationOrchestrator] State: status=${currentStatus}, owner=${owner}, waitingForCustomer=${state.waitingForCustomer}`);
 
-      console.log(`[ConversationOrchestrator] Iteration ${iterations + 1}: status = ${currentStatus}`);
-
-      if (this.isTerminalStatus(currentStatus)) {
-        console.log(`[ConversationOrchestrator] Reached terminal status ${currentStatus}, stopping`);
-        break;
-      }
-
-      const context: OrchestratorContext = {
-        event,
-        conversationId,
-        currentStatus,
-      };
-
-      const previousStatus = currentStatus;
-      await this.dispatchToAgent(context);
-
-      const newStatus = await this.getConversationStatus(conversationId);
-
-      if (newStatus === previousStatus) {
-        console.log(`[ConversationOrchestrator] Status unchanged (${newStatus}), stopping loop`);
-        break;
-      }
-
-      console.log(`[ConversationOrchestrator] Status changed: ${previousStatus} -> ${newStatus}`);
-      iterations++;
+    if (this.isTerminalStatus(currentStatus)) {
+      console.log(`[ConversationOrchestrator] Conversation in terminal status ${currentStatus}, skipping`);
+      return;
     }
 
-    if (iterations >= MAX_DISPATCH_ITERATIONS) {
-      console.warn(`[ConversationOrchestrator] Max iterations (${MAX_DISPATCH_ITERATIONS}) reached for conversation ${conversationId}`);
+    if (state.waitingForCustomer) {
+      console.log(`[ConversationOrchestrator] Customer replied, resetting waitingForCustomer`);
+      await conversationStorage.updateOrchestratorState(conversationId, {
+        waitingForCustomer: false,
+      });
     }
 
-    console.log(`[ConversationOrchestrator] Dispatch loop completed for conversation ${conversationId}`);
+    if (!owner) {
+      owner = CONVERSATION_OWNER.DEMAND_FINDER;
+      console.log(`[ConversationOrchestrator] No owner set, defaulting to ${owner}`);
+    }
+
+    const context: OrchestratorContext = {
+      event,
+      conversationId,
+      currentStatus,
+    };
+
+    await this.dispatchToOwner(context, owner);
+
+    await conversationStorage.updateOrchestratorState(conversationId, {
+      lastProcessedEventId: event.id,
+    });
+
+    console.log(`[ConversationOrchestrator] Completed processing for conversation ${conversationId}`);
   }
 
   private static isTerminalStatus(status: OrchestratorStatus): boolean {
-    return status === ORCHESTRATOR_STATUS.COMPLETED || 
-           status === ORCHESTRATOR_STATUS.ESCALATED || 
+    return status === ORCHESTRATOR_STATUS.ESCALATED || 
            status === ORCHESTRATOR_STATUS.CLOSED;
   }
 
-  private static async dispatchToAgent(context: OrchestratorContext): Promise<void> {
-    const { conversationId, currentStatus } = context;
+  private static async dispatchToOwner(context: OrchestratorContext, owner: ConversationOwner): Promise<void> {
+    const { conversationId } = context;
 
-    console.log(`[ConversationOrchestrator] Dispatching conversation ${conversationId} with status: ${currentStatus}`);
+    console.log(`[ConversationOrchestrator] Dispatching to ${owner} for conversation ${conversationId}`);
 
-    switch (currentStatus) {
-      case ORCHESTRATOR_STATUS.NEW:
-      case ORCHESTRATOR_STATUS.FINDING_DEMAND:
-      case ORCHESTRATOR_STATUS.AWAITING_CUSTOMER_REPLY:
+    switch (owner) {
+      case CONVERSATION_OWNER.DEMAND_FINDER:
         await DemandFinderAgent.process(context);
         break;
 
-      case ORCHESTRATOR_STATUS.DEMAND_CONFIRMED:
-      case ORCHESTRATOR_STATUS.PROVIDING_SOLUTION:
-      case ORCHESTRATOR_STATUS.AWAITING_SOLUTION_INPUTS:
+      case CONVERSATION_OWNER.SOLUTION_PROVIDER:
         await SolutionProviderAgent.process(context);
         break;
 
-      case ORCHESTRATOR_STATUS.FINALIZING:
+      case CONVERSATION_OWNER.CLOSER:
         await CloserAgent.process(context);
         break;
 
       default:
-        console.log(`[ConversationOrchestrator] Unknown status ${currentStatus}, defaulting to DemandFinder`);
+        console.log(`[ConversationOrchestrator] Unknown owner ${owner}, defaulting to DemandFinder`);
         await DemandFinderAgent.process(context);
     }
   }

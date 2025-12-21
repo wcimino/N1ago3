@@ -5,7 +5,7 @@ import { getClientRequestVersions, getSearchQueries, getCustomerRequestType, bui
 import { EnrichmentService } from "../services/enrichmentService.js";
 import { StatusController } from "../statusController.js";
 import { ActionExecutor } from "../actionExecutor.js";
-import { ORCHESTRATOR_STATUS, type DemandFinderAgentResult, type OrchestratorContext, type OrchestratorAction } from "../types.js";
+import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type DemandFinderAgentResult, type OrchestratorContext, type OrchestratorAction } from "../types.js";
 import { searchSolutionCenter } from "../../../../../shared/services/solutionCenterClient.js";
 
 const CONFIG_KEY = "demand_finder";
@@ -61,13 +61,17 @@ export class DemandFinderAgent {
       // Step 4: Evaluate if demand is understood
       const evaluation = await StatusController.evaluateDemandUnderstood(conversationId, context);
 
-      // Step 5: If understood -> confirm demand and exit
+      // Step 5: If understood -> confirm demand and transition to solution provider
       if (evaluation.canTransition) {
         console.log(`[DemandFinderAgent] Demand confirmed - ${evaluation.reason}`);
         
-        await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.DEMAND_CONFIRMED);
+        await conversationStorage.updateOrchestratorState(conversationId, {
+          orchestratorStatus: ORCHESTRATOR_STATUS.PROVIDING_SOLUTION,
+          conversationOwner: CONVERSATION_OWNER.SOLUTION_PROVIDER,
+          waitingForCustomer: false,
+        });
         await caseDemandStorage.updateStatus(conversationId, "demand_found");
-        context.currentStatus = ORCHESTRATOR_STATUS.DEMAND_CONFIRMED;
+        context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
         
         return {
           success: true,
@@ -134,8 +138,12 @@ export class DemandFinderAgent {
       await ActionExecutor.execute(context, [action]);
       const messageSent = true;
 
-      await conversationStorage.updateOrchestratorStatus(conversationId, ORCHESTRATOR_STATUS.AWAITING_CUSTOMER_REPLY);
-      context.currentStatus = ORCHESTRATOR_STATUS.AWAITING_CUSTOMER_REPLY;
+      await conversationStorage.updateOrchestratorState(conversationId, {
+        orchestratorStatus: ORCHESTRATOR_STATUS.FINDING_DEMAND,
+        conversationOwner: CONVERSATION_OWNER.DEMAND_FINDER,
+        waitingForCustomer: true,
+      });
+      context.currentStatus = ORCHESTRATOR_STATUS.FINDING_DEMAND;
       
       return {
         success: true,
