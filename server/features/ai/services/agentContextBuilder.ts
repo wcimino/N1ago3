@@ -9,8 +9,7 @@ import {
   type ContentPayload 
 } from "./promptUtils.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
-import { runCombinedKnowledgeSearch } from "./tools/combinedKnowledgeSearchTool.js";
-import { resolveProductById, resolveProductByName, getCustomerMainComplaint } from "./helpers/index.js";
+import { resolveProductById, resolveProductByName } from "./helpers/index.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 import type { AgentContext, BuildContextOptions } from "./agentTypes.js";
 import memoize from "memoizee";
@@ -174,48 +173,6 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
       matched_terms: r.matchedTerms || []
     }));
     artigosProblemasListaTop10 = JSON.stringify(formattedResults10, null, 2);
-  } else if (context.classification?.product && context.summary) {
-    // Fallback: buscar se não foram fornecidos
-    try {
-      const customerMainComplaint = getCustomerMainComplaint(context.summary);
-      
-      if (customerMainComplaint) {
-        const resolved = await resolveProductByName(
-          context.classification.product,
-          context.classification.subproduct
-        );
-        
-        const searchResult = await runCombinedKnowledgeSearch({
-          productId: resolved?.id,
-          conversationContext: customerMainComplaint,
-          limit: 10
-        });
-        
-        if (searchResult.results.length > 0) {
-          const formattedResults5 = searchResult.results.slice(0, 5).map(r => ({
-            tipo: "problema",
-            id: r.id,
-            nome: r.question || r.answer,
-            descricao: r.answer,
-            score: r.matchScore || 0,
-            matched_terms: r.matchedTerms || []
-          }));
-          artigosProblemasListaTop5 = JSON.stringify(formattedResults5, null, 2);
-          
-          const formattedResults10 = searchResult.results.slice(0, 10).map(r => ({
-            tipo: "problema",
-            id: r.id,
-            nome: r.question || r.answer,
-            descricao: r.answer,
-            score: r.matchScore || 0,
-            matched_terms: r.matchedTerms || []
-          }));
-          artigosProblemasListaTop10 = JSON.stringify(formattedResults10, null, 2);
-        }
-      }
-    } catch (error) {
-      console.error('[AgentFramework] Error fetching articles/problems for context:', error);
-    }
   }
 
   let produtoESubprodutoMatch: string | null = null;
