@@ -122,7 +122,10 @@ export class DemandFinderAgent {
           waitingForCustomer: false,
         });
         await caseDemandStorage.updateStatus(conversationId, "demand_found");
+        
         context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
+        context.demandFound = true;
+        context.rootCauseId = parseInt(promptResult.selected_intent.id, 10) || undefined;
         
         return {
           success: true,

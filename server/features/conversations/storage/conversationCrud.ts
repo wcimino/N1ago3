@@ -5,6 +5,7 @@ import type { ExtractedConversation } from "../../events/adapters/types.js";
 import { CONVERSATION_RULES, type ClosedReason } from "../../../config/conversationRules.js";
 import { ZendeskApiService } from "../../external-sources/zendesk/services/zendeskApiService.js";
 import { createConversationClosedEvent } from "./conversationEvents.js";
+import { isValidOwnerTransition, type ConversationOwner } from "../../ai/services/conversationOrchestrator/types.js";
 
 interface ConversationData {
   externalConversationId: string;
@@ -406,6 +407,14 @@ export const conversationCrud = {
       updateData.orchestratorStatus = state.orchestratorStatus;
     }
     if (state.conversationOwner !== undefined) {
+      const currentState = await this.getOrchestratorState(conversationId);
+      const currentOwner = currentState.conversationOwner as ConversationOwner | null;
+      const newOwner = state.conversationOwner as ConversationOwner | null;
+      
+      if (!isValidOwnerTransition(currentOwner, newOwner)) {
+        console.warn(`[ConversationStorage] Invalid owner transition for conversation ${conversationId}: ${currentOwner} -> ${newOwner}`);
+      }
+      
       updateData.conversationOwner = state.conversationOwner;
     }
     if (state.waitingForCustomer !== undefined) {

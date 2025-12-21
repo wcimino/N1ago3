@@ -8,6 +8,36 @@ export const CONVERSATION_OWNER = {
 
 export type ConversationOwner = typeof CONVERSATION_OWNER[keyof typeof CONVERSATION_OWNER];
 
+const VALID_OWNER_TRANSITIONS: Record<ConversationOwner | "null", (ConversationOwner | null)[]> = {
+  "null": [CONVERSATION_OWNER.DEMAND_FINDER],
+  [CONVERSATION_OWNER.DEMAND_FINDER]: [CONVERSATION_OWNER.SOLUTION_PROVIDER, null],
+  [CONVERSATION_OWNER.SOLUTION_PROVIDER]: [CONVERSATION_OWNER.CLOSER, CONVERSATION_OWNER.DEMAND_FINDER, null],
+  [CONVERSATION_OWNER.CLOSER]: [CONVERSATION_OWNER.DEMAND_FINDER, null],
+};
+
+export function isValidOwnerTransition(
+  from: ConversationOwner | null,
+  to: ConversationOwner | null
+): boolean {
+  if (from === to) return true;
+  
+  const fromKey = from === null ? "null" : from;
+  const allowedTransitions = VALID_OWNER_TRANSITIONS[fromKey];
+  
+  if (!allowedTransitions) {
+    return false;
+  }
+  
+  return allowedTransitions.includes(to);
+}
+
+export interface DispatchResult {
+  success: boolean;
+  newOwner: ConversationOwner | null;
+  shouldContinue: boolean;
+  error?: string;
+}
+
 export const ORCHESTRATOR_STATUS = {
   NEW: "new",
   FINDING_DEMAND: "finding_demand",
