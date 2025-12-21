@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Route, Switch, Link, Redirect, useLocation } from "wouter";
 import { Home, Sparkles, Settings, LogOut, MessageCircle, BarChart3, Menu, X } from "lucide-react";
 import { useAuth, useConfirmation } from "./shared/hooks";
@@ -42,8 +42,12 @@ function MobileNavMenu({ isOpen, onClose, onLogout, toggleButtonRef }: { isOpen:
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, onClose, toggleButtonRef]);
 
+  const prevLocationRef = useRef(location);
   useEffect(() => {
-    onClose();
+    if (prevLocationRef.current !== location) {
+      prevLocationRef.current = location;
+      onClose();
+    }
   }, [location, onClose]);
 
   if (!isOpen) return null;
@@ -85,8 +89,12 @@ function AuthenticatedApp() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuToggleRef = useRef<HTMLButtonElement>(null);
 
-  const handleLogout = () => {
+  const closeMobileMenu = useCallback(() => {
     setMobileMenuOpen(false);
+  }, []);
+
+  const handleLogout = () => {
+    closeMobileMenu();
     confirmation.confirm({
       title: "Sair do sistema",
       message: "Tem certeza que deseja sair?",
@@ -153,7 +161,7 @@ function AuthenticatedApp() {
         
         <MobileNavMenu 
           isOpen={mobileMenuOpen} 
-          onClose={() => setMobileMenuOpen(false)} 
+          onClose={closeMobileMenu} 
           onLogout={handleLogout}
           toggleButtonRef={menuToggleRef}
         />
