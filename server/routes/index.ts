@@ -27,7 +27,7 @@ import actionsRoutes from "../features/knowledge/routes/actionsRoutes.js";
 import knowledgeSolutionsRoutes from "../features/knowledge/routes/knowledgeSolutionsRoutes.js";
 import rootCausesRoutes from "../features/knowledge/routes/rootCausesRoutes.js";
 
-import { zendeskArticlesRouter, zendeskSupportUsersRouter } from "../features/external-sources/zendesk/index.js";
+import { zendeskSupportUsersRouter } from "../features/external-sources/zendesk/index.js";
 
 import usersStandardRoutes from "../features/cadastro/routes/usersStandard.js";
 import organizationsStandardRoutes from "../features/cadastro/routes/organizationsStandard.js";
@@ -84,7 +84,6 @@ function registerKnowledgeRoutes(app: Express) {
 }
 
 function registerExternalSourcesRoutes(app: Express) {
-  app.use("/api/zendesk-articles", zendeskArticlesRouter);
   app.use("/api/external-data/zendesk-users", zendeskSupportUsersRouter);
 }
 

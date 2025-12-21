@@ -11,7 +11,6 @@ export { ActionSelectorModal } from "./ActionSelectorModal";
 export { SolutionListItem } from "./SolutionListItem";
 export { ArticleFormSection, type PrefilledArticleData } from "./ArticleFormSection";
 export { ArticlesHierarchyView } from "./ArticlesHierarchyView";
-export { ZendeskArticleCard } from "./ZendeskArticleCard";
 export { EmbeddingProgressPanel } from "./EmbeddingProgressPanel";
 export { SyncStatusBanner } from "./SyncStatusBanner";
 export { ArticleListItem } from "./ArticleListItem";

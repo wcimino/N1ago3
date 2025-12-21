@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { BookOpen, Lightbulb, Cloud, Database, AlertCircle, Play, Puzzle, Layers, GitBranch } from "lucide-react";
+import { BookOpen, Lightbulb, Database, AlertCircle, Play, Puzzle, Layers, GitBranch } from "lucide-react";
 import { ArticleFormSection, ArticlesHierarchyView, type PrefilledArticleData } from "../components";
 import { SuggestionsPage } from "./SuggestionsPage";
-import { ZendeskArticlesPage } from "./ZendeskArticlesPage";
 import { ObjectiveProblemsPage } from "./ObjectiveProblemsPage";
 import { ActionsPage } from "./ActionsPage";
 import { SolutionsPage } from "./SolutionsPage";
@@ -26,7 +25,6 @@ const problemSolutionTabs = [
 const baseTabs = [
   { id: "problems-solutions", label: "Problemas e Soluções", icon: <Layers className="w-4 h-4" /> },
   { id: "internal", label: "Base interna de Artigos", icon: <Database className="w-4 h-4" /> },
-  { id: "zendesk", label: "Base Zendesk", icon: <Cloud className="w-4 h-4" /> },
 ];
 
 export function KnowledgeBasePage() {
@@ -187,16 +185,9 @@ export function KnowledgeBasePage() {
         secondaryTabs={activeBaseTab === "problems-solutions" ? problemSolutionTabs : mainTabs}
         secondaryActiveTab={activeTab}
         onSecondaryTabChange={handleSecondaryTabChange}
-        showSecondaryTabs={activeBaseTab !== "zendesk"}
       />
 
-      {activeBaseTab === "zendesk" ? (
-        <div className="p-4">
-          <ZendeskArticlesPage />
-        </div>
-      ) : (
-        <>
-          {activeTab === "suggestions" ? (
+      {activeTab === "suggestions" ? (
             <div className="p-4">
               <SuggestionsPage />
             </div>
@@ -225,42 +216,40 @@ export function KnowledgeBasePage() {
               isLoading={createMutation.isPending || updateMutation.isPending}
             />
           ) : (
-            <ArticlesHierarchyView
-              isLoading={isLoading}
-              hierarchy={hierarchy}
-              expandedPaths={expandedPaths}
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              selectedProduct={selectedProduct}
-              handleProductChange={handleProductChange}
-              selectedSubjectId={selectedSubjectId}
-              handleSubjectChange={handleSubjectChange}
-              selectedIntentId={selectedIntentId}
-              setSelectedIntentId={setSelectedIntentId}
-              filteredSubjects={filteredSubjects}
-              filteredIntents={filteredIntents}
-              productOptions={(filters?.products || []).map(id => id.toString())}
-              togglePath={togglePath}
-              expandAllPaths={expandAllPaths}
-              collapseAllPaths={collapseAllPaths}
-              catalogStats={catalogStats}
-              embeddingStats={embeddingStats}
-              generateEmbeddingsMutation={generateEmbeddingsMutation}
-              intentViewCountMap={intentViewCountMap}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onAddArticle={handleAddArticle}
-              onAddSubject={handleAddSubject}
-              onAddIntent={handleAddIntent}
-              onEditIntent={handleEditIntent}
-              onEditSubject={handleEditSubject}
-              onDeleteSubject={handleDeleteSubject}
-              onDeleteIntent={handleDeleteIntent}
-              onToggleVisibility={handleToggleVisibility}
-              onToggleAutoReply={handleToggleAutoReply}
-            />
-          )}
-        </>
+        <ArticlesHierarchyView
+          isLoading={isLoading}
+          hierarchy={hierarchy}
+          expandedPaths={expandedPaths}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          selectedProduct={selectedProduct}
+          handleProductChange={handleProductChange}
+          selectedSubjectId={selectedSubjectId}
+          handleSubjectChange={handleSubjectChange}
+          selectedIntentId={selectedIntentId}
+          setSelectedIntentId={setSelectedIntentId}
+          filteredSubjects={filteredSubjects}
+          filteredIntents={filteredIntents}
+          productOptions={(filters?.products || []).map(id => id.toString())}
+          togglePath={togglePath}
+          expandAllPaths={expandAllPaths}
+          collapseAllPaths={collapseAllPaths}
+          catalogStats={catalogStats}
+          embeddingStats={embeddingStats}
+          generateEmbeddingsMutation={generateEmbeddingsMutation}
+          intentViewCountMap={intentViewCountMap}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onAddArticle={handleAddArticle}
+          onAddSubject={handleAddSubject}
+          onAddIntent={handleAddIntent}
+          onEditIntent={handleEditIntent}
+          onEditSubject={handleEditSubject}
+          onDeleteSubject={handleDeleteSubject}
+          onDeleteIntent={handleDeleteIntent}
+          onToggleVisibility={handleToggleVisibility}
+          onToggleAutoReply={handleToggleAutoReply}
+        />
       )}
 
       <InputModal
