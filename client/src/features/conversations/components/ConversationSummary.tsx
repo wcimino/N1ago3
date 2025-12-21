@@ -6,6 +6,7 @@ import {
   ObjectiveProblemsCard,
   SolutionCenterCard,
   TriageCard,
+  OrchestratorLogsCard,
   ClientRequestVersionsTooltip,
   emotionConfig,
   type SummaryData,
@@ -164,6 +165,10 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
               
               {summary.triage && (
                 <TriageCard triage={summary.triage} />
+              )}
+              
+              {summary.conversation_orchestrator_log && summary.conversation_orchestrator_log.length > 0 && (
+                <OrchestratorLogsCard logs={summary.conversation_orchestrator_log} />
               )}
               
               {!hasStructuredData && summary.text && (

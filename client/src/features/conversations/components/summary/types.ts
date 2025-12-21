@@ -13,6 +13,22 @@ export interface SolutionCenterResult {
   score: number;
 }
 
+export interface OrchestratorLogEntry {
+  turn: number;
+  timestamp: string;
+  agent: string;
+  state: {
+    status: string;
+    owner: string | null;
+    waitingForCustomer: boolean;
+  };
+  solutionCenterResults: number;
+  aiDecision: string | null;
+  aiReason: string | null;
+  action: string;
+  details?: Record<string, unknown>;
+}
+
 export interface SummaryData {
   product?: string | null;
   subproduct?: string | null;
@@ -34,6 +50,7 @@ export interface SummaryData {
   triage?: Triage | null;
   orchestrator_status?: string | null;
   demand_finder_status?: string | null;
+  conversation_orchestrator_log?: OrchestratorLogEntry[] | null;
 }
 
 export type { Triage, ObjectiveProblemIdentified };

@@ -7,5 +7,6 @@ export { RequestTypeRow, type RequestTypeRowProps } from "./RequestTypeRow";
 export { ObjectiveProblemsCard, type ObjectiveProblemsCardProps } from "./ObjectiveProblemsCard";
 export { SolutionCenterCard, type SolutionCenterCardProps } from "./SolutionCenterCard";
 export { TriageCard, type TriageCardProps } from "./TriageCard";
+export { OrchestratorLogsCard, type OrchestratorLogsCardProps } from "./OrchestratorLogsCard";
 export { emotionConfig, severityConfig } from "./config";
-export type { SummaryData, ClientRequestVersions, SolutionCenterResult } from "./types";
+export type { SummaryData, ClientRequestVersions, SolutionCenterResult, OrchestratorLogEntry } from "./types";
