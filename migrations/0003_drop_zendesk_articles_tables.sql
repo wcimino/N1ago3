@@ -10,6 +10,3 @@ DROP TABLE IF EXISTS zendesk_articles_statistics CASCADE;
 
 -- Drop main articles table
 DROP TABLE IF EXISTS zendesk_articles CASCADE;
-
--- Drop embedding generation logs (if exists)
-DROP TABLE IF EXISTS embedding_generation_logs CASCADE;

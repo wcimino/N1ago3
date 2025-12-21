@@ -1,5 +1,4 @@
 export { createKnowledgeBaseArticlesTool } from "./knowledgeBaseTool.js";
-export { createZendeskKnowledgeBaseTool, type ZendeskSearchContext } from "./zendeskKnowledgeBaseTool.js";
 export { createSubjectIntentTool } from "./subjectIntentTool.js";
 export { createProblemObjectiveTool, runProblemObjectiveSearch } from "./problemObjectiveTool.js";
 export type { ProblemSearchResult, ProblemSearchResponse } from "./problemObjectiveTool.js";

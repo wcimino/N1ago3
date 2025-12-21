@@ -80,7 +80,7 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **AI Agent Framework Patterns:** Centralized framework for running agents and saving suggestions.
     *   **Conversation-based Agents** (SummaryAgent, ClassificationAgent, DemandFinderAgent, SolutionProviderAgent, CloserAgent): Use `buildAgentContextFromEvent()` to build context from an `EventStandard`, then call `runAgent()` with the config key. This ensures consistent context construction, prompt variable population, and tool flag handling.
     *   **Non-conversation Agents** (TopicClassificationAgent): Operate on different contexts (intents, batch items) and use `callOpenAI()` directly with custom-built prompts. This is valid when the agent's input is not a conversation event.
-*   **External Sources & Knowledge Base Architecture:** Replicas of external data (e.g., Zendesk articles) and internal Q&A articles with embeddings.
+*   **External Sources & Knowledge Base Architecture:** Internal Q&A articles with embeddings. Solution Center API provides external knowledge retrieval.
 *   **RAG (Retrieval Augmented Generation):** Implements semantic search using OpenAI embeddings with pgvector and HNSW indexing, with fallbacks to full-text search.
 
 **Server Bootstrap & Initialization (December 2024):**

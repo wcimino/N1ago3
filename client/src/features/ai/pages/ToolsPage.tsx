@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { KnowledgeBaseSearchTool } from "../components/KnowledgeBaseSearchTool";
-import { ZendeskKnowledgeBaseSearchTool } from "../components/ZendeskKnowledgeBaseSearchTool";
 import { ProblemObjectiveSearchTool } from "../components/ProblemObjectiveSearchTool";
 import { CombinedKnowledgeSearchTool } from "../components/CombinedKnowledgeSearchTool";
 
@@ -21,11 +20,6 @@ export function ToolsPage() {
       <KnowledgeBaseSearchTool
         isExpanded={expandedTool === "knowledge_base"}
         onToggle={() => toggleTool("knowledge_base")}
-      />
-
-      <ZendeskKnowledgeBaseSearchTool
-        isExpanded={expandedTool === "zendesk_knowledge_base"}
-        onToggle={() => toggleTool("zendesk_knowledge_base")}
       />
 
       <ProblemObjectiveSearchTool
