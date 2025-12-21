@@ -22,13 +22,17 @@ const navItems = [
   { href: "/settings", label: "Config.", icon: Settings },
 ];
 
-function MobileNavMenu({ isOpen, onClose, onLogout }: { isOpen: boolean; onClose: () => void; onLogout: () => void }) {
+function MobileNavMenu({ isOpen, onClose, onLogout, toggleButtonRef }: { isOpen: boolean; onClose: () => void; onLogout: () => void; toggleButtonRef: React.RefObject<HTMLButtonElement> }) {
   const [location] = useLocation();
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (toggleButtonRef.current?.contains(target)) {
+        return;
+      }
+      if (menuRef.current && !menuRef.current.contains(target)) {
         onClose();
       }
     }
@@ -36,7 +40,7 @@ function MobileNavMenu({ isOpen, onClose, onLogout }: { isOpen: boolean; onClose
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, toggleButtonRef]);
 
   useEffect(() => {
     onClose();
@@ -79,6 +83,7 @@ function AuthenticatedApp() {
   const { user } = useAuth();
   const confirmation = useConfirmation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const menuToggleRef = useRef<HTMLButtonElement>(null);
 
   const handleLogout = () => {
     setMobileMenuOpen(false);
@@ -100,6 +105,7 @@ function AuthenticatedApp() {
         <div className="w-full px-3 sm:px-4 lg:px-8">
           <div className="flex items-center py-2 sm:py-3 gap-2">
             <button
+              ref={menuToggleRef}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg md:hidden"
               aria-label="Menu"
@@ -149,6 +155,7 @@ function AuthenticatedApp() {
           isOpen={mobileMenuOpen} 
           onClose={() => setMobileMenuOpen(false)} 
           onLogout={handleLogout}
+          toggleButtonRef={menuToggleRef}
         />
       </header>
 
