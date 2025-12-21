@@ -156,7 +156,7 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
   // Se searchResults já foram fornecidos no contexto, usar diretamente (evita busca duplicada)
   if (context.searchResults && context.searchResults.length > 0) {
     const formattedResults5 = context.searchResults.slice(0, 5).map(r => ({
-      tipo: r.source === "article" ? "artigo" : "problema",
+      tipo: "problema",
       id: r.id,
       nome: r.name || r.description,
       descricao: r.description,
@@ -166,7 +166,7 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
     artigosProblemasListaTop5 = JSON.stringify(formattedResults5, null, 2);
     
     const formattedResults10 = context.searchResults.slice(0, 10).map(r => ({
-      tipo: r.source === "article" ? "artigo" : "problema",
+      tipo: "problema",
       id: r.id,
       nome: r.name || r.description,
       descricao: r.description,
@@ -193,7 +193,7 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
         
         if (searchResult.results.length > 0) {
           const formattedResults5 = searchResult.results.slice(0, 5).map(r => ({
-            tipo: r.source === "article" ? "artigo" : "problema",
+            tipo: "problema",
             id: r.id,
             nome: r.question || r.answer,
             descricao: r.answer,
@@ -203,7 +203,7 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
           artigosProblemasListaTop5 = JSON.stringify(formattedResults5, null, 2);
           
           const formattedResults10 = searchResult.results.slice(0, 10).map(r => ({
-            tipo: r.source === "article" ? "artigo" : "problema",
+            tipo: "problema",
             id: r.id,
             nome: r.question || r.answer,
             descricao: r.answer,

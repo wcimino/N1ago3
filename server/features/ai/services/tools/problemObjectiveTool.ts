@@ -6,7 +6,6 @@ import {
   type SemanticSearchResult 
 } from "../../../knowledge/storage/objectiveProblemsStorage.js";
 import { generateEmbedding } from "../../../../shared/embeddings/index.js";
-import type { ToolDefinition } from "../openaiApiService.js";
 import { extractMatchedTerms } from "../../../../shared/utils/matchScoring.js";
 import { 
   type MultiQuerySearchQueries,
@@ -308,45 +307,3 @@ export async function runProblemObjectiveSearch(params: ProblemSearchParams): Pr
   };
 }
 
-export function createProblemObjectiveTool(): ToolDefinition {
-  return {
-    name: "search_knowledge_base_problem_objective",
-    description: "Busca problemas objetivos na base de conhecimento para identificar o problema real do cliente.",
-    parameters: {
-      type: "object",
-      properties: {
-        conversationContext: {
-          type: "string",
-          description: "Resumo ou contexto da conversa para busca semântica principal (obrigatório). A busca usa o contexto para encontrar problemas semanticamente relevantes."
-        },
-        product: {
-          type: "string",
-          description: "Nome do produto (obrigatório). Ex: 'Cartão de Crédito', 'Conta Digital'"
-        },
-        subproduct: {
-          type: "string",
-          description: "Nome do subproduto para filtrar (ex: 'Gold', 'Platinum')"
-        },
-        keywords: {
-          type: "string",
-          description: "Palavras-chave opcionais para filtrar/priorizar os resultados. Usado como boost sobre os resultados semânticos."
-        }
-      },
-      required: ["conversationContext", "product"]
-    },
-    handler: async (args: { product: string; subproduct?: string; conversationContext?: string; keywords?: string }) => {
-      const productContext = args.subproduct 
-        ? `${args.product} > ${args.subproduct}`
-        : args.product;
-      
-      console.log(`[ProblemObjectiveTool] Called with product="${args.product}", subproduct="${args.subproduct || 'none'}", productContext="${productContext}"`);
-      
-      const result = await runProblemObjectiveSearch({
-        productContext,
-        conversationContext: args.conversationContext,
-        keywords: args.keywords
-      });
-      return JSON.stringify(result);
-    }
-  };
-}

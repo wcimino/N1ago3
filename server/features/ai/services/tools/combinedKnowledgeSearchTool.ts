@@ -1,7 +1,5 @@
 import { runProblemObjectiveSearch } from "./problemObjectiveTool.js";
 import { productCatalogStorage } from "../../../products/storage/productCatalogStorage.js";
-import type { ToolDefinition } from "../openaiApiService.js";
-import { caseDemandStorage } from "../../storage/caseDemandStorage.js";
 import type { MultiQuerySearchQueries } from "../../../../shared/embeddings/multiQuerySearch.js";
 
 export interface CombinedSearchResult {
@@ -154,68 +152,3 @@ export async function runCombinedKnowledgeSearch(params: CombinedSearchParams): 
   };
 }
 
-export function createCombinedKnowledgeSearchTool(): ToolDefinition {
-  return createCombinedKnowledgeSearchToolWithContext(undefined);
-}
-
-export function createCombinedKnowledgeSearchToolWithContext(conversationId?: number): ToolDefinition {
-  return {
-    name: "search_knowledge_base_articles_and_problems",
-    description: "Busca problemas objetivos na base de conhecimento. Retorna resultados com indicação de origem (source: problem).",
-    parameters: {
-      type: "object",
-      properties: {
-        conversationContext: {
-          type: "string",
-          description: "Resumo ou contexto da conversa para busca semântica principal (obrigatório). A busca usa o contexto para encontrar resultados semanticamente relevantes."
-        },
-        product: {
-          type: "string",
-          description: "Nome do produto (obrigatório). Ex: 'Cartão de Crédito', 'Conta Digital'"
-        },
-        subproduct: {
-          type: "string",
-          description: "Nome do subproduto (opcional). Ex: 'PIX', 'TED', 'Crédito'"
-        }
-      },
-      required: ["conversationContext", "product"]
-    },
-    handler: async (args: { product: string; subproduct?: string; conversationContext?: string }) => {
-      const productContext = args.subproduct 
-        ? `${args.product} > ${args.subproduct}`
-        : args.product;
-      
-      console.log(`[Combined Knowledge Search Tool] Called with product="${args.product}", subproduct="${args.subproduct || 'none'}", productContext="${productContext}" (semantic, no filter)`);
-      
-      const result = await runCombinedKnowledgeSearch({
-        productContext,
-        conversationContext: args.conversationContext
-      });
-      
-      if (conversationId && result.results.length > 0) {
-        try {
-          const resultsForStorage = result.results.map(r => ({
-            source: r.source,
-            id: r.id,
-            name: r.question,
-            description: r.answer || "",
-            matchScore: r.matchScore,
-            matchReason: r.matchReason,
-            matchedTerms: r.matchedTerms,
-            products: r.products,
-          }));
-          const saveResult = await caseDemandStorage.updateArticlesAndProblems(conversationId, resultsForStorage);
-          if (saveResult.created) {
-            console.log(`[Combined Knowledge Search Tool] Created case_demand with ${result.problemCount} problems for conversation ${conversationId}`);
-          } else if (saveResult.updated) {
-            console.log(`[Combined Knowledge Search Tool] Updated case_demand with ${result.problemCount} problems for conversation ${conversationId}`);
-          }
-        } catch (error) {
-          console.error(`[Combined Knowledge Search Tool] Error saving results for conversation ${conversationId}:`, error);
-        }
-      }
-      
-      return JSON.stringify(result);
-    }
-  };
-}
