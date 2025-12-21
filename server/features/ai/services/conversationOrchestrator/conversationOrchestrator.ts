@@ -75,7 +75,12 @@ export class ConversationOrchestrator {
       dispatchCount++;
       console.log(`[ConversationOrchestrator] Dispatch ${dispatchCount}/${MAX_DISPATCHES_PER_EVENT} to ${currentOwner} for conversation ${conversationId}`);
 
+      const stateBeforeDispatch = await conversationStorage.getOrchestratorState(conversationId);
+      context.lastDispatchLog = undefined;
+
       const result = await this.dispatchToOwner(context, currentOwner);
+
+      await this.saveDispatchLog(conversationId, dispatchCount, currentOwner, stateBeforeDispatch, context, result);
 
       if (!result.success) {
         console.error(`[ConversationOrchestrator] Dispatch to ${currentOwner} failed: ${result.error}`);
@@ -101,6 +106,41 @@ export class ConversationOrchestrator {
 
     if (dispatchCount >= MAX_DISPATCHES_PER_EVENT) {
       console.warn(`[ConversationOrchestrator] Max dispatches (${MAX_DISPATCHES_PER_EVENT}) reached for conversation ${conversationId}, stopping to prevent infinite loop`);
+    }
+  }
+
+  private static async saveDispatchLog(
+    conversationId: number,
+    turn: number,
+    agent: ConversationOwner,
+    stateBeforeDispatch: { orchestratorStatus: string | null; conversationOwner: string | null; waitingForCustomer: boolean },
+    context: OrchestratorContext,
+    result: DispatchResult
+  ): Promise<void> {
+    try {
+      const logData = context.lastDispatchLog;
+      
+      await conversationStorage.appendOrchestratorLog(conversationId, {
+        turn,
+        agent,
+        state: {
+          status: stateBeforeDispatch.orchestratorStatus || "new",
+          owner: stateBeforeDispatch.conversationOwner,
+          waitingForCustomer: stateBeforeDispatch.waitingForCustomer,
+        },
+        solutionCenterResults: logData?.solutionCenterResults ?? 0,
+        aiDecision: logData?.aiDecision ?? null,
+        aiReason: logData?.aiReason ?? null,
+        action: logData?.action ?? (result.success ? "completed" : "failed"),
+        details: {
+          ...logData?.details,
+          newOwner: result.newOwner,
+          shouldContinue: result.shouldContinue,
+          error: result.error,
+        },
+      });
+    } catch (error) {
+      console.error(`[ConversationOrchestrator] Failed to save dispatch log:`, error);
     }
   }
 

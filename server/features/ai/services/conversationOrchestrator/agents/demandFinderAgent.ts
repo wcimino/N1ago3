@@ -127,6 +127,14 @@ export class DemandFinderAgent {
         context.demandFound = true;
         context.rootCauseId = parseInt(promptResult.selected_intent.id, 10) || undefined;
         
+        context.lastDispatchLog = {
+          solutionCenterResults: searchResult.results?.length ?? 0,
+          aiDecision: promptResult.decision,
+          aiReason: promptResult.reason,
+          action: "demand_confirmed",
+          details: { selectedIntentId: promptResult.selected_intent.id, selectedIntentLabel: promptResult.selected_intent.label },
+        };
+        
         return {
           success: true,
           demandConfirmed: true,
@@ -143,6 +151,15 @@ export class DemandFinderAgent {
       if (currentInteractionCount >= MAX_INTERACTIONS) {
         console.log(`[DemandFinderAgent] Max interactions already reached, escalating`);
         await this.escalateConversation(conversationId, context, "Max interactions reached");
+        
+        context.lastDispatchLog = {
+          solutionCenterResults: searchResult.results?.length ?? 0,
+          aiDecision: promptResult.decision,
+          aiReason: promptResult.reason,
+          action: "escalated_max_interactions",
+          details: { interactionCount: currentInteractionCount, maxInteractions: MAX_INTERACTIONS },
+        };
+        
         return {
           success: true,
           demandConfirmed: false,
@@ -198,6 +215,14 @@ export class DemandFinderAgent {
         waitingForCustomer: true,
       });
       context.currentStatus = ORCHESTRATOR_STATUS.FINDING_DEMAND;
+      
+      context.lastDispatchLog = {
+        solutionCenterResults: searchResult.results?.length ?? 0,
+        aiDecision: promptResult.decision,
+        aiReason: promptResult.reason,
+        action: "sent_clarification",
+        details: { interactionCount: newInteractionCount, maxInteractions: MAX_INTERACTIONS, suggestionId },
+      };
       
       return {
         success: true,

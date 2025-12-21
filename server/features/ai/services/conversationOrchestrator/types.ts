@@ -128,6 +128,13 @@ export interface OrchestratorContext {
   caseSolutionId?: number;
   demandFound?: boolean;
   actions?: OrchestratorAction[];
+  lastDispatchLog?: {
+    solutionCenterResults: number;
+    aiDecision: string | null;
+    aiReason: string | null;
+    action: string;
+    details?: Record<string, unknown>;
+  };
 }
 
 export type OrchestratorAction = 
