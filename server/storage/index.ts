@@ -6,7 +6,6 @@ import { eventStorage } from "../features/events/storage/eventStorage.js";
 import { usersStandardStorage } from "../features/cadastro/storage/usersStandardStorage.js";
 import { organizationsStandardStorage } from "../features/cadastro/storage/organizationsStandardStorage.js";
 import { knowledgeBaseStorage } from "../features/ai/storage/knowledgeBaseStorage.js";
-import { knowledgeSuggestionsStorage } from "../features/ai/storage/knowledgeSuggestionsStorage.js";
 import { configStorage } from "../features/ai/storage/configStorage.js";
 import { classificationStorage } from "../features/ai/storage/classificationStorage.js";
 import { summaryStorage } from "../features/ai/storage/summaryStorage.js";
@@ -23,7 +22,6 @@ export const storage = {
   ...summaryStorage,
   ...usersStandardStorage,
   ...knowledgeBaseStorage,
-  ...knowledgeSuggestionsStorage,
   ...organizationsStandardStorage,
 };
 
@@ -35,6 +33,5 @@ export { eventStorage } from "../features/events/storage/eventStorage.js";
 export { usersStandardStorage } from "../features/cadastro/storage/usersStandardStorage.js";
 export { organizationsStandardStorage } from "../features/cadastro/storage/organizationsStandardStorage.js";
 export { knowledgeBaseStorage } from "../features/ai/storage/knowledgeBaseStorage.js";
-export { knowledgeSuggestionsStorage } from "../features/ai/storage/knowledgeSuggestionsStorage.js";
 export { configStorage } from "../features/ai/storage/configStorage.js";
 export { webhookStorage } from "../features/export/storage/webhookStorage.js";

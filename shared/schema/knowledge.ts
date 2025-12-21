@@ -95,43 +95,6 @@ export const knowledgeBaseObjectiveProblemsEmbeddings = pgTable("knowledge_base_
   contentHashIdx: index("idx_kb_objective_problems_embeddings_content_hash").on(table.contentHash),
 }));
 
-export const knowledgeSuggestions = pgTable("knowledge_suggestions", {
-  id: serial("id").primaryKey(),
-  conversationId: integer("conversation_id"),
-  externalConversationId: text("external_conversation_id"),
-  suggestionType: text("suggestion_type").default("create").notNull(),
-  name: text("name"),
-  productStandard: text("product_standard"),
-  subproductStandard: text("subproduct_standard"),
-  description: text("description"),
-  resolution: text("resolution"),
-  internalActions: text("internal_actions"),
-  observations: text("observations"),
-  question: text("question"),
-  answer: text("answer"),
-  keywords: text("keywords"),
-  questionVariation: json("question_variation").$type<string[]>().default([]),
-  confidenceScore: integer("confidence_score"),
-  qualityFlags: json("quality_flags"),
-  similarArticleId: integer("similar_article_id"),
-  similarityScore: integer("similarity_score"),
-  updateReason: text("update_reason"),
-  status: text("status").default("pending").notNull(),
-  reviewedBy: text("reviewed_by"),
-  reviewedAt: timestamp("reviewed_at"),
-  rejectionReason: text("rejection_reason"),
-  conversationHandler: text("conversation_handler"),
-  extractedFromMessages: json("extracted_from_messages"),
-  rawExtraction: json("raw_extraction"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  statusIdx: index("idx_knowledge_suggestions_status").on(table.status),
-  conversationIdx: index("idx_knowledge_suggestions_conversation").on(table.conversationId),
-  productIdx: index("idx_knowledge_suggestions_product").on(table.productStandard),
-  createdAtIdx: index("idx_knowledge_suggestions_created_at").on(table.createdAt),
-}));
-
 export const knowledgeSubjects = pgTable("knowledge_subjects", {
   id: serial("id").primaryKey(),
   productCatalogId: integer("product_catalog_id").notNull().references(() => productsCatalog.id),
@@ -305,8 +268,6 @@ export type KnowledgeBaseObjectiveProblemsHasProductsCatalog = typeof knowledgeB
 export type InsertKnowledgeBaseObjectiveProblemsHasProductsCatalog = Omit<typeof knowledgeBaseObjectiveProblemsHasProductsCatalog.$inferInsert, "id" | "createdAt">;
 export type KnowledgeBaseObjectiveProblemsEmbedding = typeof knowledgeBaseObjectiveProblemsEmbeddings.$inferSelect;
 export type InsertKnowledgeBaseObjectiveProblemsEmbedding = typeof knowledgeBaseObjectiveProblemsEmbeddings.$inferInsert;
-export type KnowledgeSuggestion = typeof knowledgeSuggestions.$inferSelect;
-export type InsertKnowledgeSuggestion = Omit<typeof knowledgeSuggestions.$inferInsert, "id" | "createdAt" | "updatedAt">;
 export type KnowledgeSubject = typeof knowledgeSubjects.$inferSelect;
 export type InsertKnowledgeSubject = Omit<typeof knowledgeSubjects.$inferInsert, "id" | "createdAt" | "updatedAt">;
 export type KnowledgeIntent = typeof knowledgeIntents.$inferSelect;

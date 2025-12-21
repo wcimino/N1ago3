@@ -3,13 +3,11 @@ import { createKnowledgeBaseArticlesTool } from "./tools/knowledgeBaseTool.js";
 import { createSubjectIntentTool } from "./tools/subjectIntentTool.js";
 import { createProblemObjectiveTool } from "./tools/problemObjectiveTool.js";
 import { createCombinedKnowledgeSearchToolWithContext } from "./tools/combinedKnowledgeSearchTool.js";
-import { createKnowledgeSuggestionTool } from "./tools/knowledgeSuggestionTool.js";
 
 export { createKnowledgeBaseArticlesTool } from "./tools/knowledgeBaseTool.js";
 export { createSubjectIntentTool } from "./tools/subjectIntentTool.js";
 export { createProblemObjectiveTool } from "./tools/problemObjectiveTool.js";
 export { createCombinedKnowledgeSearchToolWithContext as createCombinedKnowledgeSearchTool } from "./tools/combinedKnowledgeSearchTool.js";
-export { createKnowledgeSuggestionTool } from "./tools/knowledgeSuggestionTool.js";
 
 export interface ToolFlagsContext {
   conversationId?: number;
@@ -20,7 +18,6 @@ export interface ToolFlags {
   useSubjectIntentTool?: boolean;
   useObjectiveProblemTool?: boolean;
   useCombinedKnowledgeSearchTool?: boolean;
-  useKnowledgeSuggestionTool?: boolean;
 }
 
 export function buildToolsFromFlags(flags: ToolFlags, context?: ToolFlagsContext): ToolDefinition[] {
@@ -40,10 +37,6 @@ export function buildToolsFromFlags(flags: ToolFlags, context?: ToolFlagsContext
   
   if (flags.useCombinedKnowledgeSearchTool) {
     tools.push(createCombinedKnowledgeSearchToolWithContext(context?.conversationId));
-  }
-  
-  if (flags.useKnowledgeSuggestionTool) {
-    tools.push(createKnowledgeSuggestionTool());
   }
   
   return tools;

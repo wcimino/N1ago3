@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { BookOpen, Lightbulb, Database, AlertCircle, Play, Puzzle, Layers, GitBranch } from "lucide-react";
+import { BookOpen, Database, AlertCircle, Play, Puzzle, Layers, GitBranch } from "lucide-react";
 import { ArticleFormSection, ArticlesHierarchyView, type PrefilledArticleData } from "../components";
-import { SuggestionsPage } from "./SuggestionsPage";
 import { ObjectiveProblemsPage } from "./ObjectiveProblemsPage";
 import { ActionsPage } from "./ActionsPage";
 import { SolutionsPage } from "./SolutionsPage";
@@ -9,11 +8,6 @@ import { RootCausesPage } from "./RootCausesPage";
 import { PageHeader, InputModal } from "../../../shared/components/ui";
 import { ConfirmModal } from "../../../shared/components/ui/ConfirmModal";
 import { useKnowledgeBase, useSubjectIntentMutations, type InputModalState, type ConfirmModalState } from "../hooks";
-
-const mainTabs = [
-  { id: "articles", label: "Artigos", icon: <BookOpen className="w-4 h-4" /> },
-  { id: "suggestions", label: "Sugestões", icon: <Lightbulb className="w-4 h-4" /> },
-];
 
 const problemSolutionTabs = [
   { id: "problems", label: "Problemas", icon: <AlertCircle className="w-4 h-4" /> },
@@ -182,16 +176,13 @@ export function KnowledgeBasePage() {
         primaryTabs={baseTabs}
         primaryActiveTab={activeBaseTab}
         onPrimaryTabChange={handleBaseTabChange}
-        secondaryTabs={activeBaseTab === "problems-solutions" ? problemSolutionTabs : mainTabs}
+        secondaryTabs={problemSolutionTabs}
+        showSecondaryTabs={activeBaseTab === "problems-solutions"}
         secondaryActiveTab={activeTab}
         onSecondaryTabChange={handleSecondaryTabChange}
       />
 
-      {activeTab === "suggestions" ? (
-            <div className="p-4">
-              <SuggestionsPage />
-            </div>
-          ) : activeTab === "problems" ? (
+      {activeTab === "problems" ? (
             <div className="p-4">
               <ObjectiveProblemsPage />
             </div>
