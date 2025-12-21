@@ -72,7 +72,7 @@ export class DemandFinderAgent {
       
       if (searchResult.failed) {
         console.log(`[DemandFinderAgent] Solution Center API failed after 3 retries, escalating`);
-        await this.escalateConversation(conversationId, context, "Solution Center API failed after 3 retries");
+        await this.escalateConversation(conversationId, context, "Solution Center API failed after 3 retries", { sendApologyMessage: true });
         return {
           success: true,
           demandConfirmed: false,
@@ -150,7 +150,7 @@ export class DemandFinderAgent {
 
       if (currentInteractionCount >= MAX_INTERACTIONS) {
         console.log(`[DemandFinderAgent] Max interactions already reached, escalating`);
-        await this.escalateConversation(conversationId, context, "Max interactions reached");
+        await this.escalateConversation(conversationId, context, "Max interactions reached", { sendApologyMessage: true });
         
         context.lastDispatchLog = {
           solutionCenterResults: searchResult.results?.length ?? 0,
@@ -402,16 +402,32 @@ export class DemandFinderAgent {
   private static async escalateConversation(
     conversationId: number,
     context: OrchestratorContext,
-    reason: string
+    reason: string,
+    options?: { sendApologyMessage?: boolean }
   ): Promise<void> {
     console.log(`[DemandFinderAgent] Escalating conversation ${conversationId}: ${reason}`);
-    await conversationStorage.updateOrchestratorState(conversationId, {
-      orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
-      conversationOwner: null,
-      waitingForCustomer: false,
-    });
+    
+    const shouldSendApologyMessage = options?.sendApologyMessage ?? false;
+    
+    if (shouldSendApologyMessage) {
+      const apologyMessage = "Desculpe, não consegui entender sua solicitação. Vou te transferir para um humano continuar o atendimento, aguarde um momento...";
+      const transferAction: OrchestratorAction = {
+        type: "TRANSFER_TO_HUMAN",
+        payload: { reason, message: apologyMessage }
+      };
+      await ActionExecutor.execute(context, [transferAction]);
+    }
+    
+    if (context.currentStatus !== ORCHESTRATOR_STATUS.ESCALATED) {
+      await conversationStorage.updateOrchestratorState(conversationId, {
+        orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
+        conversationOwner: null,
+        waitingForCustomer: false,
+      });
+      context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
+    }
+    
     await caseDemandStorage.updateStatus(conversationId, "demand_not_found");
-    context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
   }
 
   private static async callDemandFinderPrompt(context: OrchestratorContext): Promise<(DemandFinderPromptResult & { suggestionId?: number }) | null> {
