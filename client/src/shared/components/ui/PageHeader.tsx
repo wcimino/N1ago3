@@ -17,6 +17,10 @@ interface PageHeaderProps {
   secondaryActiveTab?: string;
   onSecondaryTabChange?: (tabId: string) => void;
   showSecondaryTabs?: boolean;
+  tertiaryTabs?: Tab[];
+  tertiaryActiveTab?: string;
+  onTertiaryTabChange?: (tabId: string) => void;
+  tertiaryLabel?: string;
 }
 
 export function PageHeader({
@@ -29,6 +33,10 @@ export function PageHeader({
   secondaryActiveTab = "",
   onSecondaryTabChange,
   showSecondaryTabs = true,
+  tertiaryTabs,
+  tertiaryActiveTab = "",
+  onTertiaryTabChange,
+  tertiaryLabel,
 }: PageHeaderProps) {
   return (
     <>
@@ -52,6 +60,22 @@ export function PageHeader({
             tabs={secondaryTabs}
             activeTab={secondaryActiveTab}
             onChange={onSecondaryTabChange}
+            iconOnlyMobile
+            wrapMobile
+          />
+        </div>
+      )}
+      {tertiaryTabs && onTertiaryTabChange && (
+        <div className="px-4 py-3 border-b">
+          {tertiaryLabel && (
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2 block">
+              {tertiaryLabel}
+            </span>
+          )}
+          <SegmentedTabs
+            tabs={tertiaryTabs}
+            activeTab={tertiaryActiveTab}
+            onChange={onTertiaryTabChange}
             iconOnlyMobile
             wrapMobile
           />
