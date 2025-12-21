@@ -91,16 +91,6 @@ export interface DemandFinderAgentResult extends AgentResult {
   providedInputs?: Record<string, unknown>;
 }
 
-export interface SolutionProviderAgentResult extends AgentResult {
-  resolved: boolean;
-  solution?: string;
-  confidence?: number;
-  needsEscalation: boolean;
-  escalationReason?: string;
-  suggestedResponse?: string;
-  suggestionId?: number;
-}
-
 export interface CloserAgentResult extends AgentResult {
   wantsMoreHelp: boolean;
   suggestedResponse?: string;

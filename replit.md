@@ -17,7 +17,7 @@ The system employs a decoupled architecture with a React, TypeScript, Vite, Tail
 *   **AI-Powered Features:** A unified architecture supports various AI capabilities (summarization, classification, response generation, knowledge search) using centralized OpenAI services and automatic API call logging.
 *   **ConversationOrchestrator Pipeline:** Manages conversation flow using a 2-field state model (`conversation_owner` + `waiting_for_customer`) with defined owner transition validations and status values.
 *   **Case Solution and Demand Architecture:** `case_solutions` table tracks solution instances; `case_demand` stores customer demands per conversation, supporting multiple demands and interaction counts.
-*   **Shared Embeddings Architecture:** Centralized embeddings layer for standardized generation, content hashing, and processing across knowledge sources.
+*   **External Knowledge via Solution Center API:** All knowledge retrieval uses the external Solution Center API; no internal knowledge base or embeddings.
 
 **UI/UX Decisions:**
 
@@ -35,8 +35,7 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **AutoPilot:** Automatically sends suggested responses based on conditions.
 *   **SendMessageService:** Centralized message sending controller for all outbound messages to customers.
 *   **ResponseFormatterService:** Adjusts tone of voice for outbound messages using an AI agent's configuration.
-*   **Objective Problems Catalog:** Normalized catalog of evidence-based problems.
-*   **Solution Center Integration:** External KB API integration for DemandFinder's article and problem search, storing results in `solution_center_articles_and_problems`.
+*   **Solution Center Integration:** External KB API integration (Solution Center) for DemandFinder's article and problem search, storing results in `solution_center_articles_and_problems`. This is the sole knowledge source - no internal knowledge base.
 *   **Scheduled Maintenance Services:** Daily scheduled tasks for archiving old data and performing database vacuuming.
 *   **Server Bootstrap & Initialization:** Includes preflight checks for environment variables, granular scheduler control via flags, an enhanced `/ready` endpoint, and production static file verification.
 
@@ -50,13 +49,9 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **Backend Feature Architecture:** Each feature module contains `routes/`, `storage/`, and `services/`.
 *   **Idempotent Event Creation:** Ensures unique event processing.
 *   **Modular AI Tools and Prompts:** AI tools in individual files; prompt variables centralized.
-*   **Unified Knowledge Base Search Helper:** Single entry point for knowledge base searches with semantic and full-text search.
-*   **Hybrid Search Architecture:** Knowledge base tools support hybrid search using `conversationContext`, optional `keywords`, and text-based fallback.
-*   **Multi-Query Search Architecture:** Knowledge base articles and objective problems use a multi-query search approach (verbatim, keyword, normalized).
-*   **OpenAI Services Architecture:** Centralized services provide wrappers for `chat()`, `chatWithTools()`, and `embedding()` with automatic logging.
+*   **OpenAI Services Architecture:** Centralized services provide wrappers for `chat()` and `chatWithTools()` with automatic logging.
 *   **AI Agent Framework Patterns:** Centralized framework for running agents and saving suggestions, differentiating between conversation-based and non-conversation agents.
-*   **External Sources & Knowledge Base Architecture:** Solution Center API provides external knowledge retrieval; internal Q&A articles with embeddings.
-*   **RAG (Retrieval Augmented Generation):** Implements semantic search using OpenAI embeddings with pgvector and HNSW indexing, with fallbacks to full-text search.
+*   **External Knowledge Architecture:** All knowledge retrieval uses the external Solution Center API exclusively (no internal knowledge base).
 
 ## External Dependencies
 
@@ -74,4 +69,4 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **date-fns:** JavaScript date utility library.
 *   **wouter:** Lightweight React router.
 *   **AI Services (Chat):** Utilizes Replit AI Integrations (default) or OpenAI (fallback).
-*   **OpenAI API:** Used for embeddings.
+*   **OpenAI API:** Used for AI chat capabilities.
