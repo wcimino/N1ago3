@@ -79,7 +79,7 @@ export const productCatalogStorage = {
 
       // When subproduct is provided in the search, prioritize subproduct matches
       if (subproductLower) {
-        if (p.subproduto) {
+        if (p.subproduto && subprodutoLower) {
           const subMatch = subproductLower === subprodutoLower || 
                            subproductLower.includes(subprodutoLower) || 
                            subprodutoLower.includes(subproductLower);
