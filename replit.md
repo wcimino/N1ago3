@@ -32,7 +32,7 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **AI Integrations:** Includes Conversation Summaries, Product Classification, API Logging, and Configurable Triggers.
 *   **Four-Field Classification System:** Hierarchical conversation classification (Product → Subproduct → Subject → Intent) using sequential AI tools.
 *   **Structured Conversation Summary:** Displays AI-generated summaries with specific structured fields.
-*   **Automatic Routing Rules:** Unified routing system for conversation allocation (`n1ago`, `human`, `bot`) with Zendesk Switchboard API integration.
+*   **Inbound Conversation Routing:** Fast routing system (`inboundConversationRouting.ts`) that processes routing rules at the very start of webhook processing, before any enrichment operations. Routes conversations to `n1ago`, `human`, or `bot` using Zendesk Switchboard API. Designed for minimal latency (~1-10ms).
 *   **AutoPilot:** Automatically sends suggested responses based on conditions.
 *   **SendMessageService:** Centralized message sending controller for all outbound messages to customers.
 *   **ResponseFormatterService:** Adjusts tone of voice for outbound messages using an AI agent's configuration.
