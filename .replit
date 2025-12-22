@@ -85,7 +85,7 @@ SOLUTION_CENTER_API_TOKEN = "41601cecf49044bc3d12262e16b3289d0b3696f006013733a63
 [userenv.shared]
 
 [deployment]
-deploymentTarget = "vm"
+deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
 run = ["npm", "run", "start"]
 
