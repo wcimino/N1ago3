@@ -1,1 +1,0 @@
-ALTER TABLE "openai_api_config" ADD COLUMN "use_objective_problem_tool" boolean DEFAULT false NOT NULL;
