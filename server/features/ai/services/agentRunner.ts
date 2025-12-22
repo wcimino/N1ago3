@@ -2,8 +2,6 @@ import { storage } from "../../../storage/index.js";
 import { callOpenAI } from "./openaiApiService.js";
 import { replacePromptVariables } from "./promptUtils.js";
 import { buildPromptVariables } from "./agentContextBuilder.js";
-import type { OpenaiApiConfig } from "../../../../shared/schema.js";
-import type { ToolFlags } from "./aiTools.js";
 import type { 
   AgentContext, 
   AgentRunnerResult, 
@@ -11,17 +9,6 @@ import type {
   AgentSuggestionOptions,
   SaveSuggestionOptions 
 } from "./agentTypes.js";
-
-function extractToolFlags(config: OpenaiApiConfig): ToolFlags {
-  return {
-    useKnowledgeBaseTool: config.useKnowledgeBaseTool ?? false,
-    useSubjectIntentTool: config.useSubjectIntentTool ?? false,
-    useZendeskKnowledgeBaseTool: config.useZendeskKnowledgeBaseTool ?? false,
-    useObjectiveProblemTool: config.useObjectiveProblemTool ?? false,
-    useCombinedKnowledgeSearchTool: config.useCombinedKnowledgeSearchTool ?? false,
-    useKnowledgeSuggestionTool: config.useKnowledgeSuggestionTool ?? false,
-  };
-}
 
 export async function runAgent(
   configType: string,
@@ -65,11 +52,6 @@ export async function runAgent(
     fullUserPrompt += `\n\n## Formato da Resposta\n${config.responseFormat}`;
   }
 
-  const toolFlags = extractToolFlags(config);
-
-  const effectiveFinalToolName = options?.finalToolName ?? 
-    (toolFlags.useKnowledgeSuggestionTool ? "create_knowledge_suggestion" : undefined);
-
   console.log(`[AgentFramework] Running ${configType} for conversation ${context.conversationId}`);
 
   const response = await callOpenAI({
@@ -80,7 +62,7 @@ export async function runAgent(
     contextType: "conversation",
     contextId: context.externalConversationId || String(context.conversationId),
     maxIterations: options?.maxIterations,
-    finalToolName: effectiveFinalToolName,
+    finalToolName: options?.finalToolName,
   });
 
   if (!response.success) {

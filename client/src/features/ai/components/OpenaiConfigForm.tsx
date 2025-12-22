@@ -5,7 +5,6 @@ import { MODEL_OPTIONS } from "../../../lib/constants";
 import { Info, ChevronDown, ChevronRight } from "lucide-react";
 import { VARIABLE_CATEGORIES } from "../constants/promptVariables";
 import { VariablesModal } from "./VariablesModal";
-import { AIToolsSection } from "./AIToolsSection";
 
 export interface OpenaiConfigFormProps {
   configType: string;
@@ -16,9 +15,6 @@ export interface OpenaiConfigFormProps {
   promptRows?: number;
   responseFormatRows?: number;
   recommendedModel?: string;
-  showZendeskKnowledgeBaseTool?: boolean;
-  showObjectiveProblemTool?: boolean;
-  showCombinedKnowledgeSearchTool?: boolean;
   children?: ReactNode;
 }
 
@@ -31,9 +27,6 @@ export function OpenaiConfigForm({
   promptRows = 16,
   responseFormatRows = 8,
   recommendedModel = "gpt-4o-mini",
-  showZendeskKnowledgeBaseTool = false,
-  showObjectiveProblemTool = false,
-  showCombinedKnowledgeSearchTool = false,
   children,
 }: OpenaiConfigFormProps) {
   const { state, actions, isLoading, isSaving } = useOpenaiApiConfig(configType);
@@ -86,16 +79,6 @@ export function OpenaiConfigForm({
               ))}
             </select>
           </div>
-
-          <AIToolsSection
-            state={state}
-            showZendeskKnowledgeBaseTool={showZendeskKnowledgeBaseTool}
-            showObjectiveProblemTool={showObjectiveProblemTool}
-            showCombinedKnowledgeSearchTool={showCombinedKnowledgeSearchTool}
-            onToggleZendeskKnowledgeBase={() => actions.setUseZendeskKnowledgeBaseTool(!state.useZendeskKnowledgeBaseTool)}
-            onToggleObjectiveProblem={() => actions.setUseObjectiveProblemTool(!state.useObjectiveProblemTool)}
-            onToggleCombinedKnowledgeSearch={() => actions.setUseCombinedKnowledgeSearchTool(!state.useCombinedKnowledgeSearchTool)}
-          />
 
           <CollapsibleSection
             title="Orientações para o Agente"

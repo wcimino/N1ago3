@@ -12,11 +12,6 @@ export interface OpenaiApiConfigResponse {
   prompt_template: string;
   response_format: string | null;
   model_name: string;
-  use_knowledge_base_tool: boolean;
-  use_subject_intent_tool: boolean;
-  use_zendesk_knowledge_base_tool: boolean;
-  use_objective_problem_tool: boolean;
-  use_combined_knowledge_search_tool: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -27,11 +22,6 @@ export interface OpenaiApiConfigState {
   promptTemplate: string;
   responseFormat: string;
   modelName: string;
-  useKnowledgeBaseTool: boolean;
-  useSubjectIntentTool: boolean;
-  useZendeskKnowledgeBaseTool: boolean;
-  useObjectiveProblemTool: boolean;
-  useCombinedKnowledgeSearchTool: boolean;
   hasChanges: boolean;
 }
 
@@ -41,11 +31,6 @@ export interface OpenaiApiConfigActions {
   setPromptTemplate: (template: string) => void;
   setResponseFormat: (format: string) => void;
   setModelName: (model: string) => void;
-  setUseKnowledgeBaseTool: (value: boolean) => void;
-  setUseSubjectIntentTool: (value: boolean) => void;
-  setUseZendeskKnowledgeBaseTool: (value: boolean) => void;
-  setUseObjectiveProblemTool: (value: boolean) => void;
-  setUseCombinedKnowledgeSearchTool: (value: boolean) => void;
   save: () => void;
 }
 
@@ -64,11 +49,6 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
   const [promptTemplate, setPromptTemplateState] = useState("");
   const [responseFormat, setResponseFormatState] = useState("");
   const [modelName, setModelNameState] = useState("gpt-4o-mini");
-  const [useKnowledgeBaseTool, setUseKnowledgeBaseToolState] = useState(false);
-  const [useSubjectIntentTool, setUseSubjectIntentToolState] = useState(false);
-  const [useZendeskKnowledgeBaseTool, setUseZendeskKnowledgeBaseToolState] = useState(false);
-  const [useObjectiveProblemTool, setUseObjectiveProblemToolState] = useState(false);
-  const [useCombinedKnowledgeSearchTool, setUseCombinedKnowledgeSearchToolState] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
   const { data: config, isLoading: isLoadingConfig } = useQuery<OpenaiApiConfigResponse>({
@@ -83,11 +63,6 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       setPromptTemplateState(config.prompt_template);
       setResponseFormatState(config.response_format || "");
       setModelNameState(config.model_name);
-      setUseKnowledgeBaseToolState(config.use_knowledge_base_tool ?? false);
-      setUseSubjectIntentToolState(config.use_subject_intent_tool ?? false);
-      setUseZendeskKnowledgeBaseToolState(config.use_zendesk_knowledge_base_tool ?? false);
-      setUseObjectiveProblemToolState(config.use_objective_problem_tool ?? false);
-      setUseCombinedKnowledgeSearchToolState(config.use_combined_knowledge_search_tool ?? false);
       setHasChanges(false);
     }
   }, [config]);
@@ -100,11 +75,6 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
         prompt_template: promptTemplate,
         response_format: responseFormat || null,
         model_name: modelName,
-        use_knowledge_base_tool: useKnowledgeBaseTool,
-        use_subject_intent_tool: useSubjectIntentTool,
-        use_zendesk_knowledge_base_tool: useZendeskKnowledgeBaseTool,
-        use_objective_problem_tool: useObjectiveProblemTool,
-        use_combined_knowledge_search_tool: useCombinedKnowledgeSearchTool,
       });
     },
     onSuccess: () => {
@@ -140,31 +110,6 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
     markChanged();
   }, [markChanged]);
 
-  const setUseKnowledgeBaseTool = useCallback((value: boolean) => {
-    setUseKnowledgeBaseToolState(value);
-    markChanged();
-  }, [markChanged]);
-
-  const setUseSubjectIntentTool = useCallback((value: boolean) => {
-    setUseSubjectIntentToolState(value);
-    markChanged();
-  }, [markChanged]);
-
-  const setUseZendeskKnowledgeBaseTool = useCallback((value: boolean) => {
-    setUseZendeskKnowledgeBaseToolState(value);
-    markChanged();
-  }, [markChanged]);
-
-  const setUseObjectiveProblemTool = useCallback((value: boolean) => {
-    setUseObjectiveProblemToolState(value);
-    markChanged();
-  }, [markChanged]);
-
-  const setUseCombinedKnowledgeSearchTool = useCallback((value: boolean) => {
-    setUseCombinedKnowledgeSearchToolState(value);
-    markChanged();
-  }, [markChanged]);
-
   const save = useCallback(() => {
     saveMutation.mutate();
   }, [saveMutation]);
@@ -176,11 +121,6 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       promptTemplate,
       responseFormat,
       modelName,
-      useKnowledgeBaseTool,
-      useSubjectIntentTool,
-      useZendeskKnowledgeBaseTool,
-      useObjectiveProblemTool,
-      useCombinedKnowledgeSearchTool,
       hasChanges,
     },
     actions: {
@@ -189,11 +129,6 @@ export function useOpenaiApiConfig(configType: string): UseOpenaiApiConfigReturn
       setPromptTemplate,
       setResponseFormat,
       setModelName,
-      setUseKnowledgeBaseTool,
-      setUseSubjectIntentTool,
-      setUseZendeskKnowledgeBaseTool,
-      setUseObjectiveProblemTool,
-      setUseCombinedKnowledgeSearchTool,
       save,
     },
     isLoading: isLoadingConfig,

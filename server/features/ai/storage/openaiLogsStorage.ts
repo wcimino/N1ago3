@@ -26,11 +26,6 @@ export const openaiLogsStorage = {
           promptTemplate: data.promptTemplate,
           responseFormat: data.responseFormat,
           modelName: data.modelName,
-          useKnowledgeBaseTool: data.useKnowledgeBaseTool ?? existing.useKnowledgeBaseTool,
-          useSubjectIntentTool: data.useSubjectIntentTool ?? existing.useSubjectIntentTool,
-          useZendeskKnowledgeBaseTool: data.useZendeskKnowledgeBaseTool ?? existing.useZendeskKnowledgeBaseTool,
-          useObjectiveProblemTool: data.useObjectiveProblemTool ?? existing.useObjectiveProblemTool,
-          useCombinedKnowledgeSearchTool: data.useCombinedKnowledgeSearchTool ?? existing.useCombinedKnowledgeSearchTool,
           updatedAt: new Date(),
         })
         .where(eq(openaiApiConfig.id, existing.id))

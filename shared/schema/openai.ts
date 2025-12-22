@@ -10,12 +10,6 @@ export const openaiApiConfig = pgTable("openai_api_config", {
   promptTemplate: text("prompt_template").notNull(),
   responseFormat: text("response_format"),
   modelName: text("model_name").default("gpt-4o-mini").notNull(),
-  useKnowledgeBaseTool: boolean("use_knowledge_base_tool").default(false).notNull(),
-  useSubjectIntentTool: boolean("use_subject_intent_tool").default(false).notNull(),
-  useZendeskKnowledgeBaseTool: boolean("use_zendesk_knowledge_base_tool").default(false).notNull(),
-  useObjectiveProblemTool: boolean("use_objective_problem_tool").default(false).notNull(),
-  useCombinedKnowledgeSearchTool: boolean("use_combined_knowledge_search_tool").default(false).notNull(),
-  useKnowledgeSuggestionTool: boolean("use_knowledge_suggestion_tool").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({

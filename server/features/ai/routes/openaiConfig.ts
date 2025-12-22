@@ -17,12 +17,6 @@ function formatConfigResponse(config: any) {
     prompt_template: config.promptTemplate,
     response_format: config.responseFormat ?? null,
     model_name: config.modelName,
-    use_knowledge_base_tool: config.useKnowledgeBaseTool ?? false,
-    use_subject_intent_tool: config.useSubjectIntentTool ?? false,
-    use_zendesk_knowledge_base_tool: config.useZendeskKnowledgeBaseTool ?? false,
-    use_objective_problem_tool: config.useObjectiveProblemTool ?? false,
-    use_combined_knowledge_search_tool: config.useCombinedKnowledgeSearchTool ?? false,
-    use_knowledge_suggestion_tool: config.useKnowledgeSuggestionTool ?? false,
     created_at: config.createdAt?.toISOString(),
     updated_at: config.updatedAt?.toISOString(),
   };
@@ -53,7 +47,7 @@ router.put("/api/openai-config/:configType", isAuthenticated, requireAuthorizedU
     return res.status(400).json({ error: `Invalid config type. Must be one of: ${VALID_CONFIG_TYPES.join(", ")}` });
   }
 
-  const { enabled, trigger_event_types, trigger_author_types, prompt_system, prompt_template, response_format, model_name, use_knowledge_base_tool, use_subject_intent_tool, use_zendesk_knowledge_base_tool, use_objective_problem_tool, use_combined_knowledge_search_tool, use_knowledge_suggestion_tool } = req.body;
+  const { enabled, trigger_event_types, trigger_author_types, prompt_system, prompt_template, response_format, model_name } = req.body;
 
   const hasPromptTemplate = prompt_template && prompt_template.trim();
   const hasPromptSystem = prompt_system && prompt_system.trim();
@@ -92,12 +86,6 @@ router.put("/api/openai-config/:configType", isAuthenticated, requireAuthorizedU
     promptTemplate: finalPromptTemplate,
     responseFormat: finalResponseFormat,
     modelName: model_name || "gpt-4o-mini",
-    useKnowledgeBaseTool: use_knowledge_base_tool ?? false,
-    useSubjectIntentTool: use_subject_intent_tool ?? false,
-    useZendeskKnowledgeBaseTool: use_zendesk_knowledge_base_tool ?? false,
-    useObjectiveProblemTool: use_objective_problem_tool ?? false,
-    useCombinedKnowledgeSearchTool: use_combined_knowledge_search_tool ?? false,
-    useKnowledgeSuggestionTool: use_knowledge_suggestion_tool ?? false,
   });
 
   res.json(formatConfigResponse(config));
