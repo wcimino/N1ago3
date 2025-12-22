@@ -10,7 +10,58 @@ import {
   ClientRequestVersionsTooltip,
   emotionConfig,
   type SummaryData,
+  type ClientRequestVersions,
 } from "./summary";
+
+interface ParsedClientRequest {
+  clientRequest?: string;
+  clientRequestVersions?: ClientRequestVersions;
+}
+
+function extractClientRequestData(
+  clientRequest: string | object | null | undefined,
+  clientRequestVersions: ClientRequestVersions | null | undefined
+): { text: string; versions: ClientRequestVersions | null | undefined } | null {
+  if (!clientRequest) return null;
+  
+  if (typeof clientRequest === 'string') {
+    try {
+      const parsed = JSON.parse(clientRequest);
+      if (typeof parsed === 'object' && parsed !== null && 'clientRequest' in parsed) {
+        return {
+          text: parsed.clientRequest || '',
+          versions: parsed.clientRequestVersions || clientRequestVersions
+        };
+      }
+    } catch {
+      // Not JSON, use as-is
+    }
+    return { text: clientRequest, versions: clientRequestVersions };
+  }
+  
+  if (typeof clientRequest === 'object' && clientRequest !== null) {
+    const obj = clientRequest as ParsedClientRequest;
+    return {
+      text: obj.clientRequest || '',
+      versions: obj.clientRequestVersions || clientRequestVersions
+    };
+  }
+  
+  return null;
+}
+
+function tryParseJsonSummary(text: string | null | undefined): ParsedClientRequest | null {
+  if (!text) return null;
+  try {
+    const parsed = JSON.parse(text);
+    if (typeof parsed === 'object' && parsed !== null && 'clientRequest' in parsed) {
+      return parsed as ParsedClientRequest;
+    }
+  } catch {
+    // Not JSON, return null
+  }
+  return null;
+}
 
 interface ConversationSummaryProps {
   summary?: SummaryData | null;
@@ -121,16 +172,20 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
             </div>
 
             <div className="flex flex-col gap-3">
-              {summary.client_request && (
-                <div className={`rounded-lg p-3 bg-blue-50 border border-blue-200`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="text-blue-600"><User className="w-4 h-4" /></div>
-                    <h4 className="font-medium text-gray-800 text-sm">Solicitação do Cliente</h4>
-                    <ClientRequestVersionsTooltip versions={summary.client_request_versions} />
+              {(() => {
+                const clientData = extractClientRequestData(summary.client_request, summary.client_request_versions);
+                if (!clientData) return null;
+                return (
+                  <div className={`rounded-lg p-3 bg-blue-50 border border-blue-200`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="text-blue-600"><User className="w-4 h-4" /></div>
+                      <h4 className="font-medium text-gray-800 text-sm">Solicitação do Cliente</h4>
+                      <ClientRequestVersionsTooltip versions={clientData.versions} />
+                    </div>
+                    <p className="text-sm text-gray-700 leading-relaxed">{clientData.text}</p>
                   </div>
-                  <p className="text-sm text-gray-700 leading-relaxed">{summary.client_request}</p>
-                </div>
-              )}
+                );
+              })()}
               
               {summary.agent_actions && (
                 <SummaryCardItem
@@ -180,13 +235,28 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
                 <OrchestratorLogsCard logs={summary.conversation_orchestrator_log} />
               )}
               
-              {!hasStructuredData && summary.text && (
-                <div className="pt-2 border-t border-gray-100">
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                    {summary.text}
-                  </p>
-                </div>
-              )}
+              {!hasStructuredData && summary.text && (() => {
+                const parsedJson = tryParseJsonSummary(summary.text);
+                if (parsedJson?.clientRequest) {
+                  return (
+                    <div className={`rounded-lg p-3 bg-blue-50 border border-blue-200`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="text-blue-600"><User className="w-4 h-4" /></div>
+                        <h4 className="font-medium text-gray-800 text-sm">Solicitação do Cliente</h4>
+                        <ClientRequestVersionsTooltip versions={parsedJson.clientRequestVersions} />
+                      </div>
+                      <p className="text-sm text-gray-700 leading-relaxed">{parsedJson.clientRequest}</p>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="pt-2 border-t border-gray-100">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                      {summary.text}
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
           </>
         )}
