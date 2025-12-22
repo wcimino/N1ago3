@@ -3,7 +3,7 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import type { Express } from "express";
 import express from "express";
-import { startPollingWorker, stopPollingWorker, isPollingWorkerRunning } from "../features/sync/services/pollingWorker.js";
+import { startPollingWorker, isPollingWorkerRunning } from "../features/sync/services/pollingWorker.js";
 import { vacuumService, archiveService } from "../features/maintenance/services/index.js";
 import { initializePreflight, getPreflightResult, getActiveSchedulerConfig, type PreflightResult, type SchedulerConfig } from "./preflight.js";
 

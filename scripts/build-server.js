@@ -1,24 +1,4 @@
 import * as esbuild from 'esbuild';
-import { readdirSync, statSync } from 'fs';
-import { join } from 'path';
-
-function getEntryPoints(dir, extensions = ['.ts']) {
-  const entries = [];
-  const files = readdirSync(dir);
-  
-  for (const file of files) {
-    const fullPath = join(dir, file);
-    const stat = statSync(fullPath);
-    
-    if (stat.isDirectory() && !file.startsWith('.') && file !== 'node_modules') {
-      entries.push(...getEntryPoints(fullPath, extensions));
-    } else if (extensions.some(ext => file.endsWith(ext))) {
-      entries.push(fullPath);
-    }
-  }
-  
-  return entries;
-}
 
 await esbuild.build({
   entryPoints: ['server/index.ts'],
