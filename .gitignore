@@ -36,3 +36,6 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# Attached assets (development screenshots)
+attached_assets/
