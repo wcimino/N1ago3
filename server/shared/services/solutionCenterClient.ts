@@ -107,11 +107,11 @@ export async function searchSolutionCenter(
     requestBody.demandTypeConfidence = demandTypeConfidence;
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
   try {
     console.log(`[SolutionCenterClient] Searching with ${textNormalizedVersions.length} text versions at ${endpoint}`);
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     const response = await fetch(endpoint, {
       method: "POST",
@@ -124,8 +124,6 @@ export async function searchSolutionCenter(
       signal: controller.signal,
     });
 
-    clearTimeout(timeoutId);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[SolutionCenterClient] API error ${response.status}: ${errorText}`);
@@ -137,8 +135,14 @@ export async function searchSolutionCenter(
 
     return data;
   } catch (error) {
-    console.error("[SolutionCenterClient] Request failed:", error);
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error(`[SolutionCenterClient] Request timed out after 30s for ${endpoint}`);
+    } else {
+      console.error("[SolutionCenterClient] Request failed:", error);
+    }
     return null;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
