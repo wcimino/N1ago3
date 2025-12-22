@@ -1,4 +1,4 @@
-import { Sparkles, User, Headphones, Clock, Info as InfoIcon } from "lucide-react";
+import { Sparkles, User, Headphones, Clock, Info as InfoIcon, CheckCircle2 } from "lucide-react";
 import {
   SummaryCardItem,
   ProductRow,
@@ -93,7 +93,7 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
                 
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-400">Demanda:</span>
-                  <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                  <span className={`px-1.5 py-0.5 rounded text-xs font-medium inline-flex items-center gap-1 ${
                     summary.demand_finder_status === 'demand_found' 
                       ? 'bg-green-100 text-green-700' 
                       : summary.demand_finder_status === 'in_progress'
@@ -106,7 +106,12 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
                   }`}>
                     {summary.demand_finder_status === 'not_started' && 'Aguardando'}
                     {summary.demand_finder_status === 'in_progress' && `Buscando (${summary.demand_finder_interaction_count || 0}/5)`}
-                    {summary.demand_finder_status === 'demand_found' && 'Encontrada'}
+                    {summary.demand_finder_status === 'demand_found' && (
+                      <>
+                        <CheckCircle2 className="w-3 h-3" />
+                        {`Encontrada (${summary.demand_finder_interaction_count ?? 0}/5)`}
+                      </>
+                    )}
                     {summary.demand_finder_status === 'demand_not_found' && 'Não encontrada'}
                     {summary.demand_finder_status === 'error' && 'Erro'}
                     {!summary.demand_finder_status && 'Aguardando'}
