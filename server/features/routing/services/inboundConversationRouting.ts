@@ -1,6 +1,7 @@
 import { routingStorage } from "../storage/routingStorage.js";
 import { routingTrackingStorage } from "../storage/routingTrackingStorage.js";
 import { TargetResolver } from "./targetResolver.js";
+import { TransferService } from "./transferService.js";
 import { ZendeskApiService } from "../../external-sources/zendesk/services/zendeskApiService.js";
 import { userStorage } from "../../conversations/storage/userStorage.js";
 import { conversationStorage } from "../../conversations/storage/index.js";
@@ -175,7 +176,7 @@ async function executeRouting(
     if (TargetResolver.isN1ago(rule.target)) {
       const tagResult = await ZendeskApiService.addConversationTags(
         externalConversationId,
-        ["teste_n1ago"],
+        TransferService.DEFAULT_N1AGO_TAGS,
         "routing",
         `rule:${rule.id}`
       );
@@ -184,10 +185,9 @@ async function executeRouting(
         console.error(`[InboundRouting] Rule ${rule.id}: Failed to add tag - ${tagResult.error}`);
       }
 
-      const welcomeMessage = "Olá! Sou o Niago, assistente virtual do iFood Pago. Como posso ajudar você hoje?";
       const welcomeResult = await ZendeskApiService.sendMessage(
         externalConversationId,
-        welcomeMessage,
+        TransferService.DEFAULT_N1AGO_WELCOME_MESSAGE,
         "routing",
         `rule:${rule.id}`
       );

@@ -1,7 +1,6 @@
 import { conversationStorage } from "../../../conversations/storage/index.js";
 import { AutoPilotService } from "../../../autoPilot/services/autoPilotService.js";
-import { SendMessageService } from "../../../send-message/index.js";
-import { ZendeskApiService } from "../../../external-sources/zendesk/services/zendeskApiService.js";
+import { TransferService } from "../../../routing/services/transferService.js";
 import { isN1agoHandler } from "./helpers.js";
 import type { OrchestratorAction, OrchestratorContext } from "./types.js";
 import { ORCHESTRATOR_STATUS } from "./types.js";
@@ -82,31 +81,16 @@ export class ActionExecutor {
       return;
     }
 
-    const sendResult = await SendMessageService.send({
+    const result = await TransferService.transferToHuman({
       conversationId,
       externalConversationId,
-      message: payload.message,
-      type: "transfer",
       source: "orchestrator",
+      reason: payload.reason,
+      farewellMessage: payload.message,
     });
 
-    if (sendResult.sent) {
-      console.log(`[ActionExecutor] Transfer message sent successfully`);
-    } else {
-      console.log(`[ActionExecutor] Transfer message not sent: ${sendResult.reason}`);
-    }
-
-    const agentWorkspaceId = ZendeskApiService.getAgentWorkspaceIntegrationId();
-    const passControlResult = await ZendeskApiService.passControl(
-      externalConversationId,
-      agentWorkspaceId,
-      { reason: payload.reason },
-      "transfer",
-      `transfer:${conversationId}`
-    );
-
-    if (passControlResult.success) {
-      console.log(`[ActionExecutor] Control passed to agent workspace successfully`);
+    if (result.success) {
+      console.log(`[ActionExecutor] Transfer to human completed successfully`);
       await conversationStorage.updateOrchestratorState(conversationId, {
         orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
         conversationOwner: null,
@@ -115,7 +99,7 @@ export class ActionExecutor {
       context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
       console.log(`[ActionExecutor] Status updated to ESCALATED after successful transfer`);
     } else {
-      console.error(`[ActionExecutor] Failed to pass control: ${passControlResult.error}`);
+      console.error(`[ActionExecutor] Failed to transfer to human: ${result.error}`);
     }
   }
 }

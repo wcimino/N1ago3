@@ -3,9 +3,8 @@ import { db } from "../../../db.js";
 import { conversations } from "../../../../shared/schema.js";
 import { eq } from "drizzle-orm";
 import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
-import { ZendeskApiService } from "../../external-sources/zendesk/services/zendeskApiService.js";
 import { TargetResolver } from "../services/targetResolver.js";
-import { SendMessageService } from "../../send-message/index.js";
+import { TransferService } from "../services/transferService.js";
 
 const router = Router();
 
@@ -30,41 +29,20 @@ router.post("/api/conversations/:conversationId/transfer", isAuthenticated, requ
     }
 
     const externalConversationId = conversation.externalConversationId;
-    const targetIntegrationId = TargetResolver.getIntegrationId(target);
-
-    if (!targetIntegrationId) {
-      return res.status(400).json({ error: "Could not resolve target integration" });
-    }
-
     const currentHandlerIsN1ago = TargetResolver.isN1ago(conversation.currentHandler || "") || 
                                    TargetResolver.isN1ago(conversation.currentHandlerName || "");
     const targetIsHuman = TargetResolver.isHuman(target);
 
-    if (currentHandlerIsN1ago && targetIsHuman) {
-      console.log(`[TransferRoutes] Sending farewell message before transfer to human`);
-      const sendResult = await SendMessageService.send({
-        conversationId: parseInt(conversationId),
-        externalConversationId,
-        message: "Vou te transferir para um humano continuar o atendimento, aguarde um momento...",
-        type: "transfer",
-        source: "orchestrator",
-        skipFormatting: true,
-      });
-      
-      if (sendResult.sent) {
-        console.log(`[TransferRoutes] Farewell message sent successfully`);
-      } else {
-        console.log(`[TransferRoutes] Farewell message not sent: ${sendResult.reason}`);
-      }
-    }
-
-    const result = await ZendeskApiService.passControl(
+    const result = await TransferService.transfer({
+      conversationId: parseInt(conversationId),
       externalConversationId,
-      targetIntegrationId,
-      { reason: reason || `transfer_to_${target}` },
-      "manual_transfer",
-      `conversation:${conversationId}`
-    );
+      target,
+      source: "manual_transfer",
+      reason: reason || `transfer_to_${target}`,
+      farewellMessage: currentHandlerIsN1ago && targetIsHuman 
+        ? TransferService.DEFAULT_HUMAN_FAREWELL_MESSAGE 
+        : undefined,
+    });
 
     if (!result.success) {
       return res.status(500).json({ 
@@ -73,53 +51,7 @@ router.post("/api/conversations/:conversationId/transfer", isAuthenticated, requ
       });
     }
 
-    if (TargetResolver.isN1ago(target)) {
-      const tagResult = await ZendeskApiService.addConversationTags(
-        externalConversationId,
-        ["teste_n1ago"],
-        "manual_transfer",
-        `conversation:${conversationId}`
-      );
-
-      if (tagResult.success) {
-        console.log(`[TransferRoutes] Tag 'teste_n1ago' added successfully to conversation ${conversationId}`);
-      } else {
-        console.error(`[TransferRoutes] Failed to add tag 'teste_n1ago' to conversation ${conversationId}:`, tagResult.error);
-      }
-
-      // Send welcome message when transferring to N1ago
-      const welcomeMessage = "Olá! Sou o Niago, assistente virtual do iFood Pago. Como posso ajudar você hoje?";
-      const welcomeResult = await ZendeskApiService.sendMessage(
-        externalConversationId,
-        welcomeMessage,
-        "manual_transfer",
-        `conversation:${conversationId}`
-      );
-
-      if (welcomeResult.success) {
-        console.log(`[TransferRoutes] Welcome message sent successfully to conversation ${conversationId}`);
-      } else {
-        console.error(`[TransferRoutes] Failed to send welcome message to conversation ${conversationId}:`, welcomeResult.error);
-      }
-    }
-
     const handlerName = TargetResolver.getHandlerName(target);
-
-    const updateData: Record<string, any> = { 
-      currentHandler: targetIntegrationId,
-      currentHandlerName: handlerName,
-      updatedAt: new Date() 
-    };
-    
-    if (TargetResolver.isN1ago(target)) {
-      updateData.handledByN1ago = true;
-    }
-    
-    await db
-      .update(conversations)
-      .set(updateData)
-      .where(eq(conversations.id, parseInt(conversationId)));
-
     res.json({ 
       success: true, 
       message: `Conversation transferred to ${target}`,

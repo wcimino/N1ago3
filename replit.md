@@ -33,6 +33,7 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **Four-Field Classification System:** Hierarchical conversation classification (Product → Subproduct → Subject → Intent) using sequential AI tools.
 *   **Structured Conversation Summary:** Displays AI-generated summaries with specific structured fields.
 *   **Inbound Conversation Routing:** Unified routing system (`inboundConversationRouting.ts`) that processes routing rules at the very start of webhook processing, before any enrichment. Routes conversations to `n1ago`, `human`, or `bot` using Zendesk Switchboard API. When routing to n1ago, also handles tag addition and welcome message. Designed for minimal latency (~1-10ms).
+*   **TransferService:** Centralized service (`server/features/routing/services/transferService.ts`) that encapsulates all conversation transfer logic including: Zendesk passControl API call, handler persistence in database, tag management, farewell messages (when transferring to human), and welcome messages (when transferring to N1ago). Used by manual transfers, orchestrator (DemandFinder escalations), and inbound routing to ensure consistent behavior.
 *   **AutoPilot:** Automatically sends suggested responses based on conditions.
 *   **SendMessageService:** Centralized message sending controller for all outbound messages to customers.
 *   **ResponseFormatterService:** Adjusts tone of voice for outbound messages using an AI agent's configuration.
