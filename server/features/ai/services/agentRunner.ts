@@ -79,6 +79,8 @@ export async function runAgent(
     promptUser: fullUserPrompt,
     contextType: "conversation",
     contextId: context.externalConversationId || String(context.conversationId),
+    toolFlags,
+    toolFlagsContext: { conversationId: context.conversationId },
     maxIterations: options?.maxIterations,
     finalToolName: effectiveFinalToolName,
   });
