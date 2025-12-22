@@ -6,7 +6,7 @@
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "tsx watch server/index.ts",
     "dev:client": "vite",
-    "build": "npm run db:migrate && npm run build:client && npm run build:server",
+    "build": "npm run build:client && npm run build:server",
     "build:client": "vite build",
     "build:server": "node scripts/build-server.js",
     "start": "NODE_ENV=production node dist/server.js",
