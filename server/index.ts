@@ -2,6 +2,8 @@ import express from "express";
 import { setupAuth } from "./features/auth/index.js";
 import { registerRoutes } from "./routes/index.js";
 import { bootstrap, getBootstrapHealth } from "./bootstrap/index.js";
+import { db } from "./db.js";
+import { sql } from "drizzle-orm";
 import "./features/events/services/eventProcessor.js";
 
 const app = express();
@@ -9,8 +11,30 @@ const PORT = Number(process.env.PORT) || (process.env.NODE_ENV === "production" 
 
 let serverReady = false;
 let initializationError: Error | null = null;
+let databaseHealthy: boolean | null = null;
+let lastDbCheck: Date | null = null;
 
 const STARTUP_TIMEOUT_MS = 30000;
+const DB_HEALTH_CHECK_INTERVAL_MS = 30000;
+
+async function checkDatabaseHealth(): Promise<boolean> {
+  try {
+    await db.execute(sql`SELECT 1`);
+    return true;
+  } catch (error) {
+    console.error("[Health] Database check failed:", error instanceof Error ? error.message : error);
+    return false;
+  }
+}
+
+async function updateDatabaseHealth() {
+  const now = new Date();
+  if (lastDbCheck && now.getTime() - lastDbCheck.getTime() < DB_HEALTH_CHECK_INTERVAL_MS) {
+    return;
+  }
+  databaseHealthy = await checkDatabaseHealth();
+  lastDbCheck = now;
+}
 
 app.use(express.json({
   verify: (req: express.Request, res, buf) => {
@@ -19,21 +43,27 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: true }));
 
-app.get("/health", (req, res) => {
+app.get("/health", async (req, res) => {
+  await updateDatabaseHealth();
+  
   res.status(200).json({ 
     status: "ok", 
     ready: serverReady,
+    database: databaseHealthy,
     error: initializationError?.message || null,
     timestamp: new Date().toISOString() 
   });
 });
 
-app.get("/ready", (req, res) => {
+app.get("/ready", async (req, res) => {
   const bootstrapHealth = serverReady ? getBootstrapHealth() : null;
   
   if (serverReady) {
+    await updateDatabaseHealth();
+    
     res.status(200).json({ 
       ready: true, 
+      database: databaseHealthy,
       timestamp: new Date().toISOString(),
       schedulers: bootstrapHealth?.schedulerStatus || null,
       preflight: bootstrapHealth?.preflight ? {
@@ -63,6 +93,16 @@ async function initializeServices() {
   try {
     await Promise.race([
       (async () => {
+        console.log("[Startup] Checking database connectivity...");
+        databaseHealthy = await checkDatabaseHealth();
+        lastDbCheck = new Date();
+        
+        if (databaseHealthy) {
+          console.log("[Startup] Database connection successful");
+        } else {
+          console.warn("[Startup] WARNING: Database connection failed - server will start but some features may not work");
+        }
+
         console.log("[Startup] Initializing authentication...");
         await setupAuth(app);
         console.log("[Startup] Authentication ready");
@@ -73,12 +113,16 @@ async function initializeServices() {
 
         bootstrap(app, {
           isProduction: process.env.NODE_ENV === "production",
-          enableSchedulers: process.env.DISABLE_SCHEDULERS !== "true",
+          enableSchedulers: process.env.DISABLE_SCHEDULERS !== "true" && databaseHealthy === true,
         });
 
         serverReady = true;
         const elapsed = Date.now() - startTime;
         console.log(`[Startup] Server fully initialized and ready in ${elapsed}ms`);
+        
+        if (!databaseHealthy) {
+          console.warn("[Startup] Note: Server is running but database is unavailable. Background workers are disabled.");
+        }
       })(),
       timeoutPromise
     ]);
