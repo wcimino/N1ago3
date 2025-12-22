@@ -109,7 +109,9 @@ export function OrchestratorLogsCard({ logs }: OrchestratorLogsCardProps) {
     });
   };
 
-  const sortedLogs = [...logs].sort((a, b) => b.turn - a.turn);
+  const sortedLogs = [...logs].sort((a, b) => 
+    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
 
   return (
     <div className="rounded-lg p-3 bg-indigo-50 border border-indigo-200">
@@ -135,7 +137,7 @@ export function OrchestratorLogsCard({ logs }: OrchestratorLogsCardProps) {
             <LogEntry
               key={index}
               entry={entry}
-              sequenceNumber={sortedLogs.length - index}
+              sequenceNumber={logs.length - index}
               isExpanded={expandedIndexes.has(index)}
               onToggle={() => toggleIndex(index)}
               formatDateTime={formatDateTime}
