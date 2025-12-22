@@ -22,5 +22,3 @@ export const AUTH_CONFIG = {
   OIDC_CONFIG_CACHE_MS: 3600 * 1000, // 1 hour
   SESSION_PRUNE_INTERVAL_SEC: 60 * 15, // 15 minutes
 } as const;
-
-export {};
