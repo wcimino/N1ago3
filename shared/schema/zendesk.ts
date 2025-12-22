@@ -29,7 +29,7 @@ export const zendeskConversationsWebhookRaw = pgTable("zendesk_conversations_web
   retryCount: integer("retry_count").default(0).notNull(),
   eventsCreatedCount: integer("events_created_count").default(0).notNull(),
 }, (table) => ({
-  receivedAtIdx: index("idx_zendesk_webhook_received_at").on(table.receivedAt.desc()),
+  receivedAtIdx: index("idx_zendesk_webhook_received_at").on(table.receivedAt),
   processingStatusIdx: index("idx_zendesk_webhook_processing_status").on(table.processingStatus),
 }));
 

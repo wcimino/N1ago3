@@ -1,5 +1,5 @@
 {
-  "id": "cc151585-2b5a-4f44-a3ce-af58ce7e6cc8",
+  "id": "c0c70e62-b2ae-48e0-8b64-9e0b097b4f26",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -595,7 +595,7 @@
             {
               "expression": "received_at",
               "isExpression": false,
-              "asc": false,
+              "asc": true,
               "nulls": "last"
             }
           ],
@@ -1208,21 +1208,6 @@
           "method": "btree",
           "with": {}
         },
-        "idx_conversations_updated_at": {
-          "name": "idx_conversations_updated_at",
-          "columns": [
-            {
-              "expression": "updated_at",
-              "isExpression": false,
-              "asc": false,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "idx_conversations_status": {
           "name": "idx_conversations_status",
           "columns": [
@@ -1243,6 +1228,36 @@
           "columns": [
             {
               "expression": "handled_by_n1ago",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_conversations_created_at": {
+          "name": "idx_conversations_created_at",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_conversations_user_external_id": {
+          "name": "idx_conversations_user_external_id",
+          "columns": [
+            {
+              "expression": "user_external_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1454,6 +1469,21 @@
             }
           ],
           "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_conversations_summary_product_id": {
+          "name": "idx_conversations_summary_product_id",
+          "columns": [
+            {
+              "expression": "product_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -1706,21 +1736,6 @@
         }
       },
       "indexes": {
-        "idx_events_standard_occurred_at": {
-          "name": "idx_events_standard_occurred_at",
-          "columns": [
-            {
-              "expression": "occurred_at",
-              "isExpression": false,
-              "asc": false,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "idx_events_standard_conversation_event": {
           "name": "idx_events_standard_conversation_event",
           "columns": [
@@ -1732,21 +1747,6 @@
             },
             {
               "expression": "event_type",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_events_standard_source": {
-          "name": "idx_events_standard_source",
-          "columns": [
-            {
-              "expression": "source",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1929,7 +1929,7 @@
             {
               "expression": "created_at",
               "isExpression": false,
-              "asc": false,
+              "asc": true,
               "nulls": "last"
             }
           ],
@@ -3880,7 +3880,7 @@
             {
               "expression": "archive_date",
               "isExpression": false,
-              "asc": false,
+              "asc": true,
               "nulls": "last"
             }
           ],
@@ -3967,7 +3967,7 @@
             {
               "expression": "created_at",
               "isExpression": false,
-              "asc": false,
+              "asc": true,
               "nulls": "last"
             }
           ],
@@ -3982,7 +3982,7 @@
             {
               "expression": "duration_ms",
               "isExpression": false,
-              "asc": false,
+              "asc": true,
               "nulls": "last"
             }
           ],
@@ -4078,7 +4078,7 @@
             {
               "expression": "call_count",
               "isExpression": false,
-              "asc": false,
+              "asc": true,
               "nulls": "last"
             }
           ],
@@ -4093,7 +4093,7 @@
             {
               "expression": "avg_duration_ms",
               "isExpression": false,
-              "asc": false,
+              "asc": true,
               "nulls": "last"
             }
           ],

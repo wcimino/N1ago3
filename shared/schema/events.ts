@@ -40,9 +40,7 @@ export const eventsStandard = pgTable("events_standard", {
   channelType: text("channel_type"),
   processingStatus: text("processing_status").default("processed").notNull(),
 }, (table) => ({
-  occurredAtIdx: index("idx_events_standard_occurred_at").on(table.occurredAt.desc()),
   conversationEventIdx: index("idx_events_standard_conversation_event").on(table.conversationId, table.eventType),
-  sourceIdx: index("idx_events_standard_source").on(table.source),
   eventTypeIdx: index("idx_events_standard_event_type").on(table.eventType),
   sourceEventIdIdx: index("idx_events_standard_source_event_id").on(table.source, table.sourceEventId),
 }));
@@ -66,9 +64,10 @@ export const conversations = pgTable("conversations", {
   metadataJson: json("metadata_json"),
 }, (table) => ({
   userIdIdx: index("idx_conversations_user_id").on(table.userId),
-  updatedAtIdx: index("idx_conversations_updated_at").on(table.updatedAt.desc()),
   statusIdx: index("idx_conversations_status").on(table.status),
   handledByN1agoIdx: index("idx_conversations_handled_by_n1ago").on(table.handledByN1ago),
+  createdAtIdx: index("idx_conversations_created_at").on(table.createdAt),
+  userExternalIdIdx: index("idx_conversations_user_external_id").on(table.userExternalId),
 }));
 
 export const eventTypeMappings = pgTable("event_type_mappings", {
@@ -115,6 +114,7 @@ export const conversationsSummary = pgTable("conversations_summary", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   conversationIdIdx: uniqueIndex("idx_conversations_summary_conversation_id").on(table.conversationId),
+  productIdIdx: index("idx_conversations_summary_product_id").on(table.productId),
 }));
 
 export const caseDemand = pgTable("case_demand", {
@@ -206,7 +206,7 @@ export const externalEventAuditLogs = pgTable("external_event_audit_logs", {
 }, (table) => ({
   sourceIdIdx: index("idx_external_event_audit_logs_source_id").on(table.sourceId),
   actionIdx: index("idx_external_event_audit_logs_action").on(table.action),
-  createdAtIdx: index("idx_external_event_audit_logs_created_at").on(table.createdAt.desc()),
+  createdAtIdx: index("idx_external_event_audit_logs_created_at").on(table.createdAt),
 }));
 
 export type ExternalEventAuditLog = typeof externalEventAuditLogs.$inferSelect;

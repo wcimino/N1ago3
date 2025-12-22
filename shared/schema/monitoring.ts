@@ -19,8 +19,8 @@ export const queryLogs = pgTable("query_logs", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   queryHashIdx: index("idx_query_logs_query_hash").on(table.queryHash),
-  createdAtIdx: index("idx_query_logs_created_at").on(table.createdAt.desc()),
-  durationIdx: index("idx_query_logs_duration").on(table.durationMs.desc()),
+  createdAtIdx: index("idx_query_logs_created_at").on(table.createdAt),
+  durationIdx: index("idx_query_logs_duration").on(table.durationMs),
 }));
 
 export const queryStats = pgTable("query_stats", {
@@ -35,8 +35,8 @@ export const queryStats = pgTable("query_stats", {
   lastCalledAt: timestamp("last_called_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
-  callCountIdx: index("idx_query_stats_call_count").on(table.callCount.desc()),
-  avgDurationIdx: index("idx_query_stats_avg_duration").on(table.avgDurationMs.desc()),
+  callCountIdx: index("idx_query_stats_call_count").on(table.callCount),
+  avgDurationIdx: index("idx_query_stats_avg_duration").on(table.avgDurationMs),
 }));
 
 export type QueryLog = typeof queryLogs.$inferSelect;

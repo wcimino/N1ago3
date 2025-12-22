@@ -17,7 +17,7 @@ export const archiveJobs = pgTable("archive_jobs", {
 }, (table) => ({
   tableNameIdx: index("idx_archive_jobs_table_name").on(table.tableName),
   statusIdx: index("idx_archive_jobs_status").on(table.status),
-  archiveDateIdx: index("idx_archive_jobs_archive_date").on(table.archiveDate.desc()),
+  archiveDateIdx: index("idx_archive_jobs_archive_date").on(table.archiveDate),
 }));
 
 export type ArchiveJob = typeof archiveJobs.$inferSelect;

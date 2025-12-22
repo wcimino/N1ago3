@@ -511,7 +511,7 @@ CREATE INDEX "IDX_session_expire" ON "sessions" USING btree ("expire");--> state
 CREATE INDEX "idx_zendesk_api_logs_conversation_id" ON "zendesk_api_logs" USING btree ("conversation_id");--> statement-breakpoint
 CREATE INDEX "idx_zendesk_api_logs_request_type" ON "zendesk_api_logs" USING btree ("request_type");--> statement-breakpoint
 CREATE INDEX "idx_zendesk_api_logs_created_at" ON "zendesk_api_logs" USING btree ("created_at");--> statement-breakpoint
-CREATE INDEX "idx_zendesk_webhook_received_at" ON "zendesk_conversations_webhook_raw" USING btree ("received_at" DESC NULLS LAST);--> statement-breakpoint
+CREATE INDEX "idx_zendesk_webhook_received_at" ON "zendesk_conversations_webhook_raw" USING btree ("received_at");--> statement-breakpoint
 CREATE INDEX "idx_zendesk_webhook_processing_status" ON "zendesk_conversations_webhook_raw" USING btree ("processing_status");--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_zendesk_support_users_zendesk_id" ON "zendesk_support_users" USING btree ("zendesk_id");--> statement-breakpoint
 CREATE INDEX "idx_zendesk_support_users_email" ON "zendesk_support_users" USING btree ("email");--> statement-breakpoint
@@ -520,19 +520,19 @@ CREATE INDEX "idx_zendesk_support_users_organization" ON "zendesk_support_users"
 CREATE INDEX "idx_zendesk_support_users_active" ON "zendesk_support_users" USING btree ("active");--> statement-breakpoint
 CREATE INDEX "idx_case_demand_conversation_id" ON "case_demand" USING btree ("conversation_id");--> statement-breakpoint
 CREATE INDEX "idx_conversations_user_id" ON "conversations" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "idx_conversations_updated_at" ON "conversations" USING btree ("updated_at" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "idx_conversations_status" ON "conversations" USING btree ("status");--> statement-breakpoint
 CREATE INDEX "idx_conversations_handled_by_n1ago" ON "conversations" USING btree ("handled_by_n1ago");--> statement-breakpoint
+CREATE INDEX "idx_conversations_created_at" ON "conversations" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "idx_conversations_user_external_id" ON "conversations" USING btree ("user_external_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_conversations_summary_conversation_id" ON "conversations_summary" USING btree ("conversation_id");--> statement-breakpoint
+CREATE INDEX "idx_conversations_summary_product_id" ON "conversations_summary" USING btree ("product_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_event_type_mappings_unique" ON "event_type_mappings" USING btree ("source","event_type");--> statement-breakpoint
-CREATE INDEX "idx_events_standard_occurred_at" ON "events_standard" USING btree ("occurred_at" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "idx_events_standard_conversation_event" ON "events_standard" USING btree ("conversation_id","event_type");--> statement-breakpoint
-CREATE INDEX "idx_events_standard_source" ON "events_standard" USING btree ("source");--> statement-breakpoint
 CREATE INDEX "idx_events_standard_event_type" ON "events_standard" USING btree ("event_type");--> statement-breakpoint
 CREATE INDEX "idx_events_standard_source_event_id" ON "events_standard" USING btree ("source","source_event_id");--> statement-breakpoint
 CREATE INDEX "idx_external_event_audit_logs_source_id" ON "external_event_audit_logs" USING btree ("source_id");--> statement-breakpoint
 CREATE INDEX "idx_external_event_audit_logs_action" ON "external_event_audit_logs" USING btree ("action");--> statement-breakpoint
-CREATE INDEX "idx_external_event_audit_logs_created_at" ON "external_event_audit_logs" USING btree ("created_at" DESC NULLS LAST);--> statement-breakpoint
+CREATE INDEX "idx_external_event_audit_logs_created_at" ON "external_event_audit_logs" USING btree ("created_at");--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_external_event_sources_source" ON "external_event_sources" USING btree ("source");--> statement-breakpoint
 CREATE INDEX "idx_external_event_sources_api_key" ON "external_event_sources" USING btree ("api_key");--> statement-breakpoint
 CREATE INDEX "idx_responses_suggested_conversation_id" ON "responses_suggested" USING btree ("conversation_id");--> statement-breakpoint
@@ -570,9 +570,9 @@ CREATE INDEX "idx_external_data_sync_logs_status" ON "external_data_sync_logs" U
 CREATE INDEX "idx_external_data_sync_logs_started_at" ON "external_data_sync_logs" USING btree ("started_at");--> statement-breakpoint
 CREATE INDEX "idx_archive_jobs_table_name" ON "archive_jobs" USING btree ("table_name");--> statement-breakpoint
 CREATE INDEX "idx_archive_jobs_status" ON "archive_jobs" USING btree ("status");--> statement-breakpoint
-CREATE INDEX "idx_archive_jobs_archive_date" ON "archive_jobs" USING btree ("archive_date" DESC NULLS LAST);--> statement-breakpoint
+CREATE INDEX "idx_archive_jobs_archive_date" ON "archive_jobs" USING btree ("archive_date");--> statement-breakpoint
 CREATE INDEX "idx_query_logs_query_hash" ON "query_logs" USING btree ("query_hash");--> statement-breakpoint
-CREATE INDEX "idx_query_logs_created_at" ON "query_logs" USING btree ("created_at" DESC NULLS LAST);--> statement-breakpoint
-CREATE INDEX "idx_query_logs_duration" ON "query_logs" USING btree ("duration_ms" DESC NULLS LAST);--> statement-breakpoint
-CREATE INDEX "idx_query_stats_call_count" ON "query_stats" USING btree ("call_count" DESC NULLS LAST);--> statement-breakpoint
-CREATE INDEX "idx_query_stats_avg_duration" ON "query_stats" USING btree ("avg_duration_ms" DESC NULLS LAST);
+CREATE INDEX "idx_query_logs_created_at" ON "query_logs" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "idx_query_logs_duration" ON "query_logs" USING btree ("duration_ms");--> statement-breakpoint
+CREATE INDEX "idx_query_stats_call_count" ON "query_stats" USING btree ("call_count");--> statement-breakpoint
+CREATE INDEX "idx_query_stats_avg_duration" ON "query_stats" USING btree ("avg_duration_ms");
