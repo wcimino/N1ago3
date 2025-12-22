@@ -116,6 +116,9 @@ export interface OrchestratorContext {
   rootCauseId?: number;
   articleId?: number;
   solutionId?: number;
+  problemId?: string;
+  articleUuid?: string;
+  rootCauseUuid?: string;
   providedInputs?: Record<string, unknown>;
   caseSolutionId?: number;
   demandFound?: boolean;

@@ -149,3 +149,98 @@ export async function searchSolutionCenter(
 export function isConfigured(): boolean {
   return getConfig() !== null;
 }
+
+// ============================================================================
+// Solution Provider API - POST /api/solutions
+// ============================================================================
+
+export interface SolutionProviderRequest {
+  articleId: string;
+  problemId: string;
+  rootCauseId: string;
+}
+
+export interface SolutionProviderAction {
+  id: string;
+  name: string;
+  description: string;
+  actionType: "instruction" | "link" | "api_call";
+  actionValue: string;
+  order: number;
+}
+
+export interface SolutionProviderSolution {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface SolutionProviderResponse {
+  solution: SolutionProviderSolution;
+  actions: SolutionProviderAction[];
+}
+
+export async function getSolutionFromCenter(
+  request: SolutionProviderRequest
+): Promise<SolutionProviderResponse | null> {
+  const config = getConfig();
+
+  if (!config) {
+    console.log("[SolutionCenterClient] API not configured (missing SOLUTION_CENTER_API_URL or SOLUTION_CENTER_API_TOKEN)");
+    return null;
+  }
+
+  const { articleId, problemId, rootCauseId } = request;
+
+  if (!articleId || !problemId || !rootCauseId) {
+    console.log("[SolutionCenterClient] Missing required fields for solution request", { articleId, problemId, rootCauseId });
+    return null;
+  }
+
+  const endpoint = `${config.url}/api/solutions`;
+
+  const requestBody: SolutionProviderRequest = {
+    articleId,
+    problemId,
+    rootCauseId,
+  };
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+  try {
+    console.log(`[SolutionCenterClient] Fetching solution from ${endpoint}`);
+    console.log(`[SolutionCenterClient] Request: articleId=${articleId}, problemId=${problemId}, rootCauseId=${rootCauseId}`);
+
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${config.token}`,
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[SolutionCenterClient] Solution API error ${response.status}: ${errorText}`);
+      return null;
+    }
+
+    const data = await response.json() as SolutionProviderResponse;
+    console.log(`[SolutionCenterClient] Solution found: ${data.solution?.name}, actions: ${data.actions?.length || 0}`);
+
+    return data;
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error(`[SolutionCenterClient] Solution request timed out after 30s`);
+    } else {
+      console.error("[SolutionCenterClient] Solution request failed:", error);
+    }
+    return null;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
