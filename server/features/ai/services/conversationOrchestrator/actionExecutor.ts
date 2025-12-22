@@ -23,7 +23,7 @@ export class ActionExecutor {
   }
 
   private static async executeAction(context: OrchestratorContext, action: OrchestratorAction): Promise<void> {
-    const { conversationId, event } = context;
+    const { conversationId } = context;
 
     switch (action.type) {
       case "SEND_MESSAGE":
@@ -34,20 +34,8 @@ export class ActionExecutor {
         await this.executeTransferToHuman(context, action.payload);
         break;
 
-      case "INSTRUCTION":
-        await this.executeInstruction(context, action.payload);
-        break;
-
-      case "LINK":
-        await this.executeLink(context, action.payload);
-        break;
-
-      case "API_CALL":
-        await this.executeApiCall(context, action.payload);
-        break;
-
       default:
-        console.log(`[ActionExecutor] Unknown action type: ${(action as any).type}`);
+        console.log(`[ActionExecutor] Unknown or unsupported action type: ${(action as any).type} - skipping`);
     }
   }
 
@@ -129,38 +117,5 @@ export class ActionExecutor {
     } else {
       console.error(`[ActionExecutor] Failed to pass control: ${passControlResult.error}`);
     }
-  }
-
-  private static async executeInstruction(
-    context: OrchestratorContext,
-    payload: { caseActionId: number; name: string; description: string; value: string }
-  ): Promise<void> {
-    const { conversationId } = context;
-    console.log(`[ActionExecutor] INSTRUCTION for conversation ${conversationId}`);
-    console.log(`[ActionExecutor] Action: ${payload.name}`);
-    console.log(`[ActionExecutor] Description: ${payload.description}`);
-    console.log(`[ActionExecutor] Value: ${payload.value}`);
-  }
-
-  private static async executeLink(
-    context: OrchestratorContext,
-    payload: { caseActionId: number; name: string; description: string; url: string }
-  ): Promise<void> {
-    const { conversationId } = context;
-    console.log(`[ActionExecutor] LINK for conversation ${conversationId}`);
-    console.log(`[ActionExecutor] Action: ${payload.name}`);
-    console.log(`[ActionExecutor] Description: ${payload.description}`);
-    console.log(`[ActionExecutor] URL: ${payload.url}`);
-  }
-
-  private static async executeApiCall(
-    context: OrchestratorContext,
-    payload: { caseActionId: number; name: string; description: string; endpoint: string }
-  ): Promise<void> {
-    const { conversationId } = context;
-    console.log(`[ActionExecutor] API_CALL for conversation ${conversationId}`);
-    console.log(`[ActionExecutor] Action: ${payload.name}`);
-    console.log(`[ActionExecutor] Description: ${payload.description}`);
-    console.log(`[ActionExecutor] Endpoint: ${payload.endpoint}`);
   }
 }
