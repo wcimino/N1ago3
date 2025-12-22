@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { getAuthorColor, isCustomerMessage, getMessageSender } from "../../../lib/messageUtils";
 import { useDateFormatters } from "../../hooks";
 import {
@@ -32,12 +31,9 @@ export function MessageBubble({ message, onImageClick, currentHandlerName }: Mes
   const renderContent = () => {
     if (hasImage) {
       return (
-        <motion.div
-          layoutId={`image-${message.id}`}
+        <div
           onClick={() => onImageClick?.(message.content_payload as ImagePayload)}
-          className="cursor-pointer"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          className="cursor-pointer transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98]"
         >
           <img 
             src={(message.content_payload as ImagePayload).mediaUrl} 
@@ -45,7 +41,7 @@ export function MessageBubble({ message, onImageClick, currentHandlerName }: Mes
             className="max-w-full rounded-lg max-h-64 object-contain"
             loading="lazy"
           />
-        </motion.div>
+        </div>
       );
     }
 

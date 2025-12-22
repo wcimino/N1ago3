@@ -1,5 +1,4 @@
-import { useState, type ReactNode } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 
 interface CollapsibleSectionProps {
@@ -18,6 +17,23 @@ export function CollapsibleSection({
   badge,
 }: CollapsibleSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState<number | undefined>(defaultOpen ? undefined : 0);
+
+  useEffect(() => {
+    if (isOpen) {
+      const contentHeight = contentRef.current?.scrollHeight;
+      setHeight(contentHeight);
+      const timer = setTimeout(() => setHeight(undefined), 200);
+      return () => clearTimeout(timer);
+    } else {
+      const contentHeight = contentRef.current?.scrollHeight;
+      setHeight(contentHeight);
+      requestAnimationFrame(() => {
+        setHeight(0);
+      });
+    }
+  }, [isOpen]);
 
   return (
     <div className="border rounded-lg overflow-hidden">
@@ -35,28 +51,24 @@ export function CollapsibleSection({
             <p className="text-sm text-gray-500 mt-0.5">{description}</p>
           )}
         </div>
-        <motion.div
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-          className="ml-3 shrink-0"
+        <div
+          className={`ml-3 shrink-0 transition-transform duration-200 ${
+            isOpen ? "rotate-180" : "rotate-0"
+          }`}
         >
           <ChevronDown className="h-5 w-5 text-gray-400" />
-        </motion.div>
+        </div>
       </button>
       
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <div className="border-t">{children}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div
+        ref={contentRef}
+        style={{ height: height !== undefined ? `${height}px` : "auto" }}
+        className={`overflow-hidden transition-all duration-200 ${
+          isOpen ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <div className="border-t">{children}</div>
+      </div>
     </div>
   );
 }

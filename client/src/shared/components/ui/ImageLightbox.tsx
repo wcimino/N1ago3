@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 
 interface ImageLightboxProps {
@@ -8,44 +8,45 @@ interface ImageLightboxProps {
 }
 
 export function ImageLightbox({ imageUrl, altText, onClose }: ImageLightboxProps) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (imageUrl) {
+      requestAnimationFrame(() => setIsVisible(true));
+    }
+  }, [imageUrl]);
+
   if (!imageUrl) return null;
 
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(onClose, 200);
+  };
+
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-        onClick={onClose}
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm transition-opacity duration-200 ${
+        isVisible ? "opacity-100" : "opacity-0"
+      }`}
+      onClick={handleClose}
+    >
+      <button
+        className={`absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all duration-200 ${
+          isVisible ? "opacity-100 scale-100" : "opacity-0 scale-75"
+        }`}
+        onClick={handleClose}
       >
-        <motion.button
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          transition={{ delay: 0.1 }}
-          className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-          onClick={onClose}
-        >
-          <X className="w-6 h-6" />
-        </motion.button>
-        
-        <motion.img
-          initial={{ scale: 0.5, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.5, opacity: 0 }}
-          transition={{ 
-            type: "spring", 
-            stiffness: 300, 
-            damping: 25 
-          }}
-          src={imageUrl}
-          alt={altText || "Imagem expandida"}
-          className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
-        />
-      </motion.div>
-    </AnimatePresence>
+        <X className="w-6 h-6" />
+      </button>
+      
+      <img
+        src={imageUrl}
+        alt={altText || "Imagem expandida"}
+        className={`max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl transition-all duration-200 ${
+          isVisible ? "opacity-100 scale-100" : "opacity-0 scale-75"
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      />
+    </div>
   );
 }
