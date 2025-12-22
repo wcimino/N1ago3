@@ -1,0 +1,149 @@
+[
+  {
+    "table_name": "archive_jobs"
+  },
+  {
+    "table_name": "auth_users"
+  },
+  {
+    "table_name": "auth_users_conversation_favorites"
+  },
+  {
+    "table_name": "authorized_users"
+  },
+  {
+    "table_name": "case_actions"
+  },
+  {
+    "table_name": "case_demand"
+  },
+  {
+    "table_name": "case_solutions"
+  },
+  {
+    "table_name": "conversations"
+  },
+  {
+    "table_name": "conversations_summary"
+  },
+  {
+    "table_name": "embedding_generation_logs"
+  },
+  {
+    "table_name": "event_type_mappings"
+  },
+  {
+    "table_name": "events_standard"
+  },
+  {
+    "table_name": "external_data_sync_logs"
+  },
+  {
+    "table_name": "external_event_audit_logs"
+  },
+  {
+    "table_name": "external_event_sources"
+  },
+  {
+    "table_name": "knowledge_base_actions"
+  },
+  {
+    "table_name": "knowledge_base_objective_problems"
+  },
+  {
+    "table_name": "knowledge_base_objective_problems_embeddings"
+  },
+  {
+    "table_name": "knowledge_base_objective_problems_has_products_catalog"
+  },
+  {
+    "table_name": "knowledge_base_root_cause_has_knowledge_base_objective_problems"
+  },
+  {
+    "table_name": "knowledge_base_root_cause_has_knowledge_base_solutions"
+  },
+  {
+    "table_name": "knowledge_base_root_causes"
+  },
+  {
+    "table_name": "knowledge_base_solutions"
+  },
+  {
+    "table_name": "knowledge_base_solutions_has_knowledge_base_actions"
+  },
+  {
+    "table_name": "knowledge_enrichment_log"
+  },
+  {
+    "table_name": "knowledge_suggestions"
+  },
+  {
+    "table_name": "openai_api_config"
+  },
+  {
+    "table_name": "openai_api_config_general"
+  },
+  {
+    "table_name": "openai_api_logs"
+  },
+  {
+    "table_name": "organizations_standard"
+  },
+  {
+    "table_name": "organizations_standard_history"
+  },
+  {
+    "table_name": "products_catalog"
+  },
+  {
+    "table_name": "query_logs"
+  },
+  {
+    "table_name": "query_stats"
+  },
+  {
+    "table_name": "responses_suggested"
+  },
+  {
+    "table_name": "routing_processed_events"
+  },
+  {
+    "table_name": "routing_rules"
+  },
+  {
+    "table_name": "sessions"
+  },
+  {
+    "table_name": "system_config"
+  },
+  {
+    "table_name": "user_standard_has_organization_standard"
+  },
+  {
+    "table_name": "users"
+  },
+  {
+    "table_name": "users_standard"
+  },
+  {
+    "table_name": "users_standard_history"
+  },
+  {
+    "table_name": "zendesk_api_logs"
+  },
+  {
+    "table_name": "zendesk_article_embeddings"
+  },
+  {
+    "table_name": "zendesk_articles"
+  },
+  {
+    "table_name": "zendesk_articles_statistics"
+  },
+  {
+    "table_name": "zendesk_conversations_webhook_raw"
+  },
+  {
+    "table_name": "zendesk_support_users"
+  }
+]
