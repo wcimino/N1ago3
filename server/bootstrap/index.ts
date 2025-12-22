@@ -1,10 +1,14 @@
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from "url";
 import type { Express } from "express";
 import express from "express";
 import { startPollingWorker, stopPollingWorker, isPollingWorkerRunning } from "../features/sync/services/pollingWorker.js";
 import { vacuumService, archiveService } from "../features/maintenance/services/index.js";
 import { initializePreflight, getPreflightResult, getActiveSchedulerConfig, type PreflightResult, type SchedulerConfig } from "./preflight.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface BootstrapConfig {
   enableSchedulers: boolean;
@@ -58,13 +62,20 @@ export function getBootstrapHealth(): {
 }
 
 export function configureStaticFiles(app: Express): void {
-  const publicPath = path.join(process.cwd(), "dist", "public");
+  const publicPath = path.resolve(__dirname, "public");
   const indexPath = path.join(publicPath, "index.html");
+  console.log(`[Bootstrap] Looking for static files at: ${publicPath}`);
   
+  const isApiRoute = (path: string) => 
+    path.startsWith("/api") || 
+    path.startsWith("/webhook") || 
+    path === "/health" || 
+    path === "/ready";
+
   if (!fs.existsSync(indexPath)) {
     console.warn("[Bootstrap] WARNING: dist/public/index.html not found - frontend build may be missing");
     app.get("*", (req, res, next) => {
-      if (req.path.startsWith("/api") || req.path === "/health" || req.path === "/ready") {
+      if (isApiRoute(req.path)) {
         return next();
       }
       res.status(503).send(`
@@ -82,14 +93,19 @@ export function configureStaticFiles(app: Express): void {
     return;
   }
   
-  app.use(express.static(publicPath));
+  app.use(express.static(publicPath, {
+    maxAge: "1d",
+    etag: true,
+  }));
+  
   app.get("*", (req, res, next) => {
-    if (req.path.startsWith("/api") || req.path === "/health" || req.path === "/ready") {
+    if (isApiRoute(req.path)) {
       return next();
     }
     res.sendFile(indexPath);
   });
-  console.log("[Bootstrap] Static files configured");
+  
+  console.log(`[Bootstrap] Static files configured from: ${publicPath}`);
 }
 
 export function startBackgroundWorkers(config: SchedulerConfig): void {
