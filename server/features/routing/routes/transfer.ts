@@ -86,6 +86,21 @@ router.post("/api/conversations/:conversationId/transfer", isAuthenticated, requ
       } else {
         console.error(`[TransferRoutes] Failed to add tag 'teste_n1ago' to conversation ${conversationId}:`, tagResult.error);
       }
+
+      // Send welcome message when transferring to N1ago
+      const welcomeMessage = "Olá! Sou o Niago, assistente virtual do iFood Pago. Como posso ajudar você hoje?";
+      const welcomeResult = await ZendeskApiService.sendMessage(
+        externalConversationId,
+        welcomeMessage,
+        "manual_transfer",
+        `conversation:${conversationId}`
+      );
+
+      if (welcomeResult.success) {
+        console.log(`[TransferRoutes] Welcome message sent successfully to conversation ${conversationId}`);
+      } else {
+        console.error(`[TransferRoutes] Failed to send welcome message to conversation ${conversationId}:`, welcomeResult.error);
+      }
     }
 
     const handlerName = TargetResolver.getHandlerName(target);
