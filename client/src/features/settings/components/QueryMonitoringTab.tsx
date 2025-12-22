@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi, apiRequest } from "../../../lib/queryClient";
-import { useConfirmation } from "../../../shared/hooks";
+import { useConfirmation, useDateFormatters } from "../../../shared/hooks";
 import { ConfirmModal } from "../../../shared/components";
 import { RefreshCw, Trash2, Database, Clock, Activity, AlertTriangle } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 interface QueryStat {
   id: number;
@@ -51,6 +49,7 @@ type Period = "1h" | "24h";
 export function QueryMonitoringTab() {
   const queryClient = useQueryClient();
   const confirmation = useConfirmation();
+  const { formatRelativeTime } = useDateFormatters();
   const [orderBy, setOrderBy] = useState<OrderBy>("callCount");
   const [period, setPeriod] = useState<Period>("24h");
   const [showSlowQueries, setShowSlowQueries] = useState(false);
@@ -318,7 +317,7 @@ export function QueryMonitoringTab() {
                         {(stat.totalDurationMs / 1000).toFixed(1)}s
                       </td>
                       <td className="px-4 py-3 text-right text-sm text-gray-500">
-                        {formatDistanceToNow(new Date(stat.lastCalledAt), { addSuffix: true, locale: ptBR })}
+                        {formatRelativeTime(stat.lastCalledAt)}
                       </td>
                     </tr>
                   ))}
@@ -365,7 +364,7 @@ export function QueryMonitoringTab() {
                         {query.rowsAffected ?? "-"}
                       </td>
                       <td className="px-4 py-3 text-right text-sm text-gray-500">
-                        {formatDistanceToNow(new Date(query.createdAt), { addSuffix: true, locale: ptBR })}
+                        {formatRelativeTime(query.createdAt)}
                       </td>
                     </tr>
                   ))}
