@@ -146,17 +146,6 @@ async function executeRouting(
       return { success: false, error: `passControl failed: ${passControlResult.error}` };
     }
 
-    const tagResult = await ZendeskApiService.addConversationTags(
-      externalConversationId,
-      ["teste_n1ago"],
-      "routing",
-      `rule:${rule.id}`
-    );
-
-    if (!tagResult.success) {
-      console.error(`[InboundRouting] Rule ${rule.id}: Failed to add tag - ${tagResult.error}`);
-    }
-
     await routingTrackingStorage.markConversationProcessed(
       externalConversationId,
       rule.id,
@@ -173,15 +162,26 @@ async function executeRouting(
 
     slotConsumed = true;
 
+    try {
+      await conversationStorage.updateConversationHandler(
+        externalConversationId,
+        targetIntegrationId,
+        TargetResolver.getHandlerName(rule.target) || rule.target
+      );
+    } catch (handlerError) {
+      console.error(`[InboundRouting] Rule ${rule.id}: Failed to update handler:`, handlerError);
+    }
+
     if (TargetResolver.isN1ago(rule.target)) {
-      try {
-        await conversationStorage.updateConversationHandler(
-          externalConversationId,
-          targetIntegrationId,
-          TargetResolver.getHandlerName(rule.target) || "n1ago"
-        );
-      } catch (handlerError) {
-        console.error(`[InboundRouting] Rule ${rule.id}: Failed to update handler:`, handlerError);
+      const tagResult = await ZendeskApiService.addConversationTags(
+        externalConversationId,
+        ["teste_n1ago"],
+        "routing",
+        `rule:${rule.id}`
+      );
+
+      if (!tagResult.success) {
+        console.error(`[InboundRouting] Rule ${rule.id}: Failed to add tag - ${tagResult.error}`);
       }
 
       const welcomeMessage = "Olá! Sou o Niago, assistente virtual do iFood Pago. Como posso ajudar você hoje?";
