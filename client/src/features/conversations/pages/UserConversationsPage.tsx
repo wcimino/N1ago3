@@ -4,7 +4,7 @@ import { XCircle, MessageCircle, FileText, Eye, EyeOff, ArrowRightLeft, Zap, Zap
 import type { ImagePayload } from "../../../types";
 import { ImageLightbox, LoadingState, SegmentedTabs, ConfirmModal } from "../../../shared/components/ui";
 import { HandlerBadge } from "../../../shared/components/badges/HandlerBadge";
-import { ConversationSelector, ConversationSummary, ConversationChat, TransferConversationModal } from "../components";
+import { ConversationSelector, ConversationSummary, ConversationChat, TransferConversationModal, ActionsDropdown } from "../components";
 import { useResizablePanel, useDateFormatters, useConfirmation } from "../../../shared/hooks";
 import { getUserDisplayNameFromProfile } from "../../../lib/userUtils";
 import { FavoriteButton } from "../../favorites/components/FavoriteButton";
@@ -65,7 +65,39 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
     { id: "chat", label: "Chat", icon: <MessageCircle className="w-4 h-4" /> },
   ];
 
-  const renderActionButtons = () => {
+  const renderMobileActions = () => {
+    if (!selectedConversation) return null;
+    return (
+      <ActionsDropdown
+        conversationId={selectedConversation.conversation.id}
+        isFavorite={isFavorite(selectedConversation.conversation.id)}
+        onToggleFavorite={() => toggleFavorite(selectedConversation.conversation.id)}
+        isFavoriteLoading={isToggling}
+        handlerName={selectedConversation.conversation.current_handler_name}
+        autopilotEnabled={selectedConversation.conversation.autopilot_enabled}
+        onToggleAutopilot={() => toggleAutopilot(
+          selectedConversation.conversation.id,
+          !selectedConversation.conversation.autopilot_enabled
+        )}
+        isAutopilotLoading={isTogglingAutopilot}
+        showAutopilot={selectedConversation.conversation.current_handler_name?.startsWith("n1ago") || false}
+        isActive={selectedConversation.conversation.status === "active"}
+        onTransfer={() => setShowTransferModal(true)}
+        onClose={() => {
+          confirmation.confirm({
+            title: "Encerrar conversa",
+            message: "Tem certeza que deseja encerrar esta conversa?",
+            confirmLabel: "Encerrar",
+            variant: "warning",
+            onConfirm: () => closeConversation(selectedConversation.conversation.id),
+          });
+        }}
+        isClosing={isClosingConversation}
+      />
+    );
+  };
+
+  const renderDesktopActionButtons = () => {
     if (!selectedConversation) return null;
     return (
       <>
@@ -188,7 +220,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                 closedReason={selectedConversation?.conversation.closed_reason}
                 onPrevious={goToPreviousConversation}
                 onNext={goToNextConversation}
-                actionButtons={renderActionButtons()}
+                actionButtons={renderMobileActions()}
               />
               
               <div className="px-3 py-2 bg-white border-b border-gray-200 flex-shrink-0">
@@ -282,7 +314,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                       <span className="text-sm font-medium text-gray-700">Chat</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      {renderActionButtons()}
+                      {renderDesktopActionButtons()}
                       <button
                         onClick={() => setShowSuggestions(!showSuggestions)}
                         className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 rounded-lg transition-colors"

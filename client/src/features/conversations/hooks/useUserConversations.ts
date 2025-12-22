@@ -78,16 +78,14 @@ export function useUserConversations({ userId, conversationIdFromUrl }: UseUserC
   const totalMessages = data?.conversations?.reduce((acc, conv) => acc + conv.messages.length, 0) || 0;
 
   const goToPreviousConversation = useCallback(() => {
-    if (selectedConversationIndex > 0) {
-      setSelectedConversationIndex(selectedConversationIndex - 1);
-    }
-  }, [selectedConversationIndex]);
+    setSelectedConversationIndex((prev) => (prev > 0 ? prev - 1 : prev));
+  }, []);
 
   const goToNextConversation = useCallback(() => {
-    if (selectedConversationIndex < sortedConversations.length - 1) {
-      setSelectedConversationIndex(selectedConversationIndex + 1);
-    }
-  }, [selectedConversationIndex, sortedConversations.length]);
+    setSelectedConversationIndex((prev) => 
+      prev < sortedConversations.length - 1 ? prev + 1 : prev
+    );
+  }, [sortedConversations.length]);
 
   const toggleAutopilot = useCallback((conversationId: number, enabled: boolean) => {
     toggleAutopilotMutation.mutate({ conversationId, enabled });

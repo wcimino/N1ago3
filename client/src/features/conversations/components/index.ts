@@ -6,3 +6,4 @@ export { SummaryCard } from "./SummaryCard";
 export { FilterBar } from "./FilterBar";
 export { ConversationCard } from "./ConversationCard";
 export { TransferConversationModal } from "./TransferConversationModal";
+export { ActionsDropdown } from "./ActionsDropdown";

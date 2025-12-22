@@ -5,7 +5,13 @@ import { ptBR } from "date-fns/locale";
 const DEFAULT_TIMEZONE = "America/Sao_Paulo";
 
 function toDate(date: string | Date): Date {
-  return typeof date === "string" ? parseISO(date) : date;
+  if (typeof date === "string") {
+    if (!date.endsWith("Z") && !date.includes("+") && !date.includes("-", 10)) {
+      return parseISO(date + "Z");
+    }
+    return parseISO(date);
+  }
+  return date;
 }
 
 export function formatDateTime(date: string | Date, timezone: string = DEFAULT_TIMEZONE): string {
