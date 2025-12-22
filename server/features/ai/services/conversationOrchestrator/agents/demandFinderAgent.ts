@@ -117,22 +117,34 @@ export class DemandFinderAgent {
         });
         
         await conversationStorage.updateOrchestratorState(conversationId, {
-          orchestratorStatus: ORCHESTRATOR_STATUS.FINALIZING,
-          conversationOwner: CONVERSATION_OWNER.CLOSER,
+          orchestratorStatus: ORCHESTRATOR_STATUS.PROVIDING_SOLUTION,
+          conversationOwner: CONVERSATION_OWNER.SOLUTION_PROVIDER,
           waitingForCustomer: false,
         });
         await caseDemandStorage.updateStatus(conversationId, "demand_found");
         
-        context.currentStatus = ORCHESTRATOR_STATUS.FINALIZING;
+        context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
         context.demandFound = true;
-        context.rootCauseId = parseInt(promptResult.selected_intent.id, 10) || undefined;
+        
+        const selectedIntentId = parseInt(promptResult.selected_intent.id, 10) || undefined;
+        const selectedResult = searchResult.results?.find(r => r.id === promptResult.selected_intent.id);
+        
+        if (selectedResult?.source === "article") {
+          context.articleId = selectedIntentId;
+        } else {
+          context.rootCauseId = selectedIntentId;
+        }
         
         context.lastDispatchLog = {
           solutionCenterResults: searchResult.results?.length ?? 0,
           aiDecision: promptResult.decision,
           aiReason: promptResult.reason,
-          action: "demand_confirmed",
-          details: { selectedIntentId: promptResult.selected_intent.id, selectedIntentLabel: promptResult.selected_intent.label },
+          action: "demand_confirmed_to_solution_provider",
+          details: { 
+            selectedIntentId: promptResult.selected_intent.id, 
+            selectedIntentLabel: promptResult.selected_intent.label,
+            intentType: selectedResult?.source || "unknown",
+          },
         };
         
         return {

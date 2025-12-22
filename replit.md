@@ -15,7 +15,8 @@ The system employs a decoupled architecture with a React, TypeScript, Vite, Tail
 *   **Standardized Event Architecture:** Ingests and normalizes events via webhooks, an `EventBus`, an `Event Processor` with `Adapters`, and a `Polling Worker`.
 *   **Authentication System:** Uses Replit Auth (Google Login) with an Access Control List (ACL) based on email domains and an `authorized_users` table.
 *   **AI-Powered Features:** A unified architecture supports various AI capabilities (summarization, classification, response generation, knowledge search) using centralized OpenAI services and automatic API call logging.
-*   **ConversationOrchestrator Pipeline:** Manages conversation flow using a 2-field state model (`conversation_owner` + `waiting_for_customer`) with defined owner transition validations and status values.
+*   **ConversationOrchestrator Pipeline:** Manages conversation flow using a 2-field state model (`conversation_owner` + `waiting_for_customer`) with defined owner transition validations and status values. The flow is: DemandFinder → SolutionProvider → Closer. The SolutionProvider handles solution resolution using `case_solutions` and `case_actions` tables.
+*   **SolutionProviderAgent:** Receives `articleId` or `(solutionId + rootCauseId)` from DemandFinder and resolves the appropriate solution. Currently uses a fallback strategy (transfer to human) until Central de Soluções API integration is implemented.
 *   **Case Solution and Demand Architecture:** `case_solutions` table tracks solution instances; `case_demand` stores customer demands per conversation, supporting multiple demands and interaction counts.
 *   **External Knowledge via Solution Center API:** All knowledge retrieval uses the external Solution Center API; no internal knowledge base or embeddings.
 
