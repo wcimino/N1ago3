@@ -21,7 +21,7 @@ const actionLabels: Record<string, { label: string; color: string }> = {
   failed: { label: "Falhou", color: "bg-red-100 text-red-700" },
 };
 
-function LogEntry({ entry, isExpanded, onToggle, formatDateTime }: { entry: OrchestratorLogEntry; isExpanded: boolean; onToggle: () => void; formatDateTime: (date: string | Date) => string }) {
+function LogEntry({ entry, sequenceNumber, isExpanded, onToggle, formatDateTime }: { entry: OrchestratorLogEntry; sequenceNumber: number; isExpanded: boolean; onToggle: () => void; formatDateTime: (date: string | Date) => string }) {
   const agentLabel = agentLabels[entry.agent] || entry.agent;
   const actionConfig = actionLabels[entry.action] || { label: entry.action, color: "bg-gray-100 text-gray-700" };
 
@@ -36,7 +36,7 @@ function LogEntry({ entry, isExpanded, onToggle, formatDateTime }: { entry: Orch
         ) : (
           <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" />
         )}
-        <span className="text-xs font-medium text-gray-600">#{entry.turn}</span>
+        <span className="text-xs font-medium text-gray-600">#{sequenceNumber}</span>
         <span className="text-xs text-gray-400">{formatDateTime(entry.timestamp)}</span>
         <span className="text-xs font-medium text-indigo-600">{agentLabel}</span>
         <span className={`ml-auto px-2 py-0.5 rounded text-xs font-medium ${actionConfig.color}`}>
@@ -89,7 +89,7 @@ function LogEntry({ entry, isExpanded, onToggle, formatDateTime }: { entry: Orch
 }
 
 export function OrchestratorLogsCard({ logs }: OrchestratorLogsCardProps) {
-  const [expandedTurns, setExpandedTurns] = useState<Set<number>>(new Set());
+  const [expandedIndexes, setExpandedIndexes] = useState<Set<number>>(new Set());
   const [isCardExpanded, setIsCardExpanded] = useState(false);
   const { formatDateTime } = useDateFormatters();
 
@@ -97,13 +97,13 @@ export function OrchestratorLogsCard({ logs }: OrchestratorLogsCardProps) {
     return null;
   }
 
-  const toggleTurn = (turn: number) => {
-    setExpandedTurns((prev) => {
+  const toggleIndex = (index: number) => {
+    setExpandedIndexes((prev) => {
       const next = new Set(prev);
-      if (next.has(turn)) {
-        next.delete(turn);
+      if (next.has(index)) {
+        next.delete(index);
       } else {
-        next.add(turn);
+        next.add(index);
       }
       return next;
     });
@@ -126,17 +126,18 @@ export function OrchestratorLogsCard({ logs }: OrchestratorLogsCardProps) {
           <Activity className="w-4 h-4" />
         </div>
         <h4 className="font-medium text-gray-800 text-sm">Logs do Orchestrator</h4>
-        <span className="ml-auto text-xs text-indigo-600 font-medium">{logs.length} turnos</span>
+        <span className="ml-auto text-xs text-indigo-600 font-medium">{logs.length} rodadas</span>
       </button>
       
       {isCardExpanded && (
         <div className="mt-3 space-y-2">
-          {sortedLogs.map((entry) => (
+          {sortedLogs.map((entry, index) => (
             <LogEntry
-              key={entry.turn}
+              key={index}
               entry={entry}
-              isExpanded={expandedTurns.has(entry.turn)}
-              onToggle={() => toggleTurn(entry.turn)}
+              sequenceNumber={sortedLogs.length - index}
+              isExpanded={expandedIndexes.has(index)}
+              onToggle={() => toggleIndex(index)}
               formatDateTime={formatDateTime}
             />
           ))}
