@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Activity } from "lucide-react";
 import type { OrchestratorLogEntry } from "./types";
+import { useDateFormatters } from "../../../../shared/hooks";
 
 export interface OrchestratorLogsCardProps {
   logs: OrchestratorLogEntry[];
@@ -20,18 +21,7 @@ const actionLabels: Record<string, { label: string; color: string }> = {
   failed: { label: "Falhou", color: "bg-red-100 text-red-700" },
 };
 
-function formatTimestamp(timestamp: string): string {
-  const date = new Date(timestamp);
-  return date.toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
-
-function LogEntry({ entry, isExpanded, onToggle }: { entry: OrchestratorLogEntry; isExpanded: boolean; onToggle: () => void }) {
+function LogEntry({ entry, isExpanded, onToggle, formatDateTime }: { entry: OrchestratorLogEntry; isExpanded: boolean; onToggle: () => void; formatDateTime: (date: string | Date) => string }) {
   const agentLabel = agentLabels[entry.agent] || entry.agent;
   const actionConfig = actionLabels[entry.action] || { label: entry.action, color: "bg-gray-100 text-gray-700" };
 
@@ -47,7 +37,7 @@ function LogEntry({ entry, isExpanded, onToggle }: { entry: OrchestratorLogEntry
           <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" />
         )}
         <span className="text-xs font-medium text-gray-600">#{entry.turn}</span>
-        <span className="text-xs text-gray-400">{formatTimestamp(entry.timestamp)}</span>
+        <span className="text-xs text-gray-400">{formatDateTime(entry.timestamp)}</span>
         <span className="text-xs font-medium text-indigo-600">{agentLabel}</span>
         <span className={`ml-auto px-2 py-0.5 rounded text-xs font-medium ${actionConfig.color}`}>
           {actionConfig.label}
@@ -101,6 +91,7 @@ function LogEntry({ entry, isExpanded, onToggle }: { entry: OrchestratorLogEntry
 export function OrchestratorLogsCard({ logs }: OrchestratorLogsCardProps) {
   const [expandedTurns, setExpandedTurns] = useState<Set<number>>(new Set());
   const [isCardExpanded, setIsCardExpanded] = useState(false);
+  const { formatDateTime } = useDateFormatters();
 
   if (!logs || logs.length === 0) {
     return null;
@@ -146,6 +137,7 @@ export function OrchestratorLogsCard({ logs }: OrchestratorLogsCardProps) {
               entry={entry}
               isExpanded={expandedTurns.has(entry.turn)}
               onToggle={() => toggleTurn(entry.turn)}
+              formatDateTime={formatDateTime}
             />
           ))}
         </div>

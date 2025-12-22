@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { ArrowLeft, Archive, Database, RefreshCw, Play, CheckCircle, XCircle, Clock, FileArchive } from "lucide-react";
 import { apiRequest, fetchApi } from "../../../lib/queryClient";
 import { formatNumber } from "../../../lib/formatters";
-import { useConfirmation } from "../../../shared/hooks";
+import { useConfirmation, useDateFormatters } from "../../../shared/hooks";
 import { ConfirmModal } from "../../../shared/components";
 
 interface TableStats {
@@ -44,18 +44,6 @@ interface ArchiveJob {
   createdAt: string;
 }
 
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "-";
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("pt-BR");
-}
-
-function formatDateTime(dateStr: string | null): string {
-  if (!dateStr) return "-";
-  const date = new Date(dateStr);
-  return date.toLocaleString("pt-BR");
-}
-
 function formatBytes(bytes: number | null): string {
   if (!bytes) return "-";
   if (bytes < 1024) return `${bytes} B`;
@@ -66,6 +54,17 @@ function formatBytes(bytes: number | null): string {
 export function ArchivePage() {
   const [, navigate] = useLocation();
   const confirmation = useConfirmation();
+  const { formatDate: formatDateWithTz, formatDateTime: formatDateTimeWithTz } = useDateFormatters();
+
+  const formatDate = (dateStr: string | null): string => {
+    if (!dateStr) return "-";
+    return formatDateWithTz(dateStr);
+  };
+
+  const formatDateTime = (dateStr: string | null): string => {
+    if (!dateStr) return "-";
+    return formatDateTimeWithTz(dateStr);
+  };
   const [stats, setStats] = useState<ArchiveStats | null>(null);
   const [progress, setProgress] = useState<{ isRunning: boolean; progress: ArchiveProgress | null }>({ isRunning: false, progress: null });
   const [history, setHistory] = useState<ArchiveJob[]>([]);
