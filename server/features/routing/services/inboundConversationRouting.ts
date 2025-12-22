@@ -183,6 +183,20 @@ async function executeRouting(
       } catch (handlerError) {
         console.error(`[InboundRouting] Rule ${rule.id}: Failed to update handler:`, handlerError);
       }
+
+      const welcomeMessage = "Olá! Sou o Niago, assistente virtual do iFood Pago. Como posso ajudar você hoje?";
+      const welcomeResult = await ZendeskApiService.sendMessage(
+        externalConversationId,
+        welcomeMessage,
+        "routing",
+        `rule:${rule.id}`
+      );
+
+      if (welcomeResult.success) {
+        console.log(`[InboundRouting] Rule ${rule.id}: Welcome message sent`);
+      } else {
+        console.error(`[InboundRouting] Rule ${rule.id}: Failed to send welcome - ${welcomeResult.error}`);
+      }
     }
 
     if (consumeResult.shouldDeactivate) {
