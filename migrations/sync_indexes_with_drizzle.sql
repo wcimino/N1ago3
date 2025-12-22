@@ -77,9 +77,25 @@ CREATE INDEX IF NOT EXISTS idx_conversations_summary_product_id ON conversations
 -- SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public' AND indexname LIKE 'idx_%' ORDER BY tablename, indexname;
 
 -- ============================================
--- NOTA: A tabela openai_api_logs ainda usa idx_openai_api_logs_created_at 
--- com "DESC NULLS LAST" no schema. Esse índice precisa ser sincronizado
--- apenas se estiver diferente:
+-- IMPORTANTE: O índice idx_openai_api_logs_created_at deve ter "DESC NULLS LAST"
+-- para corresponder ao schema Drizzle. Execute sempre para garantir alinhamento.
 -- ============================================
 DROP INDEX IF EXISTS idx_openai_api_logs_created_at;
 CREATE INDEX idx_openai_api_logs_created_at ON openai_api_logs USING btree (created_at DESC NULLS LAST);
+
+-- ============================================
+-- NOTA SOBRE ÍNDICES FILTRADOS REMOVIDOS DO SCHEMA:
+-- Os seguintes índices existiam no banco mas foram REMOVIDOS do schema Drizzle
+-- porque o Drizzle ORM não suporta índices com WHERE clause nativamente.
+-- Se você PRECISA desses índices para performance de queries específicas,
+-- crie-os manualmente após a migração:
+-- ============================================
+-- idx_events_standard_message_aggregation:
+-- CREATE INDEX idx_events_standard_message_aggregation ON events_standard 
+--   USING btree (event_type, conversation_id, occurred_at DESC) 
+--   WHERE (event_type = 'message');
+-- 
+-- idx_zendesk_webhook_status_retry:
+-- CREATE INDEX idx_zendesk_webhook_status_retry ON zendesk_conversations_webhook_raw 
+--   USING btree (processing_status, retry_count) 
+--   WHERE (processing_status = 'pending');
