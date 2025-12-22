@@ -86,7 +86,6 @@ export class ActionExecutor {
       externalConversationId,
       source: "orchestrator",
       reason: payload.reason,
-      farewellMessage: payload.message,
     });
 
     if (result.success) {

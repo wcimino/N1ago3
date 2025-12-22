@@ -29,9 +29,6 @@ router.post("/api/conversations/:conversationId/transfer", isAuthenticated, requ
     }
 
     const externalConversationId = conversation.externalConversationId;
-    const currentHandlerIsN1ago = TargetResolver.isN1ago(conversation.currentHandler || "") || 
-                                   TargetResolver.isN1ago(conversation.currentHandlerName || "");
-    const targetIsHuman = TargetResolver.isHuman(target);
 
     const result = await TransferService.transfer({
       conversationId: parseInt(conversationId),
@@ -39,9 +36,6 @@ router.post("/api/conversations/:conversationId/transfer", isAuthenticated, requ
       target,
       source: "manual_transfer",
       reason: reason || `transfer_to_${target}`,
-      farewellMessage: currentHandlerIsN1ago && targetIsHuman 
-        ? TransferService.DEFAULT_HUMAN_FAREWELL_MESSAGE 
-        : undefined,
     });
 
     if (!result.success) {

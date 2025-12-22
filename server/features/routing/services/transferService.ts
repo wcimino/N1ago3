@@ -11,8 +11,6 @@ export interface TransferOptions {
   target: ValidTarget;
   source: TransferSource;
   reason?: string;
-  farewellMessage?: string;
-  welcomeMessage?: string;
   tags?: string[];
   skipFarewell?: boolean;
   skipWelcome?: boolean;
@@ -39,8 +37,6 @@ async function transfer(options: TransferOptions): Promise<TransferResult> {
     target,
     source,
     reason,
-    farewellMessage,
-    welcomeMessage,
     tags,
     skipFarewell = false,
     skipWelcome = false,
@@ -58,12 +54,12 @@ async function transfer(options: TransferOptions): Promise<TransferResult> {
   console.log(`[TransferService] Starting transfer for conversation ${conversationId} to ${target} (source: ${source})`);
 
   try {
-    if (!skipFarewell && isTargetHuman && farewellMessage) {
+    if (!skipFarewell && isTargetHuman) {
       console.log(`[TransferService] Sending farewell message before transfer to human`);
       const sendResult = await SendMessageService.send({
         conversationId,
         externalConversationId,
-        message: farewellMessage,
+        message: DEFAULT_HUMAN_FAREWELL_MESSAGE,
         type: "transfer",
         source: "orchestrator",
         skipFormatting: true,
@@ -133,10 +129,9 @@ async function transfer(options: TransferOptions): Promise<TransferResult> {
     }
 
     if (!skipWelcome && isTargetN1ago) {
-      const messageToSend = welcomeMessage || DEFAULT_N1AGO_WELCOME_MESSAGE;
       const welcomeResult = await ZendeskApiService.sendMessage(
         externalConversationId,
-        messageToSend,
+        DEFAULT_N1AGO_WELCOME_MESSAGE,
         source,
         contextId
       );
@@ -164,7 +159,6 @@ async function transferToHuman(options: {
   externalConversationId: string;
   source: TransferSource;
   reason?: string;
-  farewellMessage?: string;
 }): Promise<TransferResult> {
   return transfer({
     conversationId: options.conversationId,
@@ -172,7 +166,6 @@ async function transferToHuman(options: {
     target: "human",
     source: options.source,
     reason: options.reason,
-    farewellMessage: options.farewellMessage || DEFAULT_HUMAN_FAREWELL_MESSAGE,
   });
 }
 
@@ -181,7 +174,6 @@ async function transferToN1ago(options: {
   externalConversationId: string;
   source: TransferSource;
   reason?: string;
-  welcomeMessage?: string;
   tags?: string[];
 }): Promise<TransferResult> {
   return transfer({
@@ -190,7 +182,6 @@ async function transferToN1ago(options: {
     target: "n1ago",
     source: options.source,
     reason: options.reason,
-    welcomeMessage: options.welcomeMessage,
     tags: options.tags,
   });
 }
