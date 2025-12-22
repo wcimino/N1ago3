@@ -47,6 +47,11 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **Shared Types and Constants Architecture:** Centralized type definitions and UI constants.
 *   **Shared Hooks and Form Components:** Reusable frontend components.
 *   **Backend Feature Architecture:** Each feature module contains `routes/`, `storage/`, and `services/`.
+*   **Modular Conversation Storage:** The `conversations/storage/` layer is split into focused modules:
+    - `conversationCore.ts` - CRUD operations and queries
+    - `conversationLifecycle.ts` - Closing and inactivity operations
+    - `conversationOrchestratorState.ts` - Orchestrator state management
+    - `conversationCrud.ts` - Aggregates and re-exports all modules for backward compatibility
 *   **Idempotent Event Creation:** Ensures unique event processing.
 *   **Modular AI Tools and Prompts:** AI tools in individual files; prompt variables centralized.
 *   **OpenAI Services Architecture:** Centralized services provide wrappers for `chat()` and `chatWithTools()` with automatic logging.
