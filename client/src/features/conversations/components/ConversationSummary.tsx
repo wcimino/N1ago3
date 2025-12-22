@@ -8,6 +8,7 @@ import {
   TriageCard,
   OrchestratorLogsCard,
   ClientRequestVersionsTooltip,
+  DemandFinderTooltip,
   emotionConfig,
   type SummaryData,
   type ClientRequestVersions,
@@ -167,6 +168,7 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
                     {summary.demand_finder_status === 'error' && 'Erro'}
                     {!summary.demand_finder_status && 'Aguardando'}
                   </span>
+                  <DemandFinderTooltip logs={summary.conversation_orchestrator_log} />
                 </div>
               </div>
             </div>

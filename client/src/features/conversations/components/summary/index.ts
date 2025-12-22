@@ -8,5 +8,6 @@ export { ObjectiveProblemsCard, type ObjectiveProblemsCardProps } from "./Object
 export { SolutionCenterCard, type SolutionCenterCardProps } from "./SolutionCenterCard";
 export { TriageCard, type TriageCardProps } from "./TriageCard";
 export { OrchestratorLogsCard, type OrchestratorLogsCardProps } from "./OrchestratorLogsCard";
+export { DemandFinderTooltip, type DemandFinderTooltipProps } from "./DemandFinderTooltip";
 export { emotionConfig, severityConfig } from "./config";
 export type { SummaryData, ClientRequestVersions, SolutionCenterResult, OrchestratorLogEntry } from "./types";
