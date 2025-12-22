@@ -1,9 +1,7 @@
 export type AgentConfigType = "summary" | "classification" | "response" | "demand_finder" | "topic_classification" | "closer";
 
 export interface AgentToolsConfig {
-  showKnowledgeBaseTool?: boolean;
   showZendeskKnowledgeBaseTool?: boolean;
-  showSubjectIntentTool?: boolean;
   showObjectiveProblemTool?: boolean;
   showCombinedKnowledgeSearchTool?: boolean;
 }
@@ -21,9 +19,7 @@ export interface AgentConfigMetadata {
 }
 
 const allToolsEnabled: AgentToolsConfig = {
-  showKnowledgeBaseTool: true,
   showZendeskKnowledgeBaseTool: true,
-  showSubjectIntentTool: true,
   showObjectiveProblemTool: true,
   showCombinedKnowledgeSearchTool: true,
 };

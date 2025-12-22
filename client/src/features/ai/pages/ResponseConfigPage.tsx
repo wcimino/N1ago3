@@ -14,10 +14,9 @@ export function ResponseConfigPage() {
       promptRows={config.promptRows}
       responseFormatRows={config.responseFormatRows}
       recommendedModel={config.recommendedModel}
-      showKnowledgeBaseTool={config.tools.showKnowledgeBaseTool}
       showZendeskKnowledgeBaseTool={config.tools.showZendeskKnowledgeBaseTool}
-      showSubjectIntentTool={config.tools.showSubjectIntentTool}
       showObjectiveProblemTool={config.tools.showObjectiveProblemTool}
+      showCombinedKnowledgeSearchTool={config.tools.showCombinedKnowledgeSearchTool}
     />
   );
 }
