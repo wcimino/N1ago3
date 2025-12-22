@@ -4,6 +4,7 @@ import { organizationsStandardStorage } from "../../cadastro/storage/organizatio
 import { eventBus, EVENTS } from "./eventBus.js";
 import { saveAndDispatchEvent } from "./eventDispatcher.js";
 import { enrichUserFromZendesk } from "../../external-sources/zendesk/services/zendeskUserEnrichmentService.js";
+import { InboundConversationRouting } from "../../routing/services/inboundConversationRouting.js";
 
 const SUPPORTED_SOURCES = ["zendesk"] as const;
 type SupportedSource = typeof SUPPORTED_SOURCES[number];
@@ -24,6 +25,8 @@ export async function processRawEvent(rawId: number, source: string, skipStatusC
     return;
   }
 
+  const routingResult = await InboundConversationRouting.tryRouteFromPayload(raw.payload, source);
+  console.log(`[EventProcessor] Inbound routing: ${routingResult.routed ? `ROUTED to ${routingResult.target}` : routingResult.reason} (${routingResult.durationMs}ms)`);
 
   const adapter = getAdapter(source);
   if (!adapter) {
