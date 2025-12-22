@@ -168,6 +168,41 @@ export async function getUserConversationsWithMessages(userId: string) {
 
 export async function getUserConversationsWithMessagesOptimized(userId: string) {
   const result = await db.execute(sql`
+    WITH user_conversations AS (
+      SELECT id FROM conversations WHERE user_id = ${userId}
+    ),
+    conversation_messages AS (
+      SELECT 
+        e.conversation_id,
+        JSON_AGG(
+          JSON_BUILD_OBJECT(
+            'id', e.id,
+            'author_type', e.author_type,
+            'author_id', e.author_id,
+            'author_name', e.author_name,
+            'content_type', COALESCE(e.event_subtype, 'text'),
+            'content_text', e.content_text,
+            'content_payload', e.content_payload,
+            'received_at', TO_CHAR(e.received_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+            'zendesk_timestamp', TO_CHAR(e.occurred_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+          ) ORDER BY e.occurred_at
+        ) as messages
+      FROM events_standard e
+      WHERE e.event_type = 'message' AND e.conversation_id IN (SELECT id FROM user_conversations)
+      GROUP BY e.conversation_id
+    ),
+    first_case_demand AS (
+      SELECT DISTINCT ON (conversation_id)
+        conversation_id,
+        status,
+        interaction_count,
+        articles_and_objective_problems,
+        solution_center_articles_and_problems,
+        solution_center_article_and_problems_id_selected
+      FROM case_demand
+      WHERE conversation_id IN (SELECT id FROM user_conversations)
+      ORDER BY conversation_id, id
+    )
     SELECT 
       c.id as conv_id,
       c.external_conversation_id,
@@ -183,26 +218,7 @@ export async function getUserConversationsWithMessagesOptimized(userId: string) 
       c.updated_at as conv_updated_at,
       c.metadata_json,
       c.autopilot_enabled,
-      -- Messages aggregation
-      COALESCE(
-        JSON_AGG(
-          CASE WHEN e.id IS NOT NULL THEN
-            JSON_BUILD_OBJECT(
-              'id', e.id,
-              'author_type', e.author_type,
-              'author_id', e.author_id,
-              'author_name', e.author_name,
-              'content_type', COALESCE(e.event_subtype, 'text'),
-              'content_text', e.content_text,
-              'content_payload', e.content_payload,
-              'received_at', TO_CHAR(e.received_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
-              'zendesk_timestamp', TO_CHAR(e.occurred_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
-            )
-          END ORDER BY e.occurred_at
-        ) FILTER (WHERE e.id IS NOT NULL),
-        '[]'::json
-      ) as messages,
-      -- Summary fields
+      COALESCE(cm.messages, '[]'::json) as messages,
       cs.id as summary_id,
       cs.summary as summary_text,
       TO_CHAR(cs.generated_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as summary_generated_at,
@@ -223,29 +239,19 @@ export async function getUserConversationsWithMessagesOptimized(userId: string) 
       cs.objective_problems,
       cs.orchestrator_status,
       cs.conversation_orchestrator_log,
-      -- Product names from catalog
       pc.produto as product_name,
       pc.subproduto as subproduct_name,
-      -- Case demand fields (using lateral join to get only first row)
-      cd_first.status as demand_finder_status,
-      cd_first.interaction_count as demand_finder_interaction_count,
-      cd_first.articles_and_objective_problems,
-      cd_first.solution_center_articles_and_problems,
-      cd_first.solution_center_article_and_problems_id_selected
+      fcd.status as demand_finder_status,
+      fcd.interaction_count as demand_finder_interaction_count,
+      fcd.articles_and_objective_problems,
+      fcd.solution_center_articles_and_problems,
+      fcd.solution_center_article_and_problems_id_selected
     FROM conversations c
-    LEFT JOIN events_standard e ON e.conversation_id = c.id AND e.event_type = 'message'
+    LEFT JOIN conversation_messages cm ON cm.conversation_id = c.id
     LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
     LEFT JOIN products_catalog pc ON pc.id = cs.product_id
-    LEFT JOIN LATERAL (
-      SELECT * FROM case_demand cd 
-      WHERE cd.conversation_id = c.id 
-      ORDER BY cd.id 
-      LIMIT 1
-    ) cd_first ON true
+    LEFT JOIN first_case_demand fcd ON fcd.conversation_id = c.id
     WHERE c.user_id = ${userId}
-    GROUP BY c.id, cs.id, pc.id, cd_first.id, cd_first.status, cd_first.interaction_count, 
-             cd_first.articles_and_objective_problems, cd_first.solution_center_articles_and_problems,
-             cd_first.solution_center_article_and_problems_id_selected
     ORDER BY c.created_at
   `);
 
