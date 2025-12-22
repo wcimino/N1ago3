@@ -73,9 +73,9 @@ export function DemandFinderTooltip({ logs }: DemandFinderTooltipProps) {
           </div>
           <div className="space-y-2">
             {demandFinderEntries.map((entry, index) => (
-              <div key={entry.turn} className="border-t border-gray-700 pt-2 first:border-t-0 first:pt-0">
+              <div key={index} className="border-t border-gray-700 pt-2 first:border-t-0 first:pt-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-gray-400">#{entry.turn}</span>
+                  <span className="text-gray-400">{index + 1}ª rodada</span>
                   <span className="text-indigo-400">{entry.aiDecision || entry.action}</span>
                 </div>
                 {entry.aiReason ? (

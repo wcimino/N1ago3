@@ -145,29 +145,34 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
                 
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-400">Demanda:</span>
-                  <span className={`px-1.5 py-0.5 rounded text-xs font-medium inline-flex items-center gap-1 ${
-                    summary.demand_finder_status === 'demand_found' 
-                      ? 'bg-green-100 text-green-700' 
-                      : summary.demand_finder_status === 'in_progress'
-                      ? 'bg-yellow-100 text-yellow-700'
-                      : summary.demand_finder_status === 'demand_not_found'
-                      ? 'bg-blue-100 text-blue-700'
-                      : summary.demand_finder_status === 'error'
-                      ? 'bg-red-100 text-red-700'
-                      : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    {summary.demand_finder_status === 'not_started' && 'Aguardando'}
-                    {summary.demand_finder_status === 'in_progress' && `Buscando (${summary.demand_finder_interaction_count || 0}/5)`}
-                    {summary.demand_finder_status === 'demand_found' && (
-                      <>
-                        <CheckCircle2 className="w-3 h-3" />
-                        {`Encontrada (${summary.demand_finder_interaction_count ?? 0}/5)`}
-                      </>
-                    )}
-                    {summary.demand_finder_status === 'demand_not_found' && 'Não encontrada'}
-                    {summary.demand_finder_status === 'error' && 'Erro'}
-                    {!summary.demand_finder_status && 'Aguardando'}
-                  </span>
+                  {(() => {
+                    const status = summary.demand_finder_status;
+                    const count = summary.demand_finder_interaction_count || 0;
+                    const isSearching = (status === 'not_started' || status === 'in_progress') && count > 0;
+                    
+                    let colorClass = 'bg-gray-100 text-gray-500';
+                    if (status === 'demand_found') colorClass = 'bg-green-100 text-green-700';
+                    else if (isSearching || status === 'in_progress') colorClass = 'bg-yellow-100 text-yellow-700';
+                    else if (status === 'demand_not_found') colorClass = 'bg-blue-100 text-blue-700';
+                    else if (status === 'error') colorClass = 'bg-red-100 text-red-700';
+                    
+                    return (
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium inline-flex items-center gap-1 ${colorClass}`}>
+                        {status === 'demand_found' && (
+                          <>
+                            <CheckCircle2 className="w-3 h-3" />
+                            {`Encontrada (${count}/5)`}
+                          </>
+                        )}
+                        {isSearching && `Em busca (${count}/5)`}
+                        {status === 'not_started' && count === 0 && 'Não iniciado'}
+                        {status === 'in_progress' && count === 0 && 'Buscando'}
+                        {status === 'demand_not_found' && 'Não encontrada'}
+                        {status === 'error' && 'Erro'}
+                        {!status && 'Não iniciado'}
+                      </span>
+                    );
+                  })()}
                   <DemandFinderTooltip logs={summary.conversation_orchestrator_log} />
                 </div>
               </div>
