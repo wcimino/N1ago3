@@ -263,6 +263,8 @@ export async function getUserConversationsWithMessagesOptimized(userId: string) 
 export async function getSuggestedResponsesBatch(conversationIds: number[]) {
   if (conversationIds.length === 0) return [];
   
+  const idPlaceholders = sql.join(conversationIds.map(id => sql`${id}`), sql`, `);
+  
   const result = await db.execute(sql`
     SELECT 
       conversation_id,
@@ -272,7 +274,7 @@ export async function getSuggestedResponsesBatch(conversationIds: number[]) {
       status,
       articles_used
     FROM responses_suggested
-    WHERE conversation_id = ANY(${conversationIds})
+    WHERE conversation_id IN (${idPlaceholders})
     ORDER BY conversation_id, created_at
   `);
   
