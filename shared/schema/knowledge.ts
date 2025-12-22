@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, uniqueIndex, index, integer, json } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, uniqueIndex, index, integer, jsonb } from "drizzle-orm/pg-core";
 
 export const productsCatalog = pgTable("products_catalog", {
   id: serial("id").primaryKey(),
@@ -21,10 +21,10 @@ export const caseSolutions = pgTable("case_solutions", {
   solutionId: integer("solution_id"),
   rootCauseId: integer("root_cause_id"),
   status: text("status").default("pending_info").notNull(),
-  providedInputs: json("provided_inputs").$type<Record<string, unknown>>().default({}),
-  collectedInputsCustomer: json("collected_inputs_customer").$type<Record<string, unknown>>().default({}),
-  collectedInputsSystems: json("collected_inputs_systems").$type<Record<string, unknown>>().default({}),
-  pendingInputs: json("pending_inputs").$type<Array<{ key: string; question: string; source: string }>>().default([]),
+  providedInputs: jsonb("provided_inputs").$type<Record<string, unknown>>().default({}),
+  collectedInputsCustomer: jsonb("collected_inputs_customer").$type<Record<string, unknown>>().default({}),
+  collectedInputsSystems: jsonb("collected_inputs_systems").$type<Record<string, unknown>>().default({}),
+  pendingInputs: jsonb("pending_inputs").$type<Array<{ key: string; question: string; source: string }>>().default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
@@ -39,9 +39,9 @@ export const caseActions = pgTable("case_actions", {
   caseSolutionId: integer("case_solution_id").notNull().references(() => caseSolutions.id, { onDelete: "cascade" }),
   actionId: integer("action_id").notNull(),
   actionSequence: integer("action_sequence").notNull(),
-  status: text("status").default("not_started").notNull(),
-  inputUsed: json("input_used").$type<Record<string, unknown>>().default({}),
-  output: json("output").$type<Record<string, unknown>>(),
+  status: text("status").default("pending").notNull(),
+  inputUsed: jsonb("input_used").$type<Record<string, unknown>>().default({}),
+  output: jsonb("output").$type<Record<string, unknown>>(),
   errorMessage: text("error_message"),
   startedAt: timestamp("started_at"),
   completedAt: timestamp("completed_at"),
