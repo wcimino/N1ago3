@@ -1,4 +1,4 @@
-import { Check, X, Loader2 } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { Button } from "./Button";
 
 interface FormActionsProps {

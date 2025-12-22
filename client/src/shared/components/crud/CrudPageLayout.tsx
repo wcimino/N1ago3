@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, FormEvent } from "react";
 import { Plus, X, Check, Loader2 } from "lucide-react";
 import { FilterBar } from "../ui/FilterBar";
 
@@ -39,7 +39,7 @@ interface CrudPageLayoutProps {
   formTitle: string;
   onOpenForm: () => void;
   onCloseForm: () => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: (e: FormEvent) => void;
   isSaving: boolean;
   isEditing: boolean;
   addButtonLabel: string;

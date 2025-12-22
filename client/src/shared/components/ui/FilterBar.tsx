@@ -1,5 +1,5 @@
 import { Filter, X, Search, ChevronDown } from "lucide-react";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "./Button";
 
 interface FilterOption {

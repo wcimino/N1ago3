@@ -1,8 +1,9 @@
+import type { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 
 interface NavLinkProps {
   href: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function NavLink({ href, children }: NavLinkProps) {

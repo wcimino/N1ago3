@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -6,7 +6,7 @@ interface CollapsibleSectionProps {
   title: string;
   icon?: LucideIcon;
   defaultExpanded?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
   badge?: string | number;
   colorScheme?: "default" | "purple" | "amber";
 }
