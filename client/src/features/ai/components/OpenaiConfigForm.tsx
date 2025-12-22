@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
-import { CollapsibleSection, LoadingState, Button } from "../../../shared/components/ui";
+import { LoadingState, Button } from "../../../shared/components/ui";
+import { CollapsibleSection } from "../../../shared/components/forms";
 import { useOpenaiApiConfig } from "../../../shared/hooks";
 import { MODEL_OPTIONS } from "../../../lib/constants";
 import { Info, ChevronDown, ChevronRight } from "lucide-react";

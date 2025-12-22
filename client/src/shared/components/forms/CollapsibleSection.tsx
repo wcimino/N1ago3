@@ -4,10 +4,12 @@ import type { LucideIcon } from "lucide-react";
 
 interface CollapsibleSectionProps {
   title: string;
-  icon?: LucideIcon;
+  description?: string;
+  defaultOpen?: boolean;
   defaultExpanded?: boolean;
+  icon?: LucideIcon;
   children: ReactNode;
-  badge?: string | number;
+  badge?: ReactNode;
   colorScheme?: "default" | "purple" | "amber";
 }
 
@@ -34,13 +36,15 @@ const colorSchemes = {
 
 export function CollapsibleSection({
   title,
-  icon: Icon,
+  description,
+  defaultOpen,
   defaultExpanded = true,
+  icon: Icon,
   children,
   badge,
   colorScheme = "default",
 }: CollapsibleSectionProps) {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const [isExpanded, setIsExpanded] = useState(defaultOpen ?? defaultExpanded);
   const colors = colorSchemes[colorScheme];
 
   return (
@@ -57,12 +61,19 @@ export function CollapsibleSection({
             <ChevronRight className={`w-4 h-4 ${colors.header}`} />
           )}
           {Icon && <Icon className={`w-4 h-4 ${colors.header}`} />}
-          <span className={`text-sm font-medium ${colors.header}`}>{title}</span>
+          <div className="text-left">
+            <span className={`text-sm font-medium ${colors.header}`}>{title}</span>
+            {description && (
+              <p className="text-xs text-gray-500 mt-0.5">{description}</p>
+            )}
+          </div>
         </div>
-        {badge !== undefined && (
-          <span className={`text-xs px-2 py-0.5 rounded-full ${colors.badge}`}>
-            {badge}
-          </span>
+        {badge !== undefined && badge !== null && (
+          typeof badge === 'string' || typeof badge === 'number' ? (
+            <span className={`text-xs px-2 py-0.5 rounded-full ${colors.badge}`}>
+              {badge}
+            </span>
+          ) : badge
         )}
       </button>
       
