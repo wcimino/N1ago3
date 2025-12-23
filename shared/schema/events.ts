@@ -1,5 +1,5 @@
 import { pgTable, serial, text, timestamp, json, integer, boolean, index, uniqueIndex } from "drizzle-orm/pg-core";
-import { productsCatalog } from "./knowledge";
+import { productsCatalog, subproductsCatalog } from "./knowledge";
 
 export interface OrchestratorLogEntry {
   turn: number;
@@ -99,6 +99,7 @@ export const conversationsSummary = pgTable("conversations_summary", {
   importantInfo: text("important_info"),
   lastEventId: integer("last_event_id"),
   productId: integer("product_id").references(() => productsCatalog.id, { onDelete: "set null" }),
+  subproductId: integer("subproduct_id").references(() => subproductsCatalog.id, { onDelete: "set null" }),
   productConfidence: integer("product_confidence"),
   productConfidenceReason: text("product_confidence_reason"),
   classifiedAt: timestamp("classified_at"),
