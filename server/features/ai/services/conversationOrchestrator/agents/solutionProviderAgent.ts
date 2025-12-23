@@ -2,7 +2,9 @@ import { conversationStorage } from "../../../../conversations/storage/index.js"
 import { caseSolutionStorage } from "../../../storage/caseSolutionStorage.js";
 import { ActionExecutor } from "../actionExecutor.js";
 import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type OrchestratorContext, type OrchestratorAction } from "../types.js";
-import { getSolutionFromCenter, type SolutionProviderResponse, type SolutionProviderAction } from "../../../../../shared/services/solutionCenterClient.js";
+import { getSolutionFromCenter, type SolutionProviderResponse } from "../../../../../shared/services/solutionCenterClient.js";
+
+type RawAction = Record<string, unknown>;
 
 export interface SolutionProviderProcessResult {
   success: boolean;
@@ -36,7 +38,7 @@ export class SolutionProviderAgent {
 
       context.caseSolutionId = caseSolution.id;
 
-      const solutionResponse = await this.resolveSolution(caseSolution.id, {
+      const solutionResponse = await this.resolveSolution(caseSolution.id, conversationId, {
         articleId: articleUuid,
         problemId,
         rootCauseId: rootCauseUuid,
@@ -47,9 +49,11 @@ export class SolutionProviderAgent {
         return await this.executeFallback(context, caseSolution.id);
       }
 
-      const createdActions = await this.createActionsFromResponse(caseSolution.id, solutionResponse.actions);
+      const actions = solutionResponse.actions || [];
+      const createdActions = await this.createActionsFromResponse(caseSolution.id, actions);
 
-      console.log(`[SolutionProviderAgent] Solution found: ${solutionResponse.solution.name}`);
+      const solutionName = this.getSolutionName(solutionResponse);
+      console.log(`[SolutionProviderAgent] Solution found: ${solutionName}`);
       return await this.executeSolution(context, caseSolution.id, solutionResponse, createdActions);
 
     } catch (error: any) {
@@ -70,8 +74,21 @@ export class SolutionProviderAgent {
     }
   }
 
+  private static getSolutionName(response: SolutionProviderResponse): string {
+    const solution = response.solution;
+    if (!solution) return "Unknown";
+    return String(solution.name || solution.id || "Unknown");
+  }
+
+  private static getSolutionId(response: SolutionProviderResponse): string {
+    const solution = response.solution;
+    if (!solution) return "";
+    return String(solution.id || "");
+  }
+
   private static async resolveSolution(
     caseSolutionId: number,
+    conversationId: number,
     inputs: { articleId?: string; problemId?: string; solutionId?: number; rootCauseId?: string }
   ): Promise<SolutionProviderResponse | null> {
     console.log(`[SolutionProviderAgent] Resolving solution for case_solution ${caseSolutionId}`);
@@ -82,14 +99,25 @@ export class SolutionProviderAgent {
       return null;
     }
 
-    const response = await getSolutionFromCenter({
-      articleId: inputs.articleId,
-      problemId: inputs.problemId,
-      rootCauseId: inputs.rootCauseId,
-    });
+    const response = await getSolutionFromCenter(
+      {
+        articleId: inputs.articleId,
+        problemId: inputs.problemId,
+        rootCauseId: inputs.rootCauseId,
+      },
+      {
+        caseSolutionId,
+        conversationId,
+      }
+    );
 
     if (!response || !response.solution) {
       console.log(`[SolutionProviderAgent] No solution returned from Central de Soluções`);
+      return null;
+    }
+
+    if (response.success === false) {
+      console.log(`[SolutionProviderAgent] API returned success=false`);
       return null;
     }
 
@@ -98,48 +126,73 @@ export class SolutionProviderAgent {
 
   private static async createActionsFromResponse(
     caseSolutionId: number,
-    actions: SolutionProviderAction[]
-  ): Promise<Array<{ caseActionId: number; action: SolutionProviderAction }>> {
+    actions: Array<RawAction>
+  ): Promise<Array<{ caseActionId: number; rawAction: RawAction }>> {
     console.log(`[SolutionProviderAgent] Creating ${actions.length} actions for case_solution ${caseSolutionId}`);
 
-    const sortedActions = [...actions].sort((a, b) => a.order - b.order);
-    const createdActions: Array<{ caseActionId: number; action: SolutionProviderAction }> = [];
+    const sortedActions = [...actions].sort((a, b) => {
+      const seqA = Number(a.sequence || a.order || 0);
+      const seqB = Number(b.sequence || b.order || 0);
+      return seqA - seqB;
+    });
+    
+    const createdActions: Array<{ caseActionId: number; rawAction: RawAction }> = [];
 
-    for (const action of sortedActions) {
+    for (const rawAction of sortedActions) {
+      const sequence = Number(rawAction.sequence || rawAction.order || 0);
+      const externalActionId = String(rawAction.actionId || rawAction.id || "") || null;
+      
       const caseAction = await caseSolutionStorage.createAction({
         caseSolutionId,
         actionId: 0,
-        actionSequence: action.order,
+        externalActionId,
+        actionSequence: sequence,
         status: "pending",
         inputUsed: {
-          externalId: action.id,
-          name: action.name,
-          description: action.description,
-          actionType: action.actionType,
-          actionValue: action.actionValue,
+          ...rawAction,
           source: "central_de_solucoes",
         },
       });
-      createdActions.push({ caseActionId: caseAction.id, action });
-      console.log(`[SolutionProviderAgent] Created action: ${action.name} (type: ${action.actionType}, order: ${action.order})`);
+      
+      createdActions.push({ caseActionId: caseAction.id, rawAction });
+      
+      const actionType = rawAction.actionType || "unknown";
+      console.log(`[SolutionProviderAgent] Created action: ${externalActionId} (type: ${actionType}, sequence: ${sequence})`);
     }
 
     return createdActions;
   }
 
   private static mapToOrchestratorActions(
-    createdActions: Array<{ caseActionId: number; action: SolutionProviderAction }>
+    createdActions: Array<{ caseActionId: number; rawAction: RawAction }>
   ): OrchestratorAction[] {
-    return createdActions.map(({ caseActionId, action }) => {
-      switch (action.actionType) {
+    return createdActions.map(({ caseActionId, rawAction }) => {
+      const actionType = String(rawAction.actionType || "");
+      const name = String(rawAction.name || rawAction.description || "Action");
+      const description = String(rawAction.description || "");
+      const actionValue = String(rawAction.actionValue || "");
+      const filledInputs = rawAction.filledInputs as Record<string, unknown> | undefined;
+      const answer = filledInputs?.answer ? String(filledInputs.answer) : actionValue;
+      
+      switch (actionType) {
         case "instruction":
           return {
             type: "INSTRUCTION" as const,
             payload: {
               caseActionId,
-              name: action.name,
-              description: action.description,
-              value: action.actionValue,
+              name,
+              description,
+              value: answer,
+            },
+          };
+        case "informar_cliente":
+          return {
+            type: "INSTRUCTION" as const,
+            payload: {
+              caseActionId,
+              name,
+              description,
+              value: answer,
             },
           };
         case "link":
@@ -147,9 +200,9 @@ export class SolutionProviderAgent {
             type: "LINK" as const,
             payload: {
               caseActionId,
-              name: action.name,
-              description: action.description,
-              url: action.actionValue,
+              name,
+              description,
+              url: actionValue,
             },
           };
         case "api_call":
@@ -157,20 +210,20 @@ export class SolutionProviderAgent {
             type: "API_CALL" as const,
             payload: {
               caseActionId,
-              name: action.name,
-              description: action.description,
-              endpoint: action.actionValue,
+              name,
+              description,
+              endpoint: actionValue,
             },
           };
         default:
-          console.warn(`[SolutionProviderAgent] Unknown action type: ${action.actionType}`);
+          console.warn(`[SolutionProviderAgent] Unknown action type: ${actionType}, treating as instruction`);
           return {
             type: "INSTRUCTION" as const,
             payload: {
               caseActionId,
-              name: action.name,
-              description: action.description,
-              value: action.actionValue,
+              name,
+              description,
+              value: answer,
             },
           };
       }
@@ -236,13 +289,15 @@ export class SolutionProviderAgent {
     context: OrchestratorContext,
     caseSolutionId: number,
     solutionResponse: SolutionProviderResponse,
-    createdActions: Array<{ caseActionId: number; action: SolutionProviderAction }>
+    createdActions: Array<{ caseActionId: number; rawAction: RawAction }>
   ): Promise<SolutionProviderProcessResult> {
     const { conversationId } = context;
-    const { solution, actions } = solutionResponse;
+    const solutionName = this.getSolutionName(solutionResponse);
+    const solutionId = this.getSolutionId(solutionResponse);
+    const actionsCount = solutionResponse.actions?.length || 0;
 
-    console.log(`[SolutionProviderAgent] Executing solution ${solution.name} for conversation ${conversationId}`);
-    console.log(`[SolutionProviderAgent] Solution has ${actions.length} actions to execute`);
+    console.log(`[SolutionProviderAgent] Executing solution ${solutionName} for conversation ${conversationId}`);
+    console.log(`[SolutionProviderAgent] Solution has ${actionsCount} actions to execute`);
 
     await caseSolutionStorage.updateStatus(caseSolutionId, "in_progress");
 
@@ -283,13 +338,13 @@ export class SolutionProviderAgent {
     context.lastDispatchLog = {
       solutionCenterResults: 1,
       aiDecision: "solution_found",
-      aiReason: `Solution "${solution.name}" found with ${actions.length} actions`,
+      aiReason: `Solution "${solutionName}" found with ${actionsCount} actions`,
       action: "solution_applied",
       details: { 
         caseSolutionId, 
-        solutionId: solution.id,
-        solutionName: solution.name,
-        actionsCount: actions.length,
+        solutionId,
+        solutionName,
+        actionsCount,
         actionsExecuted: orchestratorActions.length,
       },
     };
@@ -298,7 +353,7 @@ export class SolutionProviderAgent {
       success: true,
       solutionFound: true,
       caseSolutionId,
-      actionExecuted: solution.name,
+      actionExecuted: solutionName,
       escalated: false,
     };
   }

@@ -5,7 +5,7 @@ import { getClientRequestVersions, getSearchQueries, getCustomerRequestType, bui
 import { EnrichmentService } from "../services/enrichmentService.js";
 import { ActionExecutor } from "../actionExecutor.js";
 import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type DemandFinderAgentResult, type OrchestratorContext, type OrchestratorAction } from "../types.js";
-import { searchSolutionCenter } from "../../../../../shared/services/solutionCenterClient.js";
+import { searchSolutionCenter, type SearchLogContext } from "../../../../../shared/services/solutionCenterClient.js";
 
 const CONFIG_KEY = "demand_finder";
 const MAX_INTERACTIONS = 5;
@@ -369,22 +369,31 @@ export class DemandFinderAgent {
 
     let lastError: unknown = null;
 
+    const activeDemand = await caseDemandStorage.getActiveByConversationId(conversationId);
+    const logContext: SearchLogContext = {
+      caseDemandId: activeDemand?.id,
+      conversationId,
+    };
+
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
         console.log(`[DemandFinderAgent] Solution Center search attempt ${attempt}/${MAX_RETRIES} for conversation ${conversationId}`);
 
-        const solutionCenterResponse = await searchSolutionCenter({
-          text: text || undefined,
-          textVerbatim: textVerbatim || undefined,
-          textNormalizedVersions,
-          keywords: keywords.length > 0 ? keywords : undefined,
-          productName: resolvedProduct?.produto || undefined,
-          subproductName: resolvedProduct?.subproduto || undefined,
-          productConfidence: productConfidenceValue,
-          subproductConfidence: productConfidenceValue,
-          demandType,
-          demandTypeConfidence: demandTypeConfidenceValue,
-        });
+        const solutionCenterResponse = await searchSolutionCenter(
+          {
+            text: text || undefined,
+            textVerbatim: textVerbatim || undefined,
+            textNormalizedVersions,
+            keywords: keywords.length > 0 ? keywords : undefined,
+            productName: resolvedProduct?.produto || undefined,
+            subproductName: resolvedProduct?.subproduto || undefined,
+            productConfidence: productConfidenceValue,
+            subproductConfidence: productConfidenceValue,
+            demandType,
+            demandTypeConfidence: demandTypeConfidenceValue,
+          },
+          logContext
+        );
 
         if (!solutionCenterResponse || !solutionCenterResponse.results || solutionCenterResponse.results.length === 0) {
           return { results: [], failed: false };

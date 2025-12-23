@@ -38,6 +38,7 @@ export const caseActions = pgTable("case_actions", {
   id: serial("id").primaryKey(),
   caseSolutionId: integer("case_solution_id").notNull().references(() => caseSolutions.id, { onDelete: "cascade" }),
   actionId: integer("action_id").notNull(),
+  externalActionId: text("external_action_id"),
   actionSequence: integer("action_sequence").notNull(),
   status: text("status").default("pending").notNull(),
   inputUsed: jsonb("input_used").$type<Record<string, unknown>>().default({}),
@@ -49,6 +50,7 @@ export const caseActions = pgTable("case_actions", {
 }, (table) => ({
   caseSolutionIdx: index("idx_case_actions_case_solution").on(table.caseSolutionId),
   actionIdx: index("idx_case_actions_action").on(table.actionId),
+  externalActionIdx: index("idx_case_actions_external_action").on(table.externalActionId),
   statusIdx: index("idx_case_actions_status").on(table.status),
 }));
 

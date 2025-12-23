@@ -170,7 +170,7 @@ export async function searchSolutionCenter(
       await solutionCenterApiLogStorage.logSearchRequest({
         caseDemandId: logContext?.caseDemandId,
         conversationId: logContext?.conversationId,
-        request: requestBody as Record<string, unknown>,
+        request: requestBody as unknown as Record<string, unknown>,
         response: responseData,
         statusCode,
         success,
@@ -291,7 +291,7 @@ export async function getSolutionFromCenter(
       await solutionCenterApiLogStorage.logSolutionRequest({
         caseSolutionId: logContext?.caseSolutionId,
         conversationId: logContext?.conversationId,
-        request: requestBody as Record<string, unknown>,
+        request: requestBody as unknown as Record<string, unknown>,
         response: responseData,
         statusCode,
         success,
