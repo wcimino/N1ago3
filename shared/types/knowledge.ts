@@ -1,8 +1,16 @@
 export interface ProductCatalogItem {
   id: number;
-  produto: string;
-  subproduto: string | null;
-  fullName: string;
+  externalId: string;
+  name: string;
+  icon: string | null;
+  color: string | null;
+}
+
+export interface SubproductCatalogItem {
+  id: number;
+  externalId: string;
+  name: string;
+  produtoId: string;
 }
 
 export interface KnowledgeSubject {

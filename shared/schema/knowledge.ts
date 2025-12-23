@@ -1,19 +1,36 @@
-import { pgTable, serial, text, timestamp, uniqueIndex, index, integer, jsonb, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, uniqueIndex, index, integer, jsonb, boolean, uuid } from "drizzle-orm/pg-core";
 
 export const productsCatalog = pgTable("products_catalog", {
   id: serial("id").primaryKey(),
-  produto: text("produto").notNull(),
-  subproduto: text("subproduto"),
-  fullName: text("full_name").notNull(),
+  externalId: uuid("external_id").notNull(),
+  name: text("name").notNull(),
+  icon: text("icon"),
+  color: text("color"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
-  produtoIdx: index("idx_ifood_products_produto").on(table.produto),
-  fullNameIdx: uniqueIndex("idx_ifood_products_full_name").on(table.fullName),
+  externalIdIdx: uniqueIndex("idx_products_catalog_external_id").on(table.externalId),
+  nameIdx: index("idx_products_catalog_name").on(table.name),
 }));
 
 export type ProductCatalog = typeof productsCatalog.$inferSelect;
 export type InsertProductCatalog = Omit<typeof productsCatalog.$inferInsert, "id" | "createdAt" | "updatedAt">;
+
+export const subproductsCatalog = pgTable("subproducts_catalog", {
+  id: serial("id").primaryKey(),
+  externalId: uuid("external_id").notNull(),
+  name: text("name").notNull(),
+  produtoId: uuid("produto_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  externalIdIdx: uniqueIndex("idx_subproducts_catalog_external_id").on(table.externalId),
+  produtoIdIdx: index("idx_subproducts_catalog_produto_id").on(table.produtoId),
+  nameIdx: index("idx_subproducts_catalog_name").on(table.name),
+}));
+
+export type SubproductCatalog = typeof subproductsCatalog.$inferSelect;
+export type InsertSubproductCatalog = Omit<typeof subproductsCatalog.$inferInsert, "id" | "createdAt" | "updatedAt">;
 
 export const caseSolutions = pgTable("case_solutions", {
   id: serial("id").primaryKey(),

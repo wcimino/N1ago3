@@ -12,7 +12,7 @@ interface ProductTreeActionsProps {
   node: ProductTreeNode;
   onAdd: (node: ProductTreeNode, level: ProductLevelType) => void;
   onEdit: (node: ProductTreeNode) => void;
-  onDelete: (id: number) => void;
+  onDelete: (node: ProductTreeNode) => void;
   isDeleting: boolean;
 }
 
@@ -41,13 +41,11 @@ export function ProductTreeActions({
   };
 
   const handleConfirmDelete = () => {
-    if (node.productId) {
-      onDelete(node.productId);
-    }
+    onDelete(node);
   };
 
-  const canEdit = node.productId || node.level === "produto";
-  const canDelete = node.productId;
+  const canEdit = true;
+  const canDelete = true;
 
   return (
     <>

@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
-import { productCatalogStorage } from "../storage/productCatalogStorage.js";
+import { productCatalogStorage, subproductCatalogStorage } from "../storage/productCatalogStorage.js";
 import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
+import crypto from "crypto";
 
 const router = Router();
 
@@ -10,17 +11,7 @@ router.get("/api/product-catalog", isAuthenticated, requireAuthorizedUser, async
     res.json(products);
   } catch (error: any) {
     console.error("[Product Catalog] Error fetching:", error.message);
-    res.status(500).json({ error: "Failed to fetch iFood products" });
-  }
-});
-
-router.get("/api/product-catalog/fullnames", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  try {
-    const fullNames = await productCatalogStorage.getFullNames();
-    res.json(fullNames);
-  } catch (error: any) {
-    console.error("[Product Catalog] Error fetching fullnames:", error.message);
-    res.status(500).json({ error: "Failed to fetch product names" });
+    res.status(500).json({ error: "Failed to fetch products" });
   }
 });
 
@@ -31,17 +22,6 @@ router.get("/api/product-catalog/distinct/produtos", isAuthenticated, requireAut
   } catch (error: any) {
     console.error("[Product Catalog] Error fetching distinct produtos:", error.message);
     res.status(500).json({ error: "Failed to fetch distinct produtos" });
-  }
-});
-
-router.get("/api/product-catalog/distinct/subprodutos", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  try {
-    const { produto } = req.query;
-    const subprodutos = await productCatalogStorage.getDistinctSubprodutos(produto as string);
-    res.json(subprodutos);
-  } catch (error: any) {
-    console.error("[Product Catalog] Error fetching distinct subprodutos:", error.message);
-    res.status(500).json({ error: "Failed to fetch distinct subprodutos" });
   }
 });
 
@@ -60,35 +40,32 @@ router.get("/api/product-catalog/:id", isAuthenticated, requireAuthorizedUser, a
     res.json(product);
   } catch (error: any) {
     console.error("[Product Catalog] Error fetching by ID:", error.message);
-    res.status(500).json({ error: "Failed to fetch iFood product" });
+    res.status(500).json({ error: "Failed to fetch product" });
   }
 });
 
 router.post("/api/product-catalog", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   try {
-    const { produto, subproduto } = req.body;
+    const { name, icon, color } = req.body;
 
-    if (!produto || typeof produto !== "string" || produto.trim() === "") {
-      return res.status(400).json({ error: "Produto is required" });
+    if (!name || typeof name !== "string" || name.trim() === "") {
+      return res.status(400).json({ error: "Name is required" });
     }
 
-    const parts = [produto.trim()];
-    if (subproduto && subproduto.trim()) parts.push(subproduto.trim());
-    const fullName = parts.join(" > ");
-
     const product = await productCatalogStorage.create({
-      produto: produto.trim(),
-      subproduto: subproduto?.trim() || null,
-      fullName,
+      externalId: crypto.randomUUID(),
+      name: name.trim(),
+      icon: icon || null,
+      color: color || null,
     });
 
     res.status(201).json(product);
   } catch (error: any) {
     console.error("[Product Catalog] Error creating:", error.message);
     if (error.message?.includes("unique constraint")) {
-      return res.status(409).json({ error: "This product combination already exists" });
+      return res.status(409).json({ error: "This product already exists" });
     }
-    res.status(500).json({ error: "Failed to create iFood product" });
+    res.status(500).json({ error: "Failed to create product" });
   }
 });
 
@@ -99,20 +76,16 @@ router.put("/api/product-catalog/:id", isAuthenticated, requireAuthorizedUser, a
       return res.status(400).json({ error: "Invalid ID" });
     }
 
-    const { produto, subproduto } = req.body;
+    const { name, icon, color } = req.body;
 
-    if (!produto || typeof produto !== "string" || produto.trim() === "") {
-      return res.status(400).json({ error: "Produto is required" });
+    if (!name || typeof name !== "string" || name.trim() === "") {
+      return res.status(400).json({ error: "Name is required" });
     }
 
-    const parts = [produto.trim()];
-    if (subproduto && subproduto.trim()) parts.push(subproduto.trim());
-    const fullName = parts.join(" > ");
-
     const product = await productCatalogStorage.update(id, {
-      produto: produto.trim(),
-      subproduto: subproduto?.trim() || null,
-      fullName,
+      name: name.trim(),
+      icon: icon || null,
+      color: color || null,
     });
 
     if (!product) {
@@ -123,9 +96,9 @@ router.put("/api/product-catalog/:id", isAuthenticated, requireAuthorizedUser, a
   } catch (error: any) {
     console.error("[Product Catalog] Error updating:", error.message);
     if (error.message?.includes("unique constraint")) {
-      return res.status(409).json({ error: "This product combination already exists" });
+      return res.status(409).json({ error: "This product already exists" });
     }
-    res.status(500).json({ error: "Failed to update iFood product" });
+    res.status(500).json({ error: "Failed to update product" });
   }
 });
 
@@ -144,7 +117,133 @@ router.delete("/api/product-catalog/:id", isAuthenticated, requireAuthorizedUser
     res.json({ success: true });
   } catch (error: any) {
     console.error("[Product Catalog] Error deleting:", error.message);
-    res.status(500).json({ error: "Failed to delete iFood product" });
+    res.status(500).json({ error: "Failed to delete product" });
+  }
+});
+
+router.get("/api/subproduct-catalog", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  try {
+    const { produtoId } = req.query;
+    
+    if (produtoId && typeof produtoId === "string") {
+      const subproducts = await subproductCatalogStorage.getByProdutoId(produtoId);
+      return res.json(subproducts);
+    }
+    
+    const subproducts = await subproductCatalogStorage.getAll();
+    res.json(subproducts);
+  } catch (error: any) {
+    console.error("[Subproduct Catalog] Error fetching:", error.message);
+    res.status(500).json({ error: "Failed to fetch subproducts" });
+  }
+});
+
+router.get("/api/subproduct-catalog/distinct", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  try {
+    const { produtoId } = req.query;
+    const subprodutos = await subproductCatalogStorage.getDistinctSubprodutos(produtoId as string);
+    res.json(subprodutos);
+  } catch (error: any) {
+    console.error("[Subproduct Catalog] Error fetching distinct:", error.message);
+    res.status(500).json({ error: "Failed to fetch distinct subprodutos" });
+  }
+});
+
+router.get("/api/subproduct-catalog/:id", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Invalid ID" });
+    }
+    
+    const subproduct = await subproductCatalogStorage.getById(id);
+    if (!subproduct) {
+      return res.status(404).json({ error: "Subproduct not found" });
+    }
+    
+    res.json(subproduct);
+  } catch (error: any) {
+    console.error("[Subproduct Catalog] Error fetching by ID:", error.message);
+    res.status(500).json({ error: "Failed to fetch subproduct" });
+  }
+});
+
+router.post("/api/subproduct-catalog", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  try {
+    const { name, produtoId } = req.body;
+
+    if (!name || typeof name !== "string" || name.trim() === "") {
+      return res.status(400).json({ error: "Name is required" });
+    }
+
+    if (!produtoId || typeof produtoId !== "string") {
+      return res.status(400).json({ error: "Produto ID is required" });
+    }
+
+    const subproduct = await subproductCatalogStorage.create({
+      externalId: crypto.randomUUID(),
+      name: name.trim(),
+      produtoId,
+    });
+
+    res.status(201).json(subproduct);
+  } catch (error: any) {
+    console.error("[Subproduct Catalog] Error creating:", error.message);
+    if (error.message?.includes("unique constraint")) {
+      return res.status(409).json({ error: "This subproduct already exists" });
+    }
+    res.status(500).json({ error: "Failed to create subproduct" });
+  }
+});
+
+router.put("/api/subproduct-catalog/:id", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Invalid ID" });
+    }
+
+    const { name, produtoId } = req.body;
+
+    if (!name || typeof name !== "string" || name.trim() === "") {
+      return res.status(400).json({ error: "Name is required" });
+    }
+
+    const subproduct = await subproductCatalogStorage.update(id, {
+      name: name.trim(),
+      produtoId,
+    });
+
+    if (!subproduct) {
+      return res.status(404).json({ error: "Subproduct not found" });
+    }
+
+    res.json(subproduct);
+  } catch (error: any) {
+    console.error("[Subproduct Catalog] Error updating:", error.message);
+    if (error.message?.includes("unique constraint")) {
+      return res.status(409).json({ error: "This subproduct already exists" });
+    }
+    res.status(500).json({ error: "Failed to update subproduct" });
+  }
+});
+
+router.delete("/api/subproduct-catalog/:id", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Invalid ID" });
+    }
+
+    const deleted = await subproductCatalogStorage.delete(id);
+    if (!deleted) {
+      return res.status(404).json({ error: "Subproduct not found" });
+    }
+
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error("[Subproduct Catalog] Error deleting:", error.message);
+    res.status(500).json({ error: "Failed to delete subproduct" });
   }
 });
 

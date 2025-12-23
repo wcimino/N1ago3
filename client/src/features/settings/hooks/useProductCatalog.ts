@@ -4,23 +4,22 @@ import { fetchApi, apiRequest } from "../../../lib/queryClient";
 import { 
   ProductTreeNode, 
   ProductLevelType,
+  ProductData,
+  SubproductData,
   buildProductTree,
   getNodeKey
 } from "../../../lib/productHierarchy";
 import { useTreeExpansion } from "../../../shared/components/ui";
 
-interface ProductCatalogItem {
-  id: number;
-  produto: string;
-  subproduto: string | null;
-  fullName: string;
-  createdAt: string;
-  updatedAt: string;
+interface CreateProductData {
+  name: string;
+  icon?: string | null;
+  color?: string | null;
 }
 
-interface ProductData {
-  produto: string;
-  subproduto: string | null;
+interface CreateSubproductData {
+  name: string;
+  produtoId: string;
 }
 
 export function useProductCatalog() {
@@ -31,20 +30,29 @@ export function useProductCatalog() {
   const [addingTo, setAddingTo] = useState<{ parentNode: ProductTreeNode | null; level: ProductLevelType } | null>(null);
   const [editingNode, setEditingNode] = useState<ProductTreeNode | null>(null);
 
-  const { data: products, isLoading } = useQuery<ProductCatalogItem[]>({
+  const { data: products, isLoading: isLoadingProducts } = useQuery<ProductData[]>({
     queryKey: ["product-catalog"],
-    queryFn: () => fetchApi<ProductCatalogItem[]>("/api/product-catalog"),
+    queryFn: () => fetchApi<ProductData[]>("/api/product-catalog"),
   });
 
-  const tree = useMemo(() => buildProductTree(products || []), [products]);
+  const { data: subproducts, isLoading: isLoadingSubproducts } = useQuery<SubproductData[]>({
+    queryKey: ["subproduct-catalog"],
+    queryFn: () => fetchApi<SubproductData[]>("/api/subproduct-catalog"),
+  });
 
-  const createMutation = useMutation({
-    mutationFn: async (data: ProductData) => {
+  const isLoading = isLoadingProducts || isLoadingSubproducts;
+
+  const tree = useMemo(() => 
+    buildProductTree(products || [], subproducts || []), 
+    [products, subproducts]
+  );
+
+  const createProductMutation = useMutation({
+    mutationFn: async (data: CreateProductData) => {
       return apiRequest("POST", "/api/product-catalog", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["product-catalog"] });
-      queryClient.invalidateQueries({ queryKey: ["product-catalog-fullnames"] });
       setAddingTo(null);
       setError(null);
       setShowSuccess(true);
@@ -55,23 +63,47 @@ export function useProductCatalog() {
     },
   });
 
-  const deleteMutation = useMutation({
+  const createSubproductMutation = useMutation({
+    mutationFn: async (data: CreateSubproductData) => {
+      return apiRequest("POST", "/api/subproduct-catalog", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subproduct-catalog"] });
+      setAddingTo(null);
+      setError(null);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    },
+    onError: (err: any) => {
+      setError(err.message || "Erro ao criar subproduto");
+    },
+  });
+
+  const deleteProductMutation = useMutation({
     mutationFn: async (id: number) => {
       return apiRequest("DELETE", `/api/product-catalog/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["product-catalog"] });
-      queryClient.invalidateQueries({ queryKey: ["product-catalog-fullnames"] });
+      queryClient.invalidateQueries({ queryKey: ["subproduct-catalog"] });
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, ...data }: { id: number } & ProductData) => {
+  const deleteSubproductMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest("DELETE", `/api/subproduct-catalog/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subproduct-catalog"] });
+    },
+  });
+
+  const updateProductMutation = useMutation({
+    mutationFn: async ({ id, ...data }: { id: number } & CreateProductData) => {
       return apiRequest("PUT", `/api/product-catalog/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["product-catalog"] });
-      queryClient.invalidateQueries({ queryKey: ["product-catalog-fullnames"] });
       setEditingNode(null);
       setError(null);
       setShowSuccess(true);
@@ -79,6 +111,22 @@ export function useProductCatalog() {
     },
     onError: (err: any) => {
       setError(err.message || "Erro ao atualizar produto");
+    },
+  });
+
+  const updateSubproductMutation = useMutation({
+    mutationFn: async ({ id, ...data }: { id: number; name: string; produtoId?: string }) => {
+      return apiRequest("PUT", `/api/subproduct-catalog/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subproduct-catalog"] });
+      setEditingNode(null);
+      setError(null);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    },
+    onError: (err: any) => {
+      setError(err.message || "Erro ao atualizar subproduto");
     },
   });
 
@@ -93,23 +141,14 @@ export function useProductCatalog() {
 
     const { parentNode, level } = addingTo;
 
-    let data: ProductData;
-
     if (level === "produto") {
-      data = { produto: name, subproduto: null };
-    } else if (level === "subproduto") {
-      data = { 
-        produto: parentNode!.ancestry.produto, 
-        subproduto: name
-      };
-    } else {
-      data = { 
-        produto: parentNode!.ancestry.produto, 
-        subproduto: parentNode!.ancestry.subproduto
-      };
+      createProductMutation.mutate({ name });
+    } else if (level === "subproduto" && parentNode) {
+      createSubproductMutation.mutate({ 
+        name, 
+        produtoId: parentNode.externalId 
+      });
     }
-
-    createMutation.mutate(data);
   };
 
   const handleStartAddProduto = () => {
@@ -122,30 +161,29 @@ export function useProductCatalog() {
   };
 
   const handleEditSubmit = (newName: string) => {
-    if (!editingNode || !editingNode.productId) return;
+    if (!editingNode) return;
 
-    const level = editingNode.level;
-    let data: ProductData;
-
-    if (level === "produto") {
-      data = { produto: newName, subproduto: null };
-    } else if (level === "subproduto") {
-      data = { 
-        produto: editingNode.ancestry.produto, 
-        subproduto: newName
-      };
-    } else {
-      data = { 
-        produto: editingNode.ancestry.produto, 
-        subproduto: editingNode.ancestry.subproduto
-      };
+    if (editingNode.level === "produto") {
+      updateProductMutation.mutate({ 
+        id: editingNode.id, 
+        name: newName,
+        icon: editingNode.icon,
+        color: editingNode.color
+      });
+    } else if (editingNode.level === "subproduto") {
+      updateSubproductMutation.mutate({ 
+        id: editingNode.id, 
+        name: newName 
+      });
     }
-
-    updateMutation.mutate({ id: editingNode.productId, ...data });
   };
 
-  const handleDelete = (id: number) => {
-    deleteMutation.mutate(id);
+  const handleDelete = (node: ProductTreeNode) => {
+    if (node.level === "produto") {
+      deleteProductMutation.mutate(node.id);
+    } else {
+      deleteSubproductMutation.mutate(node.id);
+    }
   };
 
   const handleCancelAdd = () => {
@@ -155,6 +193,10 @@ export function useProductCatalog() {
   const handleCancelEdit = () => {
     setEditingNode(null);
   };
+
+  const createMutation = createProductMutation;
+  const updateMutation = updateProductMutation;
+  const deleteMutation = deleteProductMutation;
 
   return {
     tree,
