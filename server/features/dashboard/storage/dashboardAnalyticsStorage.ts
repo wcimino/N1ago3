@@ -92,14 +92,13 @@ export const dashboardAnalyticsStorage = {
         ),
         products_subproducts_agg AS (
           SELECT 
-            COALESCE(pc.name, 'Sem classificação') as product,
-            sc.name as subproduct,
+            COALESCE(pc.produto, 'Sem classificação') as product,
+            pc.subproduto as subproduct,
             COUNT(DISTINCT ac.conversation_id)::int as count
           FROM active_conversations ac
           LEFT JOIN conversations_summary cs ON ac.conversation_id = cs.conversation_id
           LEFT JOIN products_catalog pc ON cs.product_id = pc.id
-          LEFT JOIN subproducts_catalog sc ON cs.subproduct_id = sc.id
-          GROUP BY COALESCE(pc.name, 'Sem classificação'), sc.name
+          GROUP BY COALESCE(pc.produto, 'Sem classificação'), pc.subproduto
         ),
         products_agg AS (
           SELECT 

@@ -8,7 +8,6 @@ export interface EnrichmentResult {
   summary?: string;
   classification?: {
     productId?: number;
-    subproductId?: number;
     customerRequestType?: string;
     productConfidence?: number;
     customerRequestTypeConfidence?: number;
