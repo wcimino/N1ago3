@@ -1,3 +1,5 @@
+import { solutionCenterApiLogStorage } from "../storage/solutionCenterApiLogStorage.js";
+
 export type SolutionCenterDemandType = "information" | "sales" | "support";
 
 export interface SolutionCenterSearchRequest {
@@ -37,6 +39,11 @@ export interface SolutionCenterSearchOptions {
   demandTypeConfidence?: number;
 }
 
+export interface SearchLogContext {
+  caseDemandId?: number;
+  conversationId?: number;
+}
+
 function getConfig(): { url: string; token: string } | null {
   const url = process.env.SOLUTION_CENTER_API_URL;
   const token = process.env.SOLUTION_CENTER_API_TOKEN;
@@ -49,9 +56,11 @@ function getConfig(): { url: string; token: string } | null {
 }
 
 export async function searchSolutionCenter(
-  options: SolutionCenterSearchOptions
+  options: SolutionCenterSearchOptions,
+  logContext?: SearchLogContext
 ): Promise<SolutionCenterSearchResponse | null> {
   const config = getConfig();
+  const startTime = Date.now();
 
   if (!config) {
     console.log("[SolutionCenterClient] API not configured (missing SOLUTION_CENTER_API_URL or SOLUTION_CENTER_API_TOKEN)");
@@ -110,6 +119,11 @@ export async function searchSolutionCenter(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30000);
 
+  let statusCode: number | undefined;
+  let responseData: Record<string, unknown> | undefined;
+  let errorMessage: string | undefined;
+  let success = false;
+
   try {
     console.log(`[SolutionCenterClient] Searching with ${textNormalizedVersions.length} text versions at ${endpoint}`);
 
@@ -124,25 +138,48 @@ export async function searchSolutionCenter(
       signal: controller.signal,
     });
 
+    statusCode = response.status;
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[SolutionCenterClient] API error ${response.status}: ${errorText}`);
+      errorMessage = errorText;
       return null;
     }
 
-    const data = await response.json() as SolutionCenterSearchResponse;
-    console.log(`[SolutionCenterClient] Found ${data.results?.length || 0} results`);
+    const data = await response.json();
+    responseData = data as Record<string, unknown>;
+    success = true;
+    console.log(`[SolutionCenterClient] Found ${(data as SolutionCenterSearchResponse).results?.length || 0} results`);
 
-    return data;
+    return data as SolutionCenterSearchResponse;
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       console.error(`[SolutionCenterClient] Request timed out after 30s for ${endpoint}`);
+      errorMessage = "Request timed out after 30s";
     } else {
       console.error("[SolutionCenterClient] Request failed:", error);
+      errorMessage = error instanceof Error ? error.message : String(error);
     }
     return null;
   } finally {
     clearTimeout(timeoutId);
+    const durationMs = Date.now() - startTime;
+
+    try {
+      await solutionCenterApiLogStorage.logSearchRequest({
+        caseDemandId: logContext?.caseDemandId,
+        conversationId: logContext?.conversationId,
+        request: requestBody as Record<string, unknown>,
+        response: responseData,
+        statusCode,
+        success,
+        errorMessage,
+        durationMs,
+      });
+    } catch (logError) {
+      console.error("[SolutionCenterClient] Failed to log search request:", logError);
+    }
   }
 }
 
@@ -160,30 +197,24 @@ export interface SolutionProviderRequest {
   rootCauseId: string;
 }
 
-export interface SolutionProviderAction {
-  id: string;
-  name: string;
-  description: string;
-  actionType: "instruction" | "link" | "api_call";
-  actionValue: string;
-  order: number;
-}
-
-export interface SolutionProviderSolution {
-  id: string;
-  name: string;
-  description: string;
-}
-
 export interface SolutionProviderResponse {
-  solution: SolutionProviderSolution;
-  actions: SolutionProviderAction[];
+  success?: boolean;
+  solution?: Record<string, unknown>;
+  actions?: Array<Record<string, unknown>>;
+  [key: string]: unknown;
+}
+
+export interface SolutionLogContext {
+  caseSolutionId?: number;
+  conversationId?: number;
 }
 
 export async function getSolutionFromCenter(
-  request: SolutionProviderRequest
+  request: SolutionProviderRequest,
+  logContext?: SolutionLogContext
 ): Promise<SolutionProviderResponse | null> {
   const config = getConfig();
+  const startTime = Date.now();
 
   if (!config) {
     console.log("[SolutionCenterClient] API not configured (missing SOLUTION_CENTER_API_URL or SOLUTION_CENTER_API_TOKEN)");
@@ -208,6 +239,11 @@ export async function getSolutionFromCenter(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30000);
 
+  let statusCode: number | undefined;
+  let responseData: Record<string, unknown> | undefined;
+  let errorMessage: string | undefined;
+  let success = false;
+
   try {
     console.log(`[SolutionCenterClient] Fetching solution from ${endpoint}`);
     console.log(`[SolutionCenterClient] Request: articleId=${articleId}, problemId=${problemId}, rootCauseId=${rootCauseId}`);
@@ -223,24 +259,47 @@ export async function getSolutionFromCenter(
       signal: controller.signal,
     });
 
+    statusCode = response.status;
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[SolutionCenterClient] Solution API error ${response.status}: ${errorText}`);
+      errorMessage = errorText;
       return null;
     }
 
-    const data = await response.json() as SolutionProviderResponse;
-    console.log(`[SolutionCenterClient] Solution found: ${data.solution?.name}, actions: ${data.actions?.length || 0}`);
+    const data = await response.json();
+    responseData = data as Record<string, unknown>;
+    success = true;
+    console.log(`[SolutionCenterClient] Solution response received, success=${data.success}, actions=${Array.isArray(data.actions) ? data.actions.length : 0}`);
 
-    return data;
+    return data as SolutionProviderResponse;
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       console.error(`[SolutionCenterClient] Solution request timed out after 30s`);
+      errorMessage = "Request timed out after 30s";
     } else {
       console.error("[SolutionCenterClient] Solution request failed:", error);
+      errorMessage = error instanceof Error ? error.message : String(error);
     }
     return null;
   } finally {
     clearTimeout(timeoutId);
+    const durationMs = Date.now() - startTime;
+
+    try {
+      await solutionCenterApiLogStorage.logSolutionRequest({
+        caseSolutionId: logContext?.caseSolutionId,
+        conversationId: logContext?.conversationId,
+        request: requestBody as Record<string, unknown>,
+        response: responseData,
+        statusCode,
+        success,
+        errorMessage,
+        durationMs,
+      });
+    } catch (logError) {
+      console.error("[SolutionCenterClient] Failed to log solution request:", logError);
+    }
   }
 }
