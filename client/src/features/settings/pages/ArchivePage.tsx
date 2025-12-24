@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, Archive, Database, RefreshCw, Play, CheckCircle, XCircle, Clock, FileArchive } from "lucide-react";
+import { ArrowLeft, Archive, Database, RefreshCw, Play, CheckCircle, XCircle, Clock, FileArchive, AlertTriangle, Wrench } from "lucide-react";
 import { apiRequest, fetchApi } from "../../../lib/queryClient";
 import { formatNumber } from "../../../lib/formatters";
 import { useConfirmation, useDateFormatters } from "../../../shared/hooks";
@@ -70,6 +70,9 @@ export function ArchivePage() {
   const [history, setHistory] = useState<ArchiveJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
+  const [inconsistentJobs, setInconsistentJobs] = useState<ArchiveJob[]>([]);
+  const [showInconsistent, setShowInconsistent] = useState(false);
+  const [fixingJob, setFixingJob] = useState<number | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchStats = async () => {
@@ -161,6 +164,40 @@ export function ArchivePage() {
     setLoading(false);
   };
 
+  const fetchInconsistentJobs = async () => {
+    try {
+      const data = await fetchApi<{ jobs: ArchiveJob[]; count: number }>("/api/maintenance/archive/inconsistent");
+      setInconsistentJobs(data.jobs);
+      setShowInconsistent(true);
+    } catch (error) {
+      console.error("Erro ao buscar jobs inconsistentes:", error);
+    }
+  };
+
+  const fixInconsistentJob = async (job: ArchiveJob) => {
+    setFixingJob(job.id);
+    try {
+      const dateStr = job.archiveDate.split("T")[0];
+      await apiRequest("POST", `/api/maintenance/archive/force?table=${job.tableName}&date=${dateStr}`);
+      await fetchStats();
+      setInconsistentJobs(prev => prev.filter(j => j.id !== job.id));
+    } catch (error) {
+      console.error("Erro ao corrigir job:", error);
+    }
+    setFixingJob(null);
+  };
+
+  const handleFixJob = (job: ArchiveJob) => {
+    const dateStr = job.archiveDate.split("T")[0];
+    confirmation.confirm({
+      title: "Corrigir job inconsistente",
+      message: `Forcar re-arquivamento de ${job.tableName} em ${dateStr}? Isso vai deletar os registros que foram arquivados mas nao removidos do banco.`,
+      confirmLabel: "Corrigir",
+      variant: "warning",
+      onConfirm: () => fixInconsistentJob(job),
+    });
+  };
+
   const totalPending = (stats?.zendeskWebhook.pendingRecords || 0) + 
     (stats?.openaiLogs.pendingRecords || 0) + 
     (stats?.responsesSuggested.pendingRecords || 0);
@@ -244,7 +281,10 @@ export function ArchivePage() {
           </div>
         </div>
 
-        <div className={`bg-white rounded-lg border p-4 ${stats?.inconsistentJobs && stats.inconsistentJobs > 0 ? 'border-red-300 bg-red-50' : ''}`}>
+        <div 
+          className={`bg-white rounded-lg border p-4 ${stats?.inconsistentJobs && stats.inconsistentJobs > 0 ? 'border-red-300 bg-red-50 cursor-pointer hover:bg-red-100' : ''}`}
+          onClick={() => stats?.inconsistentJobs && stats.inconsistentJobs > 0 && fetchInconsistentJobs()}
+        >
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${stats?.inconsistentJobs && stats.inconsistentJobs > 0 ? 'bg-red-100' : 'bg-gray-100'}`}>
               <XCircle className={`w-5 h-5 ${stats?.inconsistentJobs && stats.inconsistentJobs > 0 ? 'text-red-600' : 'text-gray-600'}`} />
@@ -255,12 +295,61 @@ export function ArchivePage() {
                 {stats ? formatNumber(stats.inconsistentJobs) : "-"}
               </p>
               {stats?.inconsistentJobs && stats.inconsistentJobs > 0 && (
-                <p className="text-xs text-red-500">Arquivados mas nao deletados</p>
+                <p className="text-xs text-red-500">Clique para corrigir</p>
               )}
             </div>
           </div>
         </div>
       </div>
+
+      {showInconsistent && inconsistentJobs.length > 0 && (
+        <div className="bg-red-50 rounded-lg border border-red-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-600" />
+              <h2 className="text-lg font-semibold text-red-800">Jobs Inconsistentes</h2>
+            </div>
+            <button
+              onClick={() => setShowInconsistent(false)}
+              className="text-red-600 hover:text-red-800"
+            >
+              <XCircle className="w-5 h-5" />
+            </button>
+          </div>
+          <p className="text-sm text-red-700 mb-4">
+            Estes jobs foram arquivados mas os registros nao foram deletados do banco. Clique em "Corrigir" para deletar os registros.
+          </p>
+          <div className="space-y-2">
+            {inconsistentJobs.map((job) => (
+              <div key={job.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-red-200">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <p className="font-mono text-sm">{job.tableName}</p>
+                    <p className="text-xs text-gray-500">{formatDate(job.archiveDate)}</p>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    <span className="text-green-600">{formatNumber(job.recordsArchived)} arquivados</span>
+                    <span className="mx-2">|</span>
+                    <span className="text-red-600">{formatNumber(job.recordsDeleted)} deletados</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleFixJob(job)}
+                  disabled={fixingJob === job.id || progress.isRunning}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-sm"
+                >
+                  {fixingJob === job.id ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Wrench className="w-4 h-4" />
+                  )}
+                  {fixingJob === job.id ? "Corrigindo..." : "Corrigir"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg border p-6">
         <div className="flex items-center justify-between mb-4">
