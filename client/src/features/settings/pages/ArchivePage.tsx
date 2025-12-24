@@ -73,6 +73,7 @@ export function ArchivePage() {
   const [inconsistentJobs, setInconsistentJobs] = useState<ArchiveJob[]>([]);
   const [showInconsistent, setShowInconsistent] = useState(false);
   const [fixingJob, setFixingJob] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchStats = async () => {
@@ -166,23 +167,27 @@ export function ArchivePage() {
 
   const fetchInconsistentJobs = async () => {
     try {
+      setError(null);
       const data = await fetchApi<{ jobs: ArchiveJob[]; count: number }>("/api/maintenance/archive/inconsistent");
-      setInconsistentJobs(data.jobs);
+      setInconsistentJobs(data.jobs ?? []);
       setShowInconsistent(true);
-    } catch (error) {
-      console.error("Erro ao buscar jobs inconsistentes:", error);
+    } catch (err: any) {
+      console.error("Erro ao buscar jobs inconsistentes:", err);
+      setError(err.message || "Erro ao buscar jobs inconsistentes");
     }
   };
 
   const fixInconsistentJob = async (job: ArchiveJob) => {
     setFixingJob(job.id);
     try {
-      const dateStr = job.archiveDate.split("T")[0];
+      setError(null);
+      const dateStr = job.archiveDate?.split("T")[0] ?? "";
       await apiRequest("POST", `/api/maintenance/archive/force?table=${job.tableName}&date=${dateStr}`);
       await fetchStats();
       setInconsistentJobs(prev => prev.filter(j => j.id !== job.id));
-    } catch (error) {
-      console.error("Erro ao corrigir job:", error);
+    } catch (err: any) {
+      console.error("Erro ao corrigir job:", err);
+      setError(err.message || "Erro ao corrigir job");
     }
     setFixingJob(null);
   };
@@ -216,6 +221,18 @@ export function ArchivePage() {
           <p className="text-gray-600">Arquive dados antigos em Parquet para liberar espaco no banco</p>
         </div>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+            <p className="text-red-700">{error}</p>
+          </div>
+          <button onClick={() => setError(null)} className="text-red-600 hover:text-red-800">
+            <XCircle className="w-5 h-5" />
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <div className="bg-white rounded-lg border p-4">

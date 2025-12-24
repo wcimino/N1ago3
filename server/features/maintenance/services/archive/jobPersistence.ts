@@ -23,6 +23,7 @@ export interface ExistingJob {
   recordsDeleted: number;
   filePath: string | null;
   fileSize: number | null;
+  errorMessage: string | null;
 }
 
 export async function createJob(job: JobRecord): Promise<number> {
@@ -43,7 +44,7 @@ export async function createJob(job: JobRecord): Promise<number> {
 
 export async function getExistingJob(tableName: string, archiveDate: Date): Promise<ExistingJob | null> {
   const result = await db.execute(sql`
-    SELECT id, status, last_processed_hour, records_archived, records_deleted, file_path, file_size
+    SELECT id, status, last_processed_hour, records_archived, records_deleted, file_path, file_size, error_message
     FROM archive_jobs
     WHERE table_name = ${tableName}
       AND archive_date::date = ${archiveDate}::date
@@ -63,6 +64,7 @@ export async function getExistingJob(tableName: string, archiveDate: Date): Prom
     recordsDeleted: row.records_deleted || 0,
     filePath: row.file_path,
     fileSize: row.file_size || 0,
+    errorMessage: row.error_message || null,
   };
 }
 
@@ -95,13 +97,34 @@ export async function markJobPartial(jobId: number, errorMessage: string, lastSu
   `);
 }
 
-export async function completeJob(jobId: number, hadErrors: boolean): Promise<void> {
-  const finalStatus = hadErrors ? "partial" : "completed";
+export async function completeJob(
+  jobId: number, 
+  hadErrors: boolean, 
+  totalArchived?: number, 
+  totalDeleted?: number,
+  deletionDiscrepancy?: boolean,
+  discrepancyDetails?: string | null
+): Promise<void> {
+  let finalStatus = hadErrors ? "partial" : "completed";
+  let errorMessage: string | null = hadErrors ? "Stopped at first error - check logs" : null;
+
+  if (deletionDiscrepancy && !hadErrors) {
+    finalStatus = "partial";
+    errorMessage = discrepancyDetails 
+      ? `Per-hour deletion discrepancy: ${discrepancyDetails}` 
+      : "Deletion discrepancy detected";
+  } else if (!hadErrors && totalArchived !== undefined && totalDeleted !== undefined) {
+    if (totalArchived > 0 && totalDeleted === 0) {
+      finalStatus = "partial";
+      errorMessage = "Archived records but deletion failed - records still in database";
+    }
+  }
+
   await db.execute(sql`
     UPDATE archive_jobs
     SET status = ${finalStatus},
         completed_at = ${new Date()},
-        error_message = ${hadErrors ? "Stopped at first error - check logs" : null}
+        error_message = ${errorMessage}
     WHERE id = ${jobId}
   `);
 }
@@ -135,13 +158,28 @@ export async function getInconsistentJobs(limit: number = 50): Promise<ArchiveJo
   const result = await db.execute(sql`
     SELECT *
     FROM archive_jobs
-    WHERE status = 'completed'
-      AND records_archived > 0
-      AND records_deleted = 0
+    WHERE (
+      (status = 'completed' AND records_archived > 0 AND records_deleted = 0)
+      OR (status = 'partial' AND records_archived > 0 AND records_deleted < records_archived * 0.5)
+    )
     ORDER BY created_at DESC
     LIMIT ${limit}
   `);
-  return result.rows as ArchiveJob[];
+  return (result.rows as any[]).map(row => ({
+    id: row.id,
+    tableName: row.table_name,
+    archiveDate: row.archive_date,
+    status: row.status,
+    recordsArchived: Number(row.records_archived ?? 0),
+    recordsDeleted: Number(row.records_deleted ?? 0),
+    filePath: row.file_path ?? null,
+    fileSize: Number(row.file_size ?? 0),
+    errorMessage: row.error_message ?? null,
+    startedAt: row.started_at ?? null,
+    completedAt: row.completed_at ?? null,
+    createdAt: row.created_at,
+    lastProcessedHour: row.last_processed_hour ?? null,
+  }));
 }
 
 export async function getJobStats(): Promise<{
@@ -155,7 +193,7 @@ export async function getJobStats(): Promise<{
       SUM(CASE WHEN status IN ('running', 'pending') THEN 1 ELSE 0 END) as running,
       SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
       SUM(CASE WHEN status = 'completed' THEN records_archived ELSE 0 END) as total_archived,
-      SUM(CASE WHEN status = 'completed' AND records_archived > 0 AND records_deleted = 0 THEN 1 ELSE 0 END) as inconsistent
+      SUM(CASE WHEN (status = 'completed' AND records_archived > 0 AND records_deleted = 0) OR (status = 'partial' AND records_archived > 0 AND records_deleted < records_archived * 0.5) THEN 1 ELSE 0 END) as inconsistent
     FROM archive_jobs
   `);
   const row = result.rows[0] as any;
