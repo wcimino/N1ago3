@@ -243,6 +243,23 @@ export function ArchivePage() {
             </div>
           </div>
         </div>
+
+        <div className={`bg-white rounded-lg border p-4 ${stats?.inconsistentJobs && stats.inconsistentJobs > 0 ? 'border-red-300 bg-red-50' : ''}`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${stats?.inconsistentJobs && stats.inconsistentJobs > 0 ? 'bg-red-100' : 'bg-gray-100'}`}>
+              <XCircle className={`w-5 h-5 ${stats?.inconsistentJobs && stats.inconsistentJobs > 0 ? 'text-red-600' : 'text-gray-600'}`} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm text-gray-600 truncate">Jobs Inconsistentes</p>
+              <p className={`text-xl font-bold ${stats?.inconsistentJobs && stats.inconsistentJobs > 0 ? 'text-red-600' : ''}`}>
+                {stats ? formatNumber(stats.inconsistentJobs) : "-"}
+              </p>
+              {stats?.inconsistentJobs && stats.inconsistentJobs > 0 && (
+                <p className="text-xs text-red-500">Arquivados mas nao deletados</p>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg border p-6">
