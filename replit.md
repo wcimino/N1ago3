@@ -62,11 +62,6 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **AI Agent Framework Patterns:** Centralized framework for running agents and saving suggestions, differentiating between conversation-based and non-conversation agents.
 *   **External Knowledge Architecture:** All knowledge retrieval uses the external Solution Center API exclusively (no internal knowledge base).
 
-## Recent Changes
-
-*   **2024-12-24:** Dead code cleanup - Removed unused components (StatsTableHeader, FormActions, CrudListItem), unused eventBus.off() method, unused matchScoring functions (normalizeForMatching, tokenize, extractMatchedTerms), and broken scripts/run-archive.ts script.
-*   **2024-12-24:** Removed query monitoring system (query_logs, query_stats tables, QueryMonitoringTab component, queryLogger service) to eliminate database overhead. The system was instrumenting every query via a Proxy wrapper, causing more performance degradation than value provided. The `system_config` table was preserved as it's used by other features.
-
 ## External Dependencies
 
 *   **Zendesk Sunshine Conversations:** Webhook source for conversation data.
