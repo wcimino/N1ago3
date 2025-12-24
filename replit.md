@@ -38,7 +38,12 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **SendMessageService:** Centralized message sending controller for all outbound messages to customers.
 *   **ResponseFormatterService:** Adjusts tone of voice for outbound messages using an AI agent's configuration.
 *   **Solution Center Integration:** External KB API integration (Solution Center) for DemandFinder's article and problem search, storing results in `solution_center_articles_and_problems`. This is the sole knowledge source - no internal knowledge base.
-*   **Scheduled Maintenance Services:** Daily scheduled tasks for archiving old data and performing database vacuuming.
+*   **Scheduled Maintenance Services:** Daily scheduled tasks for archiving old data and performing database vacuuming. Features include:
+    - Timestamp-based fallback deletion when archive file metadata is invalid
+    - Force archive endpoint (`POST /api/maintenance/archive/force?table=...&date=...`) for manual re-archiving
+    - Inconsistent jobs detection (`GET /api/maintenance/archive/inconsistent`) to identify jobs with archived > 0 but deleted = 0
+    - Atomic upload via temporary files (.tmp) with metadata verification before finalization
+    - Concurrency protection to prevent parallel archive executions
 *   **Server Bootstrap & Initialization:** Includes preflight checks for environment variables, granular scheduler control via flags, an enhanced `/ready` endpoint, and production static file verification.
 *   **Database Migrations:** Automated migration execution during build process using Drizzle ORM. Supports both Drizzle migrations (`./drizzle/`) and manual SQL migrations (`./migrations/`). Features timeout protection (60s per operation), proper Neon serverless transaction handling, and graceful error recovery.
 *   **Server Resilience:** Server starts even if database is unavailable (degraded mode). Background workers only start when database is healthy. Health endpoints (`/health`, `/ready`) include real-time database status with cached checks.
