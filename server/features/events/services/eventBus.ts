@@ -9,14 +9,6 @@ class EventBus {
     this.handlers.set(event, handlers);
   }
 
-  off(event: string, handler: EventHandler) {
-    const handlers = this.handlers.get(event) || [];
-    const index = handlers.indexOf(handler);
-    if (index !== -1) {
-      handlers.splice(index, 1);
-    }
-  }
-
   async emit(event: string, data: any) {
     const handlers = this.handlers.get(event) || [];
     for (const handler of handlers) {

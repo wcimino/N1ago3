@@ -1,5 +1,4 @@
 export { StatsCard } from "./StatsCard";
-export { StatsTableHeader } from "./StatsTableHeader";
 export { StatsTotalRow } from "./StatsTotalRow";
 export { StatsRow } from "./StatsRow";
 
