@@ -89,16 +89,6 @@ export function getParquetSchema(tableName: string): any {
       status: { type: "UTF8", optional: true },
       articles_used: { type: "UTF8", optional: true },
     });
-  } else if (tableName === "query_logs") {
-    return new parquet.ParquetSchema({
-      id: { type: "INT64" },
-      query_hash: { type: "UTF8", optional: true },
-      query_normalized: { type: "UTF8", optional: true },
-      duration_ms: { type: "INT32", optional: true },
-      rows_affected: { type: "INT32", optional: true },
-      source: { type: "UTF8", optional: true },
-      created_at: { type: "UTF8", optional: true },
-    });
   } else {
     throw new Error(`Unknown table for Parquet schema: ${tableName}`);
   }
