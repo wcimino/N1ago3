@@ -5,6 +5,7 @@ import * as jobPersistence from "./jobPersistence.js";
 import { exportHourToParquet, exportHourWithOutcome, getEnvironmentPrefix } from "./parquetExporter.js";
 import { deleteArchivedRecords, deleteByTimeRange, runVacuum } from "./tableCleaner.js";
 import { objectStorageClient } from "../../../../replit_integrations/object_storage/objectStorage.js";
+import { HourlyMetadata } from "../../../../../shared/schema.js";
 
 interface TableStats {
   pendingRecords: number;
@@ -178,14 +179,19 @@ class ArchiveService {
 
     console.log(`[ArchiveService] Starting FORCE archive for ${tableName} on ${dateStr}`);
 
-    const invalidatedCount = await jobPersistence.invalidateExistingJobs(tableName, archiveDate);
-    console.log(`[ArchiveService] Invalidated ${invalidatedCount} existing jobs before force archive`);
-
     this.isRunning = true;
 
     this.runForceArchiveProcess(tableName, archiveDate, tableConfig.dateColumn)
-      .then(() => {
-        console.log(`[ArchiveService] Force archive completed for ${tableName} on ${dateStr}`);
+      .then(async (result) => {
+        if (result.isSuccess) {
+          const invalidatedCount = await jobPersistence.invalidateExistingJobs(tableName, archiveDate, result.jobId);
+          if (invalidatedCount > 0) {
+            console.log(`[ArchiveService] Invalidated ${invalidatedCount} previous jobs after successful force archive (kept job ${result.jobId})`);
+          }
+          console.log(`[ArchiveService] Force archive completed successfully for ${tableName} on ${dateStr}`);
+        } else {
+          console.warn(`[ArchiveService] Force archive finished with partial status for ${tableName} on ${dateStr} - previous jobs NOT invalidated`);
+        }
       })
       .catch(err => {
         console.error(`[ArchiveService] Force archive failed for ${tableName} on ${dateStr}:`, err.message);
@@ -200,9 +206,10 @@ class ArchiveService {
     };
   }
 
-  private async runForceArchiveProcess(tableName: string, archiveDate: Date, dateColumn: string): Promise<void> {
-    await this.archiveDateData(tableName, archiveDate, dateColumn);
+  private async runForceArchiveProcess(tableName: string, archiveDate: Date, dateColumn: string): Promise<{ jobId: number; isSuccess: boolean }> {
+    const result = await this.archiveDateDataForce(tableName, archiveDate, dateColumn);
     await runVacuum(tableName);
+    return result;
   }
 
   private async runArchiveProcess(): Promise<void> {
@@ -241,6 +248,7 @@ class ArchiveService {
     const filePaths: string[] = [];
     let totalFileSize = 0;
     let hadErrors = false;
+    let hourlyMetadata: HourlyMetadata[] = [];
 
     if (existingJob) {
       jobId = existingJob.id;
@@ -251,6 +259,7 @@ class ArchiveService {
         filePaths.push(...existingJob.filePath.split(", "));
       }
       totalFileSize = existingJob.fileSize || 0;
+      hourlyMetadata = existingJob.hourlyMetadata || [];
       
       if (startHour >= 24) {
         if (existingJob.status === "partial" && existingJob.errorMessage?.includes("discrepancy")) {
@@ -298,6 +307,16 @@ class ArchiveService {
           if (result.filePath) filePaths.push(result.filePath);
           totalFileSize += result.fileSize || 0;
 
+          hourlyMetadata.push({
+            hour,
+            archived: result.archived,
+            deleted: result.deleted,
+            filePath: result.filePath,
+            fileSize: result.fileSize || 0,
+            minId: result.minId,
+            maxId: result.maxId,
+          });
+
           if (result.archived > 0 && result.deleted < result.archived * 0.5) {
             deletionDiscrepancy = true;
             discrepancyDetails.push(`hour ${hour}: archived ${result.archived}, deleted ${result.deleted}`);
@@ -306,7 +325,7 @@ class ArchiveService {
         }
 
         lastSuccessfulHour = hour;
-        await jobPersistence.updateJobProgress(jobId, hour, totalArchived, totalDeleted, filePaths, totalFileSize);
+        await jobPersistence.updateJobProgress(jobId, hour, totalArchived, totalDeleted, filePaths, totalFileSize, hourlyMetadata);
       } catch (err: any) {
         console.error(`[ArchiveService] Error archiving ${tableName} for ${archiveDate.toISOString().split("T")[0]} hour ${hour}:`, err);
         hadErrors = true;
@@ -321,12 +340,169 @@ class ArchiveService {
     console.log(`[ArchiveService] Job ${jobId} for ${tableName} ${archiveDate.toISOString().split("T")[0]} finished with status: ${finalStatus} (archived: ${totalArchived}, deleted: ${totalDeleted})`);
   }
 
+  private async archiveDateDataForce(tableName: string, archiveDate: Date, dateColumn: string): Promise<{ jobId: number; isSuccess: boolean }> {
+    const jobId = await jobPersistence.createJob({
+      tableName,
+      archiveDate,
+      status: "running",
+      recordsArchived: 0,
+      recordsDeleted: 0,
+      filePath: null,
+      fileSize: null,
+      errorMessage: null,
+    });
+    console.log(`[ArchiveService] Starting FORCE job ${jobId} for ${tableName} ${archiveDate.toISOString().split("T")[0]}`);
+
+    let totalArchived = 0;
+    let totalDeleted = 0;
+    const hourlyMetadata: HourlyMetadata[] = [];
+    let totalFileSize = 0;
+    let hadErrors = false;
+    let lastSuccessfulHour = -1;
+    let deletionDiscrepancy = false;
+    const discrepancyDetails: string[] = [];
+
+    for (let hour = 0; hour < 24; hour++) {
+      this.currentProgress = {
+        tableName,
+        status: "running",
+        currentDate: archiveDate.toISOString().split("T")[0],
+        currentHour: hour,
+        recordsArchived: totalArchived,
+        recordsDeleted: totalDeleted,
+      };
+
+      try {
+        const result = await this.archiveHourDataForce(tableName, archiveDate, hour, dateColumn);
+        if (result) {
+          totalArchived += result.archived;
+          totalDeleted += result.deleted;
+          totalFileSize += result.fileSize || 0;
+          
+          hourlyMetadata.push({
+            hour,
+            archived: result.archived,
+            deleted: result.deleted,
+            filePath: result.filePath,
+            fileSize: result.fileSize || 0,
+            minId: result.minId,
+            maxId: result.maxId,
+          });
+
+          if (result.archived > 0 && result.deleted < result.archived * 0.5) {
+            deletionDiscrepancy = true;
+            discrepancyDetails.push(`hour ${hour}: archived ${result.archived}, deleted ${result.deleted}`);
+            console.warn(`[ArchiveService] Deletion discrepancy at hour ${hour}: archived ${result.archived} but only deleted ${result.deleted}`);
+          }
+        }
+
+        lastSuccessfulHour = hour;
+        const filePaths = hourlyMetadata.filter(h => h.filePath).map(h => h.filePath!);
+        await jobPersistence.updateJobProgress(jobId, hour, totalArchived, totalDeleted, filePaths, totalFileSize, hourlyMetadata);
+      } catch (err: any) {
+        console.error(`[ArchiveService] Error in FORCE archive ${tableName} for ${archiveDate.toISOString().split("T")[0]} hour ${hour}:`, err);
+        hadErrors = true;
+        await jobPersistence.markJobPartial(jobId, err.message, lastSuccessfulHour >= 0 ? lastSuccessfulHour : null);
+        throw err;
+      }
+    }
+
+    const discrepancyMessage = deletionDiscrepancy ? discrepancyDetails.join("; ") : null;
+    await jobPersistence.completeJob(jobId, hadErrors, totalArchived, totalDeleted, deletionDiscrepancy, discrepancyMessage);
+    const isSuccess = !hadErrors && !deletionDiscrepancy;
+    const finalStatus = isSuccess ? "completed" : "partial";
+    console.log(`[ArchiveService] FORCE Job ${jobId} for ${tableName} ${archiveDate.toISOString().split("T")[0]} finished with status: ${finalStatus} (archived: ${totalArchived}, deleted: ${totalDeleted})`);
+    
+    return { jobId, isSuccess };
+  }
+
+  private async archiveHourDataForce(
+    tableName: string,
+    archiveDate: Date,
+    hour: number,
+    dateColumn: string
+  ): Promise<{ archived: number; deleted: number; filePath: string | null; fileSize: number | null; minId?: number; maxId?: number } | null> {
+    const startOfHour = new Date(archiveDate);
+    startOfHour.setHours(hour, 0, 0, 0);
+    const endOfHour = new Date(archiveDate);
+    endOfHour.setHours(hour, 59, 59, 999);
+
+    const dateStr = archiveDate.toISOString().split("T")[0];
+    const hourStr = hour.toString().padStart(2, "0");
+    const envPrefix = getEnvironmentPrefix();
+    const storageFileName = `archives/${envPrefix}/${tableName}/${dateStr}/${hourStr}.parquet`;
+
+    const privateDir = process.env.PRIVATE_OBJECT_DIR;
+    if (!privateDir) {
+      throw new Error("PRIVATE_OBJECT_DIR not configured");
+    }
+
+    const fullPath = `${privateDir}/${storageFileName}`;
+    const pathParts = fullPath.startsWith("/") ? fullPath.slice(1).split("/") : fullPath.split("/");
+    const bucketName = pathParts[0];
+    const objectName = pathParts.slice(1).join("/");
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+
+    const [existingFile] = await file.exists();
+    if (existingFile) {
+      console.log(`[ArchiveService] FORCE: Deleting existing file ${storageFileName} before re-export`);
+      try {
+        await file.delete();
+      } catch (delErr: any) {
+        console.warn(`[ArchiveService] Could not delete existing file: ${delErr.message}`);
+      }
+    }
+
+    const exportResult = await exportHourToParquet(
+      tableName,
+      archiveDate,
+      hour,
+      dateColumn,
+      (count) => {
+        if (this.currentProgress) {
+          this.currentProgress.recordsArchived += count;
+        }
+      }
+    );
+
+    if (!exportResult) {
+      return null;
+    }
+
+    const deletedCount = await deleteArchivedRecords(
+      tableName,
+      exportResult.minId,
+      exportResult.maxId,
+      exportResult.archived,
+      dateColumn,
+      startOfHour,
+      endOfHour,
+      (count) => {
+        if (this.currentProgress) {
+          this.currentProgress.recordsDeleted += count;
+        }
+      }
+    );
+
+    console.log(`[ArchiveService] FORCE completed ${storageFileName}: ${exportResult.archived} archived, ${deletedCount} deleted`);
+
+    return {
+      archived: exportResult.archived,
+      deleted: deletedCount,
+      filePath: exportResult.filePath,
+      fileSize: exportResult.fileSize,
+      minId: exportResult.minId,
+      maxId: exportResult.maxId,
+    };
+  }
+
   private async archiveHourData(
     tableName: string,
     archiveDate: Date,
     hour: number,
     dateColumn: string
-  ): Promise<{ archived: number; deleted: number; filePath: string | null; fileSize: number | null } | null> {
+  ): Promise<{ archived: number; deleted: number; filePath: string | null; fileSize: number | null; minId?: number; maxId?: number } | null> {
     const startOfHour = new Date(archiveDate);
     startOfHour.setHours(hour, 0, 0, 0);
     const endOfHour = new Date(archiveDate);
@@ -366,6 +542,8 @@ class ArchiveService {
           deleted: deletedCount,
           filePath: storageFileName,
           fileSize,
+          minId: archivedMinId,
+          maxId: archivedMaxId,
         };
       }
 
@@ -431,6 +609,8 @@ class ArchiveService {
       deleted: deletedCount,
       filePath: exportResult.filePath,
       fileSize: exportResult.fileSize,
+      minId: exportResult.minId,
+      maxId: exportResult.maxId,
     };
   }
 

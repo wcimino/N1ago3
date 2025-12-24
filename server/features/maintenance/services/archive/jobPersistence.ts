@@ -1,5 +1,5 @@
 import { db } from "../../../../db.js";
-import { archiveJobs, ArchiveJob } from "../../../../../shared/schema.js";
+import { archiveJobs, ArchiveJob, HourlyMetadata } from "../../../../../shared/schema.js";
 import { sql, desc } from "drizzle-orm";
 
 export interface JobRecord {
@@ -13,6 +13,7 @@ export interface JobRecord {
   fileSize: number | null;
   errorMessage: string | null;
   lastProcessedHour?: number | null;
+  hourlyMetadata?: HourlyMetadata[] | null;
 }
 
 export interface ExistingJob {
@@ -24,6 +25,7 @@ export interface ExistingJob {
   filePath: string | null;
   fileSize: number | null;
   errorMessage: string | null;
+  hourlyMetadata: HourlyMetadata[] | null;
 }
 
 export async function createJob(job: JobRecord): Promise<number> {
@@ -44,7 +46,7 @@ export async function createJob(job: JobRecord): Promise<number> {
 
 export async function getExistingJob(tableName: string, archiveDate: Date): Promise<ExistingJob | null> {
   const result = await db.execute(sql`
-    SELECT id, status, last_processed_hour, records_archived, records_deleted, file_path, file_size, error_message
+    SELECT id, status, last_processed_hour, records_archived, records_deleted, file_path, file_size, error_message, hourly_metadata
     FROM archive_jobs
     WHERE table_name = ${tableName}
       AND archive_date::date = ${archiveDate}::date
@@ -56,6 +58,17 @@ export async function getExistingJob(tableName: string, archiveDate: Date): Prom
   if (result.rows.length === 0) return null;
 
   const row = result.rows[0] as any;
+  let hourlyMetadata: HourlyMetadata[] | null = null;
+  if (row.hourly_metadata) {
+    try {
+      hourlyMetadata = typeof row.hourly_metadata === 'string' 
+        ? JSON.parse(row.hourly_metadata) 
+        : row.hourly_metadata;
+    } catch {
+      hourlyMetadata = null;
+    }
+  }
+  
   return {
     id: row.id,
     status: row.status,
@@ -65,6 +78,7 @@ export async function getExistingJob(tableName: string, archiveDate: Date): Prom
     filePath: row.file_path,
     fileSize: row.file_size || 0,
     errorMessage: row.error_message || null,
+    hourlyMetadata,
   };
 }
 
@@ -74,15 +88,22 @@ export async function updateJobProgress(
   recordsArchived: number,
   recordsDeleted: number,
   filePaths: string[],
-  totalFileSize: number
+  totalFileSize: number,
+  hourlyMetadata?: HourlyMetadata[]
 ): Promise<void> {
+  const filePathStr = filePaths.length > 0 ? filePaths.join(", ") : null;
+  const metadataJson = hourlyMetadata && hourlyMetadata.length > 0 
+    ? JSON.stringify(hourlyMetadata) 
+    : null;
+  
   await db.execute(sql`
     UPDATE archive_jobs
     SET last_processed_hour = ${hour},
         records_archived = ${recordsArchived},
         records_deleted = ${recordsDeleted},
-        file_path = ${filePaths.length > 0 ? filePaths.join(", ") : null},
-        file_size = ${totalFileSize}
+        file_path = ${filePathStr},
+        file_size = ${totalFileSize},
+        hourly_metadata = ${metadataJson}::jsonb
     WHERE id = ${jobId}
   `);
 }
@@ -137,7 +158,7 @@ export async function getJobHistory(limit: number = 50): Promise<ArchiveJob[]> {
     .limit(limit);
 }
 
-export async function invalidateExistingJobs(tableName: string, archiveDate: Date): Promise<number> {
+export async function invalidateExistingJobs(tableName: string, archiveDate: Date, excludeJobId?: number): Promise<number> {
   const result = await db.execute(sql`
     UPDATE archive_jobs
     SET status = 'invalidated',
@@ -145,11 +166,12 @@ export async function invalidateExistingJobs(tableName: string, archiveDate: Dat
     WHERE table_name = ${tableName}
       AND archive_date::date = ${archiveDate}::date
       AND status IN ('running', 'partial', 'completed')
+      ${excludeJobId ? sql`AND id != ${excludeJobId}` : sql``}
     RETURNING id
   `);
   const count = result.rows.length;
   if (count > 0) {
-    console.log(`[JobPersistence] Invalidated ${count} existing jobs for ${tableName} on ${archiveDate.toISOString().split("T")[0]}`);
+    console.log(`[JobPersistence] Invalidated ${count} existing jobs for ${tableName} on ${archiveDate.toISOString().split("T")[0]}${excludeJobId ? ` (excluding job ${excludeJobId})` : ''}`);
   }
   return count;
 }
@@ -165,21 +187,34 @@ export async function getInconsistentJobs(limit: number = 50): Promise<ArchiveJo
     ORDER BY created_at DESC
     LIMIT ${limit}
   `);
-  return (result.rows as any[]).map(row => ({
-    id: row.id,
-    tableName: row.table_name,
-    archiveDate: row.archive_date,
-    status: row.status,
-    recordsArchived: Number(row.records_archived ?? 0),
-    recordsDeleted: Number(row.records_deleted ?? 0),
-    filePath: row.file_path ?? null,
-    fileSize: Number(row.file_size ?? 0),
-    errorMessage: row.error_message ?? null,
-    startedAt: row.started_at ?? null,
-    completedAt: row.completed_at ?? null,
-    createdAt: row.created_at,
-    lastProcessedHour: row.last_processed_hour ?? null,
-  }));
+  return (result.rows as any[]).map(row => {
+    let hourlyMetadata: HourlyMetadata[] | null = null;
+    if (row.hourly_metadata) {
+      try {
+        hourlyMetadata = typeof row.hourly_metadata === 'string' 
+          ? JSON.parse(row.hourly_metadata) 
+          : row.hourly_metadata;
+      } catch {
+        hourlyMetadata = null;
+      }
+    }
+    return {
+      id: row.id,
+      tableName: row.table_name,
+      archiveDate: row.archive_date,
+      status: row.status,
+      recordsArchived: Number(row.records_archived ?? 0),
+      recordsDeleted: Number(row.records_deleted ?? 0),
+      filePath: row.file_path ?? null,
+      fileSize: Number(row.file_size ?? 0),
+      errorMessage: row.error_message ?? null,
+      startedAt: row.started_at ?? null,
+      completedAt: row.completed_at ?? null,
+      createdAt: row.created_at,
+      lastProcessedHour: row.last_processed_hour ?? null,
+      hourlyMetadata,
+    };
+  });
 }
 
 export async function getJobStats(): Promise<{

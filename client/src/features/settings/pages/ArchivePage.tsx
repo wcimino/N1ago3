@@ -26,6 +26,7 @@ interface ArchiveProgress {
   tableName: string;
   status: string;
   currentDate: string | null;
+  currentHour: number | null;
   recordsArchived: number;
   recordsDeleted: number;
 }
@@ -400,7 +401,17 @@ export function ArchivePage() {
             </div>
             <div className="text-sm text-blue-700 space-y-1">
               <p>Tabela: <span className="font-mono">{progress.progress.tableName}</span></p>
-              <p>Data: {progress.progress.currentDate}</p>
+              <p>Data: {progress.progress.currentDate} {progress.progress.currentHour !== null && <span className="text-blue-600">- Hora {String(progress.progress.currentHour).padStart(2, '0')}:00</span>}</p>
+              <div className="flex items-center gap-2">
+                <span>Progresso do dia:</span>
+                <div className="flex-1 h-2 bg-blue-200 rounded-full overflow-hidden max-w-[200px]">
+                  <div 
+                    className="h-full bg-blue-600 transition-all duration-300"
+                    style={{ width: `${progress.progress.currentHour !== null ? ((progress.progress.currentHour + 1) / 24) * 100 : 0}%` }}
+                  />
+                </div>
+                <span className="text-xs">{progress.progress.currentHour !== null ? progress.progress.currentHour + 1 : 0}/24h</span>
+              </div>
               <p>Registros lidos: {formatNumber(progress.progress.recordsArchived)}</p>
               <p>Registros deletados: {formatNumber(progress.progress.recordsDeleted)}</p>
             </div>

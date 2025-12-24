@@ -1,4 +1,14 @@
-import { pgTable, serial, text, timestamp, integer, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, index, jsonb } from "drizzle-orm/pg-core";
+
+export interface HourlyMetadata {
+  hour: number;
+  archived: number;
+  deleted: number;
+  filePath: string | null;
+  fileSize: number;
+  minId?: number;
+  maxId?: number;
+}
 
 export const archiveJobs = pgTable("archive_jobs", {
   id: serial("id").primaryKey(),
@@ -10,6 +20,7 @@ export const archiveJobs = pgTable("archive_jobs", {
   filePath: text("file_path"),
   fileSize: integer("file_size"),
   lastProcessedHour: integer("last_processed_hour"),
+  hourlyMetadata: jsonb("hourly_metadata").$type<HourlyMetadata[]>(),
   errorMessage: text("error_message"),
   startedAt: timestamp("started_at"),
   completedAt: timestamp("completed_at"),
