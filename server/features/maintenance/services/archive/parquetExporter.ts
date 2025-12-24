@@ -222,9 +222,12 @@ export async function exportHourToParquet(
       return null;
     }
 
+    const tmpObjectName = `${objectName}.tmp`;
+    const tmpFile = bucket.file(tmpObjectName);
+
     await withRetry(async () => {
       await bucket.upload(tempFilePath, {
-        destination: objectName,
+        destination: tmpObjectName,
         contentType: "application/octet-stream",
         metadata: {
           metadata: {
@@ -237,20 +240,33 @@ export async function exportHourToParquet(
           },
         },
       });
-    }, MAX_UPLOAD_RETRIES, `Upload ${storageFileName}`);
+    }, MAX_UPLOAD_RETRIES, `Upload ${storageFileName}.tmp`);
+
+    const [tmpExists] = await tmpFile.exists();
+    if (!tmpExists) {
+      throw new Error("Upload verification failed - temp file not found in storage");
+    }
+
+    const [tmpMetadata] = await tmpFile.getMetadata();
+    const uploadedRecordCount = Number(tmpMetadata.metadata?.recordCount || 0);
+
+    if (uploadedRecordCount !== recordsWritten) {
+      await tmpFile.delete().catch(() => {});
+      throw new Error(`Record count mismatch: wrote ${recordsWritten} but metadata shows ${uploadedRecordCount}`);
+    }
+
+    await withRetry(async () => {
+      await tmpFile.copy(file);
+      await tmpFile.delete();
+    }, MAX_UPLOAD_RETRIES, `Rename ${storageFileName}.tmp to final`);
 
     const [exists] = await file.exists();
     if (!exists) {
-      throw new Error("Upload verification failed - file not found in storage");
+      throw new Error("Rename verification failed - final file not found in storage");
     }
 
     const [metadata] = await file.getMetadata();
     const fileSize = Number(metadata.size || 0);
-    const uploadedRecordCount = Number(metadata.metadata?.recordCount || 0);
-
-    if (uploadedRecordCount !== recordsWritten) {
-      throw new Error(`Record count mismatch: wrote ${recordsWritten} but metadata shows ${uploadedRecordCount}`);
-    }
 
     console.log(`[ParquetExporter] Exported ${storageFileName}: ${recordsWritten} records`);
 

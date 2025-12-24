@@ -177,4 +177,39 @@ router.post("/api/maintenance/archive/start", isAuthenticated, requireAuthorized
   }
 });
 
+router.post("/api/maintenance/archive/force", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+  try {
+    const { table, date } = req.query;
+    
+    if (!table || typeof table !== "string") {
+      return res.status(400).json({ error: "Parâmetro 'table' é obrigatório" });
+    }
+    if (!date || typeof date !== "string") {
+      return res.status(400).json({ error: "Parâmetro 'date' é obrigatório (formato YYYY-MM-DD)" });
+    }
+
+    const result = await archiveService.forceArchive(table, date);
+    res.status(202).json(result);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.get("/api/maintenance/archive/inconsistent", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+  try {
+    const { getInconsistentJobs } = await import("../services/archive/jobPersistence.js");
+    const limit = parseInt(req.query.limit as string) || 50;
+    const jobs = await getInconsistentJobs(limit);
+    res.json({
+      count: jobs.length,
+      jobs,
+      message: jobs.length > 0 
+        ? `Encontrados ${jobs.length} jobs com archived > 0 mas deleted = 0. Use /force para re-arquivar.`
+        : "Nenhum job inconsistente encontrado"
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

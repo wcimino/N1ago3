@@ -114,16 +114,48 @@ export async function getJobHistory(limit: number = 50): Promise<ArchiveJob[]> {
     .limit(limit);
 }
 
+export async function invalidateExistingJobs(tableName: string, archiveDate: Date): Promise<number> {
+  const result = await db.execute(sql`
+    UPDATE archive_jobs
+    SET status = 'invalidated',
+        error_message = 'Invalidated by force archive'
+    WHERE table_name = ${tableName}
+      AND archive_date::date = ${archiveDate}::date
+      AND status IN ('running', 'partial', 'completed')
+    RETURNING id
+  `);
+  const count = result.rows.length;
+  if (count > 0) {
+    console.log(`[JobPersistence] Invalidated ${count} existing jobs for ${tableName} on ${archiveDate.toISOString().split("T")[0]}`);
+  }
+  return count;
+}
+
+export async function getInconsistentJobs(limit: number = 50): Promise<ArchiveJob[]> {
+  const result = await db.execute(sql`
+    SELECT *
+    FROM archive_jobs
+    WHERE status = 'completed'
+      AND records_archived > 0
+      AND records_deleted = 0
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `);
+  return result.rows as ArchiveJob[];
+}
+
 export async function getJobStats(): Promise<{
   runningJobs: number;
   completedJobs: number;
   totalArchivedRecords: number;
+  inconsistentJobs: number;
 }> {
   const result = await db.execute(sql`
     SELECT 
       SUM(CASE WHEN status IN ('running', 'pending') THEN 1 ELSE 0 END) as running,
       SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
-      SUM(CASE WHEN status = 'completed' THEN records_archived ELSE 0 END) as total_archived
+      SUM(CASE WHEN status = 'completed' THEN records_archived ELSE 0 END) as total_archived,
+      SUM(CASE WHEN status = 'completed' AND records_archived > 0 AND records_deleted = 0 THEN 1 ELSE 0 END) as inconsistent
     FROM archive_jobs
   `);
   const row = result.rows[0] as any;
@@ -131,5 +163,6 @@ export async function getJobStats(): Promise<{
     runningJobs: Number(row?.running || 0),
     completedJobs: Number(row?.completed || 0),
     totalArchivedRecords: Number(row?.total_archived || 0),
+    inconsistentJobs: Number(row?.inconsistent || 0),
   };
 }

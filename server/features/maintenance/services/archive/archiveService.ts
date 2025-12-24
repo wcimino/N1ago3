@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import { ArchiveScheduler } from "./scheduler.js";
 import * as jobPersistence from "./jobPersistence.js";
 import { exportHourToParquet, getEnvironmentPrefix } from "./parquetExporter.js";
-import { deleteArchivedRecords, runVacuum } from "./tableCleaner.js";
+import { deleteArchivedRecords, deleteByTimeRange, runVacuum } from "./tableCleaner.js";
 import { objectStorageClient } from "../../../../replit_integrations/object_storage/objectStorage.js";
 
 interface TableStats {
@@ -19,6 +19,7 @@ export interface ArchiveStats {
   runningJobs: number;
   completedJobs: number;
   totalArchivedRecords: number;
+  inconsistentJobs: number;
 }
 
 export interface ArchiveProgress {
@@ -158,6 +159,51 @@ class ArchiveService {
     return { message: "Arquivamento iniciado" };
   }
 
+  async forceArchive(tableName: string, dateStr: string): Promise<{ message: string; jobId?: number }> {
+    if (this.isRunning) {
+      throw new Error("Arquivamento já está em execução. Aguarde a conclusão.");
+    }
+
+    const validTables = ARCHIVE_TABLES.map(t => t.name);
+    if (!validTables.includes(tableName)) {
+      throw new Error(`Tabela inválida. Use: ${validTables.join(", ")}`);
+    }
+
+    const archiveDate = new Date(dateStr);
+    if (isNaN(archiveDate.getTime())) {
+      throw new Error("Data inválida. Use formato YYYY-MM-DD");
+    }
+
+    const tableConfig = ARCHIVE_TABLES.find(t => t.name === tableName)!;
+
+    console.log(`[ArchiveService] Starting FORCE archive for ${tableName} on ${dateStr}`);
+
+    await jobPersistence.invalidateExistingJobs(tableName, archiveDate);
+
+    this.isRunning = true;
+
+    this.runForceArchiveProcess(tableName, archiveDate, tableConfig.dateColumn)
+      .then(() => {
+        console.log(`[ArchiveService] Force archive completed for ${tableName} on ${dateStr}`);
+      })
+      .catch(err => {
+        console.error(`[ArchiveService] Force archive failed for ${tableName} on ${dateStr}:`, err.message);
+      })
+      .finally(() => {
+        this.isRunning = false;
+        this.currentProgress = null;
+      });
+
+    return { 
+      message: `Arquivamento forçado iniciado para ${tableName} em ${dateStr}` 
+    };
+  }
+
+  private async runForceArchiveProcess(tableName: string, archiveDate: Date, dateColumn: string): Promise<void> {
+    await this.archiveDateData(tableName, archiveDate, dateColumn);
+    await runVacuum(tableName);
+  }
+
   private async runArchiveProcess(): Promise<void> {
     for (const table of ARCHIVE_TABLES) {
       await this.archiveTable(table.name, table.dateColumn);
@@ -288,6 +334,7 @@ class ArchiveService {
       const existingRecordCount = Number(metadata.metadata?.recordCount || 0);
       const archivedMinId = Number(metadata.metadata?.minId || 0);
       const archivedMaxId = Number(metadata.metadata?.maxId || 0);
+      const fileSize = Number(metadata.size || 0);
 
       if (existingRecordCount > 0 && archivedMinId > 0 && archivedMaxId > 0) {
         console.log(`[ArchiveService] File already exists: ${storageFileName}, deleting only archived records`);
@@ -297,11 +344,32 @@ class ArchiveService {
           archived: existingRecordCount,
           deleted: deletedCount,
           filePath: storageFileName,
-          fileSize: Number(metadata.size || 0),
+          fileSize,
         };
       }
-      console.log(`[ArchiveService] File exists but has no valid metadata: ${storageFileName}, skipping`);
-      return null;
+
+      if (fileSize > 0) {
+        console.warn(`[ArchiveService] File exists but has no valid metadata: ${storageFileName}, using timestamp fallback for deletion only`);
+        const deletedCount = await deleteByTimeRange(
+          tableName,
+          dateColumn,
+          startOfHour,
+          endOfHour,
+          (count) => {
+            if (this.currentProgress) {
+              this.currentProgress.recordsDeleted += count;
+            }
+          }
+        );
+        return {
+          archived: 0,
+          deleted: deletedCount,
+          filePath: storageFileName,
+          fileSize,
+        };
+      }
+
+      console.warn(`[ArchiveService] File exists but is empty: ${storageFileName}, will re-export`);
     }
 
     const exportResult = await exportHourToParquet(

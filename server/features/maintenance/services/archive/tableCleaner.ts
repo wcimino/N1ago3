@@ -88,6 +88,57 @@ export async function deleteByIdRange(
   return deletedCount;
 }
 
+export async function deleteByTimeRange(
+  tableName: string,
+  dateColumn: string,
+  startOfHour: Date,
+  endOfHour: Date,
+  onProgress?: (deletedCount: number) => void
+): Promise<number> {
+  const countResult = await db.execute(sql`
+    SELECT COUNT(*) as count
+    FROM ${sql.identifier(tableName)}
+    WHERE ${sql.identifier(dateColumn)} >= ${startOfHour}
+      AND ${sql.identifier(dateColumn)} <= ${endOfHour}
+  `);
+  const expectedCount = Number((countResult.rows[0] as any).count);
+
+  if (expectedCount === 0) {
+    console.log(`[TableCleaner] No records to delete in time range for ${tableName}`);
+    return 0;
+  }
+
+  console.log(`[TableCleaner] Deleting ${expectedCount} records from ${tableName} by time range (fallback mode)`);
+
+  let deletedCount = 0;
+  let lastId = 0;
+
+  while (deletedCount < expectedCount) {
+    const deleteResult = await db.execute(sql`
+      DELETE FROM ${sql.identifier(tableName)}
+      WHERE id IN (
+        SELECT id FROM ${sql.identifier(tableName)}
+        WHERE ${sql.identifier(dateColumn)} >= ${startOfHour}
+          AND ${sql.identifier(dateColumn)} <= ${endOfHour}
+          AND id > ${lastId}
+        ORDER BY id ASC
+        LIMIT ${BATCH_SIZE}
+      )
+      RETURNING id
+    `);
+
+    const deletedRows = deleteResult.rows as any[];
+    if (deletedRows.length === 0) break;
+
+    deletedCount += deletedRows.length;
+    lastId = deletedRows[deletedRows.length - 1].id;
+    onProgress?.(deletedRows.length);
+  }
+
+  console.log(`[TableCleaner] Fallback delete complete: ${deletedCount} records deleted from ${tableName}`);
+  return deletedCount;
+}
+
 export async function runVacuum(tableName: string): Promise<void> {
   try {
     console.log(`[TableCleaner] Running VACUUM on ${tableName}...`);

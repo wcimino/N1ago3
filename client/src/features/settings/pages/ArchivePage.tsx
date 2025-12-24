@@ -19,6 +19,7 @@ interface ArchiveStats {
   runningJobs: number;
   completedJobs: number;
   totalArchivedRecords: number;
+  inconsistentJobs: number;
 }
 
 interface ArchiveProgress {
