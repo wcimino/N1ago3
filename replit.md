@@ -41,7 +41,9 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **Scheduled Maintenance Services:** Daily scheduled tasks for archiving old data and performing database vacuuming. Features include:
     - **Auto-recovery system:** Automatically repairs partial archive jobs by regenerating Parquet files with invalid metadata
     - **ExportOutcome discriminated union:** Three explicit states (empty, existing, exported) for reliable hour-level tracking
-    - Force archive endpoint (`POST /api/maintenance/archive/force?table=...&date=...`) invalidates old jobs before creating new ones
+    - **Safe force archive:** `POST /api/maintenance/archive/force?table=...&date=...` - invalidates previous jobs ONLY after the new job completes successfully (partial/failed runs preserve history)
+    - **Hourly metadata persistence:** `hourly_metadata` JSONB field stores per-hour data (hour, archived, deleted, filePath, fileSize, minId, maxId) for granular recovery
+    - **Real-time progress tracking:** Frontend displays current hour being processed (0-24) with visual progress bar
     - Inconsistent jobs detection includes both zero-deletion jobs AND partial jobs with <50% deletion rate
     - Per-hour discrepancy detection during archive with detailed error logging
     - Atomic upload via temporary files (.tmp) with metadata verification before finalization
