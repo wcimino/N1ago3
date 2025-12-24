@@ -16,6 +16,7 @@ interface ArchiveStats {
   zendeskWebhook: TableStats;
   openaiLogs: TableStats;
   responsesSuggested: TableStats;
+  queryLogs: TableStats;
   runningJobs: number;
   completedJobs: number;
   totalArchivedRecords: number;
@@ -162,7 +163,8 @@ export function ArchivePage() {
 
   const totalPending = (stats?.zendeskWebhook.pendingRecords || 0) + 
     (stats?.openaiLogs.pendingRecords || 0) + 
-    (stats?.responsesSuggested.pendingRecords || 0);
+    (stats?.responsesSuggested.pendingRecords || 0) + 
+    (stats?.queryLogs.pendingRecords || 0);
 
   return (
     <div className="space-y-6">
@@ -215,6 +217,19 @@ export function ArchivePage() {
               <p className="text-sm text-gray-600 truncate">Respostas Sugeridas</p>
               <p className="text-xl font-bold">{stats ? formatNumber(stats.responsesSuggested.pendingRecords) : "-"}</p>
               <p className="text-xs text-gray-500">{stats?.responsesSuggested.pendingDays || 0} dias</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center shrink-0">
+              <Database className="w-5 h-5 text-indigo-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm text-gray-600 truncate">Query Logs</p>
+              <p className="text-xl font-bold">{stats ? formatNumber(stats.queryLogs.pendingRecords) : "-"}</p>
+              <p className="text-xs text-gray-500">{stats?.queryLogs.pendingDays || 0} dias</p>
             </div>
           </div>
         </div>

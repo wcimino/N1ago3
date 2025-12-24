@@ -33,6 +33,7 @@ import maintenanceRoutes from "../features/maintenance/routes/maintenance.js";
 import favoritesRoutes from "../features/favorites/routes/favorites.js";
 import reportsRoutes from "../features/reports/routes/reports.js";
 import dashboardRoutes from "../features/dashboard/routes/dashboardRoutes.js";
+import queryMonitoringRoutes from "../features/monitoring/routes/queryMonitoringRoutes.js";
 
 function registerAuthRoutes(app: Express) {
   app.use(authRoutes);
@@ -88,6 +89,7 @@ function registerAnalyticsRoutes(app: Express) {
   app.use(favoritesRoutes);
   app.use(reportsRoutes);
   app.use("/api/dashboard", dashboardRoutes);
+  app.use("/api/monitoring/queries", queryMonitoringRoutes);
 }
 
 export function registerRoutes(app: Express) {

@@ -16,6 +16,7 @@ export interface ArchiveStats {
   zendeskWebhook: TableStats;
   openaiLogs: TableStats;
   responsesSuggested: TableStats;
+  queryLogs: TableStats;
   runningJobs: number;
   completedJobs: number;
   totalArchivedRecords: number;
@@ -34,6 +35,7 @@ const ARCHIVE_TABLES = [
   { name: "zendesk_conversations_webhook_raw", dateColumn: "received_at" },
   { name: "openai_api_logs", dateColumn: "created_at" },
   { name: "responses_suggested", dateColumn: "created_at" },
+  { name: "query_logs", dateColumn: "created_at" },
 ];
 
 class ArchiveService {
@@ -70,7 +72,7 @@ class ArchiveService {
     yesterday.setDate(yesterday.getDate() - 1);
     yesterday.setHours(0, 0, 0, 0);
 
-    const [zendeskStats, openaiStats, responsesStats, jobStats] = await Promise.all([
+    const [zendeskStats, openaiStats, responsesStats, queryLogsStats, jobStats] = await Promise.all([
       db.execute(sql`
         SELECT 
           COUNT(*) as count,
@@ -95,12 +97,21 @@ class ArchiveService {
         FROM responses_suggested
         WHERE created_at < ${yesterday}
       `),
+      db.execute(sql`
+        SELECT 
+          COUNT(*) as count,
+          MIN(created_at)::date as oldest_date,
+          COUNT(DISTINCT DATE(created_at)) as days
+        FROM query_logs
+        WHERE created_at < ${yesterday}
+      `),
       jobPersistence.getJobStats(),
     ]);
 
     const zRow = zendeskStats.rows[0] as any;
     const oRow = openaiStats.rows[0] as any;
     const rRow = responsesStats.rows[0] as any;
+    const qRow = queryLogsStats.rows[0] as any;
 
     return {
       zendeskWebhook: {
@@ -117,6 +128,11 @@ class ArchiveService {
         pendingRecords: Number(rRow?.count || 0),
         pendingDays: Number(rRow?.days || 0),
         oldestDate: rRow?.oldest_date || null,
+      },
+      queryLogs: {
+        pendingRecords: Number(qRow?.count || 0),
+        pendingDays: Number(qRow?.days || 0),
+        oldestDate: qRow?.oldest_date || null,
       },
       ...jobStats,
     };
