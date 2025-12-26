@@ -5,10 +5,19 @@ interface ClientProfileCardProps {
   data?: ClientHubData | null;
 }
 
+function formatCurrency(value: string): string {
+  const num = parseFloat(value);
+  if (isNaN(num)) return value;
+  
+  const rounded = Math.round(num);
+  const formatted = rounded.toLocaleString('pt-BR');
+  return `R$ ${formatted}`;
+}
+
 export function ClientProfileCard({ data }: ClientProfileCardProps) {
   const hasData = data && data.campos && Object.keys(data.campos).length > 0;
 
-  const groupedFields: Record<string, { key: string; label: string; value: string }[]> = {};
+  const groupedFields: Record<string, { key: string; label: string; value: string; dataType: string }[]> = {};
   
   if (hasData && data.campos) {
     Object.entries(data.campos).forEach(([key, field]) => {
@@ -20,6 +29,7 @@ export function ClientProfileCard({ data }: ClientProfileCardProps) {
         key,
         label: field.label,
         value: field.value,
+        dataType: field.dataType,
       });
     });
   }
@@ -59,7 +69,9 @@ export function ClientProfileCard({ data }: ClientProfileCardProps) {
                 {fields.map((field) => (
                   <div key={field.key} className="flex items-start gap-2">
                     <span className="text-xs text-gray-500 min-w-[80px]">{field.label}:</span>
-                    <span className="text-sm text-gray-700">{field.value || '-'}</span>
+                    <span className="text-sm text-gray-700">
+                      {field.dataType === 'number' ? formatCurrency(field.value) : (field.value || '-')}
+                    </span>
                   </div>
                 ))}
               </div>
