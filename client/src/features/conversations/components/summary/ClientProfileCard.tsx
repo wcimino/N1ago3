@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, User2, ChevronDown, ChevronRight } from "lucide-react";
+import { Building2, User2, ChevronDown, ChevronRight, Store, CreditCard, MapPin, FileText, Package } from "lucide-react";
 import type { ClientHubData } from "./types";
 
 interface ClientProfileCardProps {
@@ -19,6 +19,18 @@ function formatCNPJ(cnpj: string): string {
   const digits = cnpj.replace(/\D/g, '');
   if (digits.length !== 14) return cnpj;
   return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+}
+
+const categoryConfig: Record<string, { icon: typeof Store; color: string; bgColor: string; order: number }> = {
+  "Atributos Marketplace": { icon: Store, color: "text-orange-600", bgColor: "bg-orange-50 border-orange-200", order: 1 },
+  "Atributos Pago": { icon: CreditCard, color: "text-green-600", bgColor: "bg-green-50 border-green-200", order: 2 },
+  "Informações cadastrais": { icon: FileText, color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200", order: 3 },
+  "Localização": { icon: MapPin, color: "text-purple-600", bgColor: "bg-purple-50 border-purple-200", order: 4 },
+  "Outros": { icon: Package, color: "text-gray-600", bgColor: "bg-gray-50 border-gray-200", order: 99 },
+};
+
+function getCategoryConfig(category: string) {
+  return categoryConfig[category] || categoryConfig["Outros"];
 }
 
 export function ClientProfileCard({ data }: ClientProfileCardProps) {
@@ -41,6 +53,10 @@ export function ClientProfileCard({ data }: ClientProfileCardProps) {
       });
     });
   }
+
+  const sortedCategories = Object.keys(groupedFields).sort((a, b) => {
+    return getCategoryConfig(a).order - getCategoryConfig(b).order;
+  });
 
   const fieldCount = hasData ? Object.keys(data.campos!).length : 0;
 
@@ -88,21 +104,30 @@ export function ClientProfileCard({ data }: ClientProfileCardProps) {
                 </div>
               )}
               
-              {Object.entries(groupedFields).map(([category, fields]) => (
-                <div key={category} className="border-t border-indigo-100 pt-2">
-                  <span className="text-xs text-indigo-600 font-medium">{category}</span>
-                  <div className="grid grid-cols-1 gap-1 mt-1">
-                    {fields.map((field) => (
-                      <div key={field.key} className="flex items-start gap-2">
-                        <span className="text-xs text-gray-500 min-w-[80px]">{field.label}:</span>
-                        <span className="text-sm text-gray-700">
-                          {field.dataType === 'number' ? formatCurrency(field.value) : (field.value || '-')}
-                        </span>
-                      </div>
-                    ))}
+              {sortedCategories.map((category) => {
+                const fields = groupedFields[category];
+                const config = getCategoryConfig(category);
+                const IconComponent = config.icon;
+                
+                return (
+                  <div key={category} className={`rounded-md p-2.5 border ${config.bgColor}`}>
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <IconComponent className={`w-3.5 h-3.5 ${config.color}`} />
+                      <span className={`text-xs font-semibold ${config.color}`}>{category}</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-1.5">
+                      {fields.map((field) => (
+                        <div key={field.key} className="flex items-start gap-2">
+                          <span className="text-xs text-gray-500 flex-shrink-0">{field.label}:</span>
+                          <span className="text-sm font-medium text-gray-700">
+                            {field.dataType === 'number' ? formatCurrency(field.value) : (field.value || '-')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>
