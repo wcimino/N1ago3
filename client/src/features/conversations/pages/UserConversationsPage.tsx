@@ -169,8 +169,8 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
   };
 
   return (
-    <div className="h-[calc(100vh-180px)] flex flex-col">
-      <div className="bg-white rounded-t-lg shadow-sm border-b px-3 sm:px-4 py-2 sm:py-3 flex-shrink-0 overflow-hidden">
+    <div className="h-full min-h-0 flex flex-col">
+      <div className="bg-white rounded-t-lg shadow-sm border-b px-3 sm:px-4 py-2 sm:py-3 flex-shrink-0 overflow-hidden lg:block hidden">
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => navigate("/atendimentos")}
@@ -187,7 +187,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
         </div>
       </div>
 
-      <div className="flex-1 bg-gray-100 overflow-hidden flex flex-col">
+      <div className="flex-1 bg-gray-100 overflow-hidden flex flex-col min-h-0">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <LoadingState message="Carregando conversas..." />
@@ -211,39 +211,63 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
         ) : (
           <>
             {/* Mobile Layout */}
-            <div className="lg:hidden flex-1 flex flex-col overflow-hidden">
-              <ConversationSelector
-                selectedIndex={selectedConversationIndex}
-                totalCount={sortedConversations.length}
-                formattedDate={selectedConversation && formatDateTimeShort(selectedConversation.conversation.created_at)}
-                isActive={selectedConversation?.conversation.status === "active"}
-                closedReason={selectedConversation?.conversation.closed_reason}
-                onPrevious={goToPreviousConversation}
-                onNext={goToNextConversation}
-                actionButtons={renderMobileActions()}
-              />
-              
-              <div className="px-3 py-2 bg-white border-b border-gray-200 flex-shrink-0">
-                <div className="flex items-center justify-between">
-                  <SegmentedTabs
-                    tabs={contentTabs}
-                    activeTab={contentTab}
-                    onChange={(tab) => setContentTab(tab as ContentTab)}
-                    iconOnlyMobile
-                  />
-                  {contentTab === "chat" && (
+            <div className="lg:hidden flex-1 flex flex-col min-h-0">
+              {/* Sticky Header Zone */}
+              <div className="sticky top-0 z-10 bg-white flex-shrink-0">
+                {/* Customer Header - Mobile */}
+                <div className="px-3 py-2 border-b border-gray-200">
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setShowSuggestions(!showSuggestions)}
-                      className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors ml-2"
+                      onClick={() => navigate("/atendimentos")}
+                      className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900 flex-shrink-0"
                     >
-                      {showSuggestions ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      <span className="hidden xs:inline">{showSuggestions ? "Ocultar" : "Exibir"}</span>
+                      <ArrowLeft className="w-5 h-5" />
                     </button>
-                  )}
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-sm font-semibold text-gray-900 truncate">{customerName}</h2>
+                      <p className="text-xs text-gray-500 truncate">
+                        {data?.conversations.length || 0} {(data?.conversations.length || 0) === 1 ? "conversa" : "conversas"} - {totalMessages} msg
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Conversation Selector */}
+                <ConversationSelector
+                  selectedIndex={selectedConversationIndex}
+                  totalCount={sortedConversations.length}
+                  formattedDate={selectedConversation && formatDateTimeShort(selectedConversation.conversation.created_at)}
+                  isActive={selectedConversation?.conversation.status === "active"}
+                  closedReason={selectedConversation?.conversation.closed_reason}
+                  onPrevious={goToPreviousConversation}
+                  onNext={goToNextConversation}
+                  actionButtons={renderMobileActions()}
+                />
+                
+                {/* Content Tabs */}
+                <div className="px-3 py-2 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <SegmentedTabs
+                      tabs={contentTabs}
+                      activeTab={contentTab}
+                      onChange={(tab) => setContentTab(tab as ContentTab)}
+                      iconOnlyMobile
+                    />
+                    {contentTab === "chat" && (
+                      <button
+                        onClick={() => setShowSuggestions(!showSuggestions)}
+                        className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors ml-2"
+                      >
+                        {showSuggestions ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        <span className="hidden xs:inline">{showSuggestions ? "Ocultar" : "Exibir"}</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
+              {/* Scrollable Content Area - Single scroll */}
+              <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50">
                 {contentTab === "resumo" && (
                   <ConversationSummary summary={selectedConversation?.summary} />
                 )}
@@ -287,11 +311,13 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                   />
                   
                   {/* Summary Header */}
-                  <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
+                  <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 flex items-center gap-2 flex-shrink-0">
                     <FileText className="w-4 h-4 text-purple-600" />
                     <span className="text-sm font-medium text-gray-700">Resumo</span>
                   </div>
-                  <ConversationSummary summary={selectedConversation?.summary} />
+                  <div className="flex-1 overflow-y-auto min-h-0">
+                    <ConversationSummary summary={selectedConversation?.summary} />
+                  </div>
                 </div>
 
                 {/* Resize Handle */}
@@ -308,7 +334,7 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                   style={{ width: `${100 - leftPanelWidth}%` }}
                 >
                   {/* Chat Header with Action Buttons */}
-                  <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200">
+                  <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200 flex-shrink-0">
                     <div className="flex items-center gap-2">
                       <MessageCircle className="w-4 h-4 text-blue-600" />
                       <span className="text-sm font-medium text-gray-700">Chat</span>
@@ -324,18 +350,20 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                       </button>
                     </div>
                   </div>
-                  <ConversationChat
-                    messages={selectedConversation?.messages || []}
-                    suggestedResponses={
-                      showSuggestions 
-                        ? (selectedConversation?.suggested_responses || [])
-                        : []
-                    }
-                    onImageClick={setExpandedImage}
-                    formatDateTime={formatDateTimeShort}
-                    chatEndRef={chatEndRef}
-                    currentHandlerName={selectedConversation?.conversation.current_handler_name}
-                  />
+                  <div className="flex-1 overflow-y-auto min-h-0">
+                    <ConversationChat
+                      messages={selectedConversation?.messages || []}
+                      suggestedResponses={
+                        showSuggestions 
+                          ? (selectedConversation?.suggested_responses || [])
+                          : []
+                      }
+                      onImageClick={setExpandedImage}
+                      formatDateTime={formatDateTimeShort}
+                      chatEndRef={chatEndRef}
+                      currentHandlerName={selectedConversation?.conversation.current_handler_name}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

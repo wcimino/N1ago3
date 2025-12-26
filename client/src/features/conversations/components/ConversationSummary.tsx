@@ -73,7 +73,7 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
   const hasStructuredData = summary?.client_request || summary?.agent_actions || summary?.current_status || summary?.important_info || summary?.objective_problems?.length || summary?.solution_center_articles_and_problems?.length || summary?.triage;
 
   return (
-    <div className="flex-1 overflow-y-auto p-4">
+    <div className="p-4">
       <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
         {!summary ? (
           <div className="flex flex-col items-center justify-center py-8 text-gray-400">

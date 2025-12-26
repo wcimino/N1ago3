@@ -63,7 +63,7 @@ export function ConversationChat({
   }, [messages, suggestedResponses]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+    <div className="p-4 bg-gray-50">
       <div className="space-y-3 max-w-2xl mx-auto">
         {sortedItems.length === 0 ? (
           <div className="text-center py-8 text-gray-400 text-sm">
