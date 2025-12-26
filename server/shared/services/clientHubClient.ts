@@ -19,7 +19,7 @@ export async function fetchClientByAccountRef(
 ): Promise<ClientHubData | null> {
   const token = getToken();
   const startTime = Date.now();
-  const requestUrl = `${CLIENT_HUB_BASE_URL}/api/search/client`;
+  const requestUrl = `${getBaseUrl()}/api/search/client`;
 
   if (!token) {
     console.log("[ClientHubClient] API not configured (missing CLIENT_HUB secret)");
