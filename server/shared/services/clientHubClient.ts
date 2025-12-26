@@ -1,14 +1,16 @@
 import { clientHubApiLogStorage } from "../storage/clientHubApiLogStorage.js";
 import type { ClientHubData } from "../../../shared/schema/clientHub.js";
 
-const CLIENT_HUB_BASE_URL = "https://pago-client-hub.replit.app";
+function getBaseUrl(): string {
+  return process.env.CLIENT_HUB_BASE_URL || "https://pago-client-hub.replit.app";
+}
 
 export interface ClientHubLogContext {
   conversationId?: number;
 }
 
 function getToken(): string | null {
-  return process.env.CLIENT_HUB || null;
+  return process.env.CLIENT_HUB_TOKEN || process.env.CLIENT_HUB || null;
 }
 
 export async function fetchClientByAccountRef(
