@@ -239,6 +239,7 @@ export async function getUserConversationsWithMessagesOptimized(userId: string) 
       cs.objective_problems,
       cs.orchestrator_status,
       cs.conversation_orchestrator_log,
+      cs.client_hub_data,
       pc.produto as product_name,
       pc.subproduto as subproduct_name,
       fcd.status as demand_finder_status,

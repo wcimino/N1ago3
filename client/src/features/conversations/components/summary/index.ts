@@ -9,5 +9,6 @@ export { SolutionCenterCard, type SolutionCenterCardProps } from "./SolutionCent
 export { TriageCard, type TriageCardProps } from "./TriageCard";
 export { OrchestratorLogsCard, type OrchestratorLogsCardProps } from "./OrchestratorLogsCard";
 export { DemandFinderTooltip, type DemandFinderTooltipProps } from "./DemandFinderTooltip";
+export { ClientProfileCard } from "./ClientProfileCard";
 export { emotionConfig, severityConfig } from "./config";
-export type { SummaryData, ClientRequestVersions, SolutionCenterResult, OrchestratorLogEntry } from "./types";
+export type { SummaryData, ClientRequestVersions, SolutionCenterResult, OrchestratorLogEntry, ClientHubData, ClientHubField } from "./types";

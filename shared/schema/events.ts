@@ -1,5 +1,6 @@
 import { pgTable, serial, text, timestamp, json, integer, boolean, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { productsCatalog } from "./knowledge";
+import type { ClientHubData } from "./clientHub.js";
 
 export interface OrchestratorLogEntry {
   turn: number;
@@ -109,6 +110,7 @@ export const conversationsSummary = pgTable("conversations_summary", {
   objectiveProblems: json("objective_problems").$type<Array<{ id: number; name: string; matchScore?: number; matchedTerms?: string[] }>>(),
   clientRequestVersions: json("client_request_versions").$type<{ clientRequestStandardVersion?: string; clientRequestQuestionVersion?: string; clientRequestProblemVersion?: string }>(),
   conversationOrchestratorLog: json("conversation_orchestrator_log").$type<OrchestratorLogEntry[]>().default([]),
+  clientHubData: json("client_hub_data").$type<ClientHubData>(),
   generatedAt: timestamp("generated_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

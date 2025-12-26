@@ -1,5 +1,6 @@
 export * from "./auth";
 export * from "./zendesk";
+export * from "./clientHub";
 export * from "./events";
 export * from "./knowledge";
 export * from "./users-standard";

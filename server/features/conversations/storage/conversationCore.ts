@@ -5,6 +5,8 @@ import type { ExtractedConversation } from "../../events/adapters/types.js";
 import { CONVERSATION_RULES } from "../../../config/conversationRules.js";
 import { ZendeskApiService } from "../../external-sources/zendesk/services/zendeskApiService.js";
 import { createConversationClosedEvent } from "./conversationEvents.js";
+import { fetchClientByAccountRef } from "../../../shared/services/clientHubClient.js";
+import { summaryStorage } from "../../ai/storage/summaryStorage.js";
 
 interface ConversationData {
   externalConversationId: string;
@@ -76,7 +78,27 @@ export async function upsertConversation(data: ConversationData): Promise<{ conv
     }
   }
   
+  if (isNewConversation && data.userExternalId) {
+    fetchClientHubDataAsync(conversation.id, data.userExternalId);
+  }
+  
   return { conversation, isNew: isNewConversation };
+}
+
+async function fetchClientHubDataAsync(conversationId: number, accountRef: string): Promise<void> {
+  try {
+    console.log(`[ClientHubIntegration] Fetching client data for conversation ${conversationId}, accountRef: ${accountRef}`);
+    const clientData = await fetchClientByAccountRef(accountRef, { conversationId });
+    
+    if (clientData) {
+      await summaryStorage.updateClientHubData(conversationId, clientData);
+      console.log(`[ClientHubIntegration] Successfully saved client data for conversation ${conversationId}`);
+    } else {
+      console.log(`[ClientHubIntegration] No client data found for accountRef: ${accountRef}`);
+    }
+  } catch (error) {
+    console.error(`[ClientHubIntegration] Failed to fetch client data for conversation ${conversationId}:`, error);
+  }
 }
 
 export const conversationCore = {

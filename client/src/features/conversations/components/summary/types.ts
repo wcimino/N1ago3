@@ -29,6 +29,20 @@ export interface OrchestratorLogEntry {
   details?: Record<string, unknown>;
 }
 
+export interface ClientHubField {
+  label: string;
+  value: string;
+  dataType: string;
+  category: string;
+}
+
+export interface ClientHubData {
+  cnpj?: string;
+  cnpjValido?: boolean;
+  campos?: Record<string, ClientHubField>;
+  fetchedAt?: string;
+}
+
 export interface SummaryData {
   product?: string | null;
   subproduct?: string | null;
@@ -52,6 +66,7 @@ export interface SummaryData {
   demand_finder_status?: string | null;
   demand_finder_interaction_count?: number | null;
   conversation_orchestrator_log?: OrchestratorLogEntry[] | null;
+  client_hub_data?: ClientHubData | null;
 }
 
 export type { Triage, ObjectiveProblemIdentified };

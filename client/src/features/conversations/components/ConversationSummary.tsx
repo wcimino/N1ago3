@@ -9,6 +9,7 @@ import {
   OrchestratorLogsCard,
   ClientRequestVersionsTooltip,
   DemandFinderTooltip,
+  ClientProfileCard,
   emotionConfig,
   type SummaryData,
   type ClientRequestVersions,
@@ -179,6 +180,8 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
             </div>
 
             <div className="flex flex-col gap-3">
+              <ClientProfileCard data={summary.client_hub_data} />
+              
               {(() => {
                 const clientData = extractClientRequestData(summary.client_request, summary.client_request_versions);
                 if (!clientData) return null;

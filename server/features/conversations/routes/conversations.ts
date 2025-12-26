@@ -161,6 +161,7 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
         demand_finder_status: row.demand_finder_status || null,
         demand_finder_interaction_count: row.demand_finder_interaction_count || 0,
         conversation_orchestrator_log: row.conversation_orchestrator_log || null,
+        client_hub_data: row.client_hub_data || null,
       } : null,
       suggested_responses: suggestedResponses.map((sr: any) => ({
         text: sr.suggested_response,
@@ -230,6 +231,7 @@ router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedU
     demand_finder_status: caseDemandData?.status || null,
     demand_finder_interaction_count: caseDemandData?.interactionCount || 0,
     conversation_orchestrator_log: summary.conversationOrchestratorLog || null,
+    client_hub_data: summary.clientHubData || null,
   });
 });
 

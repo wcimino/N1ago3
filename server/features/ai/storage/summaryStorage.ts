@@ -1,7 +1,7 @@
 import { db } from "../../../db.js";
 import { conversationsSummary } from "../../../../shared/schema.js";
 import { eq, desc, gte, lte, and, isNotNull, sql, type SQL } from "drizzle-orm";
-import type { ConversationSummary, InsertConversationSummary } from "../../../../shared/schema.js";
+import type { ConversationSummary, InsertConversationSummary, ClientHubData } from "../../../../shared/schema.js";
 
 export const summaryStorage = {
   async getConversationSummary(conversationId: number): Promise<ConversationSummary | null> {
@@ -99,5 +99,28 @@ export const summaryStorage = {
       .orderBy(desc(conversationsSummary.generatedAt));
 
     return results;
+  },
+
+  async updateClientHubData(conversationId: number, clientHubData: ClientHubData): Promise<void> {
+    await db.insert(conversationsSummary)
+      .values({
+        conversationId,
+        summary: "",
+        clientHubData,
+      })
+      .onConflictDoUpdate({
+        target: conversationsSummary.conversationId,
+        set: {
+          clientHubData,
+          updatedAt: new Date(),
+        },
+      });
+  },
+
+  async getClientHubData(conversationId: number): Promise<ClientHubData | null> {
+    const [summary] = await db.select({ clientHubData: conversationsSummary.clientHubData })
+      .from(conversationsSummary)
+      .where(eq(conversationsSummary.conversationId, conversationId));
+    return summary?.clientHubData || null;
   },
 };
