@@ -1,10 +1,22 @@
 import { pgTable, serial, text, timestamp, json, integer, boolean, index } from "drizzle-orm/pg-core";
 
+export interface ClientHubProduct {
+  name: string;
+  icon?: string;
+  color?: string;
+}
+
+export interface ClientHubSubproduct {
+  name: string;
+}
+
 export interface ClientHubField {
   label: string;
   value: string;
   dataType: string;
   category: string;
+  product?: ClientHubProduct;
+  subproduct?: ClientHubSubproduct;
 }
 
 export interface ClientHubData {

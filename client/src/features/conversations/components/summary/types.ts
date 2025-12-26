@@ -29,11 +29,23 @@ export interface OrchestratorLogEntry {
   details?: Record<string, unknown>;
 }
 
+export interface ClientHubProduct {
+  name: string;
+  icon?: string;
+  color?: string;
+}
+
+export interface ClientHubSubproduct {
+  name: string;
+}
+
 export interface ClientHubField {
   label: string;
   value: string;
   dataType: string;
   category: string;
+  product?: ClientHubProduct;
+  subproduct?: ClientHubSubproduct;
 }
 
 export interface ClientHubData {
