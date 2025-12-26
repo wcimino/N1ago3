@@ -15,6 +15,12 @@ function formatCurrency(value: string): string {
   return `R$ ${formatted}`;
 }
 
+function formatCNPJ(cnpj: string): string {
+  const digits = cnpj.replace(/\D/g, '');
+  if (digits.length !== 14) return cnpj;
+  return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+}
+
 export function ClientProfileCard({ data }: ClientProfileCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const hasData = data && data.campos && Object.keys(data.campos).length > 0;
@@ -73,7 +79,7 @@ export function ClientProfileCard({ data }: ClientProfileCardProps) {
               {data.cnpj && (
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-500">CNPJ:</span>
-                  <span className="text-sm font-medium text-gray-700">{data.cnpj}</span>
+                  <span className="text-sm font-medium text-gray-700">{formatCNPJ(data.cnpj)}</span>
                   {data.cnpjValido !== undefined && (
                     <span className={`text-xs px-1.5 py-0.5 rounded ${data.cnpjValido ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                       {data.cnpjValido ? 'Válido' : 'Inválido'}
