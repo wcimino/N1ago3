@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { XCircle, MessageCircle, FileText, Eye, EyeOff, ArrowRightLeft, Zap, ZapOff, XSquare, Loader2, ArrowLeft } from "lucide-react";
+import { XCircle, MessageCircle, FileText, Eye, EyeOff, ArrowRightLeft, XSquare, Loader2 } from "lucide-react";
 import type { ImagePayload } from "../../../types";
-import { ImageLightbox, LoadingState, SegmentedTabs, ConfirmModal } from "../../../shared/components/ui";
+import { ImageLightbox, LoadingState, SegmentedTabs, ConfirmModal, EmptyState, SectionHeader } from "../../../shared/components/ui";
 import { HandlerBadge } from "../../../shared/components/badges/HandlerBadge";
-import { ConversationSelector, ConversationSummary, ConversationChat, TransferConversationModal, ActionsDropdown } from "../components";
+import { ConversationSelector, ConversationSummary, ConversationChat, TransferConversationModal, ActionsDropdown, CustomerHeader, AutopilotToggleButton } from "../components";
 import { useResizablePanel, useDateFormatters, useConfirmation } from "../../../shared/hooks";
 import { getUserDisplayNameFromProfile } from "../../../lib/userUtils";
 import { FavoriteButton } from "../../favorites/components/FavoriteButton";
@@ -113,25 +113,14 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
           size="sm" 
         />
         {selectedConversation.conversation.current_handler_name?.startsWith("n1ago") && (
-          <button
-            onClick={() => toggleAutopilot(
+          <AutopilotToggleButton
+            enabled={selectedConversation.conversation.autopilot_enabled}
+            onToggle={() => toggleAutopilot(
               selectedConversation.conversation.id,
               !selectedConversation.conversation.autopilot_enabled
             )}
-            disabled={isTogglingAutopilot}
-            className={`inline-flex items-center justify-center w-8 h-8 text-sm border rounded-lg transition-colors ${
-              selectedConversation.conversation.autopilot_enabled
-                ? "text-amber-600 hover:text-amber-700 border-amber-200 hover:border-amber-300 hover:bg-amber-50"
-                : "text-green-600 hover:text-green-700 border-green-200 hover:border-green-300 hover:bg-green-50"
-            }`}
-            title={selectedConversation.conversation.autopilot_enabled ? "Pausar AutoPilot" : "Ativar AutoPilot"}
-          >
-            {selectedConversation.conversation.autopilot_enabled ? (
-              <ZapOff className="w-4 h-4" />
-            ) : (
-              <Zap className="w-4 h-4" />
-            )}
-          </button>
+            isLoading={isTogglingAutopilot}
+          />
         )}
         <button
           onClick={() => setShowTransferModal(true)}
@@ -170,21 +159,14 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
 
   return (
     <div className="h-full min-h-0 flex flex-col">
-      <div className="bg-white rounded-t-lg shadow-sm border-b px-3 sm:px-4 py-2 sm:py-3 flex-shrink-0 overflow-hidden lg:block hidden">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <button
-            onClick={() => navigate("/atendimentos")}
-            className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900 flex-shrink-0"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 truncate">{customerName}</h2>
-            <p className="text-xs text-gray-500 truncate">
-              {data?.conversations.length || 0} {(data?.conversations.length || 0) === 1 ? "conversa" : "conversas"} - {totalMessages} msg
-            </p>
-          </div>
-        </div>
+      <div className="hidden lg:block flex-shrink-0">
+        <CustomerHeader
+          name={customerName}
+          conversationCount={data?.conversations.length || 0}
+          messageCount={totalMessages}
+          onBack={() => navigate("/atendimentos")}
+          rounded
+        />
       </div>
 
       <div className="flex-1 bg-gray-100 overflow-hidden flex flex-col min-h-0">
@@ -193,20 +175,26 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
             <LoadingState message="Carregando conversas..." />
           </div>
         ) : error ? (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500">
-            <XCircle className="w-12 h-12 text-red-300 mb-3" />
-            <p>Conversas não encontradas</p>
-            <button
-              onClick={() => navigate("/atendimentos")}
-              className="mt-4 text-blue-600 hover:text-blue-800"
-            >
-              Voltar para lista
-            </button>
+          <div className="flex items-center justify-center h-full">
+            <EmptyState
+              icon={<XCircle className="w-12 h-12 text-red-300" />}
+              title="Conversas não encontradas"
+              action={
+                <button
+                  onClick={() => navigate("/atendimentos")}
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  Voltar para lista
+                </button>
+              }
+            />
           </div>
         ) : !data?.conversations || data.conversations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500">
-            <MessageCircle className="w-12 h-12 text-gray-300 mb-3" />
-            <p>Nenhuma mensagem encontrada</p>
+          <div className="flex items-center justify-center h-full">
+            <EmptyState
+              icon={<MessageCircle className="w-12 h-12 text-gray-300" />}
+              title="Nenhuma mensagem encontrada"
+            />
           </div>
         ) : (
           <>
@@ -214,23 +202,13 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
             <div className="lg:hidden flex-1 flex flex-col min-h-0">
               {/* Sticky Header Zone */}
               <div className="sticky top-0 z-10 bg-white flex-shrink-0">
-                {/* Customer Header - Mobile */}
-                <div className="px-3 py-2 border-b border-gray-200">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => navigate("/atendimentos")}
-                      className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900 flex-shrink-0"
-                    >
-                      <ArrowLeft className="w-5 h-5" />
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <h2 className="text-sm font-semibold text-gray-900 truncate">{customerName}</h2>
-                      <p className="text-xs text-gray-500 truncate">
-                        {data?.conversations.length || 0} {(data?.conversations.length || 0) === 1 ? "conversa" : "conversas"} - {totalMessages} msg
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <CustomerHeader
+                  name={customerName}
+                  conversationCount={data?.conversations.length || 0}
+                  messageCount={totalMessages}
+                  onBack={() => navigate("/atendimentos")}
+                  compact
+                />
                 
                 {/* Conversation Selector */}
                 <ConversationSelector
@@ -310,11 +288,10 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                     onNext={goToNextConversation}
                   />
                   
-                  {/* Summary Header */}
-                  <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 flex items-center gap-2 flex-shrink-0">
-                    <FileText className="w-4 h-4 text-purple-600" />
-                    <span className="text-sm font-medium text-gray-700">Resumo</span>
-                  </div>
+                  <SectionHeader
+                    icon={<FileText className="w-4 h-4 text-purple-600" />}
+                    title="Resumo"
+                  />
                   <div className="flex-1 overflow-y-auto min-h-0">
                     <ConversationSummary summary={selectedConversation?.summary} />
                   </div>
@@ -333,23 +310,23 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                   className="flex-1 flex flex-col overflow-hidden bg-gray-50"
                   style={{ width: `${100 - leftPanelWidth}%` }}
                 >
-                  {/* Chat Header with Action Buttons */}
-                  <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200 flex-shrink-0">
-                    <div className="flex items-center gap-2">
-                      <MessageCircle className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium text-gray-700">Chat</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      {renderDesktopActionButtons()}
-                      <button
-                        onClick={() => setShowSuggestions(!showSuggestions)}
-                        className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 rounded-lg transition-colors"
-                      >
-                        {showSuggestions ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        <span>{showSuggestions ? "Ocultar" : "Sugestões"}</span>
-                      </button>
-                    </div>
-                  </div>
+                  <SectionHeader
+                    icon={<MessageCircle className="w-4 h-4 text-blue-600" />}
+                    title="Chat"
+                    className="bg-white"
+                    actions={
+                      <>
+                        {renderDesktopActionButtons()}
+                        <button
+                          onClick={() => setShowSuggestions(!showSuggestions)}
+                          className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 rounded-lg transition-colors"
+                        >
+                          {showSuggestions ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          <span>{showSuggestions ? "Ocultar" : "Sugestões"}</span>
+                        </button>
+                      </>
+                    }
+                  />
                   <div className="flex-1 overflow-y-auto min-h-0">
                     <ConversationChat
                       messages={selectedConversation?.messages || []}
