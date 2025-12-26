@@ -78,8 +78,13 @@ export async function upsertConversation(data: ConversationData): Promise<{ conv
     }
   }
   
-  if (isNewConversation && data.userExternalId) {
-    fetchClientHubDataAsync(conversation.id, data.userExternalId);
+  if (isNewConversation) {
+    const accountRef = data.userExternalId || 
+      data.metadata?.metadata?.['zen:ticket_field:17571800295309'];
+    
+    if (accountRef) {
+      fetchClientHubDataAsync(conversation.id, accountRef);
+    }
   }
   
   return { conversation, isNew: isNewConversation };
