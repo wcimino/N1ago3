@@ -146,14 +146,16 @@ export function ClientProfileCard({ data }: ClientProfileCardProps) {
           ) : (
             <div className="space-y-3 mt-3">
               {data.cnpj && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">CNPJ:</span>
-                  <span className="text-sm font-medium text-gray-700">{formatCNPJ(data.cnpj)}</span>
-                  {data.cnpjValido !== undefined && (
-                    <span className={`text-xs px-1.5 py-0.5 rounded ${data.cnpjValido ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {data.cnpjValido ? 'Válido' : 'Inválido'}
-                    </span>
-                  )}
+                <div className="flex flex-col">
+                  <span className="text-xs text-gray-500">CNPJ</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-700">{formatCNPJ(data.cnpj)}</span>
+                    {data.cnpjValido !== undefined && (
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${data.cnpjValido ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {data.cnpjValido ? 'Válido' : 'Inválido'}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
               
@@ -198,11 +200,11 @@ export function ClientProfileCard({ data }: ClientProfileCardProps) {
                                 </span>
                               </div>
                             )}
-                            <div className="grid grid-cols-1 gap-1">
+                            <div className="grid grid-cols-2 gap-2">
                               {productGroup.fields.map((field) => (
-                                <div key={field.key} className="flex items-start gap-2">
-                                  <span className="text-xs text-gray-500 flex-shrink-0">{field.label}:</span>
-                                  <span className="text-sm font-medium text-gray-700">
+                                <div key={field.key} className="flex flex-col">
+                                  <span className="text-xs text-gray-500">{field.label}</span>
+                                  <span className="text-sm font-medium text-gray-700 break-words">
                                     {field.dataType === 'number' ? formatCurrency(field.value) : (field.value || '-')}
                                   </span>
                                 </div>
