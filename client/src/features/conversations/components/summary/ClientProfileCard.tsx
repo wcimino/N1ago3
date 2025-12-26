@@ -22,10 +22,10 @@ function formatCNPJ(cnpj: string): string {
 }
 
 const categoryConfig: Record<string, { icon: typeof Store; color: string; bgColor: string; order: number }> = {
-  "Atributos Marketplace": { icon: Store, color: "text-orange-600", bgColor: "bg-orange-50 border-orange-200", order: 1 },
-  "Atributos Pago": { icon: CreditCard, color: "text-green-600", bgColor: "bg-green-50 border-green-200", order: 2 },
-  "Informações cadastrais": { icon: FileText, color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200", order: 3 },
-  "Localização": { icon: MapPin, color: "text-purple-600", bgColor: "bg-purple-50 border-purple-200", order: 4 },
+  "Atributos Pago": { icon: CreditCard, color: "text-green-600", bgColor: "bg-green-50 border-green-200", order: 1 },
+  "Informações cadastrais": { icon: FileText, color: "text-blue-600", bgColor: "bg-blue-50 border-blue-200", order: 2 },
+  "Localização": { icon: MapPin, color: "text-purple-600", bgColor: "bg-purple-50 border-purple-200", order: 3 },
+  "Atributos Marketplace": { icon: Store, color: "text-orange-600", bgColor: "bg-orange-50 border-orange-200", order: 4 },
   "Outros": { icon: Package, color: "text-gray-600", bgColor: "bg-gray-50 border-gray-200", order: 99 },
 };
 
