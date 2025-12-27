@@ -72,6 +72,9 @@ export const VARIABLE_CATEGORIES: PromptVariableCategory[] = [
     title: 'Soluções',
     description: 'Dados da Central de Soluções',
     variables: [
+      { name: '{{SOLUCAO_ID}}', description: 'ID da solução/demanda identificada pelo DemandFinder' },
+      { name: '{{SOLUCAO_NOME}}', description: 'Nome da solução/demanda identificada' },
+      { name: '{{SOLUCAO_DESCRICAO}}', description: 'Descrição/razão da seleção da solução' },
       { name: '{{SOLUCAO_ACOES}}', description: 'JSON com lista de ações da solução' },
     ],
   },

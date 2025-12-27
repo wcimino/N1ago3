@@ -31,6 +31,9 @@ export interface PromptVariables {
   sugestaoResposta?: string | null;
   produtoSubprodutoAssunto?: string | null;
   perguntas?: string | null;
+  solucaoId?: string | null;
+  solucaoNome?: string | null;
+  solucaoDescricao?: string | null;
   solucaoAcoes?: string | null;
   customVariables?: Record<string, string>;
 }
@@ -72,6 +75,9 @@ export function replacePromptVariables(
   result = result.replace(/\{\{SUGESTAO_RESPOSTA\}\}/g, variables.sugestaoResposta || 'Nenhuma sugestão de resposta disponível.');
   result = result.replace(/\{\{PRODUTO_SUBPRODUTO_ASSUNTO\}\}/g, variables.produtoSubprodutoAssunto || '[]');
   result = result.replace(/\{\{PERGUNTAS\}\}/g, variables.perguntas || 'Nenhuma pergunta disponível.');
+  result = result.replace(/\{\{SOLUCAO_ID\}\}/g, variables.solucaoId || '');
+  result = result.replace(/\{\{SOLUCAO_NOME\}\}/g, variables.solucaoNome || 'Não identificada');
+  result = result.replace(/\{\{SOLUCAO_DESCRICAO\}\}/g, variables.solucaoDescricao || 'Sem descrição');
   result = result.replace(/\{\{SOLUCAO_ACOES\}\}/g, variables.solucaoAcoes || '[]');
 
   result = result.replace(/\{\{INTENCAO_ID\}\}/gi, variables.intencaoId || '');
@@ -281,5 +287,8 @@ export const AVAILABLE_VARIABLES = [
   { name: '{{#if_subproduto_nome}}...{{/if_subproduto_nome}}', description: 'Bloco condicional: exibe se há nome de subproduto' },
   { name: '{{PRODUTO_SUBPRODUTO_ASSUNTO}}', description: 'JSON de assuntos agrupados por produto/subproduto' },
   { name: '{{PERGUNTAS}}', description: 'Lista de perguntas para classificação de temas' },
+  { name: '{{SOLUCAO_ID}}', description: 'ID da solução/demanda identificada pelo DemandFinder' },
+  { name: '{{SOLUCAO_NOME}}', description: 'Nome da solução/demanda identificada pelo DemandFinder' },
+  { name: '{{SOLUCAO_DESCRICAO}}', description: 'Descrição/razão da seleção da solução pelo DemandFinder' },
   { name: '{{SOLUCAO_ACOES}}', description: 'JSON com lista de ações da solução da Central de Soluções' },
 ];

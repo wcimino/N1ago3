@@ -10,6 +10,7 @@ import {
 } from "./promptUtils.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 import { caseSolutionStorage } from "../storage/caseSolutionStorage.js";
+import { caseDemandStorage } from "../storage/caseDemandStorage.js";
 import { resolveProductById, resolveProductByName } from "./helpers/index.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 import type { AgentContext, BuildContextOptions } from "./agentTypes.js";
@@ -206,8 +207,34 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
   }
 
   let solucaoAcoes: string | null = null;
+  let solucaoId: string | null = null;
+  let solucaoNome: string | null = null;
+  let solucaoDescricao: string | null = null;
+
   if (context.conversationId) {
     try {
+      const caseDemand = await caseDemandStorage.getActiveByConversationId(context.conversationId);
+      if (caseDemand) {
+        solucaoId = caseDemand.solutionCenterArticleAndProblemsIdSelected || null;
+        
+        try {
+          const rawResponse = caseDemand.demandFinderAiResponse;
+          const aiResponse: { 
+            selected_intent?: { id?: string; label?: string }; 
+            reason?: string 
+          } | null = typeof rawResponse === 'string' 
+            ? JSON.parse(rawResponse) 
+            : rawResponse;
+          
+          if (aiResponse) {
+            solucaoNome = aiResponse.selected_intent?.label || null;
+            solucaoDescricao = aiResponse.reason || null;
+          }
+        } catch (parseError) {
+          console.error('[buildPromptVariables] Error parsing demandFinderAiResponse:', parseError);
+        }
+      }
+
       const caseSolution = await caseSolutionStorage.getActiveByConversationId(context.conversationId);
       if (caseSolution) {
         const actions = await caseSolutionStorage.getActions(caseSolution.id);
@@ -223,7 +250,7 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
         }
       }
     } catch (error) {
-      console.error('[buildPromptVariables] Error fetching solution actions:', error);
+      console.error('[buildPromptVariables] Error fetching solution data:', error);
     }
   }
 
@@ -244,6 +271,9 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
     produtoESubprodutoMatch,
     tipoDeDemandaMatch,
     artigoOuProblemaPrincipalMatch,
+    solucaoId,
+    solucaoNome,
+    solucaoDescricao,
     solucaoAcoes,
     customVariables: context.customVariables,
   };
