@@ -239,14 +239,14 @@ export function ConversationSummary({ summary, conversationId }: ConversationSum
               
               {conversationId && <SolutionCard conversationId={conversationId} />}
               
+              {summary.conversation_orchestrator_log && summary.conversation_orchestrator_log.length > 0 && (
+                <OrchestratorLogsCard logs={summary.conversation_orchestrator_log} />
+              )}
+              
               <ObjectiveProblemsCard problems={summary.objective_problems} />
               
               {summary.triage && (
                 <TriageCard triage={summary.triage} />
-              )}
-              
-              {summary.conversation_orchestrator_log && summary.conversation_orchestrator_log.length > 0 && (
-                <OrchestratorLogsCard logs={summary.conversation_orchestrator_log} />
               )}
               
               {!hasStructuredData && summary.text && (() => {
