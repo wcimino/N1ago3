@@ -126,13 +126,13 @@ export class DemandFinderAgent {
         context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
         context.demandFound = true;
         
-        const selectedIntentId = parseInt(promptResult.selected_intent.id, 10) || undefined;
+        const selectedIntentUuid = promptResult.selected_intent.id;
         const selectedResult = searchResult.results?.find(r => r.id === promptResult.selected_intent.id);
         
         if (selectedResult?.source === "article") {
-          context.articleId = selectedIntentId;
-        } else {
-          context.rootCauseId = selectedIntentId;
+          context.articleUuid = selectedIntentUuid;
+        } else if (selectedResult?.source === "problem") {
+          context.problemId = selectedIntentUuid;
         }
         
         context.lastDispatchLog = {
