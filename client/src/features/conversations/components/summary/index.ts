@@ -6,6 +6,7 @@ export { ProductRow, type ProductRowProps } from "./ProductRow";
 export { RequestTypeRow, type RequestTypeRowProps } from "./RequestTypeRow";
 export { ObjectiveProblemsCard, type ObjectiveProblemsCardProps } from "./ObjectiveProblemsCard";
 export { SolutionCenterCard, type SolutionCenterCardProps } from "./SolutionCenterCard";
+export { SolutionCard, type SolutionCardProps } from "./SolutionCard";
 export { TriageCard, type TriageCardProps } from "./TriageCard";
 export { OrchestratorLogsCard, type OrchestratorLogsCardProps } from "./OrchestratorLogsCard";
 export { DemandFinderTooltip, type DemandFinderTooltipProps } from "./DemandFinderTooltip";

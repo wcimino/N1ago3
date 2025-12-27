@@ -3,6 +3,7 @@ import { storage } from "../../../storage.js";
 import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 import { caseDemandStorage } from "../../ai/storage/caseDemandStorage.js";
+import { caseSolutionStorage } from "../../ai/storage/caseSolutionStorage.js";
 import type { Triage } from "../../../../shared/types/index.js";
 
 async function getProductNames(productId: number | null | undefined): Promise<{ product: string | null; subproduct: string | null }> {
@@ -232,6 +233,60 @@ router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedU
     demand_finder_interaction_count: caseDemandData?.interactionCount || 0,
     conversation_orchestrator_log: summary.conversationOrchestratorLog || null,
     client_hub_data: summary.clientHubData || null,
+  });
+});
+
+router.get("/api/conversations/:id/solution", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
+  const id = parseInt(req.params.id);
+  
+  if (isNaN(id)) {
+    return res.status(400).json({ error: "Invalid conversation ID" });
+  }
+
+  const caseSolution = await caseSolutionStorage.getLatestByConversationId(id);
+  
+  if (!caseSolution) {
+    return res.json({ solution: null, actions: [] });
+  }
+
+  const actions = await caseSolutionStorage.getActions(caseSolution.id);
+  
+  const parseInputUsed = (inputUsed: unknown): Record<string, unknown> => {
+    if (!inputUsed) return {};
+    if (typeof inputUsed === 'string') {
+      try {
+        return JSON.parse(inputUsed);
+      } catch {
+        return {};
+      }
+    }
+    if (typeof inputUsed === 'object') {
+      return inputUsed as Record<string, unknown>;
+    }
+    return {};
+  };
+
+  res.json({
+    solution: {
+      id: caseSolution.id,
+      status: caseSolution.status,
+      createdAt: caseSolution.createdAt,
+      updatedAt: caseSolution.updatedAt,
+    },
+    actions: actions.map(action => {
+      const parsedInput = parseInputUsed(action.inputUsed);
+      return {
+        id: action.id,
+        externalActionId: action.externalActionId,
+        sequence: action.actionSequence,
+        status: action.status,
+        actionType: String(parsedInput.actionType || parsedInput.type || "unknown"),
+        description: parsedInput.description ? String(parsedInput.description) : null,
+        createdAt: action.createdAt,
+        completedAt: action.completedAt,
+        errorMessage: action.errorMessage,
+      };
+    }),
   });
 });
 

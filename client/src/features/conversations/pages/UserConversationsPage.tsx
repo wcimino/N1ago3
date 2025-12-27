@@ -247,7 +247,10 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
               {/* Scrollable Content Area - Single scroll */}
               <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50">
                 {contentTab === "resumo" && (
-                  <ConversationSummary summary={selectedConversation?.summary} />
+                  <ConversationSummary 
+                    summary={selectedConversation?.summary} 
+                    conversationId={selectedConversation?.conversation.id}
+                  />
                 )}
                 {contentTab === "chat" && (
                   <ConversationChat
@@ -293,7 +296,10 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                     title="Resumo"
                   />
                   <div className="flex-1 overflow-y-auto min-h-0">
-                    <ConversationSummary summary={selectedConversation?.summary} />
+                    <ConversationSummary 
+                      summary={selectedConversation?.summary} 
+                      conversationId={selectedConversation?.conversation.id}
+                    />
                   </div>
                 </div>
 

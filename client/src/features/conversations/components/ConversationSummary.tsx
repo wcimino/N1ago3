@@ -5,6 +5,7 @@ import {
   RequestTypeRow,
   ObjectiveProblemsCard,
   SolutionCenterCard,
+  SolutionCard,
   TriageCard,
   OrchestratorLogsCard,
   ClientRequestVersionsTooltip,
@@ -67,9 +68,10 @@ function tryParseJsonSummary(text: string | null | undefined): ParsedClientReque
 
 interface ConversationSummaryProps {
   summary?: SummaryData | null;
+  conversationId?: number;
 }
 
-export function ConversationSummary({ summary }: ConversationSummaryProps) {
+export function ConversationSummary({ summary, conversationId }: ConversationSummaryProps) {
   const hasStructuredData = summary?.client_request || summary?.agent_actions || summary?.current_status || summary?.important_info || summary?.objective_problems?.length || summary?.solution_center_articles_and_problems?.length || summary?.triage;
 
   return (
@@ -234,6 +236,8 @@ export function ConversationSummary({ summary }: ConversationSummaryProps) {
                 items={summary.solution_center_articles_and_problems} 
                 selectedId={summary.solution_center_selected_id}
               />
+              
+              {conversationId && <SolutionCard conversationId={conversationId} />}
               
               <ObjectiveProblemsCard problems={summary.objective_problems} />
               
