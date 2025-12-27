@@ -33,6 +33,30 @@ export class ActionExecutor {
         await this.executeTransferToHuman(context, action.payload);
         break;
 
+      case "INSTRUCTION":
+        console.log(`[ActionExecutor] INSTRUCTION action: ${action.payload.name}`);
+        console.log(`[ActionExecutor] Value: ${action.payload.value?.substring(0, 100)}...`);
+        if (action.payload.agentInstructions) {
+          console.log(`[ActionExecutor] Agent Instructions: ${action.payload.agentInstructions.substring(0, 100)}...`);
+        }
+        break;
+
+      case "LINK":
+        console.log(`[ActionExecutor] LINK action: ${action.payload.name}`);
+        console.log(`[ActionExecutor] URL: ${action.payload.url}`);
+        if (action.payload.agentInstructions) {
+          console.log(`[ActionExecutor] Agent Instructions: ${action.payload.agentInstructions.substring(0, 100)}...`);
+        }
+        break;
+
+      case "API_CALL":
+        console.log(`[ActionExecutor] API_CALL action: ${action.payload.name}`);
+        console.log(`[ActionExecutor] Endpoint: ${action.payload.endpoint}`);
+        if (action.payload.agentInstructions) {
+          console.log(`[ActionExecutor] Agent Instructions: ${action.payload.agentInstructions.substring(0, 100)}...`);
+        }
+        break;
+
       default:
         console.log(`[ActionExecutor] Unknown or unsupported action type: ${(action as any).type} - skipping`);
     }
