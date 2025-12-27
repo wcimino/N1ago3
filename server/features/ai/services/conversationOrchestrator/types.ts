@@ -135,8 +135,8 @@ export interface OrchestratorContext {
 export type OrchestratorAction = 
   | { type: "SEND_MESSAGE"; payload: { suggestionId: number; responsePreview: string } }
   | { type: "TRANSFER_TO_HUMAN"; payload: { reason: string; message: string } }
-  | { type: "INSTRUCTION"; payload: { caseActionId: number; name: string; description: string; value: string } }
-  | { type: "LINK"; payload: { caseActionId: number; name: string; description: string; url: string } }
-  | { type: "API_CALL"; payload: { caseActionId: number; name: string; description: string; endpoint: string } };
+  | { type: "INSTRUCTION"; payload: { caseActionId: number; name: string; description: string; value: string; agentInstructions?: string } }
+  | { type: "LINK"; payload: { caseActionId: number; name: string; description: string; url: string; agentInstructions?: string } }
+  | { type: "API_CALL"; payload: { caseActionId: number; name: string; description: string; endpoint: string; agentInstructions?: string } };
 
 export type SolutionCenterActionType = "instruction" | "link" | "api_call";
