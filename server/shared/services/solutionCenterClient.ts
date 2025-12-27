@@ -192,9 +192,9 @@ export function isConfigured(): boolean {
 // ============================================================================
 
 export interface SolutionProviderRequest {
-  articleId: string;
-  problemId: string;
-  rootCauseId: string;
+  articleId?: string;
+  problemId?: string;
+  rootCauseId?: string;
 }
 
 export interface SolutionProviderResponse {
@@ -223,8 +223,8 @@ export async function getSolutionFromCenter(
 
   const { articleId, problemId, rootCauseId } = request;
 
-  if (!articleId || !problemId || !rootCauseId) {
-    console.log("[SolutionCenterClient] Missing required fields for solution request", { articleId, problemId, rootCauseId });
+  if (!articleId && !problemId) {
+    console.log("[SolutionCenterClient] Need at least articleId or problemId for solution request", { articleId, problemId, rootCauseId });
     return null;
   }
 

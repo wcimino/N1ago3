@@ -302,8 +302,8 @@ export class SolutionProviderAgent {
     console.log(`[SolutionProviderAgent] Resolving solution for case_solution ${caseSolutionId}`);
     console.log(`[SolutionProviderAgent] Inputs: articleId=${inputs.articleId}, problemId=${inputs.problemId}, rootCauseId=${inputs.rootCauseId}`);
     
-    if (!inputs.articleId || !inputs.problemId || !inputs.rootCauseId) {
-      console.log(`[SolutionProviderAgent] Missing required inputs for Central de Soluções API`);
+    if (!inputs.articleId && !inputs.problemId) {
+      console.log(`[SolutionProviderAgent] Need at least articleId or problemId for Central de Soluções API`);
       return null;
     }
 
