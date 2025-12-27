@@ -67,11 +67,7 @@ export class ActionExecutor {
         break;
 
       case "QUERY_CUSTOMER_PROFILE":
-        console.log(`[ActionExecutor] QUERY_CUSTOMER_PROFILE: ${action.payload.name}`);
-        console.log(`[ActionExecutor] Description: ${action.payload.description}`);
-        if (action.payload.agentInstructions) {
-          console.log(`[ActionExecutor] Agent Instructions: ${action.payload.agentInstructions.substring(0, 100)}...`);
-        }
+        await this.executeQueryCustomerProfile(context, action.payload);
         break;
 
       case "ASK_CUSTOMER":
@@ -148,6 +144,35 @@ export class ActionExecutor {
       console.log(`[ActionExecutor] Status updated to ESCALATED after successful transfer`);
     } else {
       console.error(`[ActionExecutor] Failed to transfer to human: ${result.error}`);
+    }
+  }
+
+  private static async executeQueryCustomerProfile(
+    context: OrchestratorContext,
+    payload: { caseActionId: number; name: string; description: string; agentInstructions?: string }
+  ): Promise<void> {
+    const { conversationId } = context;
+    console.log(`[ActionExecutor] QUERY_CUSTOMER_PROFILE: ${payload.name}`);
+    console.log(`[ActionExecutor] Description: ${payload.description}`);
+    if (payload.agentInstructions) {
+      console.log(`[ActionExecutor] Agent Instructions: ${payload.agentInstructions.substring(0, 100)}...`);
+    }
+
+    const clientHubData = await conversationStorage.getClientHubData(conversationId);
+
+    if (clientHubData) {
+      console.log(`[ActionExecutor] Client Hub Data found for conversation ${conversationId}`);
+      console.log(`[ActionExecutor] CNPJ: ${clientHubData.cnpj || "N/A"}`);
+      console.log(`[ActionExecutor] CNPJ Valid: ${clientHubData.cnpjValido ?? "N/A"}`);
+      console.log(`[ActionExecutor] Fields count: ${clientHubData.campos ? Object.keys(clientHubData.campos).length : 0}`);
+      console.log(`[ActionExecutor] Fetched at: ${clientHubData.fetchedAt || "N/A"}`);
+      
+      context.providedInputs = {
+        ...(context.providedInputs || {}),
+        clientHubData,
+      };
+    } else {
+      console.log(`[ActionExecutor] No Client Hub Data found for conversation ${conversationId}`);
     }
   }
 }

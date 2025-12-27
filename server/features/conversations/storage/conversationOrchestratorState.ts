@@ -2,6 +2,7 @@ import { db } from "../../../db.js";
 import { conversationsSummary } from "../../../../shared/schema.js";
 import { eq, and, sql } from "drizzle-orm";
 import { isValidOwnerTransition, type ConversationOwner } from "../../ai/services/conversationOrchestrator/types.js";
+import type { ClientHubData } from "../../../../shared/schema/clientHub.js";
 
 export const conversationOrchestratorState = {
   async updateOrchestratorStatus(conversationId: number, orchestratorStatus: string) {
@@ -212,5 +213,16 @@ export const conversationOrchestratorState = {
         updatedAt: new Date(),
       })
       .where(eq(conversationsSummary.conversationId, conversationId));
+  },
+
+  async getClientHubData(conversationId: number): Promise<ClientHubData | null> {
+    const result = await db.select({
+      clientHubData: conversationsSummary.clientHubData,
+    })
+      .from(conversationsSummary)
+      .where(eq(conversationsSummary.conversationId, conversationId))
+      .limit(1);
+    
+    return result[0]?.clientHubData || null;
   },
 };
