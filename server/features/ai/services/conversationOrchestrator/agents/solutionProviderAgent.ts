@@ -173,6 +173,7 @@ export class SolutionProviderAgent {
       const actionValue = String(rawAction.actionValue || "");
       const filledInputs = rawAction.filledInputs as Record<string, unknown> | undefined;
       const answer = filledInputs?.answer ? String(filledInputs.answer) : actionValue;
+      const agentInstructions = rawAction.agentInstructions ? String(rawAction.agentInstructions) : undefined;
       
       switch (actionType) {
         case "instruction":
@@ -183,6 +184,7 @@ export class SolutionProviderAgent {
               name,
               description,
               value: answer,
+              agentInstructions,
             },
           };
         case "informar_cliente":
@@ -193,6 +195,7 @@ export class SolutionProviderAgent {
               name,
               description,
               value: answer,
+              agentInstructions,
             },
           };
         case "link":
@@ -203,6 +206,7 @@ export class SolutionProviderAgent {
               name,
               description,
               url: actionValue,
+              agentInstructions,
             },
           };
         case "api_call":
@@ -213,6 +217,7 @@ export class SolutionProviderAgent {
               name,
               description,
               endpoint: actionValue,
+              agentInstructions,
             },
           };
         default:
@@ -224,6 +229,7 @@ export class SolutionProviderAgent {
               name,
               description,
               value: answer,
+              agentInstructions,
             },
           };
       }
