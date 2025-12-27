@@ -57,6 +57,31 @@ export class ActionExecutor {
         }
         break;
 
+      case "INTERNAL_ACTION":
+        console.log(`[ActionExecutor] INTERNAL_ACTION: ${action.payload.name}`);
+        console.log(`[ActionExecutor] Description: ${action.payload.description}`);
+        console.log(`[ActionExecutor] Value: ${action.payload.value?.substring(0, 100)}...`);
+        if (action.payload.agentInstructions) {
+          console.log(`[ActionExecutor] Agent Instructions: ${action.payload.agentInstructions.substring(0, 100)}...`);
+        }
+        break;
+
+      case "QUERY_CUSTOMER_PROFILE":
+        console.log(`[ActionExecutor] QUERY_CUSTOMER_PROFILE: ${action.payload.name}`);
+        console.log(`[ActionExecutor] Description: ${action.payload.description}`);
+        if (action.payload.agentInstructions) {
+          console.log(`[ActionExecutor] Agent Instructions: ${action.payload.agentInstructions.substring(0, 100)}...`);
+        }
+        break;
+
+      case "ASK_CUSTOMER":
+        console.log(`[ActionExecutor] ASK_CUSTOMER: ${action.payload.name}`);
+        console.log(`[ActionExecutor] Question: ${action.payload.value?.substring(0, 100)}...`);
+        if (action.payload.agentInstructions) {
+          console.log(`[ActionExecutor] Agent Instructions: ${action.payload.agentInstructions.substring(0, 100)}...`);
+        }
+        break;
+
       default:
         console.log(`[ActionExecutor] Unknown or unsupported action type: ${(action as any).type} - skipping`);
     }

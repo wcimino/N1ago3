@@ -177,16 +177,6 @@ export class SolutionProviderAgent {
       
       switch (actionType) {
         case "instruction":
-          return {
-            type: "INSTRUCTION" as const,
-            payload: {
-              caseActionId,
-              name,
-              description,
-              value: answer,
-              agentInstructions,
-            },
-          };
         case "informar_cliente":
           return {
             type: "INSTRUCTION" as const,
@@ -198,6 +188,7 @@ export class SolutionProviderAgent {
               agentInstructions,
             },
           };
+
         case "link":
           return {
             type: "LINK" as const,
@@ -209,6 +200,7 @@ export class SolutionProviderAgent {
               agentInstructions,
             },
           };
+
         case "api_call":
           return {
             type: "API_CALL" as const,
@@ -220,8 +212,54 @@ export class SolutionProviderAgent {
               agentInstructions,
             },
           };
+
+        case "acao_interna_manual":
+          return {
+            type: "INTERNAL_ACTION" as const,
+            payload: {
+              caseActionId,
+              name,
+              description,
+              value: answer,
+              agentInstructions,
+            },
+          };
+
+        case "consultar_perfil_cliente":
+          return {
+            type: "QUERY_CUSTOMER_PROFILE" as const,
+            payload: {
+              caseActionId,
+              name,
+              description,
+              agentInstructions,
+            },
+          };
+
+        case "perguntar_ao_cliente":
+          return {
+            type: "ASK_CUSTOMER" as const,
+            payload: {
+              caseActionId,
+              name,
+              description,
+              value: answer,
+              agentInstructions,
+            },
+          };
+
+        case "transferir_para_humano":
+          return {
+            type: "TRANSFER_TO_HUMAN" as const,
+            payload: {
+              reason: description || "Transferência solicitada pela solução",
+              message: answer || "Vou te transferir para um especialista que poderá te ajudar melhor.",
+            },
+          };
+
+        case "outro":
         default:
-          console.warn(`[SolutionProviderAgent] Unknown action type: ${actionType}, treating as instruction`);
+          console.warn(`[SolutionProviderAgent] Unknown or generic action type: ${actionType}, treating as instruction`);
           return {
             type: "INSTRUCTION" as const,
             payload: {

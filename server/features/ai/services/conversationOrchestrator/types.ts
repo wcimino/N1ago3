@@ -137,6 +137,18 @@ export type OrchestratorAction =
   | { type: "TRANSFER_TO_HUMAN"; payload: { reason: string; message: string } }
   | { type: "INSTRUCTION"; payload: { caseActionId: number; name: string; description: string; value: string; agentInstructions?: string } }
   | { type: "LINK"; payload: { caseActionId: number; name: string; description: string; url: string; agentInstructions?: string } }
-  | { type: "API_CALL"; payload: { caseActionId: number; name: string; description: string; endpoint: string; agentInstructions?: string } };
+  | { type: "API_CALL"; payload: { caseActionId: number; name: string; description: string; endpoint: string; agentInstructions?: string } }
+  | { type: "INTERNAL_ACTION"; payload: { caseActionId: number; name: string; description: string; value: string; agentInstructions?: string } }
+  | { type: "QUERY_CUSTOMER_PROFILE"; payload: { caseActionId: number; name: string; description: string; agentInstructions?: string } }
+  | { type: "ASK_CUSTOMER"; payload: { caseActionId: number; name: string; description: string; value: string; agentInstructions?: string } };
 
-export type SolutionCenterActionType = "instruction" | "link" | "api_call";
+export type SolutionCenterActionType = 
+  | "instruction" 
+  | "informar_cliente" 
+  | "link" 
+  | "api_call" 
+  | "acao_interna_manual" 
+  | "consultar_perfil_cliente" 
+  | "outro" 
+  | "perguntar_ao_cliente" 
+  | "transferir_para_humano";
