@@ -66,6 +66,13 @@ export class SolutionProviderAgent {
         }
 
         const actions = solutionResponse.actions || [];
+        
+        if (actions.length === 0) {
+          const solutionName = this.getSolutionName(solutionResponse);
+          console.log(`[SolutionProviderAgent] Solution "${solutionName}" has no actions, using fallback (transfer to human)`);
+          return await this.executeFallback(context, caseSolution.id);
+        }
+        
         await this.createActionsFromResponse(caseSolution.id, actions);
         existingActions = await caseSolutionStorage.getActions(caseSolution.id);
         
