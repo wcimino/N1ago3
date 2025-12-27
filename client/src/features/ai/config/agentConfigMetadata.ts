@@ -1,4 +1,4 @@
-export type AgentConfigType = "summary" | "classification" | "response" | "demand_finder" | "topic_classification" | "closer";
+export type AgentConfigType = "summary" | "classification" | "response" | "demand_finder" | "solution_provider" | "topic_classification" | "closer";
 
 export interface AgentToolsConfig {
   showZendeskKnowledgeBaseTool?: boolean;
@@ -67,6 +67,18 @@ export const agentConfigMetadata: Record<AgentConfigType, AgentConfigMetadata> =
     description: "Configure o agente que identifica e entende qual é a demanda/necessidade do cliente na conversa. Usa a Central de Soluções para buscar artigos e problemas.",
     enabledLabel: "Ativar Demand Finder",
     enabledDescription: "Quando ativado, o sistema identifica automaticamente o que o cliente precisa",
+    promptRows: 20,
+    responseFormatRows: 8,
+    recommendedModel: "gpt-4o",
+    tools: {},
+  },
+
+  solution_provider: {
+    configType: "solution_provider",
+    title: "Configuração do Solution Provider",
+    description: "Configure o agente que fornece soluções para as demandas identificadas pelo Demand Finder",
+    enabledLabel: "Ativar Solution Provider",
+    enabledDescription: "Quando ativado, o sistema gera soluções automaticamente para as demandas identificadas",
     promptRows: 20,
     responseFormatRows: 8,
     recommendedModel: "gpt-4o",
