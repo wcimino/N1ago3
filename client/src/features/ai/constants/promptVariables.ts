@@ -68,6 +68,14 @@ export const VARIABLE_CATEGORIES: PromptVariableCategory[] = [
     ],
   },
   {
+    id: 'solutions',
+    title: 'Soluções',
+    description: 'Dados da Central de Soluções',
+    variables: [
+      { name: '{{SOLUCAO_ACOES}}', description: 'JSON com lista de ações da solução' },
+    ],
+  },
+  {
     id: 'conditionals',
     title: 'Blocos Condicionais',
     description: 'Estruturas para exibir conteúdo condicionalmente',

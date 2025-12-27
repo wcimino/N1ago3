@@ -9,6 +9,7 @@ import {
   type ContentPayload 
 } from "./promptUtils.js";
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
+import { caseSolutionStorage } from "../storage/caseSolutionStorage.js";
 import { resolveProductById, resolveProductByName } from "./helpers/index.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 import type { AgentContext, BuildContextOptions } from "./agentTypes.js";
@@ -204,6 +205,28 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
     artigoOuProblemaPrincipalMatch = `[${topResult.source}] ${topResult.name}${topResult.matchScore != null ? ` (score: ${topResult.matchScore})` : ''}`;
   }
 
+  let solucaoAcoes: string | null = null;
+  if (context.conversationId) {
+    try {
+      const caseSolution = await caseSolutionStorage.getActiveByConversationId(context.conversationId);
+      if (caseSolution) {
+        const actions = await caseSolutionStorage.getActions(caseSolution.id);
+        if (actions.length > 0) {
+          const formattedActions = actions.map(action => ({
+            id: action.id,
+            externalActionId: action.externalActionId,
+            sequence: action.actionSequence,
+            status: action.status,
+            input: action.inputUsed,
+          }));
+          solucaoAcoes = JSON.stringify(formattedActions, null, 2);
+        }
+      }
+    } catch (error) {
+      console.error('[buildPromptVariables] Error fetching solution actions:', error);
+    }
+  }
+
   return {
     resumo: context.summary,
     resumoAtual: context.previousSummary ?? context.summary,
@@ -221,6 +244,7 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
     produtoESubprodutoMatch,
     tipoDeDemandaMatch,
     artigoOuProblemaPrincipalMatch,
+    solucaoAcoes,
     customVariables: context.customVariables,
   };
 }

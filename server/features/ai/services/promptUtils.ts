@@ -31,6 +31,7 @@ export interface PromptVariables {
   sugestaoResposta?: string | null;
   produtoSubprodutoAssunto?: string | null;
   perguntas?: string | null;
+  solucaoAcoes?: string | null;
   customVariables?: Record<string, string>;
 }
 
@@ -71,6 +72,7 @@ export function replacePromptVariables(
   result = result.replace(/\{\{SUGESTAO_RESPOSTA\}\}/g, variables.sugestaoResposta || 'Nenhuma sugestão de resposta disponível.');
   result = result.replace(/\{\{PRODUTO_SUBPRODUTO_ASSUNTO\}\}/g, variables.produtoSubprodutoAssunto || '[]');
   result = result.replace(/\{\{PERGUNTAS\}\}/g, variables.perguntas || 'Nenhuma pergunta disponível.');
+  result = result.replace(/\{\{SOLUCAO_ACOES\}\}/g, variables.solucaoAcoes || '[]');
 
   result = result.replace(/\{\{INTENCAO_ID\}\}/gi, variables.intencaoId || '');
   result = result.replace(/\{\{INTENCAO_NOME\}\}/gi, variables.intencaoNome || '');
@@ -279,4 +281,5 @@ export const AVAILABLE_VARIABLES = [
   { name: '{{#if_subproduto_nome}}...{{/if_subproduto_nome}}', description: 'Bloco condicional: exibe se há nome de subproduto' },
   { name: '{{PRODUTO_SUBPRODUTO_ASSUNTO}}', description: 'JSON de assuntos agrupados por produto/subproduto' },
   { name: '{{PERGUNTAS}}', description: 'Lista de perguntas para classificação de temas' },
+  { name: '{{SOLUCAO_ACOES}}', description: 'JSON com lista de ações da solução da Central de Soluções' },
 ];
