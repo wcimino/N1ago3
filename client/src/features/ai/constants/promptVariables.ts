@@ -75,18 +75,6 @@ export const VARIABLE_CATEGORIES: PromptVariableCategory[] = [
       { name: '{{SOLUCAO_ACOES}}', description: 'JSON com lista de ações da solução' },
     ],
   },
-  {
-    id: 'conditionals',
-    title: 'Blocos Condicionais',
-    description: 'Estruturas para exibir conteúdo condicionalmente',
-    variables: [
-      { name: '{{#if_artigo_existe}}...{{/if_artigo_existe}}', description: 'Exibe conteúdo se artigo existe' },
-      { name: '{{#if_artigo_nao_existe}}...{{/if_artigo_nao_existe}}', description: 'Exibe conteúdo se artigo não existe' },
-      { name: '{{#if_intencao_sinonimos}}...{{/if_intencao_sinonimos}}', description: 'Exibe se há sinônimos de intenção' },
-      { name: '{{#if_assunto_sinonimos}}...{{/if_assunto_sinonimos}}', description: 'Exibe se há sinônimos de assunto' },
-      { name: '{{#if_subproduto_nome}}...{{/if_subproduto_nome}}', description: 'Exibe se há nome de subproduto' },
-    ],
-  },
 ];
 
 export const AVAILABLE_VARIABLES: PromptVariable[] = VARIABLE_CATEGORIES.flatMap(

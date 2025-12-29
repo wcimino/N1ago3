@@ -26,7 +26,6 @@ export interface PromptVariables {
   artigoResposta?: string | null;
   artigoKeywords?: string | null;
   artigoVariacoes?: string | null;
-  artigoExiste?: boolean;
   sugestaoResposta?: string | null;
   solucaoId?: string | null;
   solucaoNome?: string | null;
@@ -86,34 +85,6 @@ export function replacePromptVariables(
   result = result.replace(/\{\{ARTIGO_RESPOSTA\}\}/gi, variables.artigoResposta || 'Sem resposta');
   result = result.replace(/\{\{ARTIGO_KEYWORDS\}\}/gi, variables.artigoKeywords || 'Sem keywords');
   result = result.replace(/\{\{ARTIGO_VARIACOES\}\}/gi, variables.artigoVariacoes || 'Sem variações');
-
-  if (variables.artigoExiste === true) {
-    result = result
-      .replace(/\{\{#if_artigo_existe\}\}([\s\S]*?)\{\{\/if_artigo_existe\}\}/gi, '$1')
-      .replace(/\{\{#if_artigo_nao_existe\}\}[\s\S]*?\{\{\/if_artigo_nao_existe\}\}/gi, '');
-  } else if (variables.artigoExiste === false) {
-    result = result
-      .replace(/\{\{#if_artigo_nao_existe\}\}([\s\S]*?)\{\{\/if_artigo_nao_existe\}\}/gi, '$1')
-      .replace(/\{\{#if_artigo_existe\}\}[\s\S]*?\{\{\/if_artigo_existe\}\}/gi, '');
-  }
-
-  if (variables.intencaoSinonimos) {
-    result = result.replace(/\{\{#if_intencao_sinonimos\}\}([\s\S]*?)\{\{\/if_intencao_sinonimos\}\}/gi, '$1');
-  } else {
-    result = result.replace(/\{\{#if_intencao_sinonimos\}\}[\s\S]*?\{\{\/if_intencao_sinonimos\}\}/gi, '');
-  }
-
-  if (variables.assuntoSinonimos) {
-    result = result.replace(/\{\{#if_assunto_sinonimos\}\}([\s\S]*?)\{\{\/if_assunto_sinonimos\}\}/gi, '$1');
-  } else {
-    result = result.replace(/\{\{#if_assunto_sinonimos\}\}[\s\S]*?\{\{\/if_assunto_sinonimos\}\}/gi, '');
-  }
-
-  if (variables.subprodutoNome) {
-    result = result.replace(/\{\{#if_subproduto_nome\}\}([\s\S]*?)\{\{\/if_subproduto_nome\}\}/gi, '$1');
-  } else {
-    result = result.replace(/\{\{#if_subproduto_nome\}\}[\s\S]*?\{\{\/if_subproduto_nome\}\}/gi, '');
-  }
 
   if (variables.customVariables) {
     for (const [key, value] of Object.entries(variables.customVariables)) {
@@ -273,11 +244,6 @@ export const AVAILABLE_VARIABLES = [
   { name: '{{ARTIGO_RESPOSTA}}', description: 'Resposta do artigo existente' },
   { name: '{{ARTIGO_KEYWORDS}}', description: 'Keywords do artigo existente' },
   { name: '{{ARTIGO_VARIACOES}}', description: 'Variações de pergunta do artigo existente' },
-  { name: '{{#if_artigo_existe}}...{{/if_artigo_existe}}', description: 'Bloco condicional: exibe conteúdo se artigo existe' },
-  { name: '{{#if_artigo_nao_existe}}...{{/if_artigo_nao_existe}}', description: 'Bloco condicional: exibe conteúdo se artigo não existe' },
-  { name: '{{#if_intencao_sinonimos}}...{{/if_intencao_sinonimos}}', description: 'Bloco condicional: exibe se há sinônimos de intenção' },
-  { name: '{{#if_assunto_sinonimos}}...{{/if_assunto_sinonimos}}', description: 'Bloco condicional: exibe se há sinônimos de assunto' },
-  { name: '{{#if_subproduto_nome}}...{{/if_subproduto_nome}}', description: 'Bloco condicional: exibe se há nome de subproduto' },
   { name: '{{SOLUCAO_ID}}', description: 'ID da solução/demanda identificada pelo DemandFinder' },
   { name: '{{SOLUCAO_NOME}}', description: 'Nome da solução/demanda identificada pelo DemandFinder' },
   { name: '{{SOLUCAO_DESCRICAO}}', description: 'Descrição/razão da seleção da solução pelo DemandFinder' },
