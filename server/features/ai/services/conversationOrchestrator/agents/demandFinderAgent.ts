@@ -106,6 +106,46 @@ export class DemandFinderAgent {
 
       // Step 5: If AI selected an intent -> confirm demand and transition to solution provider
       if (promptResult.decision === "selected_intent" && promptResult.selected_intent?.id) {
+        const selectedIntentId = promptResult.selected_intent.id;
+        const candidateIds = searchResult.results?.map(r => r.id) || [];
+        const isValidCandidate = candidateIds.includes(selectedIntentId);
+        
+        if (!isValidCandidate) {
+          console.warn(`[DemandFinderAgent] WARNING: AI selected intent "${selectedIntentId}" is NOT in the candidate list. Candidates: ${candidateIds.join(', ')}. Escalating to human.`);
+          
+          await caseDemandStorage.updateDemandFinderAiResponse(conversationId, {
+            decision: promptResult.decision,
+            selected_intent: promptResult.selected_intent,
+            top_candidates_ranked: promptResult.top_candidates_ranked || [],
+            clarifying_question: promptResult.clarifying_question,
+            reason: promptResult.reason,
+          });
+          
+          await this.escalateConversation(conversationId, context, `AI selected invalid intent: "${selectedIntentId}" not in candidates`, { sendApologyMessage: true });
+          
+          context.lastDispatchLog = {
+            solutionCenterResults: searchResult.results?.length ?? 0,
+            aiDecision: promptResult.decision,
+            aiReason: promptResult.reason,
+            action: "escalated_invalid_intent_selection",
+            details: { 
+              selectedIntentId,
+              selectedIntentLabel: promptResult.selected_intent.label,
+              validCandidateIds: candidateIds,
+            },
+          };
+          
+          return {
+            success: true,
+            demandConfirmed: false,
+            needsClarification: false,
+            maxInteractionsReached: true,
+            messageSent: false,
+            suggestedResponse: "Vou te transferir para um especialista que podera te ajudar.",
+            error: `AI selected invalid intent: "${selectedIntentId}" not in candidates`,
+          };
+        }
+        
         console.log(`[DemandFinderAgent] Demand confirmed - selected intent: ${promptResult.selected_intent.id} (${promptResult.selected_intent.label})`);
         
         await caseDemandStorage.updateSelectedIntent(conversationId, promptResult.selected_intent.id, {
