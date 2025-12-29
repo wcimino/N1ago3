@@ -50,7 +50,6 @@ export const VARIABLE_CATEGORIES: PromptVariableCategory[] = [
       { name: '{{ARTIGOS_PROBLEMAS_LISTA_TOP_10}}', description: 'Top 10 artigos e problemas da base de conhecimento' },
       { name: '{{TIPO_DE_DEMANDA_MATCH}}', description: 'Tipo de demanda identificado com match' },
       { name: '{{ARTIGO_OU_PROBLEMA_PRINCIPAL_MATCH}}', description: 'Artigo ou problema principal com melhor match' },
-      { name: '{{RESULTADOS_BUSCA}}', description: 'Resultados da busca na base de conhecimento' },
     ],
   },
   {

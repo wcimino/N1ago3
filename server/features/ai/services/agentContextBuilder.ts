@@ -135,13 +135,6 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
     catalogoJson = '[]';
   }
 
-  let searchResultsFormatted: string | null = null;
-  if (context.searchResults && context.searchResults.length > 0) {
-    searchResultsFormatted = context.searchResults
-      .map(r => `- [${r.source}] ${r.name}: ${r.description}${r.matchScore ? ` (score: ${r.matchScore})` : ''}`)
-      .join('\n');
-  }
-
   let artigosProblemasListaTop5: string | null = null;
   let artigosProblemasListaTop10: string | null = null;
   
@@ -239,7 +232,6 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
     produtosESubprodutosCatalogo: catalogoJson,
     tipoSolicitacao: context.customerRequestType,
     demandaIdentificada: context.demand,
-    resultadosBusca: searchResultsFormatted,
     artigosProblemasListaTop5,
     artigosProblemasListaTop10,
     tipoDeDemandaMatch,

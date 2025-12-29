@@ -6,7 +6,6 @@ export interface PromptVariables {
   produtosESubprodutosCatalogo?: string | null;
   tipoSolicitacao?: string | null;
   demandaIdentificada?: string | null;
-  resultadosBusca?: string | null;
   artigosProblemasListaTop5?: string | null;
   artigosProblemasListaTop10?: string | null;
   tipoDeDemandaMatch?: string | null;
@@ -58,7 +57,6 @@ export function replacePromptVariables(
   result = result.replace(/\{\{PRODUTOS_E_SUBPRODUTOS_CATALOGO\}\}/g, variables.produtosESubprodutosCatalogo || '[]');
   result = result.replace(/\{\{TIPO_SOLICITACAO\}\}/g, variables.tipoSolicitacao || 'Não identificado');
   result = result.replace(/\{\{DEMANDA_IDENTIFICADA\}\}/g, variables.demandaIdentificada || 'Nenhuma demanda identificada.');
-  result = result.replace(/\{\{RESULTADOS_BUSCA\}\}/g, variables.resultadosBusca || 'Nenhum resultado de busca disponível.');
   result = result.replace(/\{\{ARTIGOS_PROBLEMAS_LISTA_TOP_5\}\}/g, variables.artigosProblemasListaTop5 || 'Nenhum artigo ou problema encontrado.');
   result = result.replace(/\{\{ARTIGOS_PROBLEMAS_LISTA_TOP_10\}\}/g, variables.artigosProblemasListaTop10 || 'Nenhum artigo ou problema encontrado.');
   result = result.replace(/\{\{TIPO_DE_DEMANDA_MATCH\}\}/g, variables.tipoDeDemandaMatch || 'Nenhum tipo de demanda identificado.');
@@ -248,7 +246,6 @@ export const AVAILABLE_VARIABLES = [
   { name: '{{PRODUTOS_E_SUBPRODUTOS_CATALOGO}}', description: 'Lista JSON de produtos e subprodutos do catálogo' },
   { name: '{{TIPO_SOLICITACAO}}', description: 'Tipo de solicitação do cliente (Quer suporte/contratar/informações)' },
   { name: '{{DEMANDA_IDENTIFICADA}}', description: 'Demanda identificada pelo DemandFinder (para SolutionProvider)' },
-  { name: '{{RESULTADOS_BUSCA}}', description: 'Resultados da busca na base de conhecimento (para SolutionProvider)' },
   { name: '{{ARTIGOS_PROBLEMAS_LISTA_TOP_5}}', description: 'Top 5 artigos e problemas da base de conhecimento (busca automática)' },
   { name: '{{ARTIGOS_PROBLEMAS_LISTA_TOP_10}}', description: 'Top 10 artigos e problemas da base de conhecimento (busca automática)' },
   { name: '{{TIPO_DE_DEMANDA_MATCH}}', description: 'Tipo de demanda identificado com match' },
