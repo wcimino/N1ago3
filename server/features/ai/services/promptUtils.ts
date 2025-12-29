@@ -55,7 +55,7 @@ export function replacePromptVariables(
   result = result.replace(/\{\{ULTIMA_MENSAGEM\}\}/g, variables.ultimaMensagem || '');
   result = result.replace(/\{\{HANDLER\}\}/g, variables.handler || 'Não identificado');
   result = result.replace(/\{\{PRODUTOS_E_SUBPRODUTOS_CATALOGO\}\}/g, variables.produtosESubprodutosCatalogo || '[]');
-  result = result.replace(/\{\{TIPO_SOLICITACAO\}\}/g, variables.tipoSolicitacao || 'Não identificado');
+  result = result.replace(/\{\{TIPO_SOLICITACAO_NOME\}\}/g, variables.tipoSolicitacao || 'Não identificado');
   result = result.replace(/\{\{DEMANDA_IDENTIFICADA\}\}/g, variables.demandaIdentificada || 'Nenhuma demanda identificada.');
   result = result.replace(/\{\{ARTIGOS_PROBLEMAS_LISTA_TOP_5\}\}/g, variables.artigosProblemasListaTop5 || 'Nenhum artigo ou problema encontrado.');
   result = result.replace(/\{\{ARTIGOS_PROBLEMAS_LISTA_TOP_10\}\}/g, variables.artigosProblemasListaTop10 || 'Nenhum artigo ou problema encontrado.');
@@ -244,7 +244,7 @@ export const AVAILABLE_VARIABLES = [
   { name: '{{ULTIMA_MENSAGEM}}', description: 'A mensagem mais recente' },
   { name: '{{HANDLER}}', description: 'Quem está atendendo (bot/humano)' },
   { name: '{{PRODUTOS_E_SUBPRODUTOS_CATALOGO}}', description: 'Lista JSON de produtos e subprodutos do catálogo' },
-  { name: '{{TIPO_SOLICITACAO}}', description: 'Tipo de solicitação do cliente (Quer suporte/contratar/informações)' },
+  { name: '{{TIPO_SOLICITACAO_NOME}}', description: 'Tipo de solicitação do cliente (Quer suporte/contratar/informações)' },
   { name: '{{DEMANDA_IDENTIFICADA}}', description: 'Demanda identificada pelo DemandFinder (para SolutionProvider)' },
   { name: '{{ARTIGOS_PROBLEMAS_LISTA_TOP_5}}', description: 'Top 5 artigos e problemas da base de conhecimento (busca automática)' },
   { name: '{{ARTIGOS_PROBLEMAS_LISTA_TOP_10}}', description: 'Top 10 artigos e problemas da base de conhecimento (busca automática)' },
