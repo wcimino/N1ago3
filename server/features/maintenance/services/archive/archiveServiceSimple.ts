@@ -46,9 +46,33 @@ class SimpleArchiveService {
     });
   }
 
-  start(): void {
+  async start(): Promise<void> {
     console.log("[SimpleArchiveService] Starting service");
+    await this.markOrphanedJobsAsFailed();
     this.scheduler.start();
+  }
+
+  private async markOrphanedJobsAsFailed(): Promise<void> {
+    try {
+      const result = await db.execute(sql`
+        UPDATE archive_jobs 
+        SET status = 'failed', 
+            completed_at = NOW(), 
+            error_message = 'Job interrompido - servidor reiniciado durante execução',
+            progress = NULL
+        WHERE status = 'running'
+        RETURNING id, table_name, archive_date
+      `);
+      
+      if (result.rows.length > 0) {
+        console.log(`[SimpleArchiveService] Marked ${result.rows.length} orphaned job(s) as failed:`);
+        for (const row of result.rows as any[]) {
+          console.log(`  - Job ${row.id}: ${row.table_name} ${row.archive_date}`);
+        }
+      }
+    } catch (error: any) {
+      console.error("[SimpleArchiveService] Error marking orphaned jobs:", error.message);
+    }
   }
 
   stop(): void {

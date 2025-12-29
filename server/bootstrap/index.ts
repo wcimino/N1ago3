@@ -108,7 +108,7 @@ export function configureStaticFiles(app: Express): void {
   console.log(`[Bootstrap] Static files configured from: ${publicPath}`);
 }
 
-export function startBackgroundWorkers(config: SchedulerConfig): void {
+export async function startBackgroundWorkers(config: SchedulerConfig): Promise<void> {
   console.log("[Bootstrap] Starting background workers...");
 
   if (config.enablePolling) {
@@ -128,7 +128,7 @@ export function startBackgroundWorkers(config: SchedulerConfig): void {
   }
 
   if (config.enableArchive) {
-    archiveService.start();
+    await archiveService.start();
     schedulerStatus.archive = { enabled: true, running: false, lastRunDate: null };
     console.log("[Bootstrap] Archive service started");
   } else {
@@ -138,7 +138,7 @@ export function startBackgroundWorkers(config: SchedulerConfig): void {
   console.log("[Bootstrap] Background workers initialization complete");
 }
 
-export function bootstrap(app: Express, config: BootstrapConfig): void {
+export async function bootstrap(app: Express, config: BootstrapConfig): Promise<void> {
   if (config.isProduction) {
     configureStaticFiles(app);
   }
@@ -147,7 +147,7 @@ export function bootstrap(app: Express, config: BootstrapConfig): void {
     const { preflight, config: schedulerConfig } = initializePreflight();
     
     if (preflight.canRunSchedulers) {
-      startBackgroundWorkers(schedulerConfig);
+      await startBackgroundWorkers(schedulerConfig);
     } else {
       console.warn("[Bootstrap] Schedulers disabled due to preflight failures - running in API-only mode");
     }

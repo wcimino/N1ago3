@@ -111,7 +111,7 @@ async function initializeServices() {
         registerRoutes(app);
         console.log("[Startup] Routes registered");
 
-        bootstrap(app, {
+        await bootstrap(app, {
           isProduction: process.env.NODE_ENV === "production",
           enableSchedulers: process.env.DISABLE_SCHEDULERS !== "true" && databaseHealthy === true,
         });
