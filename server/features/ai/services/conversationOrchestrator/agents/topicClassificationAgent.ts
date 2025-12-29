@@ -3,40 +3,17 @@ import { sql } from "drizzle-orm";
 import { storage } from "../../../../../storage/index.js";
 import { runAgent } from "../../agentFramework.js";
 import type { AgentResult } from "../types.js";
+import type { 
+  QuestionTopic, 
+  ThemeSummary, 
+  CoverageSummary, 
+  PeriodFilter 
+} from "../../../../../../shared/types/reports.js";
+
+export type { QuestionTopic, ThemeSummary, CoverageSummary, PeriodFilter };
 
 const CONFIG_KEY = "topic_classification";
 const BATCH_SIZE = 25;
-
-export interface QuestionTopic {
-  produto: string;
-  subproduto: string | null;
-  question: string;
-  problema: string | null;
-  count: number;
-  topScore: number | null;
-  theme?: string;
-}
-
-export interface ThemeSummary {
-  theme: string;
-  count: number;
-  avgScore: number | null;
-  coverage: "good" | "medium" | "low" | "unknown";
-  questions: Array<{
-    question: string;
-    count: number;
-    subproduto: string | null;
-    topScore: number | null;
-  }>;
-}
-
-export interface CoverageSummary {
-  total: number;
-  goodCoverage: number;
-  mediumCoverage: number;
-  lowCoverage: number;
-  noCoverage: number;
-}
 
 export interface TopicClassificationAgentResult extends AgentResult {
   questions?: QuestionTopic[];
@@ -44,8 +21,6 @@ export interface TopicClassificationAgentResult extends AgentResult {
   total?: number;
   coverage?: CoverageSummary;
 }
-
-export type PeriodFilter = "last_hour" | "last_24h" | "all";
 
 interface SubjectProductMap {
   [subject: string]: string;

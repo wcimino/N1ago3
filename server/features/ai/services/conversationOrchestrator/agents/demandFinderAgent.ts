@@ -470,29 +470,12 @@ export class DemandFinderAgent {
     reason: string,
     options?: { sendApologyMessage?: boolean }
   ): Promise<void> {
-    console.log(`[DemandFinderAgent] Escalating conversation ${conversationId}: ${reason}`);
-    
-    const shouldSendApologyMessage = options?.sendApologyMessage ?? false;
-    
-    if (shouldSendApologyMessage) {
-      const apologyMessage = "Desculpe, não consegui entender sua solicitação. Vou te transferir para um humano continuar o atendimento, aguarde um momento...";
-      const transferAction: OrchestratorAction = {
-        type: "TRANSFER_TO_HUMAN",
-        payload: { reason, message: apologyMessage }
-      };
-      await ActionExecutor.execute(context, [transferAction]);
-    }
-    
-    if (context.currentStatus !== ORCHESTRATOR_STATUS.ESCALATED) {
-      await conversationStorage.updateOrchestratorState(conversationId, {
-        orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
-        conversationOwner: null,
-        waitingForCustomer: false,
-      });
-      context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
-    }
-    
-    await caseDemandStorage.updateStatus(conversationId, "demand_not_found");
+    const { escalateConversation: sharedEscalate } = await import("../helpers/orchestratorHelpers.js");
+    await sharedEscalate(conversationId, context, reason, {
+      sendApologyMessage: options?.sendApologyMessage ?? false,
+      updateCaseDemandStatus: true,
+      caseDemandStatus: "demand_not_found",
+    });
   }
 
   private static async callDemandFinderPrompt(context: OrchestratorContext): Promise<(DemandFinderPromptResult & { suggestionId?: number }) | null> {

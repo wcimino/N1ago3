@@ -438,22 +438,12 @@ export class SolutionProviderAgent {
     context: OrchestratorContext,
     reason: string
   ): Promise<void> {
-    console.log(`[SolutionProviderAgent] Escalating conversation ${conversationId}: ${reason}`);
-
-    const escalationMessage = "Desculpe, tivemos um problema técnico. Vou te transferir para um especialista.";
-    const action: OrchestratorAction = {
-      type: "TRANSFER_TO_HUMAN",
-      payload: { reason, message: escalationMessage }
-    };
-    
-    await ActionExecutor.execute(context, [action]);
-
-    await conversationStorage.updateOrchestratorState(conversationId, {
-      orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
-      conversationOwner: null,
-      waitingForCustomer: false,
+    const { escalateConversation: sharedEscalate } = await import("../helpers/orchestratorHelpers.js");
+    await sharedEscalate(conversationId, context, reason, {
+      sendApologyMessage: true,
+      apologyMessage: "Desculpe, tivemos um problema técnico. Vou te transferir para um especialista.",
+      updateCaseDemandStatus: false,
     });
-    context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
 
     if (context.caseSolutionId) {
       await caseSolutionStorage.updateStatus(context.caseSolutionId, "error");
