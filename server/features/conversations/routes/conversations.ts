@@ -190,7 +190,7 @@ router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedU
 
   const [summary, caseDemandData] = await Promise.all([
     storage.getConversationSummary(id),
-    caseDemandStorage.getFirstByConversationId(id),
+    caseDemandStorage.getLatestByConversationId(id),
   ]);
 
   if (!summary) {

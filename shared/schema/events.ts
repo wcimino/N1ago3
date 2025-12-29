@@ -131,6 +131,7 @@ export const caseDemand = pgTable("case_demand", {
     selected_intent: { id: string | null; label: string | null };
     top_candidates_ranked: Array<{ id: string; label: string; why: string }>;
     clarifying_question: string | null;
+    selected_intent_confidence?: number;
     reason: string;
   }>(),
   interactionCount: integer("interaction_count").default(0).notNull(),
