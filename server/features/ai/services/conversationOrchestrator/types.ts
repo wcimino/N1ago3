@@ -139,7 +139,6 @@ export type OrchestratorAction =
   | { type: "LINK"; payload: { caseActionId: number; name: string; description: string; url: string; agentInstructions?: string } }
   | { type: "API_CALL"; payload: { caseActionId: number; name: string; description: string; endpoint: string; agentInstructions?: string } }
   | { type: "INTERNAL_ACTION"; payload: { caseActionId: number; name: string; description: string; value: string; agentInstructions?: string } }
-  | { type: "QUERY_CUSTOMER_PROFILE"; payload: { caseActionId: number; name: string; description: string; agentInstructions?: string } }
   | { type: "ASK_CUSTOMER"; payload: { caseActionId: number; name: string; description: string; value: string; agentInstructions?: string } };
 
 export type SolutionCenterActionType = 
