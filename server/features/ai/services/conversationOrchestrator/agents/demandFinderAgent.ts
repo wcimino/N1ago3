@@ -18,6 +18,7 @@ interface DemandFinderPromptResult {
   };
   top_candidates_ranked: Array<{ id: string; label: string; why: string }>;
   clarifying_question: string | null;
+  selected_intent_confidence?: number;
   reason: string;
 }
 
@@ -118,6 +119,7 @@ export class DemandFinderAgent {
             selected_intent: promptResult.selected_intent,
             top_candidates_ranked: promptResult.top_candidates_ranked || [],
             clarifying_question: promptResult.clarifying_question,
+            selected_intent_confidence: promptResult.selected_intent_confidence,
             reason: promptResult.reason,
           });
           
@@ -153,6 +155,7 @@ export class DemandFinderAgent {
           selected_intent: promptResult.selected_intent,
           top_candidates_ranked: promptResult.top_candidates_ranked || [],
           clarifying_question: promptResult.clarifying_question,
+          selected_intent_confidence: promptResult.selected_intent_confidence,
           reason: promptResult.reason,
         });
         
@@ -232,6 +235,7 @@ export class DemandFinderAgent {
         selected_intent: promptResult.selected_intent,
         top_candidates_ranked: promptResult.top_candidates_ranked || [],
         clarifying_question: promptResult.clarifying_question,
+        selected_intent_confidence: promptResult.selected_intent_confidence,
         reason: promptResult.reason,
       });
       

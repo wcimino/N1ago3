@@ -76,6 +76,7 @@ export interface SummaryData {
   solution_center_articles_and_problems?: SolutionCenterResult[] | null;
   solution_center_selected_id?: string | null;
   solution_center_selected_reason?: string | null;
+  solution_center_selected_confidence?: number | null;
   triage?: Triage | null;
   orchestrator_status?: string | null;
   demand_finder_status?: string | null;

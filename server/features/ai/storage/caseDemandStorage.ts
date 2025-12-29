@@ -191,6 +191,7 @@ export const caseDemandStorage = {
       selected_intent: { id: string | null; label: string | null };
       top_candidates_ranked: Array<{ id: string; label: string; why: string }>;
       clarifying_question: string | null;
+      selected_intent_confidence?: number;
       reason: string;
     }
   ): Promise<void> {
@@ -221,6 +222,7 @@ export const caseDemandStorage = {
       selected_intent: { id: string | null; label: string | null };
       top_candidates_ranked: Array<{ id: string; label: string; why: string }>;
       clarifying_question: string | null;
+      selected_intent_confidence?: number;
       reason: string;
     }
   ): Promise<void> {
