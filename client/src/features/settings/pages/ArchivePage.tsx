@@ -81,8 +81,9 @@ export function ArchivePage() {
     try {
       const data = await fetchApi<ArchiveStats>("/api/maintenance/archive/stats");
       setStats(data);
-    } catch (error) {
-      console.error("Erro ao buscar estatisticas:", error);
+    } catch (error: any) {
+      console.error("Erro ao buscar estatisticas:", error?.message || error);
+      setError("Erro ao carregar estatísticas. Tente atualizar a página.");
     }
   };
 
@@ -100,17 +101,23 @@ export function ArchivePage() {
   const fetchHistory = async () => {
     try {
       const data = await fetchApi<ArchiveJob[]>("/api/maintenance/archive/history?limit=20");
-      setHistory(data);
-    } catch (error) {
-      console.error("Erro ao buscar historico:", error);
+      setHistory(data || []);
+    } catch (error: any) {
+      console.error("Erro ao buscar historico:", error?.message || error);
+      setHistory([]);
     }
   };
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([fetchStats(), fetchProgress(), fetchHistory()]);
-      setLoading(false);
+      try {
+        await Promise.allSettled([fetchStats(), fetchProgress(), fetchHistory()]);
+      } catch (e) {
+        console.error("Erro ao carregar dados:", e);
+      } finally {
+        setLoading(false);
+      }
     };
     loadData();
 
@@ -130,7 +137,7 @@ export function ArchivePage() {
             clearInterval(pollRef.current);
             pollRef.current = null;
           }
-          await Promise.all([fetchStats(), fetchHistory()]);
+          await Promise.allSettled([fetchStats(), fetchHistory()]);
         }
       }, 2000);
     } else if (!progress.isRunning && pollRef.current) {
@@ -141,11 +148,15 @@ export function ArchivePage() {
 
   const startArchive = async () => {
     setStarting(true);
+    setError(null);
     try {
-      await apiRequest("POST", "/api/maintenance/archive/start");
+      const response = await apiRequest("POST", "/api/maintenance/archive/start");
+      const data = await response.json();
+      console.log("[Archive] Start response:", data);
       await fetchProgress();
-    } catch (error) {
-      console.error("Erro ao iniciar arquivamento:", error);
+    } catch (error: any) {
+      console.error("Erro ao iniciar arquivamento:", error?.message || error);
+      setError("Erro ao iniciar arquivamento. Verifique sua conexão e tente novamente.");
     }
     setStarting(false);
   };
@@ -162,8 +173,13 @@ export function ArchivePage() {
 
   const handleRefresh = async () => {
     setLoading(true);
-    await Promise.all([fetchStats(), fetchProgress(), fetchHistory()]);
-    setLoading(false);
+    try {
+      await Promise.allSettled([fetchStats(), fetchProgress(), fetchHistory()]);
+    } catch (e) {
+      console.error("Erro ao atualizar dados:", e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchInconsistentJobs = async () => {

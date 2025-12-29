@@ -151,11 +151,17 @@ export async function completeJob(
 }
 
 export async function getJobHistory(limit: number = 50): Promise<ArchiveJob[]> {
-  return db
-    .select()
-    .from(archiveJobs)
-    .orderBy(desc(archiveJobs.createdAt))
-    .limit(limit);
+  try {
+    const result = await db
+      .select()
+      .from(archiveJobs)
+      .orderBy(desc(archiveJobs.createdAt))
+      .limit(limit);
+    return result || [];
+  } catch (error: any) {
+    console.error("[JobPersistence] Error fetching job history:", error?.message || error);
+    return [];
+  }
 }
 
 export async function invalidateExistingJobs(tableName: string, archiveDate: Date, excludeJobId?: number): Promise<number> {

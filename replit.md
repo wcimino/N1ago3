@@ -49,6 +49,7 @@ The React frontend provides a real-time dashboard and administrative interfaces,
     - Atomic upload via temporary files (.tmp) with metadata verification before finalization
     - Concurrency protection to prevent parallel archive executions
     - Recovery only promotes jobs to 'completed' when all 24 hours verified AND deleted >= archived
+    - **UI Resilience:** Archive page uses `Promise.allSettled` + `try/finally` to ensure controls remain functional even when individual APIs fail (e.g., history endpoint returns 500)
 *   **Server Bootstrap & Initialization:** Includes preflight checks for environment variables, granular scheduler control via flags, an enhanced `/ready` endpoint, and production static file verification.
 *   **Database Migrations:** Automated migration execution during build process using Drizzle ORM. Supports both Drizzle migrations (`./drizzle/`) and manual SQL migrations (`./migrations/`). Features timeout protection (60s per operation), proper Neon serverless transaction handling, and graceful error recovery.
 *   **Server Resilience:** Server starts even if database is unavailable (degraded mode). Background workers only start when database is healthy. Health endpoints (`/health`, `/ready`) include real-time database status with cached checks.

@@ -161,10 +161,14 @@ router.get("/api/maintenance/archive/progress", isAuthenticated, requireAuthoriz
 router.get("/api/maintenance/archive/history", isAuthenticated, requireAuthorizedUser, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit as string) || 50;
+    console.log("[Archive] Fetching history with limit:", limit);
     const history = await archiveService.getHistory(limit);
-    res.json(history);
+    console.log("[Archive] History fetched, count:", history?.length || 0);
+    res.json(history || []);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error("[Archive] Error fetching history:", error);
+    console.error("[Archive] Error stack:", error?.stack);
+    res.status(500).json({ error: error?.message || "Failed to fetch history" });
   }
 });
 
