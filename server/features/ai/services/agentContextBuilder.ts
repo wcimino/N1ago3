@@ -85,6 +85,7 @@ export async function buildAgentContextFromEvent(
       eventSubtype: m.eventSubtype,
       contentPayload: m.contentPayload as ContentPayload | null,
     })),
+    clientHubData: existingSummary?.clientHubData || null,
   };
 
   if (options?.includeLastMessage !== false) {
@@ -127,6 +128,7 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
   const produtoJson = JSON.stringify({ nome: produtoNome, score: produtoScore });
   const subprodutoJson = JSON.stringify({ nome: subprodutoNome, score: null });
   const tipoSolicitacaoJson = JSON.stringify({ nome: tipoSolicitacaoNome, score: tipoSolicitacaoScore });
+  const clientePerfilJson = context.clientHubData ? JSON.stringify(context.clientHubData) : null;
   
   let produtoESubprodutoNome: string | null = null;
   if (produtoNome) {
@@ -249,6 +251,7 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
     produtoJson,
     subprodutoJson,
     tipoSolicitacaoJson,
+    clientePerfilJson,
     solucaoId,
     solucaoNome,
     solucaoDescricao,

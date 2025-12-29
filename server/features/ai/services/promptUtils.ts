@@ -21,6 +21,7 @@ export interface PromptVariables {
   produtoJson?: string | null;
   subprodutoJson?: string | null;
   tipoSolicitacaoJson?: string | null;
+  clientePerfilJson?: string | null;
   artigoId?: string | null;
   artigoPergunta?: string | null;
   artigoResposta?: string | null;
@@ -61,6 +62,7 @@ export function replacePromptVariables(
   result = result.replace(/\{\{PRODUTO_JSON\}\}/g, variables.produtoJson || '{"nome": null, "score": null}');
   result = result.replace(/\{\{SUBPRODUTO_JSON\}\}/g, variables.subprodutoJson || '{"nome": null, "score": null}');
   result = result.replace(/\{\{TIPO_SOLICITACAO_JSON\}\}/g, variables.tipoSolicitacaoJson || '{"nome": null, "score": null}');
+  result = result.replace(/\{\{CLIENTE_PERFIL_JSON\}\}/g, variables.clientePerfilJson || '{}');
   result = result.replace(/\{\{DEMANDA_IDENTIFICADA\}\}/g, variables.demandaIdentificada || 'Nenhuma demanda identificada.');
   result = result.replace(/\{\{ARTIGOS_PROBLEMAS_LISTA_TOP_5\}\}/g, variables.artigosProblemasListaTop5 || 'Nenhum artigo ou problema encontrado.');
   result = result.replace(/\{\{ARTIGOS_PROBLEMAS_LISTA_TOP_10\}\}/g, variables.artigosProblemasListaTop10 || 'Nenhum artigo ou problema encontrado.');
@@ -239,6 +241,7 @@ export const AVAILABLE_VARIABLES = [
   { name: '{{PRODUTO_JSON}}', description: 'Produto com nome e score em JSON' },
   { name: '{{SUBPRODUTO_JSON}}', description: 'Subproduto com nome e score em JSON' },
   { name: '{{TIPO_SOLICITACAO_JSON}}', description: 'Tipo de solicitação com nome e score em JSON' },
+  { name: '{{CLIENTE_PERFIL_JSON}}', description: 'Perfil do cliente com CNPJ e campos do ClientHub' },
   { name: '{{ARTIGO_ID}}', description: 'ID do artigo existente (para enriquecimento)' },
   { name: '{{ARTIGO_PERGUNTA}}', description: 'Pergunta do artigo existente' },
   { name: '{{ARTIGO_RESPOSTA}}', description: 'Resposta do artigo existente' },

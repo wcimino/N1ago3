@@ -1,4 +1,5 @@
 import type { ContentPayload } from "./promptUtils.js";
+import type { ClientHubData } from "../../../../shared/schema/clientHub.js";
 
 export interface AgentContext {
   conversationId: number;
@@ -42,6 +43,7 @@ export interface AgentContext {
     eventSubtype?: string | null;
     contentPayload?: ContentPayload | null;
   };
+  clientHubData?: ClientHubData | null;
   customVariables?: Record<string, string>;
 }
 

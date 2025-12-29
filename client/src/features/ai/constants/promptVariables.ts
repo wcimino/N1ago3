@@ -42,6 +42,7 @@ export const VARIABLE_CATEGORIES: PromptVariableCategory[] = [
       { name: '{{PRODUTO_JSON}}', description: 'Produto com nome e score em JSON' },
       { name: '{{SUBPRODUTO_JSON}}', description: 'Subproduto com nome e score em JSON' },
       { name: '{{TIPO_SOLICITACAO_JSON}}', description: 'Tipo de solicitação com nome e score em JSON' },
+      { name: '{{CLIENTE_PERFIL_JSON}}', description: 'Perfil do cliente com CNPJ e campos do ClientHub' },
     ],
   },
   {
