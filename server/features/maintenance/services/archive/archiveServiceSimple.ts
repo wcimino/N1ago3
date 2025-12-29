@@ -201,6 +201,8 @@ class SimpleArchiveService {
     yesterday.setHours(0, 0, 0, 0);
 
     try {
+      await this.repairPartialJobs();
+
       for (const table of ARCHIVE_TABLES) {
         try {
           await this.archiveTable(table, yesterday);
@@ -213,6 +215,36 @@ class SimpleArchiveService {
       console.log("[SimpleArchiveService] Archive process completed");
     } finally {
       this.isRunning = false;
+    }
+  }
+
+  private async repairPartialJobs(): Promise<void> {
+    const partialJobs = await db.execute(sql`
+      SELECT id, table_name, archive_date, records_archived, records_deleted
+      FROM archive_jobs
+      WHERE status = 'partial'
+        OR (records_archived > 0 AND records_deleted = 0 AND status NOT IN ('running', 'invalidated', 'failed'))
+      ORDER BY archive_date ASC
+      LIMIT 20
+    `);
+
+    if (partialJobs.rows.length === 0) {
+      console.log("[SimpleArchiveService] No partial jobs found");
+      return;
+    }
+
+    console.log(`[SimpleArchiveService] Found ${partialJobs.rows.length} partial jobs - marking for manual review`);
+
+    for (const row of partialJobs.rows as any[]) {
+      const job = row as { id: number; table_name: string; archive_date: Date; records_archived: number };
+      console.log(`[SimpleArchiveService] Job ${job.id} (${job.table_name} ${job.archive_date}): ${job.records_archived} archived, 0 deleted - requires manual intervention`);
+      
+      await db.execute(sql`
+        UPDATE archive_jobs 
+        SET status = 'failed', 
+            error_message = ${'Arquivamento incompleto: registros exportados mas não deletados. Verifique o arquivo Parquet e delete manualmente os registros correspondentes.'}
+        WHERE id = ${job.id}
+      `);
     }
   }
 
@@ -240,16 +272,28 @@ class SimpleArchiveService {
     const dateStr = archiveDate.toISOString().split("T")[0];
 
     const existingJob = await db.execute(sql`
-      SELECT id, status FROM archive_jobs
+      SELECT id, status, records_archived, records_deleted FROM archive_jobs
       WHERE table_name = ${table.name}
         AND archive_date::date = ${archiveDate}::date
-        AND status IN ('completed', 'running')
+        AND status NOT IN ('invalidated')
+      ORDER BY created_at DESC
       LIMIT 1
     `);
 
     if (existingJob.rows.length > 0) {
-      console.log(`[SimpleArchiveService] Skipping ${table.name} ${dateStr} - already processed`);
-      return;
+      const job = existingJob.rows[0] as any;
+      if (job.status === 'completed') {
+        console.log(`[SimpleArchiveService] Skipping ${table.name} ${dateStr} - already completed`);
+        return;
+      }
+      if (job.status === 'running') {
+        console.log(`[SimpleArchiveService] Skipping ${table.name} ${dateStr} - already running`);
+        return;
+      }
+      if (job.status === 'partial' || job.status === 'failed') {
+        console.log(`[SimpleArchiveService] Skipping ${table.name} ${dateStr} - has partial/failed job (${job.id}), requires manual intervention`);
+        return;
+      }
     }
 
     const jobResult = await db.execute(sql`
