@@ -10,7 +10,8 @@ interface InfoTooltipProps {
 function InfoTooltip({ confidence, reason }: InfoTooltipProps) {
   const [isVisible, setIsVisible] = useState(false);
   
-  if (!confidence && !reason) return null;
+  // Only show tooltip if there's any AI-derived data to display
+  if (confidence === undefined && !reason) return null;
   
   return (
     <div className="relative inline-block">
@@ -92,7 +93,7 @@ export function SolutionCenterCard({ items, selectedId, selectedReason, selected
                         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-green-500 text-white">
                           <Check className="w-3 h-3" />
                         </span>
-                        <InfoTooltip confidence={selectedConfidence ?? item.confidence} reason={selectedReason || item.reason} />
+                        <InfoTooltip confidence={selectedConfidence ?? undefined} reason={selectedReason ?? undefined} />
                       </>
                     )}
                     <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
