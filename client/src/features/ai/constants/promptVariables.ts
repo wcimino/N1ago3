@@ -16,9 +16,7 @@ export const VARIABLE_CATEGORIES: PromptVariableCategory[] = [
     title: 'Dados do Sistema',
     description: 'Listas e catálogos disponíveis no sistema',
     variables: [
-      { name: '{{CATALOGO_PRODUTOS_SUBPRODUTOS}}', description: 'Lista JSON de produtos e subprodutos do catálogo' },
-      { name: '{{PRODUTO_SUBPRODUTO_ASSUNTO}}', description: 'JSON de assuntos agrupados por produto/subproduto' },
-      { name: '{{PERGUNTAS}}', description: 'Lista de perguntas para classificação de temas' },
+      { name: '{{PRODUTOS_E_SUBPRODUTOS_CATALOGO}}', description: 'Lista JSON de produtos e subprodutos do catálogo' },
     ],
   },
   {

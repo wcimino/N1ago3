@@ -3,7 +3,7 @@ export interface PromptVariables {
   ultimas20Mensagens?: string | null;
   ultimaMensagem?: string | null;
   handler?: string | null;
-  catalogoProdutosSubprodutos?: string | null;
+  produtosESubprodutosCatalogo?: string | null;
   tipoSolicitacao?: string | null;
   demandaIdentificada?: string | null;
   resultadosBusca?: string | null;
@@ -26,8 +26,6 @@ export interface PromptVariables {
   artigoVariacoes?: string | null;
   artigoExiste?: boolean;
   sugestaoResposta?: string | null;
-  produtoSubprodutoAssunto?: string | null;
-  perguntas?: string | null;
   solucaoId?: string | null;
   solucaoNome?: string | null;
   solucaoDescricao?: string | null;
@@ -57,7 +55,7 @@ export function replacePromptVariables(
   result = result.replace(/\{\{ULTIMAS_20_MENSAGENS\}\}/g, variables.ultimas20Mensagens || 'Nenhuma mensagem anterior.');
   result = result.replace(/\{\{ULTIMA_MENSAGEM\}\}/g, variables.ultimaMensagem || '');
   result = result.replace(/\{\{HANDLER\}\}/g, variables.handler || 'Não identificado');
-  result = result.replace(/\{\{CATALOGO_PRODUTOS_SUBPRODUTOS\}\}/g, variables.catalogoProdutosSubprodutos || '[]');
+  result = result.replace(/\{\{PRODUTOS_E_SUBPRODUTOS_CATALOGO\}\}/g, variables.produtosESubprodutosCatalogo || '[]');
   result = result.replace(/\{\{TIPO_SOLICITACAO\}\}/g, variables.tipoSolicitacao || 'Não identificado');
   result = result.replace(/\{\{DEMANDA_IDENTIFICADA\}\}/g, variables.demandaIdentificada || 'Nenhuma demanda identificada.');
   result = result.replace(/\{\{RESULTADOS_BUSCA\}\}/g, variables.resultadosBusca || 'Nenhum resultado de busca disponível.');
@@ -66,8 +64,6 @@ export function replacePromptVariables(
   result = result.replace(/\{\{TIPO_DE_DEMANDA_MATCH\}\}/g, variables.tipoDeDemandaMatch || 'Nenhum tipo de demanda identificado.');
   result = result.replace(/\{\{ARTIGO_OU_PROBLEMA_PRINCIPAL_MATCH\}\}/g, variables.artigoOuProblemaPrincipalMatch || 'Nenhum artigo ou problema principal identificado.');
   result = result.replace(/\{\{SUGESTAO_RESPOSTA\}\}/g, variables.sugestaoResposta || 'Nenhuma sugestão de resposta disponível.');
-  result = result.replace(/\{\{PRODUTO_SUBPRODUTO_ASSUNTO\}\}/g, variables.produtoSubprodutoAssunto || '[]');
-  result = result.replace(/\{\{PERGUNTAS\}\}/g, variables.perguntas || 'Nenhuma pergunta disponível.');
   result = result.replace(/\{\{SOLUCAO_ID\}\}/g, variables.solucaoId || '');
   result = result.replace(/\{\{SOLUCAO_NOME\}\}/g, variables.solucaoNome || 'Não identificada');
   result = result.replace(/\{\{SOLUCAO_DESCRICAO\}\}/g, variables.solucaoDescricao || 'Sem descrição');
@@ -249,7 +245,7 @@ export const AVAILABLE_VARIABLES = [
   { name: '{{ULTIMAS_20_MENSAGENS}}', description: 'Histórico das últimas 20 mensagens' },
   { name: '{{ULTIMA_MENSAGEM}}', description: 'A mensagem mais recente' },
   { name: '{{HANDLER}}', description: 'Quem está atendendo (bot/humano)' },
-  { name: '{{CATALOGO_PRODUTOS_SUBPRODUTOS}}', description: 'Lista JSON de produtos e subprodutos do catálogo' },
+  { name: '{{PRODUTOS_E_SUBPRODUTOS_CATALOGO}}', description: 'Lista JSON de produtos e subprodutos do catálogo' },
   { name: '{{TIPO_SOLICITACAO}}', description: 'Tipo de solicitação do cliente (Quer suporte/contratar/informações)' },
   { name: '{{DEMANDA_IDENTIFICADA}}', description: 'Demanda identificada pelo DemandFinder (para SolutionProvider)' },
   { name: '{{RESULTADOS_BUSCA}}', description: 'Resultados da busca na base de conhecimento (para SolutionProvider)' },
@@ -276,8 +272,6 @@ export const AVAILABLE_VARIABLES = [
   { name: '{{#if_intencao_sinonimos}}...{{/if_intencao_sinonimos}}', description: 'Bloco condicional: exibe se há sinônimos de intenção' },
   { name: '{{#if_assunto_sinonimos}}...{{/if_assunto_sinonimos}}', description: 'Bloco condicional: exibe se há sinônimos de assunto' },
   { name: '{{#if_subproduto_nome}}...{{/if_subproduto_nome}}', description: 'Bloco condicional: exibe se há nome de subproduto' },
-  { name: '{{PRODUTO_SUBPRODUTO_ASSUNTO}}', description: 'JSON de assuntos agrupados por produto/subproduto' },
-  { name: '{{PERGUNTAS}}', description: 'Lista de perguntas para classificação de temas' },
   { name: '{{SOLUCAO_ID}}', description: 'ID da solução/demanda identificada pelo DemandFinder' },
   { name: '{{SOLUCAO_NOME}}', description: 'Nome da solução/demanda identificada pelo DemandFinder' },
   { name: '{{SOLUCAO_DESCRICAO}}', description: 'Descrição/razão da seleção da solução pelo DemandFinder' },

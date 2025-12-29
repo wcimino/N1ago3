@@ -236,7 +236,7 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
     ultimas20Mensagens: messagesContext,
     ultimaMensagem: lastMessageContext,
     handler: context.handler,
-    catalogoProdutosSubprodutos: catalogoJson,
+    produtosESubprodutosCatalogo: catalogoJson,
     tipoSolicitacao: context.customerRequestType,
     demandaIdentificada: context.demand,
     resultadosBusca: searchResultsFormatted,
