@@ -235,6 +235,7 @@ export function ConversationSummary({ summary, conversationId }: ConversationSum
               <SolutionCenterCard 
                 items={summary.solution_center_articles_and_problems} 
                 selectedId={summary.solution_center_selected_id}
+                selectedReason={summary.solution_center_selected_reason}
               />
               
               {conversationId && <SolutionCard conversationId={conversationId} />}

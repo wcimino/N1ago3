@@ -50,9 +50,10 @@ function InfoTooltip({ confidence, reason }: InfoTooltipProps) {
 export interface SolutionCenterCardProps {
   items?: SolutionCenterResult[] | null;
   selectedId?: string | null;
+  selectedReason?: string | null;
 }
 
-export function SolutionCenterCard({ items, selectedId }: SolutionCenterCardProps) {
+export function SolutionCenterCard({ items, selectedId, selectedReason }: SolutionCenterCardProps) {
   const itemsList = [...(items || [])].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   const hasItems = itemsList.length > 0;
   const articleCount = itemsList.filter(i => i.type === "article").length;
@@ -90,7 +91,7 @@ export function SolutionCenterCard({ items, selectedId }: SolutionCenterCardProp
                         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-green-500 text-white">
                           <Check className="w-3 h-3" />
                         </span>
-                        <InfoTooltip confidence={item.confidence} reason={item.reason} />
+                        <InfoTooltip confidence={item.confidence} reason={selectedReason || item.reason} />
                       </>
                     )}
                     <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
