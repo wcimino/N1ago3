@@ -1,18 +1,14 @@
 export interface PromptVariables {
   resumo?: string | null;
-  productsAndSubproducts?: string | null;
-  productsAndSubproductsId?: string | null;
   ultimas20Mensagens?: string | null;
   ultimaMensagem?: string | null;
   handler?: string | null;
-  resumoAtual?: string | null;
   catalogoProdutosSubprodutos?: string | null;
   tipoSolicitacao?: string | null;
   demandaIdentificada?: string | null;
   resultadosBusca?: string | null;
   artigosProblemasListaTop5?: string | null;
   artigosProblemasListaTop10?: string | null;
-  produtoESubprodutoMatch?: string | null;
   tipoDeDemandaMatch?: string | null;
   artigoOuProblemaPrincipalMatch?: string | null;
   intencaoId?: string | null;
@@ -22,6 +18,7 @@ export interface PromptVariables {
   assuntoSinonimos?: string | null;
   produtoNome?: string | null;
   subprodutoNome?: string | null;
+  produtoESubprodutoNome?: string | null;
   artigoId?: string | null;
   artigoPergunta?: string | null;
   artigoResposta?: string | null;
@@ -57,9 +54,6 @@ export function replacePromptVariables(
   let result = prompt;
 
   result = result.replace(/\{\{RESUMO\}\}/g, extractClientRequest(variables.resumo) || 'Nenhum resumo disponível.');
-  result = result.replace(/\{\{RESUMO_ATUAL\}\}/g, extractClientRequest(variables.resumoAtual) || extractClientRequest(variables.resumo) || 'Nenhum resumo anterior disponível.');
-  result = result.replace(/\{\{PRODUCTS_AND_SUBPRODUCTS\}\}/g, variables.productsAndSubproducts || 'Produto/Subproduto não disponível.');
-  result = result.replace(/\{\{PRODUCTS_AND_SUBPRODUCTS_ID\}\}/g, variables.productsAndSubproductsId || 'IDs não disponíveis');
   result = result.replace(/\{\{ULTIMAS_20_MENSAGENS\}\}/g, variables.ultimas20Mensagens || 'Nenhuma mensagem anterior.');
   result = result.replace(/\{\{ULTIMA_MENSAGEM\}\}/g, variables.ultimaMensagem || '');
   result = result.replace(/\{\{HANDLER\}\}/g, variables.handler || 'Não identificado');
@@ -69,7 +63,6 @@ export function replacePromptVariables(
   result = result.replace(/\{\{RESULTADOS_BUSCA\}\}/g, variables.resultadosBusca || 'Nenhum resultado de busca disponível.');
   result = result.replace(/\{\{ARTIGOS_PROBLEMAS_LISTA_TOP_5\}\}/g, variables.artigosProblemasListaTop5 || 'Nenhum artigo ou problema encontrado.');
   result = result.replace(/\{\{ARTIGOS_PROBLEMAS_LISTA_TOP_10\}\}/g, variables.artigosProblemasListaTop10 || 'Nenhum artigo ou problema encontrado.');
-  result = result.replace(/\{\{PRODUTO_E_SUBPRODUTO_MATCH\}\}/g, variables.produtoESubprodutoMatch || 'Nenhum produto/subproduto identificado.');
   result = result.replace(/\{\{TIPO_DE_DEMANDA_MATCH\}\}/g, variables.tipoDeDemandaMatch || 'Nenhum tipo de demanda identificado.');
   result = result.replace(/\{\{ARTIGO_OU_PROBLEMA_PRINCIPAL_MATCH\}\}/g, variables.artigoOuProblemaPrincipalMatch || 'Nenhum artigo ou problema principal identificado.');
   result = result.replace(/\{\{SUGESTAO_RESPOSTA\}\}/g, variables.sugestaoResposta || 'Nenhuma sugestão de resposta disponível.');
@@ -87,6 +80,7 @@ export function replacePromptVariables(
   result = result.replace(/\{\{ASSUNTO_SINONIMOS\}\}/gi, variables.assuntoSinonimos || '');
   result = result.replace(/\{\{PRODUTO_NOME\}\}/gi, variables.produtoNome || '');
   result = result.replace(/\{\{SUBPRODUTO_NOME\}\}/gi, variables.subprodutoNome || '');
+  result = result.replace(/\{\{PRODUTO_E_SUBPRODUTO_NOME\}\}/gi, variables.produtoESubprodutoNome || 'Produto/Subproduto não disponível');
   result = result.replace(/\{\{ARTIGO_ID\}\}/gi, variables.artigoId || '');
   result = result.replace(/\{\{ARTIGO_PERGUNTA\}\}/gi, variables.artigoPergunta || 'Sem pergunta');
   result = result.replace(/\{\{ARTIGO_RESPOSTA\}\}/gi, variables.artigoResposta || 'Sem resposta');
@@ -252,9 +246,6 @@ export function buildFullPrompt(
 
 export const AVAILABLE_VARIABLES = [
   { name: '{{RESUMO}}', description: 'Resumo da conversa atual' },
-  { name: '{{RESUMO_ATUAL}}', description: 'Resumo anterior da conversa (para atualização)' },
-  { name: '{{PRODUCTS_AND_SUBPRODUCTS}}', description: 'Produto e Subproduto classificados da conversa' },
-  { name: '{{PRODUCTS_AND_SUBPRODUCTS_ID}}', description: 'IDs do Produto e Subproduto classificados da conversa' },
   { name: '{{ULTIMAS_20_MENSAGENS}}', description: 'Histórico das últimas 20 mensagens' },
   { name: '{{ULTIMA_MENSAGEM}}', description: 'A mensagem mais recente' },
   { name: '{{HANDLER}}', description: 'Quem está atendendo (bot/humano)' },
@@ -264,7 +255,6 @@ export const AVAILABLE_VARIABLES = [
   { name: '{{RESULTADOS_BUSCA}}', description: 'Resultados da busca na base de conhecimento (para SolutionProvider)' },
   { name: '{{ARTIGOS_PROBLEMAS_LISTA_TOP_5}}', description: 'Top 5 artigos e problemas da base de conhecimento (busca automática)' },
   { name: '{{ARTIGOS_PROBLEMAS_LISTA_TOP_10}}', description: 'Top 10 artigos e problemas da base de conhecimento (busca automática)' },
-  { name: '{{PRODUTO_E_SUBPRODUTO_MATCH}}', description: 'Produto e Subproduto identificados com match na base' },
   { name: '{{TIPO_DE_DEMANDA_MATCH}}', description: 'Tipo de demanda identificado com match' },
   { name: '{{ARTIGO_OU_PROBLEMA_PRINCIPAL_MATCH}}', description: 'Artigo ou problema principal identificado com melhor match' },
   { name: '{{SUGESTAO_RESPOSTA}}', description: 'Sugestão de resposta gerada pelo SolutionProvider (para ajuste de tom)' },
@@ -273,8 +263,9 @@ export const AVAILABLE_VARIABLES = [
   { name: '{{INTENCAO_SINONIMOS}}', description: 'Sinônimos da intenção separados por vírgula' },
   { name: '{{ASSUNTO_NOME}}', description: 'Nome do assunto (para enriquecimento de artigos)' },
   { name: '{{ASSUNTO_SINONIMOS}}', description: 'Sinônimos do assunto separados por vírgula' },
-  { name: '{{PRODUTO_NOME}}', description: 'Nome do produto (para enriquecimento de artigos)' },
-  { name: '{{SUBPRODUTO_NOME}}', description: 'Nome do subproduto (para enriquecimento de artigos)' },
+  { name: '{{PRODUTO_NOME}}', description: 'Nome do produto classificado' },
+  { name: '{{SUBPRODUTO_NOME}}', description: 'Nome do subproduto classificado' },
+  { name: '{{PRODUTO_E_SUBPRODUTO_NOME}}', description: 'Produto e Subproduto classificados (formato: Produto / Subproduto)' },
   { name: '{{ARTIGO_ID}}', description: 'ID do artigo existente (para enriquecimento)' },
   { name: '{{ARTIGO_PERGUNTA}}', description: 'Pergunta do artigo existente' },
   { name: '{{ARTIGO_RESPOSTA}}', description: 'Resposta do artigo existente' },

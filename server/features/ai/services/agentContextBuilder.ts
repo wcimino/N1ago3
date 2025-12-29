@@ -3,8 +3,7 @@ import {
   replacePromptVariables, 
   formatMessagesContext, 
   formatLastMessage, 
-  formatClassification, 
-  formatProductsAndSubproducts,
+  formatClassification,
   type PromptVariables,
   type ContentPayload 
 } from "./promptUtils.js";
@@ -119,22 +118,14 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
       })
     : 'Classificação não disponível';
     
-  const productsContext = context.classification
-    ? formatProductsAndSubproducts({
-        product: context.classification.product ?? null,
-        subproduct: context.classification.subproduct ?? null,
-      })
-    : 'Produto/Subproduto não disponível';
-
-  let productsIdContext = 'IDs não disponíveis';
-  if (context.classification?.product) {
-    const resolved = await resolveProductByName(
-      context.classification.product,
-      context.classification.subproduct
-    );
-    if (resolved) {
-      productsIdContext = `ID: ${resolved.id} (${resolved.fullName})`;
-    }
+  const produtoNome = context.classification?.product ?? null;
+  const subprodutoNome = context.classification?.subproduct ?? null;
+  
+  let produtoESubprodutoNome: string | null = null;
+  if (produtoNome) {
+    produtoESubprodutoNome = subprodutoNome 
+      ? `${produtoNome} / ${subprodutoNome}`
+      : produtoNome;
   }
 
   let catalogoJson = '[]';
@@ -175,20 +166,6 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
       matched_terms: r.matchedTerms || []
     }));
     artigosProblemasListaTop10 = JSON.stringify(formattedResults10, null, 2);
-  }
-
-  let produtoESubprodutoMatch: string | null = null;
-  if (context.classification?.product) {
-    const resolved = await resolveProductByName(
-      context.classification.product,
-      context.classification.subproduct
-    );
-    if (resolved) {
-      const productScore = context.classification.productConfidence;
-      produtoESubprodutoMatch = productScore != null 
-        ? `${resolved.fullName} (score: ${productScore}%)`
-        : resolved.fullName;
-    }
   }
 
   let tipoDeDemandaMatch: string | null = null;
@@ -256,9 +233,6 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
 
   return {
     resumo: context.summary,
-    resumoAtual: context.previousSummary ?? context.summary,
-    productsAndSubproducts: productsContext,
-    productsAndSubproductsId: productsIdContext,
     ultimas20Mensagens: messagesContext,
     ultimaMensagem: lastMessageContext,
     handler: context.handler,
@@ -268,9 +242,11 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
     resultadosBusca: searchResultsFormatted,
     artigosProblemasListaTop5,
     artigosProblemasListaTop10,
-    produtoESubprodutoMatch,
     tipoDeDemandaMatch,
     artigoOuProblemaPrincipalMatch,
+    produtoNome,
+    subprodutoNome,
+    produtoESubprodutoNome,
     solucaoId,
     solucaoNome,
     solucaoDescricao,
