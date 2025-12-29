@@ -1,23 +1,8 @@
 import { Router, type Request, type Response } from "express";
 import { storage } from "../../../storage.js";
 import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
-import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
-import { caseDemandStorage } from "../../ai/storage/caseDemandStorage.js";
 import { caseSolutionStorage } from "../../ai/storage/caseSolutionStorage.js";
 import type { Triage } from "../../../../shared/types/index.js";
-
-async function getProductNames(productId: number | null | undefined): Promise<{ product: string | null; subproduct: string | null }> {
-  if (!productId) return { product: null, subproduct: null };
-  try {
-    const productInfo = await productCatalogStorage.getById(productId);
-    if (productInfo) {
-      return { product: productInfo.produto, subproduct: productInfo.subproduto };
-    }
-  } catch (error) {
-    console.error(`[Conversations] Error fetching product ${productId}:`, error);
-  }
-  return { product: null, subproduct: null };
-}
 
 function extractTriageFromSummary(summaryJson: string | null): Triage | null {
   if (!summaryJson) return null;
@@ -31,6 +16,39 @@ function extractTriageFromSummary(summaryJson: string | null): Triage | null {
     return null;
   } catch {
     return null;
+  }
+}
+
+interface DemandFinderData {
+  selectedConfidence: number | null;
+  selectedReason: string | null;
+  topCandidatesRanked: Array<{ id: string; why?: string; label?: string }>;
+}
+
+function extractDemandFinderData(demandFinderAiResponse: unknown): DemandFinderData {
+  const defaultResult: DemandFinderData = {
+    selectedConfidence: null,
+    selectedReason: null,
+    topCandidatesRanked: [],
+  };
+
+  if (!demandFinderAiResponse) return defaultResult;
+
+  try {
+    let parsed: any;
+    if (typeof demandFinderAiResponse === 'string') {
+      parsed = JSON.parse(demandFinderAiResponse);
+    } else {
+      parsed = demandFinderAiResponse;
+    }
+
+    return {
+      selectedConfidence: parsed?.selected_intent_confidence ?? null,
+      selectedReason: parsed?.reason ?? null,
+      topCandidatesRanked: parsed?.top_candidates_ranked || [],
+    };
+  } catch {
+    return defaultResult;
   }
 }
 
@@ -119,6 +137,7 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
   const conversationsWithSummary = result.map((row: any) => {
     const hasSummary = row.summary_id != null;
     const suggestedResponses = suggestedResponsesByConversation.get(row.conv_id) || [];
+    const demandFinderData = extractDemandFinderData(row.demand_finder_ai_response);
     
     return {
       conversation: {
@@ -157,6 +176,8 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
         articles_and_objective_problems: row.articles_and_objective_problems || null,
         solution_center_articles_and_problems: row.solution_center_articles_and_problems || null,
         solution_center_selected_id: row.solution_center_article_and_problems_id_selected || null,
+        solution_center_selected_confidence: row.solution_center_article_and_problems_id_selected ? demandFinderData.selectedConfidence : null,
+        solution_center_selected_reason: row.solution_center_article_and_problems_id_selected ? demandFinderData.selectedReason : null,
         triage: extractTriageFromSummary(row.summary_text),
         orchestrator_status: row.orchestrator_status || null,
         demand_finder_status: row.demand_finder_status || null,
@@ -178,101 +199,6 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
     user_id: req.params.userId,
     user_profile: user?.profile || null,
     conversations: conversationsWithSummary,
-  });
-});
-
-router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  const id = parseInt(req.params.id);
-  
-  if (isNaN(id)) {
-    return res.status(400).json({ error: "Invalid conversation ID" });
-  }
-
-  const [summary, caseDemandData] = await Promise.all([
-    storage.getConversationSummary(id),
-    caseDemandStorage.getLatestByConversationId(id),
-  ]);
-
-  if (!summary) {
-    return res.json({ 
-      conversation_id: id,
-      has_summary: false,
-      summary: null,
-    });
-  }
-
-  const productNames = await getProductNames(summary.productId);
-
-  const solutionCenterResults = caseDemandData?.solutionCenterArticlesAndProblems || [];
-  
-  // Parse demandFinderAiResponse if it's a string (JSON field may come as string)
-  let aiResponse: {
-    top_candidates_ranked?: Array<{ id: string; label: string; why: string }>;
-    selected_intent_confidence?: number;
-    reason?: string;
-  } | null = null;
-  
-  if (caseDemandData?.demandFinderAiResponse) {
-    if (typeof caseDemandData.demandFinderAiResponse === 'string') {
-      try {
-        aiResponse = JSON.parse(caseDemandData.demandFinderAiResponse);
-      } catch (e) {
-        console.error('[Summary API] Failed to parse demandFinderAiResponse:', e);
-      }
-    } else {
-      aiResponse = caseDemandData.demandFinderAiResponse as unknown as typeof aiResponse;
-    }
-  }
-  
-  const topCandidates = aiResponse?.top_candidates_ranked || [];
-  const selectedReason = aiResponse?.reason || null;
-  const selectedConfidence = aiResponse?.selected_intent_confidence ?? null;
-  
-  // Debug log
-  console.log(`[Summary API] conversation=${id}, hasAiResponse=${!!aiResponse}, confidence=${selectedConfidence}, reason=${selectedReason?.substring(0, 50)}`);
-  
-  
-  const enrichedSolutionCenterResults = solutionCenterResults.map((item: { type: string; id: string; name: string; score: number }) => {
-    const candidate = topCandidates.find((c: { id: string }) => c.id === item.id);
-    return {
-      ...item,
-      confidence: item.score !== undefined && item.score !== null ? Math.round(item.score * 100) : undefined,
-      reason: candidate?.why || undefined,
-    };
-  });
-
-  res.json({
-    conversation_id: id,
-    has_summary: true,
-    summary: summary.summary,
-    last_event_id: summary.lastEventId,
-    generated_at: summary.generatedAt?.toISOString(),
-    updated_at: summary.updatedAt?.toISOString(),
-    product_id: summary.productId,
-    product: productNames.product,
-    subproduct: productNames.subproduct,
-    product_confidence: summary.productConfidence,
-    product_confidence_reason: summary.productConfidenceReason,
-    objective_problems: summary.objectiveProblems || null,
-    articles_and_objective_problems: caseDemandData?.articlesAndObjectiveProblems || null,
-    solution_center_articles_and_problems: enrichedSolutionCenterResults.length > 0 ? enrichedSolutionCenterResults : null,
-    solution_center_selected_id: caseDemandData?.solutionCenterArticleAndProblemsIdSelected || null,
-    solution_center_selected_reason: caseDemandData?.solutionCenterArticleAndProblemsIdSelected ? selectedReason : null,
-    solution_center_selected_confidence: caseDemandData?.solutionCenterArticleAndProblemsIdSelected ? selectedConfidence : null,
-    customer_request_type: summary.customerRequestType,
-    customer_request_type_confidence: summary.customerRequestTypeConfidence,
-    customer_request_type_reason: summary.customerRequestTypeReason,
-    client_request: summary.clientRequest,
-    client_request_versions: summary.clientRequestVersions || null,
-    agent_actions: summary.agentActions,
-    current_status: summary.currentStatus,
-    important_info: summary.importantInfo,
-    customer_emotion_level: summary.customerEmotionLevel,
-    orchestrator_status: summary.orchestratorStatus || null,
-    demand_finder_status: caseDemandData?.status || null,
-    demand_finder_interaction_count: caseDemandData?.interactionCount || 0,
-    conversation_orchestrator_log: summary.conversationOrchestratorLog || null,
-    client_hub_data: summary.clientHubData || null,
   });
 });
 

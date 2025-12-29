@@ -198,10 +198,11 @@ export async function getUserConversationsWithMessagesOptimized(userId: string) 
         interaction_count,
         articles_and_objective_problems,
         solution_center_articles_and_problems,
-        solution_center_article_and_problems_id_selected
+        solution_center_article_and_problems_id_selected,
+        demand_finder_ai_response
       FROM case_demand
       WHERE conversation_id IN (SELECT id FROM user_conversations)
-      ORDER BY conversation_id, id
+      ORDER BY conversation_id, id DESC
     )
     SELECT 
       c.id as conv_id,
@@ -246,7 +247,8 @@ export async function getUserConversationsWithMessagesOptimized(userId: string) 
       fcd.interaction_count as demand_finder_interaction_count,
       fcd.articles_and_objective_problems,
       fcd.solution_center_articles_and_problems,
-      fcd.solution_center_article_and_problems_id_selected
+      fcd.solution_center_article_and_problems_id_selected,
+      fcd.demand_finder_ai_response
     FROM conversations c
     LEFT JOIN conversation_messages cm ON cm.conversation_id = c.id
     LEFT JOIN conversations_summary cs ON cs.conversation_id = c.id
