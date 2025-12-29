@@ -204,14 +204,33 @@ router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedU
   const productNames = await getProductNames(summary.productId);
 
   const solutionCenterResults = caseDemandData?.solutionCenterArticlesAndProblems || [];
-  const aiResponse = caseDemandData?.demandFinderAiResponse as {
+  
+  // Parse demandFinderAiResponse if it's a string (JSON field may come as string)
+  let aiResponse: {
     top_candidates_ranked?: Array<{ id: string; label: string; why: string }>;
     selected_intent_confidence?: number;
     reason?: string;
-  } | null;
+  } | null = null;
+  
+  if (caseDemandData?.demandFinderAiResponse) {
+    if (typeof caseDemandData.demandFinderAiResponse === 'string') {
+      try {
+        aiResponse = JSON.parse(caseDemandData.demandFinderAiResponse);
+      } catch (e) {
+        console.error('[Summary API] Failed to parse demandFinderAiResponse:', e);
+      }
+    } else {
+      aiResponse = caseDemandData.demandFinderAiResponse as unknown as typeof aiResponse;
+    }
+  }
+  
   const topCandidates = aiResponse?.top_candidates_ranked || [];
   const selectedReason = aiResponse?.reason || null;
-  const selectedConfidence = aiResponse?.selected_intent_confidence || null;
+  const selectedConfidence = aiResponse?.selected_intent_confidence ?? null;
+  
+  // Debug log
+  console.log(`[Summary API] conversation=${id}, hasAiResponse=${!!aiResponse}, confidence=${selectedConfidence}, reason=${selectedReason?.substring(0, 50)}`);
+  
   
   const enrichedSolutionCenterResults = solutionCenterResults.map((item: { type: string; id: string; name: string; score: number }) => {
     const candidate = topCandidates.find((c: { id: string }) => c.id === item.id);
