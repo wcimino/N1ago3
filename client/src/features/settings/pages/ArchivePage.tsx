@@ -217,7 +217,16 @@ export function ArchivePage() {
 
   return (
     <div className="space-y-6">
-      <ConfirmModal {...confirmation.modalProps} />
+      <ConfirmModal
+        isOpen={confirmation.isOpen}
+        onClose={confirmation.close}
+        onConfirm={confirmation.handleConfirm}
+        title={confirmation.title}
+        message={confirmation.message}
+        confirmLabel={confirmation.confirmLabel}
+        cancelLabel={confirmation.cancelLabel}
+        variant={confirmation.variant}
+      />
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
