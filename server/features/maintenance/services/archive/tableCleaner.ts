@@ -139,6 +139,62 @@ export async function deleteByTimeRange(
   return deletedCount;
 }
 
+export async function deleteArchivedRecordsByDay(
+  tableName: string,
+  minId: number,
+  maxId: number,
+  expectedCount: number,
+  dateColumn: string,
+  archiveDate: Date
+): Promise<number> {
+  const startOfDay = new Date(archiveDate);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(archiveDate);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  const remainingCountResult = await db.execute(sql`
+    SELECT COUNT(*) as count
+    FROM ${sql.identifier(tableName)}
+    WHERE ${sql.identifier(dateColumn)} >= ${startOfDay}
+      AND ${sql.identifier(dateColumn)} <= ${endOfDay}
+      AND id >= ${minId}
+      AND id <= ${maxId}
+  `);
+  const remainingCount = Number((remainingCountResult.rows[0] as any).count);
+
+  if (remainingCount !== expectedCount) {
+    console.warn(`[TableCleaner] Warning: Expected ${expectedCount} records to delete but found ${remainingCount}`);
+  }
+
+  let deletedCount = 0;
+  let deleteLastId = minId - 1;
+
+  while (deletedCount < expectedCount) {
+    const deleteResult = await db.execute(sql`
+      DELETE FROM ${sql.identifier(tableName)}
+      WHERE id IN (
+        SELECT id FROM ${sql.identifier(tableName)}
+        WHERE ${sql.identifier(dateColumn)} >= ${startOfDay}
+          AND ${sql.identifier(dateColumn)} <= ${endOfDay}
+          AND id > ${deleteLastId}
+          AND id <= ${maxId}
+        ORDER BY id ASC
+        LIMIT ${BATCH_SIZE}
+      )
+      RETURNING id
+    `);
+
+    const deletedRows = deleteResult.rows as any[];
+    if (deletedRows.length === 0) break;
+
+    deletedCount += deletedRows.length;
+    deleteLastId = deletedRows[deletedRows.length - 1].id;
+  }
+
+  console.log(`[TableCleaner] Deleted ${deletedCount} records from ${tableName} for day`);
+  return deletedCount;
+}
+
 export async function runVacuum(tableName: string): Promise<void> {
   try {
     console.log(`[TableCleaner] Running VACUUM on ${tableName}...`);

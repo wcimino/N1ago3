@@ -1,0 +1,2 @@
+ALTER TABLE archive_jobs ADD COLUMN IF NOT EXISTS progress JSONB;
+ALTER TABLE archive_jobs ADD COLUMN IF NOT EXISTS hourly_metadata JSONB;

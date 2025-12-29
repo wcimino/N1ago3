@@ -103,6 +103,193 @@ export interface ExportResult {
   maxId: number;
 }
 
+export interface DayExportResult {
+  archived: number;
+  filePath: string;
+  fileSize: number;
+  minId: number;
+  maxId: number;
+}
+
+export async function exportDayToParquet(
+  tableName: string,
+  archiveDate: Date,
+  dateColumn: string
+): Promise<DayExportResult | null> {
+  const startOfDay = new Date(archiveDate);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(archiveDate);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  const countResult = await db.execute(sql`
+    SELECT COUNT(*) as count
+    FROM ${sql.identifier(tableName)}
+    WHERE ${sql.identifier(dateColumn)} >= ${startOfDay}
+      AND ${sql.identifier(dateColumn)} <= ${endOfDay}
+  `);
+  const totalRecords = Number((countResult.rows[0] as any).count);
+
+  if (totalRecords === 0) {
+    console.log(`[ParquetExporter] No records to export for ${tableName} on ${archiveDate.toISOString().split("T")[0]}`);
+    return null;
+  }
+
+  const schema = getParquetSchema(tableName);
+  const dateStr = archiveDate.toISOString().split("T")[0];
+  const envPrefix = getEnvironmentPrefix();
+  const storageFileName = `archives/${envPrefix}/${tableName}/${dateStr}/day.parquet`;
+
+  const privateDir = process.env.PRIVATE_OBJECT_DIR;
+  if (!privateDir) {
+    throw new Error("PRIVATE_OBJECT_DIR not configured");
+  }
+
+  const fullPath = `${privateDir}/${storageFileName}`;
+  const pathParts = fullPath.startsWith("/") ? fullPath.slice(1).split("/") : fullPath.split("/");
+  const bucketName = pathParts[0];
+  const objectName = pathParts.slice(1).join("/");
+  const bucket = objectStorageClient.bucket(bucketName);
+  const file = bucket.file(objectName);
+
+  const [existingFile] = await file.exists();
+  if (existingFile) {
+    const [metadata] = await file.getMetadata();
+    const existingRecordCount = Number(metadata.metadata?.recordCount || 0);
+    const archivedMinId = Number(metadata.metadata?.minId || 0);
+    const archivedMaxId = Number(metadata.metadata?.maxId || 0);
+
+    if (existingRecordCount > 0 && archivedMinId > 0 && archivedMaxId > 0) {
+      console.log(`[ParquetExporter] File already exists: ${storageFileName}`);
+      return {
+        archived: existingRecordCount,
+        filePath: storageFileName,
+        fileSize: Number(metadata.size || 0),
+        minId: archivedMinId,
+        maxId: archivedMaxId,
+      };
+    }
+    console.log(`[ParquetExporter] File exists but has no valid metadata: ${storageFileName}, re-exporting`);
+  }
+
+  const tempDir = os.tmpdir();
+  const tempFilePath = path.join(tempDir, `archive_${tableName}_${dateStr}_day_${Date.now()}.parquet`);
+  const writer = await parquet.ParquetWriter.openFile(schema, tempFilePath);
+
+  let lastId = 0;
+  let recordsWritten = 0;
+  let minId = Number.MAX_SAFE_INTEGER;
+  let maxId = 0;
+
+  try {
+    while (true) {
+      const batchResult = await db.execute(sql`
+        SELECT *
+        FROM ${sql.identifier(tableName)}
+        WHERE ${sql.identifier(dateColumn)} >= ${startOfDay}
+          AND ${sql.identifier(dateColumn)} <= ${endOfDay}
+          AND id > ${lastId}
+        ORDER BY id ASC
+        LIMIT ${BATCH_SIZE}
+      `);
+
+      const rows = batchResult.rows as any[];
+      if (rows.length === 0) break;
+
+      for (const record of rows) {
+        const row: any = {};
+        for (const field of Object.keys((schema as any).schema)) {
+          let value = record[field];
+          if (value === undefined || value === null) {
+            row[field] = null;
+          } else if (typeof value === "object" && !(value instanceof Date)) {
+            row[field] = JSON.stringify(value);
+          } else if (value instanceof Date) {
+            row[field] = value.toISOString();
+          } else {
+            row[field] = value;
+          }
+        }
+        await writer.appendRow(row);
+        recordsWritten++;
+
+        if (record.id < minId) minId = record.id;
+        if (record.id > maxId) maxId = record.id;
+      }
+
+      lastId = rows[rows.length - 1].id;
+    }
+
+    await writer.close();
+
+    if (recordsWritten === 0) {
+      return null;
+    }
+
+    const tmpObjectName = `${objectName}.tmp`;
+    const tmpFile = bucket.file(tmpObjectName);
+
+    await withRetry(async () => {
+      await bucket.upload(tempFilePath, {
+        destination: tmpObjectName,
+        contentType: "application/octet-stream",
+        metadata: {
+          metadata: {
+            tableName,
+            archiveDate: dateStr,
+            recordCount: recordsWritten.toString(),
+            minId: minId.toString(),
+            maxId: maxId.toString(),
+          },
+        },
+      });
+    }, MAX_UPLOAD_RETRIES, `Upload ${storageFileName}.tmp`);
+
+    const [tmpExists] = await tmpFile.exists();
+    if (!tmpExists) {
+      throw new Error("Upload verification failed - temp file not found in storage");
+    }
+
+    const [tmpMetadata] = await tmpFile.getMetadata();
+    const uploadedRecordCount = Number(tmpMetadata.metadata?.recordCount || 0);
+
+    if (uploadedRecordCount !== recordsWritten) {
+      await tmpFile.delete().catch(() => {});
+      throw new Error(`Record count mismatch: wrote ${recordsWritten} but metadata shows ${uploadedRecordCount}`);
+    }
+
+    await withRetry(async () => {
+      await tmpFile.copy(file);
+      await tmpFile.delete();
+    }, MAX_UPLOAD_RETRIES, `Rename ${storageFileName}.tmp to final`);
+
+    const [exists] = await file.exists();
+    if (!exists) {
+      throw new Error("Rename verification failed - final file not found in storage");
+    }
+
+    const [metadata] = await file.getMetadata();
+    const fileSize = Number(metadata.size || 0);
+
+    console.log(`[ParquetExporter] Exported ${storageFileName}: ${recordsWritten} records`);
+
+    return {
+      archived: recordsWritten,
+      filePath: storageFileName,
+      fileSize,
+      minId,
+      maxId,
+    };
+  } finally {
+    try {
+      if (fs.existsSync(tempFilePath)) {
+        fs.unlinkSync(tempFilePath);
+      }
+    } catch (e) {
+      console.error("[ParquetExporter] Failed to delete temp file:", e);
+    }
+  }
+}
+
 export type ExportOutcome =
   | { status: "empty" }
   | { status: "existing"; archived: number; filePath: string; fileSize: number; minId: number; maxId: number }

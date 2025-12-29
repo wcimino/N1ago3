@@ -144,74 +144,64 @@ router.get("/api/maintenance/archive/stats", isAuthenticated, requireAuthorizedU
     const stats = await archiveService.getStats();
     res.json(stats);
   } catch (error: any) {
+    console.error("[Archive] Error getting stats:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
 router.get("/api/maintenance/archive/progress", isAuthenticated, requireAuthorizedUser, async (req, res) => {
   try {
-    const progress = archiveService.getProgress();
-    const isRunning = archiveService.isArchiveRunning();
-    res.json({ isRunning, progress });
+    const activeJob = await archiveService.getActiveJob();
+    res.json({ 
+      isRunning: activeJob !== null, 
+      job: activeJob,
+      progress: activeJob?.progress || null 
+    });
   } catch (error: any) {
+    console.error("[Archive] Error getting progress:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
 router.get("/api/maintenance/archive/history", isAuthenticated, requireAuthorizedUser, async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit as string) || 50;
-    console.log("[Archive] Fetching history with limit:", limit);
+    const limit = parseInt(req.query.limit as string) || 20;
     const history = await archiveService.getHistory(limit);
-    console.log("[Archive] History fetched, count:", history?.length || 0);
-    res.json(history || []);
+    res.json(history);
   } catch (error: any) {
-    console.error("[Archive] Error fetching history:", error);
-    console.error("[Archive] Error stack:", error?.stack);
-    res.status(500).json({ error: error?.message || "Failed to fetch history" });
+    console.error("[Archive] Error getting history:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
 router.post("/api/maintenance/archive/start", isAuthenticated, requireAuthorizedUser, async (req, res) => {
   try {
     const result = await archiveService.startArchive();
-    res.json(result);
+    if (result.success) {
+      res.json({ message: result.message });
+    } else {
+      res.status(409).json({ error: result.message });
+    }
   } catch (error: any) {
+    console.error("[Archive] Error starting archive:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
-router.post("/api/maintenance/archive/force", isAuthenticated, requireAuthorizedUser, async (req, res) => {
+router.post("/api/maintenance/archive/retry/:jobId", isAuthenticated, requireAuthorizedUser, async (req, res) => {
   try {
-    const { table, date } = req.query;
-    
-    if (!table || typeof table !== "string") {
-      return res.status(400).json({ error: "Parâmetro 'table' é obrigatório" });
+    const jobId = parseInt(req.params.jobId);
+    if (isNaN(jobId)) {
+      return res.status(400).json({ error: "ID do job inválido" });
     }
-    if (!date || typeof date !== "string") {
-      return res.status(400).json({ error: "Parâmetro 'date' é obrigatório (formato YYYY-MM-DD)" });
+    const result = await archiveService.retryJob(jobId);
+    if (result.success) {
+      res.json({ message: result.message });
+    } else {
+      res.status(400).json({ error: result.message });
     }
-
-    const result = await archiveService.forceArchive(table, date);
-    res.status(202).json(result);
   } catch (error: any) {
-    res.status(400).json({ error: error.message });
-  }
-});
-
-router.get("/api/maintenance/archive/inconsistent", isAuthenticated, requireAuthorizedUser, async (req, res) => {
-  try {
-    const { getInconsistentJobs } = await import("../services/archive/jobPersistence.js");
-    const limit = parseInt(req.query.limit as string) || 50;
-    const jobs = await getInconsistentJobs(limit);
-    res.json({
-      count: jobs.length,
-      jobs,
-      message: jobs.length > 0 
-        ? `Encontrados ${jobs.length} jobs com archived > 0 mas deleted = 0. Use /force para re-arquivar.`
-        : "Nenhum job inconsistente encontrado"
-    });
-  } catch (error: any) {
+    console.error("[Archive] Error retrying job:", error);
     res.status(500).json({ error: error.message });
   }
 });

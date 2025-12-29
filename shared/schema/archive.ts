@@ -1,13 +1,11 @@
 import { pgTable, serial, text, timestamp, integer, index, jsonb } from "drizzle-orm/pg-core";
 
-export interface HourlyMetadata {
-  hour: number;
-  archived: number;
-  deleted: number;
-  filePath: string | null;
-  fileSize: number;
-  minId?: number;
-  maxId?: number;
+export interface ArchiveProgress {
+  phase: "exporting" | "uploading" | "deleting" | "vacuuming";
+  currentTable?: string;
+  currentDate?: string;
+  recordsProcessed: number;
+  totalRecords?: number;
 }
 
 export const archiveJobs = pgTable("archive_jobs", {
@@ -20,7 +18,8 @@ export const archiveJobs = pgTable("archive_jobs", {
   filePath: text("file_path"),
   fileSize: integer("file_size"),
   lastProcessedHour: integer("last_processed_hour"),
-  hourlyMetadata: jsonb("hourly_metadata").$type<HourlyMetadata[]>(),
+  hourlyMetadata: jsonb("hourly_metadata"),
+  progress: jsonb("progress").$type<ArchiveProgress>(),
   errorMessage: text("error_message"),
   startedAt: timestamp("started_at"),
   completedAt: timestamp("completed_at"),
@@ -33,3 +32,13 @@ export const archiveJobs = pgTable("archive_jobs", {
 
 export type ArchiveJob = typeof archiveJobs.$inferSelect;
 export type InsertArchiveJob = typeof archiveJobs.$inferInsert;
+
+export interface HourlyMetadata {
+  hour: number;
+  archived: number;
+  deleted: number;
+  filePath: string | null;
+  fileSize: number;
+  minId?: number;
+  maxId?: number;
+}

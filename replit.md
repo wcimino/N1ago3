@@ -39,17 +39,14 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **ResponseFormatterService:** Adjusts tone of voice for outbound messages using an AI agent's configuration.
 *   **Solution Center Integration:** External KB API integration (Solution Center) for DemandFinder's article and problem search, storing results in `solution_center_articles_and_problems`. This is the sole knowledge source - no internal knowledge base.
 *   **Scheduled Maintenance Services:** Daily scheduled tasks for archiving old data and performing database vacuuming. Features include:
-    - **Auto-recovery system:** Automatically repairs partial archive jobs by regenerating Parquet files with invalid metadata
-    - **ExportOutcome discriminated union:** Three explicit states (empty, existing, exported) for reliable hour-level tracking
-    - **Safe force archive:** `POST /api/maintenance/archive/force?table=...&date=...` - invalidates previous jobs ONLY after the new job completes successfully (partial/failed runs preserve history)
-    - **Hourly metadata persistence:** `hourly_metadata` JSONB field stores per-hour data (hour, archived, deleted, filePath, fileSize, minId, maxId) for granular recovery
-    - **Real-time progress tracking:** Frontend displays current hour being processed (0-24) with visual progress bar
-    - Inconsistent jobs detection includes both zero-deletion jobs AND partial jobs with <50% deletion rate
-    - Per-hour discrepancy detection during archive with detailed error logging
+    - **Simplified day-based archiving:** Processes entire days in a single Parquet file (no hourly breakdown) for robustness
+    - **Linear pipeline:** export → delete → vacuum flow per day/table with clear progress tracking
+    - **Database-first state:** All job state stored in `archive_jobs` table with `progress` JSONB field for real-time updates
+    - **Concurrency protection:** In-memory lock prevents parallel executions from scheduler, manual start, or retry
+    - **Retry mechanism:** Failed jobs can be retried via UI button, which invalidates old job and creates new one
+    - **Clear error display:** Failed jobs show error message in UI with one-click retry option
     - Atomic upload via temporary files (.tmp) with metadata verification before finalization
-    - Concurrency protection to prevent parallel archive executions
-    - Recovery only promotes jobs to 'completed' when all 24 hours verified AND deleted >= archived
-    - **UI Resilience:** Archive page uses `Promise.allSettled` + `try/finally` to ensure controls remain functional even when individual APIs fail (e.g., history endpoint returns 500)
+    - **UI Resilience:** Archive page uses `Promise.allSettled` + `try/finally` to ensure controls remain functional even when individual APIs fail
 *   **Server Bootstrap & Initialization:** Includes preflight checks for environment variables, granular scheduler control via flags, an enhanced `/ready` endpoint, and production static file verification.
 *   **Database Migrations:** Automated migration execution during build process using Drizzle ORM. Supports both Drizzle migrations (`./drizzle/`) and manual SQL migrations (`./migrations/`). Features timeout protection (60s per operation), proper Neon serverless transaction handling, and graceful error recovery.
 *   **Server Resilience:** Server starts even if database is unavailable (degraded mode). Background workers only start when database is healthy. Health endpoints (`/health`, `/ready`) include real-time database status with cached checks.
