@@ -120,6 +120,13 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
     
   const produtoNome = context.classification?.product ?? null;
   const subprodutoNome = context.classification?.subproduct ?? null;
+  const produtoScore = context.classification?.productConfidence ?? null;
+  const tipoSolicitacaoNome = context.customerRequestType || (context.classification?.customerRequestType ?? null);
+  const tipoSolicitacaoScore = context.classification?.customerRequestTypeConfidence ?? null;
+  
+  const produtoJson = JSON.stringify({ nome: produtoNome, score: produtoScore });
+  const subprodutoJson = JSON.stringify({ nome: subprodutoNome, score: null });
+  const tipoSolicitacaoJson = JSON.stringify({ nome: tipoSolicitacaoNome, score: tipoSolicitacaoScore });
   
   let produtoESubprodutoNome: string | null = null;
   if (produtoNome) {
@@ -239,6 +246,9 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
     produtoNome,
     subprodutoNome,
     produtoESubprodutoNome,
+    produtoJson,
+    subprodutoJson,
+    tipoSolicitacaoJson,
     solucaoId,
     solucaoNome,
     solucaoDescricao,

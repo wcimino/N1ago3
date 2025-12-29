@@ -18,6 +18,9 @@ export interface PromptVariables {
   produtoNome?: string | null;
   subprodutoNome?: string | null;
   produtoESubprodutoNome?: string | null;
+  produtoJson?: string | null;
+  subprodutoJson?: string | null;
+  tipoSolicitacaoJson?: string | null;
   artigoId?: string | null;
   artigoPergunta?: string | null;
   artigoResposta?: string | null;
@@ -56,6 +59,9 @@ export function replacePromptVariables(
   result = result.replace(/\{\{HANDLER\}\}/g, variables.handler || 'Não identificado');
   result = result.replace(/\{\{PRODUTOS_E_SUBPRODUTOS_CATALOGO\}\}/g, variables.produtosESubprodutosCatalogo || '[]');
   result = result.replace(/\{\{TIPO_SOLICITACAO_NOME\}\}/g, variables.tipoSolicitacao || 'Não identificado');
+  result = result.replace(/\{\{PRODUTO_JSON\}\}/g, variables.produtoJson || '{"nome": null, "score": null}');
+  result = result.replace(/\{\{SUBPRODUTO_JSON\}\}/g, variables.subprodutoJson || '{"nome": null, "score": null}');
+  result = result.replace(/\{\{TIPO_SOLICITACAO_JSON\}\}/g, variables.tipoSolicitacaoJson || '{"nome": null, "score": null}');
   result = result.replace(/\{\{DEMANDA_IDENTIFICADA\}\}/g, variables.demandaIdentificada || 'Nenhuma demanda identificada.');
   result = result.replace(/\{\{ARTIGOS_PROBLEMAS_LISTA_TOP_5\}\}/g, variables.artigosProblemasListaTop5 || 'Nenhum artigo ou problema encontrado.');
   result = result.replace(/\{\{ARTIGOS_PROBLEMAS_LISTA_TOP_10\}\}/g, variables.artigosProblemasListaTop10 || 'Nenhum artigo ou problema encontrado.');
@@ -259,6 +265,9 @@ export const AVAILABLE_VARIABLES = [
   { name: '{{PRODUTO_NOME}}', description: 'Nome do produto classificado' },
   { name: '{{SUBPRODUTO_NOME}}', description: 'Nome do subproduto classificado' },
   { name: '{{PRODUTO_E_SUBPRODUTO_NOME}}', description: 'Produto e Subproduto classificados (formato: Produto / Subproduto)' },
+  { name: '{{PRODUTO_JSON}}', description: 'Produto com nome e score em JSON' },
+  { name: '{{SUBPRODUTO_JSON}}', description: 'Subproduto com nome e score em JSON' },
+  { name: '{{TIPO_SOLICITACAO_JSON}}', description: 'Tipo de solicitação com nome e score em JSON' },
   { name: '{{ARTIGO_ID}}', description: 'ID do artigo existente (para enriquecimento)' },
   { name: '{{ARTIGO_PERGUNTA}}', description: 'Pergunta do artigo existente' },
   { name: '{{ARTIGO_RESPOSTA}}', description: 'Resposta do artigo existente' },

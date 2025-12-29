@@ -39,6 +39,9 @@ export const VARIABLE_CATEGORIES: PromptVariableCategory[] = [
       { name: '{{SUBPRODUTO_NOME}}', description: 'Nome do subproduto classificado' },
       { name: '{{PRODUTO_E_SUBPRODUTO_NOME}}', description: 'Produto e Subproduto classificados (formato: Produto / Subproduto)' },
       { name: '{{TIPO_SOLICITACAO_NOME}}', description: 'Tipo de solicitação (Quer suporte/contratar/informações)' },
+      { name: '{{PRODUTO_JSON}}', description: 'Produto com nome e score em JSON' },
+      { name: '{{SUBPRODUTO_JSON}}', description: 'Subproduto com nome e score em JSON' },
+      { name: '{{TIPO_SOLICITACAO_JSON}}', description: 'Tipo de solicitação com nome e score em JSON' },
     ],
   },
   {
