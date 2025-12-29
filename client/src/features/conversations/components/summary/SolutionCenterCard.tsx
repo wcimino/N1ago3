@@ -1,5 +1,51 @@
-import { Lightbulb, Check } from "lucide-react";
+import { Lightbulb, Check, Info } from "lucide-react";
+import { useState } from "react";
 import type { SolutionCenterResult } from "./types";
+
+interface InfoTooltipProps {
+  confidence?: number;
+  reason?: string;
+}
+
+function InfoTooltip({ confidence, reason }: InfoTooltipProps) {
+  const [isVisible, setIsVisible] = useState(false);
+  
+  if (!confidence && !reason) return null;
+  
+  return (
+    <div className="relative inline-block">
+      <button
+        type="button"
+        className="flex items-center justify-center w-4 h-4 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsVisible(!isVisible);
+        }}
+      >
+        <Info className="w-3 h-3" />
+      </button>
+      {isVisible && (
+        <div className="absolute z-50 left-full ml-2 top-1/2 -translate-y-1/2 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45" />
+          {confidence !== undefined && (
+            <div className="mb-2">
+              <span className="font-semibold text-green-300">Confiança:</span>{" "}
+              <span>{confidence}%</span>
+            </div>
+          )}
+          {reason && (
+            <div>
+              <span className="font-semibold text-green-300">Motivo:</span>{" "}
+              <span className="text-gray-200">{reason}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export interface SolutionCenterCardProps {
   items?: SolutionCenterResult[] | null;
@@ -40,9 +86,12 @@ export function SolutionCenterCard({ items, selectedId }: SolutionCenterCardProp
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
                     {isSelected && (
-                      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-green-500 text-white">
-                        <Check className="w-3 h-3" />
-                      </span>
+                      <>
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-green-500 text-white">
+                          <Check className="w-3 h-3" />
+                        </span>
+                        <InfoTooltip confidence={item.confidence} reason={item.reason} />
+                      </>
                     )}
                     <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
                       item.type === "article" 

@@ -11,6 +11,8 @@ export interface SolutionCenterResult {
   id: string;
   name: string;
   score: number;
+  confidence?: number;
+  reason?: string;
 }
 
 export interface OrchestratorLogEntry {

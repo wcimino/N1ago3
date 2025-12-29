@@ -203,6 +203,21 @@ router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedU
 
   const productNames = await getProductNames(summary.productId);
 
+  const solutionCenterResults = caseDemandData?.solutionCenterArticlesAndProblems || [];
+  const aiResponse = caseDemandData?.demandFinderAiResponse as {
+    top_candidates_ranked?: Array<{ id: string; label: string; why: string }>;
+  } | null;
+  const topCandidates = aiResponse?.top_candidates_ranked || [];
+  
+  const enrichedSolutionCenterResults = solutionCenterResults.map((item: { type: string; id: string; name: string; score: number }) => {
+    const candidate = topCandidates.find((c: { id: string }) => c.id === item.id);
+    return {
+      ...item,
+      confidence: item.score ? Math.round(item.score * 100) : undefined,
+      reason: candidate?.why || undefined,
+    };
+  });
+
   res.json({
     conversation_id: id,
     has_summary: true,
@@ -217,7 +232,7 @@ router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedU
     product_confidence_reason: summary.productConfidenceReason,
     objective_problems: summary.objectiveProblems || null,
     articles_and_objective_problems: caseDemandData?.articlesAndObjectiveProblems || null,
-    solution_center_articles_and_problems: caseDemandData?.solutionCenterArticlesAndProblems || null,
+    solution_center_articles_and_problems: enrichedSolutionCenterResults.length > 0 ? enrichedSolutionCenterResults : null,
     solution_center_selected_id: caseDemandData?.solutionCenterArticleAndProblemsIdSelected || null,
     customer_request_type: summary.customerRequestType,
     customer_request_type_confidence: summary.customerRequestTypeConfidence,
