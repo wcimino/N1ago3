@@ -213,7 +213,7 @@ router.get("/api/conversations/:id/summary", isAuthenticated, requireAuthorizedU
     const candidate = topCandidates.find((c: { id: string }) => c.id === item.id);
     return {
       ...item,
-      confidence: item.score ? Math.round(item.score * 100) : undefined,
+      confidence: item.score !== undefined && item.score !== null ? Math.round(item.score * 100) : undefined,
       reason: candidate?.why || undefined,
     };
   });
