@@ -115,6 +115,10 @@ The React frontend provides a real-time dashboard and administrative interfaces,
     - `createSuccessResult(overrides)`: Standardized agent result factory
     - `createEscalatedResult(error?, message?)`: Escalation result with default messages
 
+*   **AI Agents Refactoring:**
+    - `DemandFinderAgent`: Uses `createAgentLogger` for structured logging, `withRetry` for Solution Center API calls
+    - `SolutionProviderOrchestrator`: Uses `createAgentLogger` for consistent logging patterns
+
 **Code Quality:**
 - Eliminated ~400 lines of duplicated retry/batch logic
 - Centralized error handling patterns
@@ -122,3 +126,4 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 - Fixed circular dependency in archiveService via dynamic import
 - Added fileSize to FileCheckResult for accurate progress reporting
 - FORCE mode now throws on delete failure to prevent stale artifacts
+- AI agents now use structured logging via createAgentLogger helper
