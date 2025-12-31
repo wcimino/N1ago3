@@ -6,9 +6,13 @@ import { EnrichmentService } from "../services/enrichmentService.js";
 import { ActionExecutor } from "../actionExecutor.js";
 import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type DemandFinderAgentResult, type OrchestratorContext, type OrchestratorAction } from "../types.js";
 import { searchSolutionCenter, type SearchLogContext } from "../../../../../shared/services/solutionCenterClient.js";
+import { createAgentLogger, createEscalatedResult } from "../helpers/orchestratorHelpers.js";
+import { withRetry } from "../../../../../../shared/utils/retry.js";
 
 const CONFIG_KEY = "demand_finder";
 const MAX_INTERACTIONS = 5;
+const MAX_RETRIES = 3;
+const log = createAgentLogger("DemandFinderAgent");
 
 interface DemandFinderPromptResult {
   decision: "selected_intent" | "need_clarification";
@@ -38,7 +42,7 @@ export class DemandFinderAgent {
     const { conversationId } = context;
 
     try {
-      console.log(`[DemandFinderAgent] Starting demand finding for conversation ${conversationId}`);
+      log.action(conversationId, "Starting demand finding");
 
       // Step 1: Ensure active demand exists
       await caseDemandStorage.ensureActiveDemand(conversationId);
@@ -47,7 +51,7 @@ export class DemandFinderAgent {
       const enrichmentResult = await EnrichmentService.enrich(context);
       
       if (!enrichmentResult.success) {
-        console.log(`[DemandFinderAgent] Enrichment failed: ${enrichmentResult.error}, escalating`);
+        log.warn(conversationId, `Enrichment failed: ${enrichmentResult.error}, escalating`);
         
         await conversationStorage.updateOrchestratorState(conversationId, {
           orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
@@ -72,7 +76,7 @@ export class DemandFinderAgent {
       const searchResult = await this.searchArticles(context);
       
       if (searchResult.failed) {
-        console.log(`[DemandFinderAgent] Solution Center API failed after 3 retries, escalating`);
+        log.warn(conversationId, "Solution Center API failed after 3 retries, escalating");
         await this.escalateConversation(conversationId, context, "Solution Center API failed after 3 retries", { sendApologyMessage: true });
         return {
           success: true,
@@ -91,7 +95,7 @@ export class DemandFinderAgent {
       const promptResult = await this.callDemandFinderPrompt(context);
 
       if (!promptResult) {
-        console.log(`[DemandFinderAgent] Prompt call failed, escalating`);
+        log.warn(conversationId, "Prompt call failed, escalating");
         await this.escalateConversation(conversationId, context, "Prompt call failed");
         return {
           success: true,
@@ -103,7 +107,7 @@ export class DemandFinderAgent {
         };
       }
 
-      console.log(`[DemandFinderAgent] AI decision: ${promptResult.decision}, reason: ${promptResult.reason}`);
+      log.decision(conversationId, promptResult.decision, promptResult.reason);
 
       // Step 5: If AI selected an intent -> confirm demand and transition to solution provider
       if (promptResult.decision === "selected_intent" && promptResult.selected_intent?.id) {
@@ -112,7 +116,7 @@ export class DemandFinderAgent {
         const isValidCandidate = candidateIds.includes(selectedIntentId);
         
         if (!isValidCandidate) {
-          console.warn(`[DemandFinderAgent] WARNING: AI selected intent "${selectedIntentId}" is NOT in the candidate list. Candidates: ${candidateIds.join(', ')}. Escalating to human.`);
+          log.warn(conversationId, `AI selected intent "${selectedIntentId}" is NOT in candidate list: ${candidateIds.join(', ')}. Escalating`);
           
           await caseDemandStorage.updateDemandFinderAiResponse(conversationId, {
             decision: promptResult.decision,
@@ -148,7 +152,7 @@ export class DemandFinderAgent {
           };
         }
         
-        console.log(`[DemandFinderAgent] Demand confirmed - selected intent: ${promptResult.selected_intent.id} (${promptResult.selected_intent.label})`);
+        log.action(conversationId, "Demand confirmed", `intent: ${promptResult.selected_intent.id} (${promptResult.selected_intent.label})`);
         
         await caseDemandStorage.updateSelectedIntent(conversationId, promptResult.selected_intent.id, {
           decision: promptResult.decision,
@@ -201,10 +205,10 @@ export class DemandFinderAgent {
 
       // Step 6: AI needs clarification - check interaction counter first
       const currentInteractionCount = await caseDemandStorage.getInteractionCount(conversationId);
-      console.log(`[DemandFinderAgent] Current interaction count: ${currentInteractionCount}/${MAX_INTERACTIONS}`);
+      log.info(conversationId, `Interaction count: ${currentInteractionCount}/${MAX_INTERACTIONS}`);
 
       if (currentInteractionCount >= MAX_INTERACTIONS) {
-        console.log(`[DemandFinderAgent] Max interactions already reached, escalating`);
+        log.warn(conversationId, "Max interactions already reached, escalating");
         await this.escalateConversation(conversationId, context, "Max interactions reached", { sendApologyMessage: true });
         
         context.lastDispatchLog = {
@@ -240,7 +244,7 @@ export class DemandFinderAgent {
       });
       
       if (!clarifyingQuestion || !suggestionId) {
-        console.log(`[DemandFinderAgent] No clarifying question or suggestionId from AI, escalating`);
+        log.warn(conversationId, "No clarifying question or suggestionId from AI, escalating");
         await this.escalateConversation(conversationId, context, "No clarifying question generated");
         return {
           success: true,
@@ -254,10 +258,10 @@ export class DemandFinderAgent {
 
       // Step 8: Increment counter
       const newInteractionCount = await caseDemandStorage.incrementInteractionCount(conversationId);
-      console.log(`[DemandFinderAgent] Incremented interaction count to ${newInteractionCount}/${MAX_INTERACTIONS}`);
+      log.info(conversationId, `Incremented interaction count to ${newInteractionCount}/${MAX_INTERACTIONS}`);
 
       // Step 9: Send the message (ActionExecutor handles isN1agoHandler check)
-      console.log(`[DemandFinderAgent] Sending clarification question for conversation ${conversationId}`);
+      log.action(conversationId, "Sending clarification question");
       const action: OrchestratorAction = {
         type: "SEND_MESSAGE",
         payload: { suggestionId, responsePreview: clarifyingQuestion }
@@ -291,7 +295,7 @@ export class DemandFinderAgent {
       };
 
     } catch (error: any) {
-      console.error(`[DemandFinderAgent] Error processing conversation ${conversationId}:`, error);
+      log.error(conversationId, "Error processing", error);
       
       try {
         await conversationStorage.updateOrchestratorState(conversationId, {
@@ -324,23 +328,17 @@ export class DemandFinderAgent {
     const searchQueries = getSearchQueries(summary);
     const customerRequestType = getCustomerRequestType(summary);
     
-    console.log(`[DemandFinderAgent] Searching Solution Center for conversation ${conversationId}`);
-    if (searchQueries) {
-      console.log(`[DemandFinderAgent] Using queries: verbatim=${!!searchQueries.verbatimQuery}, keyword=${!!searchQueries.keywordQuery}, normalized=${!!searchQueries.normalizedQuery}`);
-    }
-    if (customerRequestType) {
-      console.log(`[DemandFinderAgent] Customer request type: ${customerRequestType}`);
-    }
+    log.action(conversationId, "Searching Solution Center");
 
     const solutionCenterResult = await this.searchSolutionCenterExternal(context, searchQueries, versions, customerRequestType || undefined);
 
     if (solutionCenterResult.failed) {
-      console.log(`[DemandFinderAgent] Solution Center API failed after retries for conversation ${conversationId}`);
+      log.warn(conversationId, "Solution Center API failed after retries");
       return { results: [], failed: true };
     }
 
     if (!solutionCenterResult.results || solutionCenterResult.results.length === 0) {
-      console.log(`[DemandFinderAgent] No results from Solution Center for conversation ${conversationId}`);
+      log.info(conversationId, "No results from Solution Center");
       return { results: [], failed: false };
     }
 
@@ -353,7 +351,7 @@ export class DemandFinderAgent {
     }));
 
     await caseDemandStorage.updateArticlesAndProblems(conversationId, resultsForStorage);
-    console.log(`[DemandFinderAgent] Saved ${resultsForStorage.length} Solution Center results to articlesAndProblems for conversation ${conversationId}`);
+    log.info(conversationId, `Saved ${resultsForStorage.length} results to articlesAndProblems`);
 
     return { results: resultsForStorage, failed: false };
   }
@@ -383,7 +381,6 @@ export class DemandFinderAgent {
     customerRequestType?: string
   ): Promise<{ results: Array<{ type: "article" | "problem"; id: string; name: string; score: number }>; failed: boolean }> {
     const { conversationId, classification } = context;
-    const MAX_RETRIES = 3;
 
     const textNormalizedVersions: string[] = [];
     
@@ -392,7 +389,7 @@ export class DemandFinderAgent {
     }
 
     if (textNormalizedVersions.length === 0) {
-      console.log(`[DemandFinderAgent] No text versions for Solution Center search, skipping`);
+      log.info(conversationId, "No text versions for Solution Center search, skipping");
       return { results: [], failed: false };
     }
 
@@ -411,19 +408,15 @@ export class DemandFinderAgent {
       ? context.classification.customerRequestTypeConfidence / 100 
       : undefined;
 
-    let lastError: unknown = null;
-
     const activeDemand = await caseDemandStorage.getActiveByConversationId(conversationId);
     const logContext: SearchLogContext = {
       caseDemandId: activeDemand?.id,
       conversationId,
     };
 
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        console.log(`[DemandFinderAgent] Solution Center search attempt ${attempt}/${MAX_RETRIES} for conversation ${conversationId}`);
-
-        const solutionCenterResponse = await searchSolutionCenter(
+    try {
+      const solutionCenterResponse = await withRetry(
+        () => searchSolutionCenter(
           {
             text: text || undefined,
             textVerbatim: textVerbatim || undefined,
@@ -437,31 +430,27 @@ export class DemandFinderAgent {
             demandTypeConfidence: demandTypeConfidenceValue,
           },
           logContext
-        );
-
-        if (!solutionCenterResponse || !solutionCenterResponse.results || solutionCenterResponse.results.length === 0) {
-          return { results: [], failed: false };
+        ),
+        {
+          maxRetries: MAX_RETRIES,
+          initialBackoffMs: 500,
+          operationName: `SolutionCenter search (conversation ${conversationId})`,
         }
+      );
 
-        await caseDemandStorage.updateSolutionCenterResults(conversationId, solutionCenterResponse.results);
-        console.log(`[DemandFinderAgent] Saved ${solutionCenterResponse.results.length} Solution Center results for conversation ${conversationId}`);
-
-        return { results: solutionCenterResponse.results, failed: false };
-
-      } catch (error) {
-        lastError = error;
-        console.error(`[DemandFinderAgent] Solution Center search attempt ${attempt}/${MAX_RETRIES} failed for conversation ${conversationId}:`, error);
-        
-        if (attempt < MAX_RETRIES) {
-          const delayMs = attempt * 500;
-          console.log(`[DemandFinderAgent] Retrying in ${delayMs}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delayMs));
-        }
+      if (!solutionCenterResponse || !solutionCenterResponse.results || solutionCenterResponse.results.length === 0) {
+        return { results: [], failed: false };
       }
-    }
 
-    console.error(`[DemandFinderAgent] All ${MAX_RETRIES} Solution Center search attempts failed for conversation ${conversationId}:`, lastError);
-    return { results: [], failed: true };
+      await caseDemandStorage.updateSolutionCenterResults(conversationId, solutionCenterResponse.results);
+      log.info(conversationId, `Saved ${solutionCenterResponse.results.length} Solution Center results`);
+
+      return { results: solutionCenterResponse.results, failed: false };
+
+    } catch (error) {
+      log.error(conversationId, `All ${MAX_RETRIES} Solution Center search attempts failed`, error);
+      return { results: [], failed: true };
+    }
   }
 
   private static async escalateConversation(

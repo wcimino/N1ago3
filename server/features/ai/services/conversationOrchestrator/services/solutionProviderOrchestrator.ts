@@ -16,8 +16,10 @@ import {
   type ActionDecision,
 } from "./actionStateMachine.js";
 import type { ClientHubData } from "../../../../../../shared/schema/clientHub.js";
+import { createAgentLogger } from "../helpers/orchestratorHelpers.js";
 
 const MAX_INTERACTIONS = 5;
+const log = createAgentLogger("SolutionProviderOrchestrator");
 
 interface SolutionProviderAIResponse {
   mensagem?: string;
@@ -46,7 +48,7 @@ export class SolutionProviderOrchestrator {
     let actionsProcessed = 0;
 
     try {
-      console.log(`[SolutionProviderOrchestrator] Processing caseSolution ${caseSolutionId} with ${actions.length} actions`);
+      log.action(conversationId, `Processing caseSolution ${caseSolutionId}`, `${actions.length} actions`);
 
       while (actionsProcessed < MAX_ACTIONS_PER_TURN) {
         actionsProcessed++;
@@ -54,49 +56,49 @@ export class SolutionProviderOrchestrator {
         const currentActions = await caseSolutionStorage.getActions(caseSolutionId);
 
         if (allActionsCompleted(currentActions)) {
-          console.log(`[SolutionProviderOrchestrator] All actions completed, transitioning to Closer`);
+          log.action(conversationId, "All actions completed, transitioning to Closer");
           return await this.transitionToCloser(context, caseSolutionId);
         }
 
         const nextAction = selectNextAction(currentActions);
         if (!nextAction) {
-          console.log(`[SolutionProviderOrchestrator] No pending action found, escalating`);
+          log.warn(conversationId, "No pending action found, escalating");
           return await this.escalate(context, caseSolutionId, "No pending action found");
         }
 
-        console.log(`[SolutionProviderOrchestrator] Iteration ${actionsProcessed}: action ${nextAction.id} (sequence: ${nextAction.actionSequence})`);
+        log.info(conversationId, `Iteration ${actionsProcessed}: action ${nextAction.id} (sequence: ${nextAction.actionSequence})`);
 
         const decision = decideActionExecution(nextAction);
-        console.log(`[SolutionProviderOrchestrator] Decision: ${decision.decision}, requiresAI: ${decision.requiresAI}`);
+        log.decision(conversationId, decision.decision, `requiresAI: ${decision.requiresAI}`);
 
         if (decision.requiresAI) {
           const currentInteractionCount = await caseSolutionStorage.getInteractionCount(caseSolutionId);
-          console.log(`[SolutionProviderOrchestrator] Interaction count: ${currentInteractionCount}/${MAX_INTERACTIONS}`);
+          log.info(conversationId, `Interaction count: ${currentInteractionCount}/${MAX_INTERACTIONS}`);
 
           if (currentInteractionCount >= MAX_INTERACTIONS) {
-            console.log(`[SolutionProviderOrchestrator] Max interactions reached, escalating`);
+            log.warn(conversationId, "Max interactions reached, escalating");
             return await this.escalate(context, caseSolutionId, "Max interactions reached");
           }
 
           await caseSolutionStorage.incrementInteractionCount(caseSolutionId);
-          console.log(`[SolutionProviderOrchestrator] Incremented interaction count`);
+          log.info(conversationId, "Incremented interaction count");
         }
 
         const result = await this.executeDecision(context, caseSolutionId, decision);
 
         if (result.escalated || result.waitingForCustomer) {
-          console.log(`[SolutionProviderOrchestrator] Stopping loop: escalated=${result.escalated}, waitingForCustomer=${result.waitingForCustomer}`);
+          log.info(conversationId, `Stopping loop: escalated=${result.escalated}, waitingForCustomer=${result.waitingForCustomer}`);
           return result;
         }
 
-        console.log(`[SolutionProviderOrchestrator] Action completed, continuing to next action`);
+        log.info(conversationId, "Action completed, continuing to next action");
       }
 
-      console.log(`[SolutionProviderOrchestrator] Max actions per turn (${MAX_ACTIONS_PER_TURN}) reached, escalating to prevent stall`);
+      log.warn(conversationId, `Max actions per turn (${MAX_ACTIONS_PER_TURN}) reached, escalating`);
       return await this.escalate(context, caseSolutionId, "Solution too complex - max actions per turn exceeded");
 
     } catch (error: any) {
-      console.error(`[SolutionProviderOrchestrator] Error:`, error);
+      log.error(conversationId, "Error", error);
       return await this.escalate(context, caseSolutionId, error.message || "Orchestrator error");
     }
   }
@@ -549,10 +551,6 @@ Gere a mensagem para o cliente.`;
   private static async getClientHubData(
     context: OrchestratorContext
   ): Promise<ClientHubData | null> {
-    if (context.conversationSummary?.clientHubData) {
-      return context.conversationSummary.clientHubData as ClientHubData;
-    }
-
     const { conversationId, event } = context;
 
     if (event.externalConversationId) {
