@@ -152,3 +152,52 @@ export type SolutionCenterActionType =
   | "perguntar_ao_cliente" 
   | "transferir_para_humano"
   | "transferir_humano";
+
+// ============================================================================
+// Solution Center API Response Types (POST /api/solutions)
+// ============================================================================
+
+export interface SolutionCenterCondition {
+  variableName: string;
+  expectedValue: unknown;
+}
+
+export interface SolutionCenterMessageVariation {
+  label: string;
+  conditions: SolutionCenterCondition[];
+  message: string;
+  agentInstructions: string;
+}
+
+export interface SolutionCenterMessageVariations {
+  variations: SolutionCenterMessageVariation[];
+}
+
+export interface SolutionCenterAction {
+  actionId: string;
+  sequence: number;
+  actionType: SolutionCenterActionType;
+  description: string;
+  requiredInput?: string;
+  message?: string;
+  agentInstructions?: string;
+  messageVariations?: SolutionCenterMessageVariations;
+}
+
+export interface SolutionCenterSolution {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface SolutionCenterResponse {
+  success: boolean;
+  solution?: SolutionCenterSolution;
+  actions?: SolutionCenterAction[];
+}
+
+export interface ResolvedMessage {
+  message: string;
+  agentInstructions: string;
+  variationLabel?: string;
+}

@@ -1,5 +1,11 @@
-import type { SolutionCenterActionType } from "../types.js";
+import type { 
+  SolutionCenterActionType, 
+  SolutionCenterMessageVariations,
+  SolutionCenterCondition,
+  ResolvedMessage 
+} from "../types.js";
 import type { CaseAction as DrizzleCaseAction } from "../../../../../../shared/schema/knowledge.js";
+import type { ClientHubData } from "../../../../../../shared/schema/clientHub.js";
 
 export type ActionStatus = "pending" | "in_progress" | "completed" | "failed" | "skipped";
 
@@ -141,4 +147,74 @@ export function decideActionExecution(action: CaseAction): ActionDecision {
     requiresAI: false,
     waitForCustomer: false,
   };
+}
+
+// ============================================================================
+// Message Variation Resolution
+// ============================================================================
+
+function matchesCondition(actualValue: unknown, expectedValue: unknown): boolean {
+  if (actualValue === expectedValue) return true;
+  if (actualValue === undefined || actualValue === null) return false;
+  return String(actualValue).toLowerCase() === String(expectedValue).toLowerCase();
+}
+
+function evaluateConditions(
+  conditions: SolutionCenterCondition[],
+  context: Record<string, unknown>
+): boolean {
+  if (!conditions || conditions.length === 0) return false;
+  
+  return conditions.every(condition => {
+    const actualValue = context[condition.variableName];
+    return matchesCondition(actualValue, condition.expectedValue);
+  });
+}
+
+export function resolveMessageFromVariations(
+  action: CaseAction,
+  clientHubData?: ClientHubData | null
+): ResolvedMessage {
+  const input = action.inputUsed as Record<string, unknown> | undefined;
+  
+  const defaultMessage = input?.message ? String(input.message) : "";
+  const defaultInstructions = input?.agentInstructions ? String(input.agentInstructions) : "";
+  
+  const fallback: ResolvedMessage = {
+    message: defaultMessage,
+    agentInstructions: defaultInstructions,
+  };
+  
+  const messageVariations = input?.messageVariations as SolutionCenterMessageVariations | undefined;
+  
+  if (!messageVariations?.variations || messageVariations.variations.length === 0) {
+    return fallback;
+  }
+  
+  const context: Record<string, unknown> = {};
+  
+  if (clientHubData) {
+    context.cnpj = clientHubData.cnpj;
+    context.cnpjValido = clientHubData.cnpjValido;
+    context.authenticated = clientHubData.authenticated;
+    
+    if (clientHubData.campos) {
+      for (const [key, field] of Object.entries(clientHubData.campos)) {
+        context[key] = field.value;
+      }
+    }
+  }
+  
+  for (const variation of messageVariations.variations) {
+    if (evaluateConditions(variation.conditions, context)) {
+      console.log(`[ActionStateMachine] Matched variation: ${variation.label}`);
+      return {
+        message: variation.message || defaultMessage,
+        agentInstructions: variation.agentInstructions || defaultInstructions,
+        variationLabel: variation.label,
+      };
+    }
+  }
+  
+  return fallback;
 }
