@@ -92,3 +92,25 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **wouter:** Lightweight React router.
 *   **AI Services (Chat):** Utilizes Replit AI Integrations (default) or OpenAI (fallback).
 *   **OpenAI API:** Used for AI chat capabilities.
+
+## Recent Refactoring (2024-12-31)
+
+**Architectural Improvements:**
+
+*   **Shared Utilities Layer (`shared/utils/`):**
+    - `retry.ts`: Generic retry utility with exponential backoff, configurable delays, and batch processing support. Exported: `withRetry`, `sleep`, `formatDuration`, `processBatch`
+
+*   **Client-Side Architecture:**
+    - `client/src/lib/apiClient.ts`: Typed API client with centralized error handling, automatic JSON serialization
+    - `client/src/shared/components/ui/ListContainer.tsx`: Unified list rendering with loading/empty/pagination states
+
+*   **Archive Services Refactoring (`server/features/maintenance/services/archive/`):**
+    - `schemaRegistry.ts`: Parquet schema definitions for archived tables
+    - `storageUploader.ts`: Object storage upload with verification and atomic rename
+    - `batchQueryBuilder.ts`: Cursor-based batch queries with time range support
+    - `parquetExporter.ts`: Simplified to ~250 lines using above modules
+
+**Code Quality:**
+- Eliminated ~400 lines of duplicated retry/batch logic
+- Centralized error handling patterns
+- Improved type safety across API boundaries
