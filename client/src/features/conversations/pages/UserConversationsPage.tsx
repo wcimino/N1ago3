@@ -1,13 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { XCircle, MessageCircle, FileText, Eye, EyeOff, ArrowRightLeft, XSquare, Loader2 } from "lucide-react";
+import { XCircle, MessageCircle, FileText, Eye, EyeOff } from "lucide-react";
 import type { ImagePayload } from "../../../types";
 import { ImageLightbox, LoadingState, SegmentedTabs, ConfirmModal, EmptyState, SectionHeader } from "../../../shared/components/ui";
-import { HandlerBadge } from "../../../shared/components/badges/HandlerBadge";
-import { ConversationSelector, ConversationSummary, ConversationChat, TransferConversationModal, ActionsDropdown, CustomerHeader, AutopilotToggleButton } from "../components";
+import { ConversationSelector, ConversationSummary, ConversationChat, TransferConversationModal, CustomerHeader, ConversationActionButtons } from "../components";
 import { useResizablePanel, useDateFormatters, useConfirmation } from "../../../shared/hooks";
 import { getUserDisplayNameFromProfile } from "../../../lib/userUtils";
-import { FavoriteButton } from "../../favorites/components/FavoriteButton";
 import { useFavorites } from "../../favorites/hooks/useFavorites";
 import { useUserConversations } from "../hooks";
 
@@ -65,97 +63,34 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
     { id: "chat", label: "Chat", icon: <MessageCircle className="w-4 h-4" /> },
   ];
 
-  const renderMobileActions = () => {
-    if (!selectedConversation) return null;
-    return (
-      <ActionsDropdown
-        conversationId={selectedConversation.conversation.id}
-        isFavorite={isFavorite(selectedConversation.conversation.id)}
-        onToggleFavorite={() => toggleFavorite(selectedConversation.conversation.id)}
-        isFavoriteLoading={isToggling}
-        handlerName={selectedConversation.conversation.current_handler_name}
-        autopilotEnabled={selectedConversation.conversation.autopilot_enabled}
-        onToggleAutopilot={() => toggleAutopilot(
-          selectedConversation.conversation.id,
-          !selectedConversation.conversation.autopilot_enabled
-        )}
-        isAutopilotLoading={isTogglingAutopilot}
-        showAutopilot={selectedConversation.conversation.current_handler_name?.startsWith("n1ago") || false}
-        isActive={selectedConversation.conversation.status === "active"}
-        onTransfer={() => setShowTransferModal(true)}
-        onClose={() => {
-          confirmation.confirm({
-            title: "Encerrar conversa",
-            message: "Tem certeza que deseja encerrar esta conversa?",
-            confirmLabel: "Encerrar",
-            variant: "warning",
-            onConfirm: () => closeConversation(selectedConversation.conversation.id),
-          });
-        }}
-        isClosing={isClosingConversation}
-      />
-    );
+  const handleCloseConversation = () => {
+    if (!selectedConversation) return;
+    confirmation.confirm({
+      title: "Encerrar conversa",
+      message: "Tem certeza que deseja encerrar esta conversa?",
+      confirmLabel: "Encerrar",
+      variant: "warning",
+      onConfirm: () => closeConversation(selectedConversation.conversation.id),
+    });
   };
 
-  const renderDesktopActionButtons = () => {
-    if (!selectedConversation) return null;
-    return (
-      <>
-        <FavoriteButton
-          conversationId={selectedConversation.conversation.id}
-          isFavorite={isFavorite(selectedConversation.conversation.id)}
-          onToggle={() => toggleFavorite(selectedConversation.conversation.id)}
-          isLoading={isToggling}
-          size="sm"
-        />
-        <HandlerBadge 
-          handlerName={selectedConversation.conversation.current_handler_name} 
-          size="sm" 
-        />
-        {selectedConversation.conversation.current_handler_name?.startsWith("n1ago") && (
-          <AutopilotToggleButton
-            enabled={selectedConversation.conversation.autopilot_enabled}
-            onToggle={() => toggleAutopilot(
-              selectedConversation.conversation.id,
-              !selectedConversation.conversation.autopilot_enabled
-            )}
-            isLoading={isTogglingAutopilot}
-          />
-        )}
-        <button
-          onClick={() => setShowTransferModal(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-purple-600 hover:text-purple-700 border border-purple-200 hover:border-purple-300 rounded-lg hover:bg-purple-50 transition-colors"
-          title="Transferir conversa"
-        >
-          <ArrowRightLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">Transferir</span>
-        </button>
-        {selectedConversation.conversation.status === "active" && (
-          <button
-            onClick={() => {
-              confirmation.confirm({
-                title: "Encerrar conversa",
-                message: "Tem certeza que deseja encerrar esta conversa?",
-                confirmLabel: "Encerrar",
-                variant: "warning",
-                onConfirm: () => closeConversation(selectedConversation.conversation.id),
-              });
-            }}
-            disabled={isClosingConversation}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 hover:text-red-700 border border-red-200 hover:border-red-300 rounded-lg hover:bg-red-50 transition-colors"
-            title="Encerrar conversa"
-          >
-            {isClosingConversation ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <XSquare className="w-4 h-4" />
-            )}
-            <span className="hidden sm:inline">Encerrar</span>
-          </button>
-        )}
-      </>
-    );
-  };
+  const actionButtonProps = selectedConversation ? {
+    conversationId: selectedConversation.conversation.id,
+    handlerName: selectedConversation.conversation.current_handler_name,
+    autopilotEnabled: selectedConversation.conversation.autopilot_enabled,
+    isActive: selectedConversation.conversation.status === "active",
+    isFavorite: isFavorite(selectedConversation.conversation.id),
+    onToggleFavorite: () => toggleFavorite(selectedConversation.conversation.id),
+    isFavoriteLoading: isToggling,
+    onToggleAutopilot: () => toggleAutopilot(
+      selectedConversation.conversation.id,
+      !selectedConversation.conversation.autopilot_enabled
+    ),
+    isAutopilotLoading: isTogglingAutopilot,
+    onTransfer: () => setShowTransferModal(true),
+    onClose: handleCloseConversation,
+    isClosing: isClosingConversation,
+  } : null;
 
   return (
     <div className="h-full min-h-0 flex flex-col">
@@ -200,7 +135,6 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
           <>
             {/* Mobile Layout */}
             <div className="lg:hidden flex-1 flex flex-col min-h-0">
-              {/* Sticky Header Zone */}
               <div className="sticky top-0 z-10 bg-white flex-shrink-0">
                 <CustomerHeader
                   name={customerName}
@@ -210,7 +144,6 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                   compact
                 />
                 
-                {/* Conversation Selector */}
                 <ConversationSelector
                   selectedIndex={selectedConversationIndex}
                   totalCount={sortedConversations.length}
@@ -219,10 +152,11 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                   closedReason={selectedConversation?.conversation.closed_reason}
                   onPrevious={goToPreviousConversation}
                   onNext={goToNextConversation}
-                  actionButtons={renderMobileActions()}
+                  actionButtons={actionButtonProps && (
+                    <ConversationActionButtons {...actionButtonProps} variant="mobile" />
+                  )}
                 />
                 
-                {/* Content Tabs */}
                 <div className="px-3 py-2 border-b border-gray-200">
                   <div className="flex items-center justify-between">
                     <SegmentedTabs
@@ -244,7 +178,6 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                 </div>
               </div>
 
-              {/* Scrollable Content Area - Single scroll */}
               <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50">
                 {contentTab === "resumo" && (
                   <ConversationSummary 
@@ -269,18 +202,16 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
               </div>
             </div>
 
-            {/* Desktop Layout - Split Panels */}
+            {/* Desktop Layout */}
             <div className="hidden lg:flex h-full flex-col overflow-hidden">
               <div 
                 ref={containerRef}
                 className="flex-1 flex overflow-hidden"
               >
-                {/* Left Panel - Navigation + Summary */}
                 <div 
                   className="flex flex-col overflow-hidden bg-white border-r border-gray-200"
                   style={{ width: `${leftPanelWidth}%` }}
                 >
-                  {/* Conversation Navigation */}
                   <ConversationSelector
                     selectedIndex={selectedConversationIndex}
                     totalCount={sortedConversations.length}
@@ -303,7 +234,6 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                   </div>
                 </div>
 
-                {/* Resize Handle */}
                 <div
                   className={`w-1 cursor-col-resize hover:bg-blue-400 transition-colors flex-shrink-0 ${
                     isResizing ? "bg-blue-500" : "bg-gray-200"
@@ -311,7 +241,6 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                   onMouseDown={handleMouseDown}
                 />
 
-                {/* Right Panel - Chat */}
                 <div 
                   className="flex-1 flex flex-col overflow-hidden bg-gray-50"
                   style={{ width: `${100 - leftPanelWidth}%` }}
@@ -322,7 +251,9 @@ export function UserConversationsPage({ params }: UserConversationsPageProps) {
                     className="bg-white"
                     actions={
                       <>
-                        {renderDesktopActionButtons()}
+                        {actionButtonProps && (
+                          <ConversationActionButtons {...actionButtonProps} variant="desktop" />
+                        )}
                         <button
                           onClick={() => setShowSuggestions(!showSuggestions)}
                           className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 rounded-lg transition-colors"

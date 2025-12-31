@@ -5,3 +5,4 @@ export { CatalogTab } from "./CatalogTab";
 export { ExternalEventsTab } from "./ExternalEventsTab";
 export { ProductAddForm, ProductEditForm } from "./ProductCatalogForms";
 export { ProductTreeActions } from "./ProductTreeActions";
+export { ArchiveStatsCards, ActiveJobProgress, ArchiveHistoryTable } from "./archive";
