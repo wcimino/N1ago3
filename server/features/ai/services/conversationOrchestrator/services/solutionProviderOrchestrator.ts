@@ -1,5 +1,6 @@
 import { caseSolutionStorage } from "../../../storage/caseSolutionStorage.js";
 import { conversationStorage } from "../../../../conversations/storage/index.js";
+import { summaryStorage } from "../../../storage/summaryStorage.js";
 import { ActionExecutor } from "../actionExecutor.js";
 import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type OrchestratorContext, type OrchestratorAction } from "../types.js";
 import { saveSuggestedResponse } from "../../agentFramework.js";
@@ -9,7 +10,6 @@ import {
   allActionsCompleted,
   decideActionExecution,
   getActionDescription,
-  getActionValue,
   getActionAgentInstructions,
   resolveMessageFromVariations,
   type CaseAction,
@@ -196,21 +196,10 @@ export class SolutionProviderOrchestrator {
     caseSolutionId: number,
     action: CaseAction
   ): Promise<SolutionProviderOrchestratorResult> {
-    const { conversationId } = context;
-
+    const { conversationId, event } = context;
     console.log(`[SolutionProviderOrchestrator] Executing automatic action: consultar_perfil_cliente`);
 
-    const { summaryStorage } = await import("../../../storage/summaryStorage.js");
-    let clientHubData: Record<string, unknown> | null = null;
-    
-    if (context.event.externalConversationId) {
-      const existingSummary = await summaryStorage.getConversationSummaryByExternalId(context.event.externalConversationId);
-      clientHubData = existingSummary?.clientHubData as Record<string, unknown> | null;
-    }
-    
-    if (!clientHubData) {
-      clientHubData = await summaryStorage.getClientHubData(conversationId) as Record<string, unknown> | null;
-    }
+    const clientHubData = await this.getClientHubData(context);
 
     if (clientHubData) {
       await caseSolutionStorage.updateCollectedInputs(caseSolutionId, undefined, {
@@ -218,7 +207,7 @@ export class SolutionProviderOrchestrator {
       });
       
       await caseSolutionStorage.updateActionStatus(action.id, "completed", {
-        output: { profileFound: true, dataKeys: Object.keys(clientHubData || {}) },
+        output: { profileFound: true, dataKeys: Object.keys(clientHubData) },
       });
       
       console.log(`[SolutionProviderOrchestrator] Client profile found, action completed`);
@@ -258,8 +247,8 @@ export class SolutionProviderOrchestrator {
     const { conversationId, event } = context;
 
     const actionDescription = getActionDescription(action);
-    const actionValue = getActionValue(action);
     const agentInstructions = getActionAgentInstructions(action);
+    const actionValue = (action.inputUsed as Record<string, unknown>)?.value as string | null ?? null;
 
     console.log(`[SolutionProviderOrchestrator] Generating message for action: ${actionDescription}`);
 
@@ -289,7 +278,7 @@ export class SolutionProviderOrchestrator {
 
       const aiResult = await this.callAIForMessage(context, {
         actionDescription,
-        actionValue: actionValue ?? null,
+        actionValue,
         agentInstructions: resolvedMessage.agentInstructions ?? agentInstructions,
         waitForResponse,
       });
@@ -303,34 +292,25 @@ export class SolutionProviderOrchestrator {
       suggestionId = aiResult.suggestionId;
     }
 
-    let messageSent = false;
-    if (suggestionId) {
-      const sendAction: OrchestratorAction = {
-        type: "SEND_MESSAGE",
-        payload: { suggestionId, responsePreview: mensagem.substring(0, 100) },
-      };
-      await ActionExecutor.execute(context, [sendAction]);
-      messageSent = true;
-    } else {
+    if (!suggestionId) {
       const saved = await saveSuggestedResponse(conversationId, mensagem, {
         externalConversationId: event.externalConversationId,
         lastEventId: event.id,
         inResponseTo: String(event.id),
       });
-      if (saved) {
-        const sendAction: OrchestratorAction = {
-          type: "SEND_MESSAGE",
-          payload: { suggestionId: saved.id, responsePreview: mensagem.substring(0, 100) },
-        };
-        await ActionExecutor.execute(context, [sendAction]);
-        messageSent = true;
-      }
+      suggestionId = saved?.id;
     }
 
-    if (!messageSent) {
-      console.log(`[SolutionProviderOrchestrator] Failed to send message, escalating`);
-      return await this.escalate(context, caseSolutionId, "Failed to send message");
+    if (!suggestionId) {
+      console.log(`[SolutionProviderOrchestrator] Failed to save message, escalating`);
+      return await this.escalate(context, caseSolutionId, "Failed to save message");
     }
+
+    const sendAction: OrchestratorAction = {
+      type: "SEND_MESSAGE",
+      payload: { suggestionId, responsePreview: mensagem.substring(0, 100) },
+    };
+    await ActionExecutor.execute(context, [sendAction]);
 
     if (waitForResponse) {
       await caseSolutionStorage.updateActionStatus(action.id, "in_progress", {
@@ -569,18 +549,24 @@ Gere a mensagem para o cliente.`;
   private static async getClientHubData(
     context: OrchestratorContext
   ): Promise<ClientHubData | null> {
+    if (context.conversationSummary?.clientHubData) {
+      return context.conversationSummary.clientHubData as ClientHubData;
+    }
+
     const { conversationId, event } = context;
 
-    const { summaryStorage } = await import("../../../storage/summaryStorage.js");
-    
     if (event.externalConversationId) {
       const existingSummary = await summaryStorage.getConversationSummaryByExternalId(event.externalConversationId);
       if (existingSummary?.clientHubData) {
         return existingSummary.clientHubData as ClientHubData;
       }
     }
-    
-    const clientHubData = await summaryStorage.getClientHubData(conversationId);
-    return clientHubData as ClientHubData | null;
+
+    if (conversationId) {
+      const clientHubData = await summaryStorage.getClientHubData(conversationId);
+      return clientHubData as ClientHubData | null;
+    }
+
+    return null;
   }
 }

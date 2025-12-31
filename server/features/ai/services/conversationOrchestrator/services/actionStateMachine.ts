@@ -70,11 +70,6 @@ export function getActionDescription(action: CaseAction): string {
   return String(input?.name || input?.description || input?.value || "Ação sem descrição");
 }
 
-export function getActionValue(action: CaseAction): string | null {
-  const input = action.inputUsed;
-  return input?.value ? String(input.value) : null;
-}
-
 export function getActionAgentInstructions(action: CaseAction): string | null {
   const input = action.inputUsed;
   return input?.agentInstructions ? String(input.agentInstructions) : null;
