@@ -6,7 +6,7 @@ import { EnrichmentService } from "../services/enrichmentService.js";
 import { ActionExecutor } from "../actionExecutor.js";
 import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type DemandFinderAgentResult, type OrchestratorContext, type OrchestratorAction } from "../types.js";
 import { searchSolutionCenter, type SearchLogContext } from "../../../../../shared/services/solutionCenterClient.js";
-import { createAgentLogger, createEscalatedResult } from "../helpers/orchestratorHelpers.js";
+import { createAgentLogger } from "../helpers/orchestratorHelpers.js";
 import { withRetry } from "../../../../../../shared/utils/retry.js";
 
 const CONFIG_KEY = "demand_finder";
@@ -329,6 +329,12 @@ export class DemandFinderAgent {
     const customerRequestType = getCustomerRequestType(summary);
     
     log.action(conversationId, "Searching Solution Center");
+    if (searchQueries) {
+      log.info(conversationId, `Queries: verbatim=${!!searchQueries.verbatimQuery}, keyword=${!!searchQueries.keywordQuery}, normalized=${!!searchQueries.normalizedQuery}`);
+    }
+    if (customerRequestType) {
+      log.info(conversationId, `Customer request type: ${customerRequestType}`);
+    }
 
     const solutionCenterResult = await this.searchSolutionCenterExternal(context, searchQueries, versions, customerRequestType || undefined);
 
