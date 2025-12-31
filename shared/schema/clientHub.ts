@@ -24,6 +24,7 @@ export interface ClientHubData {
   cnpjValido?: boolean;
   campos?: Record<string, ClientHubField>;
   fetchedAt?: string;
+  authenticated?: boolean;
 }
 
 export const clientHubApiLogs = pgTable("client_hub_api_logs", {

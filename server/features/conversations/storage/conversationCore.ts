@@ -1,5 +1,5 @@
 import { db } from "../../../db.js";
-import { conversations, eventsStandard } from "../../../../shared/schema.js";
+import { conversations, eventsStandard, users } from "../../../../shared/schema.js";
 import { eq, desc, sql, and, ne } from "drizzle-orm";
 import type { ExtractedConversation } from "../../events/adapters/types.js";
 import { CONVERSATION_RULES } from "../../../config/conversationRules.js";
@@ -83,21 +83,30 @@ export async function upsertConversation(data: ConversationData): Promise<{ conv
       data.metadata?.metadata?.['zen:ticket_field:17571800295309'];
     
     if (accountRef) {
-      fetchClientHubDataAsync(conversation.id, accountRef);
+      fetchClientHubDataAsync(conversation.id, accountRef, data.userExternalId);
     }
   }
   
   return { conversation, isNew: isNewConversation };
 }
 
-async function fetchClientHubDataAsync(conversationId: number, accountRef: string): Promise<void> {
+async function fetchClientHubDataAsync(conversationId: number, accountRef: string, userExternalId?: string): Promise<void> {
   try {
     console.log(`[ClientHubIntegration] Fetching client data for conversation ${conversationId}, accountRef: ${accountRef}`);
     const clientData = await fetchClientByAccountRef(accountRef, { conversationId });
     
     if (clientData) {
+      if (userExternalId) {
+        const [user] = await db.select({ authenticated: users.authenticated })
+          .from(users)
+          .where(eq(users.externalId, userExternalId));
+        clientData.authenticated = user?.authenticated ?? false;
+      } else {
+        clientData.authenticated = false;
+      }
+      
       await summaryStorage.updateClientHubData(conversationId, clientData);
-      console.log(`[ClientHubIntegration] Successfully saved client data for conversation ${conversationId}`);
+      console.log(`[ClientHubIntegration] Successfully saved client data for conversation ${conversationId}, authenticated: ${clientData.authenticated}`);
     } else {
       console.log(`[ClientHubIntegration] No client data found for accountRef: ${accountRef}`);
     }
