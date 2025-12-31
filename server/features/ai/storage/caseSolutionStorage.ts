@@ -217,4 +217,23 @@ export const caseSolutionStorage = {
     const pendingAction = await this.getNextPendingAction(caseSolutionId);
     return pendingAction !== null;
   },
+
+  async getInteractionCount(caseSolutionId: number): Promise<number> {
+    const solution = await this.getById(caseSolutionId);
+    return solution?.interactionCount ?? 0;
+  },
+
+  async incrementInteractionCount(caseSolutionId: number): Promise<number> {
+    const current = await this.getInteractionCount(caseSolutionId);
+    const newCount = current + 1;
+    
+    await db.update(caseSolutions)
+      .set({
+        interactionCount: newCount,
+        updatedAt: new Date(),
+      })
+      .where(eq(caseSolutions.id, caseSolutionId));
+    
+    return newCount;
+  },
 };

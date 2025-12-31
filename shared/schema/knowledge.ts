@@ -25,6 +25,7 @@ export const caseSolutions = pgTable("case_solutions", {
   collectedInputsCustomer: jsonb("collected_inputs_customer").$type<Record<string, unknown>>().default({}),
   collectedInputsSystems: jsonb("collected_inputs_systems").$type<Record<string, unknown>>().default({}),
   pendingInputs: jsonb("pending_inputs").$type<Array<{ key: string; question: string; source: string }>>().default([]),
+  interactionCount: integer("interaction_count").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({

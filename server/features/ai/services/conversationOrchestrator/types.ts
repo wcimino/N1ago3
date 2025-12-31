@@ -150,4 +150,5 @@ export type SolutionCenterActionType =
   | "consultar_perfil_cliente" 
   | "outro" 
   | "perguntar_ao_cliente" 
-  | "transferir_para_humano";
+  | "transferir_para_humano"
+  | "transferir_humano";

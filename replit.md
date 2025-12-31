@@ -16,7 +16,12 @@ The system employs a decoupled architecture with a React, TypeScript, Vite, Tail
 *   **Authentication System:** Uses Replit Auth (Google Login) with an Access Control List (ACL) based on email domains and an `authorized_users` table.
 *   **AI-Powered Features:** A unified architecture supports various AI capabilities (summarization, classification, response generation, knowledge search) using centralized OpenAI services and automatic API call logging.
 *   **ConversationOrchestrator Pipeline:** Manages conversation flow using a 2-field state model (`conversation_owner` + `waiting_for_customer`) with defined owner transition validations and status values. The flow is: DemandFinder → SolutionProvider → Closer. The SolutionProvider handles solution resolution using `case_solutions` and `case_actions` tables.
-*   **SolutionProviderAgent:** Receives `articleId` or `(solutionId + rootCauseId)` from DemandFinder and resolves the appropriate solution. Currently uses a fallback strategy (transfer to human) until Central de Soluções API integration is implemented.
+*   **SolutionProviderAgent & Orchestrator:** Receives `articleId` or `(solutionId + rootCauseId)` from DemandFinder and resolves the appropriate solution via Solution Center API. Uses a **deterministic orchestrator pattern**:
+    - **ActionStateMachine** (`actionStateMachine.ts`): Categorizes actions as AUTOMATIC, REQUIRES_MESSAGE, or REQUIRES_CUSTOMER_INPUT
+    - **SolutionProviderOrchestrator** (`solutionProviderOrchestrator.ts`): Turn-based loop processing up to 10 actions per invocation
+    - **AI only generates message text** - no control flow decisions; orchestrator handles all workflow logic
+    - **Interaction counting**: MAX_INTERACTIONS=5 enforced across all AI calls, incrementing only when AI is required
+    - Actions: `transferir_humano` (escalate), `consultar_perfil_cliente` (fetch ClientHub data), `informar_cliente` (send message)
 *   **Case Solution and Demand Architecture:** `case_solutions` table tracks solution instances; `case_demand` stores customer demands per conversation, supporting multiple demands and interaction counts.
 *   **External Knowledge via Solution Center API:** All knowledge retrieval uses the external Solution Center API; no internal knowledge base or embeddings.
 

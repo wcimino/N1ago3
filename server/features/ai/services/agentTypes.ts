@@ -77,9 +77,18 @@ export interface SaveSuggestionOptions {
   source?: string;
 }
 
+export interface ActionInfo {
+  description: string;
+  value: string | null;
+  instructions: string | null;
+  requiresResponse: boolean;
+}
+
 export interface BuildContextOptions {
   includeLastMessage?: boolean;
   includeSummary?: boolean;
   includeClassification?: boolean;
-  overrides?: Partial<Pick<AgentContext, 'summary' | 'classification' | 'demand' | 'searchResults' | 'handler' | 'customerRequestType'>>;
+  overrides?: Partial<Pick<AgentContext, 'summary' | 'classification' | 'demand' | 'searchResults' | 'handler' | 'customerRequestType'>> & {
+    actionInfo?: ActionInfo;
+  };
 }
