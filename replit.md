@@ -93,7 +93,7 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **AI Services (Chat):** Utilizes Replit AI Integrations (default) or OpenAI (fallback).
 *   **OpenAI API:** Used for AI chat capabilities.
 
-## Recent Refactoring (2024-12-31)
+## Recent Refactoring (2025-12-31)
 
 **Architectural Improvements:**
 
@@ -119,6 +119,11 @@ The React frontend provides a real-time dashboard and administrative interfaces,
     - `DemandFinderAgent`: Uses `createAgentLogger` for structured logging, `withRetry` for Solution Center API calls
     - `SolutionProviderOrchestrator`: Uses `createAgentLogger` for consistent logging patterns
 
+*   **Frontend Pages Refactoring:**
+    - `ArchivePage`: Reduced 68% (416→131 lines) by extracting `useArchiveData` hook and presentational components (`ArchiveStatsCards`, `ActiveJobProgress`, `ArchiveHistoryTable`)
+    - `UserConversationsPage`: Reduced 18% (385→315 lines) by extracting `ConversationActionButtons` component with mobile/desktop variants
+    - Hook pattern: Data fetching and state management in custom hooks, UI in presentational components
+
 **Code Quality:**
 - Eliminated ~400 lines of duplicated retry/batch logic
 - Centralized error handling patterns
@@ -127,3 +132,4 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 - Added fileSize to FileCheckResult for accurate progress reporting
 - FORCE mode now throws on delete failure to prevent stale artifacts
 - AI agents now use structured logging via createAgentLogger helper
+- Frontend components follow consistent hook + presentational pattern
