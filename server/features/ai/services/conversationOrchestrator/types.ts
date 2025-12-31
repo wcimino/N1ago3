@@ -197,7 +197,7 @@ export interface SolutionCenterResponse {
 }
 
 export interface ResolvedMessage {
-  message: string;
-  agentInstructions: string;
+  message: string | undefined;
+  agentInstructions: string | undefined;
   variationLabel?: string;
 }

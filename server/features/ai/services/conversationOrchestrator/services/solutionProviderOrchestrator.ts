@@ -11,9 +11,11 @@ import {
   getActionDescription,
   getActionValue,
   getActionAgentInstructions,
+  resolveMessageFromVariations,
   type CaseAction,
   type ActionDecision,
 } from "./actionStateMachine.js";
+import type { ClientHubData } from "../../../../../../shared/schema/clientHub.js";
 
 const MAX_INTERACTIONS = 5;
 
@@ -261,19 +263,45 @@ export class SolutionProviderOrchestrator {
 
     console.log(`[SolutionProviderOrchestrator] Generating message for action: ${actionDescription}`);
 
-    const aiResult = await this.callAIForMessage(context, {
-      actionDescription,
-      actionValue,
-      agentInstructions,
-      waitForResponse,
-    });
+    const clientHubData = await this.getClientHubData(context);
+    const resolvedMessage = resolveMessageFromVariations(action, clientHubData);
 
-    if (!aiResult || !aiResult.mensagem) {
-      console.log(`[SolutionProviderOrchestrator] AI failed to generate message, escalating`);
-      return await this.escalate(context, caseSolutionId, "AI failed to generate message");
+    if (resolvedMessage.variationLabel) {
+      console.log(`[SolutionProviderOrchestrator] Using variation: ${resolvedMessage.variationLabel}`);
     }
 
-    const { mensagem, suggestionId } = aiResult;
+    let mensagem: string;
+    let suggestionId: number | undefined;
+
+    if (resolvedMessage.message) {
+      console.log(`[SolutionProviderOrchestrator] Using pre-defined message from action`);
+      mensagem = resolvedMessage.message;
+
+      const saved = await saveSuggestedResponse(conversationId, mensagem, {
+        externalConversationId: event.externalConversationId,
+        lastEventId: event.id,
+        inResponseTo: String(event.id),
+        source: "solution_provider_orchestrator_predefined",
+      });
+      suggestionId = saved?.id;
+    } else {
+      console.log(`[SolutionProviderOrchestrator] Calling AI to generate message`);
+
+      const aiResult = await this.callAIForMessage(context, {
+        actionDescription,
+        actionValue: actionValue ?? null,
+        agentInstructions: resolvedMessage.agentInstructions ?? agentInstructions,
+        waitForResponse,
+      });
+
+      if (!aiResult || !aiResult.mensagem) {
+        console.log(`[SolutionProviderOrchestrator] AI failed to generate message, escalating`);
+        return await this.escalate(context, caseSolutionId, "AI failed to generate message");
+      }
+
+      mensagem = aiResult.mensagem;
+      suggestionId = aiResult.suggestionId;
+    }
 
     let messageSent = false;
     if (suggestionId) {
@@ -318,7 +346,7 @@ export class SolutionProviderOrchestrator {
       context.lastDispatchLog = {
         solutionCenterResults: 1,
         aiDecision: "ask_customer",
-        aiReason: aiResult.motivo || "Waiting for customer response",
+        aiReason: "Waiting for customer response",
         action: "message_sent_waiting",
         details: { caseSolutionId, actionId: action.id, suggestionId },
       };
@@ -346,7 +374,7 @@ export class SolutionProviderOrchestrator {
       context.lastDispatchLog = {
         solutionCenterResults: 1,
         aiDecision: "inform_customer",
-        aiReason: aiResult.motivo || "Informed customer",
+        aiReason: "Informed customer",
         action: "message_sent",
         details: { caseSolutionId, actionId: action.id, suggestionId },
       };
@@ -536,5 +564,23 @@ Gere a mensagem para o cliente.`;
       escalated: true,
       error: reason,
     };
+  }
+
+  private static async getClientHubData(
+    context: OrchestratorContext
+  ): Promise<ClientHubData | null> {
+    const { conversationId, event } = context;
+
+    const { summaryStorage } = await import("../../../storage/summaryStorage.js");
+    
+    if (event.externalConversationId) {
+      const existingSummary = await summaryStorage.getConversationSummaryByExternalId(event.externalConversationId);
+      if (existingSummary?.clientHubData) {
+        return existingSummary.clientHubData as ClientHubData;
+      }
+    }
+    
+    const clientHubData = await summaryStorage.getClientHubData(conversationId);
+    return clientHubData as ClientHubData | null;
   }
 }

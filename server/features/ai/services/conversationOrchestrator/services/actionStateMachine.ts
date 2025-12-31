@@ -163,7 +163,7 @@ function evaluateConditions(
   conditions: SolutionCenterCondition[],
   context: Record<string, unknown>
 ): boolean {
-  if (!conditions || conditions.length === 0) return false;
+  if (!conditions || conditions.length === 0) return true;
   
   return conditions.every(condition => {
     const actualValue = context[condition.variableName];
@@ -177,8 +177,8 @@ export function resolveMessageFromVariations(
 ): ResolvedMessage {
   const input = action.inputUsed as Record<string, unknown> | undefined;
   
-  const defaultMessage = input?.message ? String(input.message) : "";
-  const defaultInstructions = input?.agentInstructions ? String(input.agentInstructions) : "";
+  const defaultMessage = input?.message && String(input.message).trim() ? String(input.message) : undefined;
+  const defaultInstructions = input?.agentInstructions && String(input.agentInstructions).trim() ? String(input.agentInstructions) : undefined;
   
   const fallback: ResolvedMessage = {
     message: defaultMessage,
@@ -208,9 +208,11 @@ export function resolveMessageFromVariations(
   for (const variation of messageVariations.variations) {
     if (evaluateConditions(variation.conditions, context)) {
       console.log(`[ActionStateMachine] Matched variation: ${variation.label}`);
+      const variationMessage = variation.message && variation.message.trim() ? variation.message : undefined;
+      const variationInstructions = variation.agentInstructions && variation.agentInstructions.trim() ? variation.agentInstructions : undefined;
       return {
-        message: variation.message || defaultMessage,
-        agentInstructions: variation.agentInstructions || defaultInstructions,
+        message: variationMessage ?? defaultMessage,
+        agentInstructions: variationInstructions ?? defaultInstructions,
         variationLabel: variation.label,
       };
     }
