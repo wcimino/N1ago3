@@ -5,35 +5,11 @@ import * as os from "os";
 import { db } from "../../../../db.js";
 import { sql } from "drizzle-orm";
 import { objectStorageClient } from "../../../../replit_integrations/object_storage/objectStorage.js";
+import { withRetry } from "../../../../../shared/utils/retry.js";
 
 const BATCH_SIZE = 2000;
 const MAX_UPLOAD_RETRIES = 3;
 const INITIAL_RETRY_DELAY_MS = 1000;
-
-async function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function withRetry<T>(
-  operation: () => Promise<T>,
-  maxRetries: number = MAX_UPLOAD_RETRIES,
-  operationName: string = "operation"
-): Promise<T> {
-  let lastError: Error | null = null;
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await operation();
-    } catch (err: any) {
-      lastError = err;
-      if (attempt < maxRetries) {
-        const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt - 1);
-        console.log(`[ParquetExporter] ${operationName} failed (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`);
-        await sleep(delay);
-      }
-    }
-  }
-  throw lastError;
-}
 
 export function getEnvironmentPrefix(): string {
   return process.env.REPLIT_DEPLOYMENT ? "prod" : "dev";
@@ -242,7 +218,7 @@ export async function exportDayToParquet(
           },
         },
       });
-    }, MAX_UPLOAD_RETRIES, `Upload ${storageFileName}.tmp`);
+    }, { maxRetries: MAX_UPLOAD_RETRIES, initialBackoffMs: INITIAL_RETRY_DELAY_MS, operationName: `Upload ${storageFileName}.tmp` });
 
     const [tmpExists] = await tmpFile.exists();
     if (!tmpExists) {
@@ -260,7 +236,7 @@ export async function exportDayToParquet(
     await withRetry(async () => {
       await tmpFile.copy(file);
       await tmpFile.delete();
-    }, MAX_UPLOAD_RETRIES, `Rename ${storageFileName}.tmp to final`);
+    }, { maxRetries: MAX_UPLOAD_RETRIES, initialBackoffMs: INITIAL_RETRY_DELAY_MS, operationName: `Rename ${storageFileName}.tmp to final` });
 
     const [exists] = await file.exists();
     if (!exists) {
@@ -432,7 +408,7 @@ export async function exportHourToParquet(
           },
         },
       });
-    }, MAX_UPLOAD_RETRIES, `Upload ${storageFileName}.tmp`);
+    }, { maxRetries: MAX_UPLOAD_RETRIES, initialBackoffMs: INITIAL_RETRY_DELAY_MS, operationName: `Upload ${storageFileName}.tmp` });
 
     const [tmpExists] = await tmpFile.exists();
     if (!tmpExists) {
@@ -450,7 +426,7 @@ export async function exportHourToParquet(
     await withRetry(async () => {
       await tmpFile.copy(file);
       await tmpFile.delete();
-    }, MAX_UPLOAD_RETRIES, `Rename ${storageFileName}.tmp to final`);
+    }, { maxRetries: MAX_UPLOAD_RETRIES, initialBackoffMs: INITIAL_RETRY_DELAY_MS, operationName: `Rename ${storageFileName}.tmp to final` });
 
     const [exists] = await file.exists();
     if (!exists) {
@@ -615,7 +591,7 @@ export async function exportHourWithOutcome(
           },
         },
       });
-    }, MAX_UPLOAD_RETRIES, `Upload ${storageFileName}.tmp`);
+    }, { maxRetries: MAX_UPLOAD_RETRIES, initialBackoffMs: INITIAL_RETRY_DELAY_MS, operationName: `Upload ${storageFileName}.tmp` });
 
     const [tmpExists] = await tmpFile.exists();
     if (!tmpExists) {
@@ -633,7 +609,7 @@ export async function exportHourWithOutcome(
     await withRetry(async () => {
       await tmpFile.copy(file);
       await tmpFile.delete();
-    }, MAX_UPLOAD_RETRIES, `Rename ${storageFileName}.tmp to final`);
+    }, { maxRetries: MAX_UPLOAD_RETRIES, initialBackoffMs: INITIAL_RETRY_DELAY_MS, operationName: `Rename ${storageFileName}.tmp to final` });
 
     const [exists] = await file.exists();
     if (!exists) {
