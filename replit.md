@@ -110,7 +110,15 @@ The React frontend provides a real-time dashboard and administrative interfaces,
     - `batchQueryBuilder.ts`: Cursor-based batch queries with time range support
     - `parquetExporter.ts`: Simplified to ~250 lines using above modules
 
+*   **Orchestrator Helpers (`server/features/ai/services/conversationOrchestrator/helpers/orchestratorHelpers.ts`):**
+    - `createAgentLogger(agentName)`: Structured logging wrapper for AI agents
+    - `createSuccessResult(overrides)`: Standardized agent result factory
+    - `createEscalatedResult(error?, message?)`: Escalation result with default messages
+
 **Code Quality:**
 - Eliminated ~400 lines of duplicated retry/batch logic
 - Centralized error handling patterns
 - Improved type safety across API boundaries
+- Fixed circular dependency in archiveService via dynamic import
+- Added fileSize to FileCheckResult for accurate progress reporting
+- FORCE mode now throws on delete failure to prevent stale artifacts
