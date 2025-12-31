@@ -2,73 +2,23 @@ import parquet from "parquetjs";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import { db } from "../../../../db.js";
-import { sql } from "drizzle-orm";
-import { objectStorageClient } from "../../../../replit_integrations/object_storage/objectStorage.js";
-import { withRetry } from "../../../../../shared/utils/retry.js";
 
-const BATCH_SIZE = 2000;
-const MAX_UPLOAD_RETRIES = 3;
-const INITIAL_RETRY_DELAY_MS = 1000;
+import { getParquetSchema, getSchemaFields, serializeValue } from "./schemaRegistry.js";
+import {
+  buildStoragePath,
+  checkExistingFile,
+  deleteFileIfInvalid,
+  uploadWithVerification,
+  getEnvironmentPrefix,
+} from "./storageUploader.js";
+import {
+  createDayRange,
+  createHourRange,
+  countRecordsInRange,
+  iterateBatches,
+} from "./batchQueryBuilder.js";
 
-export function getEnvironmentPrefix(): string {
-  return process.env.REPLIT_DEPLOYMENT ? "prod" : "dev";
-}
-
-export function getParquetSchema(tableName: string): any {
-  if (tableName === "zendesk_conversations_webhook_raw") {
-    return new parquet.ParquetSchema({
-      id: { type: "INT64" },
-      source: { type: "UTF8", optional: true },
-      received_at: { type: "UTF8", optional: true },
-      source_ip: { type: "UTF8", optional: true },
-      headers: { type: "UTF8", optional: true },
-      payload: { type: "UTF8", optional: true },
-      raw_body: { type: "UTF8", optional: true },
-      processing_status: { type: "UTF8", optional: true },
-      error_message: { type: "UTF8", optional: true },
-      processed_at: { type: "UTF8", optional: true },
-      retry_count: { type: "INT32", optional: true },
-      events_created_count: { type: "INT32", optional: true },
-    });
-  } else if (tableName === "openai_api_logs") {
-    return new parquet.ParquetSchema({
-      id: { type: "INT64" },
-      request_type: { type: "UTF8", optional: true },
-      model_name: { type: "UTF8", optional: true },
-      prompt_system: { type: "UTF8", optional: true },
-      prompt_user: { type: "UTF8", optional: true },
-      response_raw: { type: "UTF8", optional: true },
-      response_content: { type: "UTF8", optional: true },
-      tokens_prompt: { type: "INT32", optional: true },
-      tokens_completion: { type: "INT32", optional: true },
-      tokens_total: { type: "INT32", optional: true },
-      duration_ms: { type: "INT32", optional: true },
-      success: { type: "BOOLEAN", optional: true },
-      error_message: { type: "UTF8", optional: true },
-      context_type: { type: "UTF8", optional: true },
-      context_id: { type: "UTF8", optional: true },
-      created_at: { type: "UTF8", optional: true },
-    });
-  } else if (tableName === "responses_suggested") {
-    return new parquet.ParquetSchema({
-      id: { type: "INT64" },
-      conversation_id: { type: "INT32", optional: true },
-      external_conversation_id: { type: "UTF8", optional: true },
-      suggested_response: { type: "UTF8", optional: true },
-      last_event_id: { type: "INT32", optional: true },
-      openai_log_id: { type: "INT32", optional: true },
-      used_at: { type: "UTF8", optional: true },
-      dismissed: { type: "BOOLEAN", optional: true },
-      created_at: { type: "UTF8", optional: true },
-      in_response_to: { type: "UTF8", optional: true },
-      status: { type: "UTF8", optional: true },
-      articles_used: { type: "UTF8", optional: true },
-    });
-  } else {
-    throw new Error(`Unknown table for Parquet schema: ${tableName}`);
-  }
-}
+export { getParquetSchema, getEnvironmentPrefix };
 
 export interface ExportResult {
   archived: number;
@@ -87,174 +37,57 @@ export interface DayExportResult {
   maxId: number;
 }
 
-export async function exportDayToParquet(
+export type ExportOutcome =
+  | { status: "empty" }
+  | { status: "existing"; archived: number; filePath: string; fileSize: number; minId: number; maxId: number }
+  | { status: "exported"; archived: number; filePath: string; fileSize: number; minId: number; maxId: number };
+
+interface WriterState {
+  recordsWritten: number;
+  minId: number;
+  maxId: number;
+}
+
+async function writeRecordsToParquet(
+  writer: parquet.ParquetWriter,
   tableName: string,
-  archiveDate: Date,
-  dateColumn: string
-): Promise<DayExportResult | null> {
-  const startOfDay = new Date(archiveDate);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(archiveDate);
-  endOfDay.setHours(23, 59, 59, 999);
-
-  const countResult = await db.execute(sql`
-    SELECT COUNT(*) as count
-    FROM ${sql.identifier(tableName)}
-    WHERE ${sql.identifier(dateColumn)} >= ${startOfDay}
-      AND ${sql.identifier(dateColumn)} <= ${endOfDay}
-  `);
-  const totalRecords = Number((countResult.rows[0] as any).count);
-
-  if (totalRecords === 0) {
-    console.log(`[ParquetExporter] No records to export for ${tableName} on ${archiveDate.toISOString().split("T")[0]}`);
-    return null;
-  }
-
-  const schema = getParquetSchema(tableName);
-  const dateStr = archiveDate.toISOString().split("T")[0];
-  const envPrefix = getEnvironmentPrefix();
-  const storageFileName = `archives/${envPrefix}/${tableName}/${dateStr}/day.parquet`;
-
-  const privateDir = process.env.PRIVATE_OBJECT_DIR;
-  if (!privateDir) {
-    throw new Error("PRIVATE_OBJECT_DIR not configured");
-  }
-
-  const fullPath = `${privateDir}/${storageFileName}`;
-  const pathParts = fullPath.startsWith("/") ? fullPath.slice(1).split("/") : fullPath.split("/");
-  const bucketName = pathParts[0];
-  const objectName = pathParts.slice(1).join("/");
-  const bucket = objectStorageClient.bucket(bucketName);
-  const file = bucket.file(objectName);
-
-  const [existingFile] = await file.exists();
-  if (existingFile) {
-    const [metadata] = await file.getMetadata();
-    const existingRecordCount = Number(metadata.metadata?.recordCount || 0);
-    const archivedMinId = Number(metadata.metadata?.minId || 0);
-    const archivedMaxId = Number(metadata.metadata?.maxId || 0);
-
-    if (existingRecordCount > 0 && archivedMinId > 0 && archivedMaxId > 0) {
-      console.log(`[ParquetExporter] File already exists: ${storageFileName}`);
-      return {
-        archived: existingRecordCount,
-        filePath: storageFileName,
-        fileSize: Number(metadata.size || 0),
-        minId: archivedMinId,
-        maxId: archivedMaxId,
-      };
-    }
-    console.log(`[ParquetExporter] File exists but has no valid metadata: ${storageFileName}, re-exporting`);
-  }
-
-  const tempDir = os.tmpdir();
-  const tempFilePath = path.join(tempDir, `archive_${tableName}_${dateStr}_day_${Date.now()}.parquet`);
-  const writer = await parquet.ParquetWriter.openFile(schema, tempFilePath);
-
-  let lastId = 0;
+  dateColumn: string,
+  range: { start: Date; end: Date },
+  onProgress?: (recordsWritten: number) => void
+): Promise<WriterState> {
+  const fields = getSchemaFields(tableName);
   let recordsWritten = 0;
   let minId = Number.MAX_SAFE_INTEGER;
   let maxId = 0;
 
-  try {
-    while (true) {
-      const batchResult = await db.execute(sql`
-        SELECT *
-        FROM ${sql.identifier(tableName)}
-        WHERE ${sql.identifier(dateColumn)} >= ${startOfDay}
-          AND ${sql.identifier(dateColumn)} <= ${endOfDay}
-          AND id > ${lastId}
-        ORDER BY id ASC
-        LIMIT ${BATCH_SIZE}
-      `);
-
-      const rows = batchResult.rows as any[];
-      if (rows.length === 0) break;
-
-      for (const record of rows) {
-        const row: any = {};
-        for (const field of Object.keys((schema as any).schema)) {
-          let value = record[field];
-          if (value === undefined || value === null) {
-            row[field] = null;
-          } else if (typeof value === "object" && !(value instanceof Date)) {
-            row[field] = JSON.stringify(value);
-          } else if (value instanceof Date) {
-            row[field] = value.toISOString();
-          } else {
-            row[field] = value;
-          }
-        }
-        await writer.appendRow(row);
-        recordsWritten++;
-
-        if (record.id < minId) minId = record.id;
-        if (record.id > maxId) maxId = record.id;
+  for await (const batch of iterateBatches(tableName, dateColumn, range)) {
+    for (const record of batch as any[]) {
+      const row: Record<string, unknown> = {};
+      for (const field of fields) {
+        row[field] = serializeValue(record[field]);
       }
+      await writer.appendRow(row);
+      recordsWritten++;
 
-      lastId = rows[rows.length - 1].id;
+      if (record.id < minId) minId = record.id;
+      if (record.id > maxId) maxId = record.id;
     }
 
-    await writer.close();
+    onProgress?.(batch.length);
+  }
 
-    if (recordsWritten === 0) {
-      return null;
-    }
+  return { recordsWritten, minId, maxId };
+}
 
-    const tmpObjectName = `${objectName}.tmp`;
-    const tmpFile = bucket.file(tmpObjectName);
+async function withTempFile<T>(
+  prefix: string,
+  fn: (tempFilePath: string) => Promise<T>
+): Promise<T> {
+  const tempDir = os.tmpdir();
+  const tempFilePath = path.join(tempDir, `${prefix}_${Date.now()}.parquet`);
 
-    await withRetry(async () => {
-      await bucket.upload(tempFilePath, {
-        destination: tmpObjectName,
-        contentType: "application/octet-stream",
-        metadata: {
-          metadata: {
-            tableName,
-            archiveDate: dateStr,
-            recordCount: recordsWritten.toString(),
-            minId: minId.toString(),
-            maxId: maxId.toString(),
-          },
-        },
-      });
-    }, { maxRetries: MAX_UPLOAD_RETRIES, initialBackoffMs: INITIAL_RETRY_DELAY_MS, operationName: `Upload ${storageFileName}.tmp` });
-
-    const [tmpExists] = await tmpFile.exists();
-    if (!tmpExists) {
-      throw new Error("Upload verification failed - temp file not found in storage");
-    }
-
-    const [tmpMetadata] = await tmpFile.getMetadata();
-    const uploadedRecordCount = Number(tmpMetadata.metadata?.recordCount || 0);
-
-    if (uploadedRecordCount !== recordsWritten) {
-      await tmpFile.delete().catch(() => {});
-      throw new Error(`Record count mismatch: wrote ${recordsWritten} but metadata shows ${uploadedRecordCount}`);
-    }
-
-    await withRetry(async () => {
-      await tmpFile.copy(file);
-      await tmpFile.delete();
-    }, { maxRetries: MAX_UPLOAD_RETRIES, initialBackoffMs: INITIAL_RETRY_DELAY_MS, operationName: `Rename ${storageFileName}.tmp to final` });
-
-    const [exists] = await file.exists();
-    if (!exists) {
-      throw new Error("Rename verification failed - final file not found in storage");
-    }
-
-    const [metadata] = await file.getMetadata();
-    const fileSize = Number(metadata.size || 0);
-
-    console.log(`[ParquetExporter] Exported ${storageFileName}: ${recordsWritten} records`);
-
-    return {
-      archived: recordsWritten,
-      filePath: storageFileName,
-      fileSize,
-      minId,
-      maxId,
-    };
+  try {
+    return await fn(tempFilePath);
   } finally {
     try {
       if (fs.existsSync(tempFilePath)) {
@@ -266,10 +99,73 @@ export async function exportDayToParquet(
   }
 }
 
-export type ExportOutcome =
-  | { status: "empty" }
-  | { status: "existing"; archived: number; filePath: string; fileSize: number; minId: number; maxId: number }
-  | { status: "exported"; archived: number; filePath: string; fileSize: number; minId: number; maxId: number };
+export async function exportDayToParquet(
+  tableName: string,
+  archiveDate: Date,
+  dateColumn: string
+): Promise<DayExportResult | null> {
+  const range = createDayRange(archiveDate);
+  const totalRecords = await countRecordsInRange(tableName, dateColumn, range);
+
+  if (totalRecords === 0) {
+    const dateStr = archiveDate.toISOString().split("T")[0];
+    console.log(`[ParquetExporter] No records to export for ${tableName} on ${dateStr}`);
+    return null;
+  }
+
+  const dateStr = archiveDate.toISOString().split("T")[0];
+  const storageFileName = buildStoragePath(tableName, dateStr);
+
+  const existing = await checkExistingFile(storageFileName);
+  if (existing) {
+    console.log(`[ParquetExporter] File already exists: ${storageFileName}`);
+    return {
+      archived: existing.recordCount,
+      filePath: storageFileName,
+      fileSize: existing.fileSize,
+      minId: existing.minId,
+      maxId: existing.maxId,
+    };
+  }
+
+  await deleteFileIfInvalid(storageFileName);
+
+  return withTempFile(`archive_${tableName}_${dateStr}_day`, async (tempFilePath) => {
+    const schema = getParquetSchema(tableName);
+    const writer = await parquet.ParquetWriter.openFile(schema, tempFilePath);
+
+    const { recordsWritten, minId, maxId } = await writeRecordsToParquet(
+      writer,
+      tableName,
+      dateColumn,
+      range
+    );
+
+    await writer.close();
+
+    if (recordsWritten === 0) {
+      return null;
+    }
+
+    const fileSize = await uploadWithVerification(tempFilePath, storageFileName, {
+      tableName,
+      archiveDate: dateStr,
+      recordCount: recordsWritten,
+      minId,
+      maxId,
+    });
+
+    console.log(`[ParquetExporter] Exported ${storageFileName}: ${recordsWritten} records`);
+
+    return {
+      archived: recordsWritten,
+      filePath: storageFileName,
+      fileSize,
+      minId,
+      maxId,
+    };
+  });
+}
 
 export async function exportHourToParquet(
   tableName: string,
@@ -278,111 +174,43 @@ export async function exportHourToParquet(
   dateColumn: string,
   onProgress?: (recordsWritten: number) => void
 ): Promise<ExportResult | null> {
-  const startOfHour = new Date(archiveDate);
-  startOfHour.setHours(hour, 0, 0, 0);
-  const endOfHour = new Date(archiveDate);
-  endOfHour.setHours(hour, 59, 59, 999);
-
-  const countResult = await db.execute(sql`
-    SELECT COUNT(*) as count
-    FROM ${sql.identifier(tableName)}
-    WHERE ${sql.identifier(dateColumn)} >= ${startOfHour}
-      AND ${sql.identifier(dateColumn)} <= ${endOfHour}
-  `);
-  const totalRecords = Number((countResult.rows[0] as any).count);
+  const range = createHourRange(archiveDate, hour);
+  const totalRecords = await countRecordsInRange(tableName, dateColumn, range);
 
   if (totalRecords === 0) {
     return null;
   }
 
-  const schema = getParquetSchema(tableName);
   const dateStr = archiveDate.toISOString().split("T")[0];
   const hourStr = hour.toString().padStart(2, "0");
-  const envPrefix = getEnvironmentPrefix();
-  const storageFileName = `archives/${envPrefix}/${tableName}/${dateStr}/${hourStr}.parquet`;
+  const storageFileName = buildStoragePath(tableName, dateStr, hourStr);
 
-  const privateDir = process.env.PRIVATE_OBJECT_DIR;
-  if (!privateDir) {
-    throw new Error("PRIVATE_OBJECT_DIR not configured");
+  const existing = await checkExistingFile(storageFileName);
+  if (existing) {
+    console.log(`[ParquetExporter] File already exists: ${storageFileName}`);
+    return {
+      archived: existing.recordCount,
+      deleted: 0,
+      filePath: storageFileName,
+      fileSize: existing.fileSize,
+      minId: existing.minId,
+      maxId: existing.maxId,
+    };
   }
 
-  const fullPath = `${privateDir}/${storageFileName}`;
-  const pathParts = fullPath.startsWith("/") ? fullPath.slice(1).split("/") : fullPath.split("/");
-  const bucketName = pathParts[0];
-  const objectName = pathParts.slice(1).join("/");
-  const bucket = objectStorageClient.bucket(bucketName);
-  const file = bucket.file(objectName);
+  await deleteFileIfInvalid(storageFileName);
 
-  const [existingFile] = await file.exists();
-  if (existingFile) {
-    const [metadata] = await file.getMetadata();
-    const existingRecordCount = Number(metadata.metadata?.recordCount || 0);
-    const archivedMinId = Number(metadata.metadata?.minId || 0);
-    const archivedMaxId = Number(metadata.metadata?.maxId || 0);
+  return withTempFile(`archive_${tableName}_${dateStr}_${hourStr}`, async (tempFilePath) => {
+    const schema = getParquetSchema(tableName);
+    const writer = await parquet.ParquetWriter.openFile(schema, tempFilePath);
 
-    if (existingRecordCount > 0 && archivedMinId > 0 && archivedMaxId > 0) {
-      console.log(`[ParquetExporter] File already exists: ${storageFileName}`);
-      return {
-        archived: existingRecordCount,
-        deleted: 0,
-        filePath: storageFileName,
-        fileSize: Number(metadata.size || 0),
-        minId: archivedMinId,
-        maxId: archivedMaxId,
-      };
-    }
-    console.log(`[ParquetExporter] File exists but has no valid metadata: ${storageFileName}, skipping`);
-    return null;
-  }
-
-  const tempDir = os.tmpdir();
-  const tempFilePath = path.join(tempDir, `archive_${tableName}_${dateStr}_${hourStr}_${Date.now()}.parquet`);
-  const writer = await parquet.ParquetWriter.openFile(schema, tempFilePath);
-
-  let lastId = 0;
-  let recordsWritten = 0;
-  let minId = Number.MAX_SAFE_INTEGER;
-  let maxId = 0;
-
-  try {
-    while (true) {
-      const batchResult = await db.execute(sql`
-        SELECT *
-        FROM ${sql.identifier(tableName)}
-        WHERE ${sql.identifier(dateColumn)} >= ${startOfHour}
-          AND ${sql.identifier(dateColumn)} <= ${endOfHour}
-          AND id > ${lastId}
-        ORDER BY id ASC
-        LIMIT ${BATCH_SIZE}
-      `);
-
-      const rows = batchResult.rows as any[];
-      if (rows.length === 0) break;
-
-      for (const record of rows) {
-        const row: any = {};
-        for (const field of Object.keys((schema as any).schema)) {
-          let value = record[field];
-          if (value === undefined || value === null) {
-            row[field] = null;
-          } else if (typeof value === "object" && !(value instanceof Date)) {
-            row[field] = JSON.stringify(value);
-          } else if (value instanceof Date) {
-            row[field] = value.toISOString();
-          } else {
-            row[field] = value;
-          }
-        }
-        await writer.appendRow(row);
-        recordsWritten++;
-
-        if (record.id < minId) minId = record.id;
-        if (record.id > maxId) maxId = record.id;
-      }
-
-      lastId = rows[rows.length - 1].id;
-      onProgress?.(rows.length);
-    }
+    const { recordsWritten, minId, maxId } = await writeRecordsToParquet(
+      writer,
+      tableName,
+      dateColumn,
+      range,
+      onProgress
+    );
 
     await writer.close();
 
@@ -390,51 +218,14 @@ export async function exportHourToParquet(
       return null;
     }
 
-    const tmpObjectName = `${objectName}.tmp`;
-    const tmpFile = bucket.file(tmpObjectName);
-
-    await withRetry(async () => {
-      await bucket.upload(tempFilePath, {
-        destination: tmpObjectName,
-        contentType: "application/octet-stream",
-        metadata: {
-          metadata: {
-            tableName,
-            archiveDate: dateStr,
-            hour: hourStr,
-            recordCount: recordsWritten.toString(),
-            minId: minId.toString(),
-            maxId: maxId.toString(),
-          },
-        },
-      });
-    }, { maxRetries: MAX_UPLOAD_RETRIES, initialBackoffMs: INITIAL_RETRY_DELAY_MS, operationName: `Upload ${storageFileName}.tmp` });
-
-    const [tmpExists] = await tmpFile.exists();
-    if (!tmpExists) {
-      throw new Error("Upload verification failed - temp file not found in storage");
-    }
-
-    const [tmpMetadata] = await tmpFile.getMetadata();
-    const uploadedRecordCount = Number(tmpMetadata.metadata?.recordCount || 0);
-
-    if (uploadedRecordCount !== recordsWritten) {
-      await tmpFile.delete().catch(() => {});
-      throw new Error(`Record count mismatch: wrote ${recordsWritten} but metadata shows ${uploadedRecordCount}`);
-    }
-
-    await withRetry(async () => {
-      await tmpFile.copy(file);
-      await tmpFile.delete();
-    }, { maxRetries: MAX_UPLOAD_RETRIES, initialBackoffMs: INITIAL_RETRY_DELAY_MS, operationName: `Rename ${storageFileName}.tmp to final` });
-
-    const [exists] = await file.exists();
-    if (!exists) {
-      throw new Error("Rename verification failed - final file not found in storage");
-    }
-
-    const [metadata] = await file.getMetadata();
-    const fileSize = Number(metadata.size || 0);
+    const fileSize = await uploadWithVerification(tempFilePath, storageFileName, {
+      tableName,
+      archiveDate: dateStr,
+      hour: hourStr,
+      recordCount: recordsWritten,
+      minId,
+      maxId,
+    });
 
     console.log(`[ParquetExporter] Exported ${storageFileName}: ${recordsWritten} records`);
 
@@ -446,15 +237,7 @@ export async function exportHourToParquet(
       minId,
       maxId,
     };
-  } finally {
-    try {
-      if (fs.existsSync(tempFilePath)) {
-        fs.unlinkSync(tempFilePath);
-      }
-    } catch (e) {
-      console.error("[ParquetExporter] Failed to delete temp file:", e);
-    }
-  }
+  });
 }
 
 export async function exportHourWithOutcome(
@@ -463,179 +246,66 @@ export async function exportHourWithOutcome(
   hour: number,
   dateColumn: string
 ): Promise<ExportOutcome> {
-  const startOfHour = new Date(archiveDate);
-  startOfHour.setHours(hour, 0, 0, 0);
-  const endOfHour = new Date(archiveDate);
-  endOfHour.setHours(hour, 59, 59, 999);
-
-  const countResult = await db.execute(sql`
-    SELECT COUNT(*) as count
-    FROM ${sql.identifier(tableName)}
-    WHERE ${sql.identifier(dateColumn)} >= ${startOfHour}
-      AND ${sql.identifier(dateColumn)} <= ${endOfHour}
-  `);
-  const totalRecords = Number((countResult.rows[0] as any).count);
+  const range = createHourRange(archiveDate, hour);
+  const totalRecords = await countRecordsInRange(tableName, dateColumn, range);
 
   if (totalRecords === 0) {
     return { status: "empty" };
   }
 
-  const schema = getParquetSchema(tableName);
   const dateStr = archiveDate.toISOString().split("T")[0];
   const hourStr = hour.toString().padStart(2, "0");
-  const envPrefix = getEnvironmentPrefix();
-  const storageFileName = `archives/${envPrefix}/${tableName}/${dateStr}/${hourStr}.parquet`;
+  const storageFileName = buildStoragePath(tableName, dateStr, hourStr);
 
-  const privateDir = process.env.PRIVATE_OBJECT_DIR;
-  if (!privateDir) {
-    throw new Error("PRIVATE_OBJECT_DIR not configured");
+  const existing = await checkExistingFile(storageFileName);
+  if (existing) {
+    return {
+      status: "existing",
+      archived: existing.recordCount,
+      filePath: storageFileName,
+      fileSize: existing.fileSize,
+      minId: existing.minId,
+      maxId: existing.maxId,
+    };
   }
 
-  const fullPath = `${privateDir}/${storageFileName}`;
-  const pathParts = fullPath.startsWith("/") ? fullPath.slice(1).split("/") : fullPath.split("/");
-  const bucketName = pathParts[0];
-  const objectName = pathParts.slice(1).join("/");
-  const bucket = objectStorageClient.bucket(bucketName);
-  const file = bucket.file(objectName);
+  await deleteFileIfInvalid(storageFileName);
 
-  const [existingFile] = await file.exists();
-  if (existingFile) {
-    const [metadata] = await file.getMetadata();
-    const existingRecordCount = Number(metadata.metadata?.recordCount || 0);
-    const archivedMinId = Number(metadata.metadata?.minId || 0);
-    const archivedMaxId = Number(metadata.metadata?.maxId || 0);
+  return withTempFile(`archive_${tableName}_${dateStr}_${hourStr}`, async (tempFilePath) => {
+    const schema = getParquetSchema(tableName);
+    const writer = await parquet.ParquetWriter.openFile(schema, tempFilePath);
 
-    if (existingRecordCount > 0 && archivedMinId > 0 && archivedMaxId > 0) {
-      return {
-        status: "existing",
-        archived: existingRecordCount,
-        filePath: storageFileName,
-        fileSize: Number(metadata.size || 0),
-        minId: archivedMinId,
-        maxId: archivedMaxId,
-      };
-    }
-    console.log(`[ParquetExporter] Deleting file with invalid metadata: ${storageFileName}`);
-    await file.delete().catch(() => {});
-  }
-
-  const tempDir = os.tmpdir();
-  const tempFilePath = path.join(tempDir, `archive_${tableName}_${dateStr}_${hourStr}_${Date.now()}.parquet`);
-  const writer = await parquet.ParquetWriter.openFile(schema, tempFilePath);
-
-  let lastId = 0;
-  let recordsWritten = 0;
-  let minId = Number.MAX_SAFE_INTEGER;
-  let maxId = 0;
-
-  try {
-    while (true) {
-      const batchResult = await db.execute(sql`
-        SELECT *
-        FROM ${sql.identifier(tableName)}
-        WHERE ${sql.identifier(dateColumn)} >= ${startOfHour}
-          AND ${sql.identifier(dateColumn)} <= ${endOfHour}
-          AND id > ${lastId}
-        ORDER BY id ASC
-        LIMIT ${BATCH_SIZE}
-      `);
-
-      const rows = batchResult.rows as any[];
-      if (rows.length === 0) break;
-
-      for (const record of rows) {
-        const row: any = {};
-        for (const field of Object.keys((schema as any).schema)) {
-          let value = record[field];
-          if (value === undefined || value === null) {
-            row[field] = null;
-          } else if (typeof value === "object" && !(value instanceof Date)) {
-            row[field] = JSON.stringify(value);
-          } else if (value instanceof Date) {
-            row[field] = value.toISOString();
-          } else {
-            row[field] = value;
-          }
-        }
-        await writer.appendRow(row);
-        recordsWritten++;
-
-        if (record.id < minId) minId = record.id;
-        if (record.id > maxId) maxId = record.id;
-      }
-
-      lastId = rows[rows.length - 1].id;
-    }
+    const { recordsWritten, minId, maxId } = await writeRecordsToParquet(
+      writer,
+      tableName,
+      dateColumn,
+      range
+    );
 
     await writer.close();
 
     if (recordsWritten === 0) {
-      return { status: "empty" };
+      return { status: "empty" as const };
     }
 
-    const tmpObjectName = `${objectName}.tmp`;
-    const tmpFile = bucket.file(tmpObjectName);
-
-    await withRetry(async () => {
-      await bucket.upload(tempFilePath, {
-        destination: tmpObjectName,
-        contentType: "application/octet-stream",
-        metadata: {
-          metadata: {
-            tableName,
-            archiveDate: dateStr,
-            hour: hourStr,
-            recordCount: recordsWritten.toString(),
-            minId: minId.toString(),
-            maxId: maxId.toString(),
-          },
-        },
-      });
-    }, { maxRetries: MAX_UPLOAD_RETRIES, initialBackoffMs: INITIAL_RETRY_DELAY_MS, operationName: `Upload ${storageFileName}.tmp` });
-
-    const [tmpExists] = await tmpFile.exists();
-    if (!tmpExists) {
-      throw new Error("Upload verification failed - temp file not found in storage");
-    }
-
-    const [tmpMetadata] = await tmpFile.getMetadata();
-    const uploadedRecordCount = Number(tmpMetadata.metadata?.recordCount || 0);
-
-    if (uploadedRecordCount !== recordsWritten) {
-      await tmpFile.delete().catch(() => {});
-      throw new Error(`Record count mismatch: wrote ${recordsWritten} but metadata shows ${uploadedRecordCount}`);
-    }
-
-    await withRetry(async () => {
-      await tmpFile.copy(file);
-      await tmpFile.delete();
-    }, { maxRetries: MAX_UPLOAD_RETRIES, initialBackoffMs: INITIAL_RETRY_DELAY_MS, operationName: `Rename ${storageFileName}.tmp to final` });
-
-    const [exists] = await file.exists();
-    if (!exists) {
-      throw new Error("Rename verification failed - final file not found in storage");
-    }
-
-    const [metadata] = await file.getMetadata();
-    const fileSize = Number(metadata.size || 0);
+    const fileSize = await uploadWithVerification(tempFilePath, storageFileName, {
+      tableName,
+      archiveDate: dateStr,
+      hour: hourStr,
+      recordCount: recordsWritten,
+      minId,
+      maxId,
+    });
 
     console.log(`[ParquetExporter] Exported ${storageFileName}: ${recordsWritten} records`);
 
     return {
-      status: "exported",
+      status: "exported" as const,
       archived: recordsWritten,
       filePath: storageFileName,
       fileSize,
       minId,
       maxId,
     };
-  } finally {
-    try {
-      if (fs.existsSync(tempFilePath)) {
-        fs.unlinkSync(tempFilePath);
-      }
-    } catch (e) {
-      console.error("[ParquetExporter] Failed to delete temp file:", e);
-    }
-  }
+  });
 }
