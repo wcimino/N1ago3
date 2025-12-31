@@ -2,9 +2,10 @@ import { db } from "../../../../db.js";
 import { sql } from "drizzle-orm";
 import { ArchiveScheduler } from "./scheduler.js";
 import * as jobPersistence from "./jobPersistence.js";
-import { exportHourToParquet, exportHourWithOutcome, getEnvironmentPrefix } from "./parquetExporter.js";
+import { exportHourToParquet } from "./parquetExporter.js";
 import { deleteArchivedRecords, deleteByTimeRange, runVacuum } from "./tableCleaner.js";
-import { objectStorageClient } from "../../../../replit_integrations/object_storage/objectStorage.js";
+import { buildStoragePath, checkFileStatus, deleteFile } from "./storageUploader.js";
+import { createHourRange } from "./batchQueryBuilder.js";
 import { HourlyMetadata } from "../../../../../shared/schema.js";
 
 interface TableStats {
@@ -423,35 +424,17 @@ class ArchiveService {
     hour: number,
     dateColumn: string
   ): Promise<{ archived: number; deleted: number; filePath: string | null; fileSize: number | null; minId?: number; maxId?: number } | null> {
-    const startOfHour = new Date(archiveDate);
-    startOfHour.setHours(hour, 0, 0, 0);
-    const endOfHour = new Date(archiveDate);
-    endOfHour.setHours(hour, 59, 59, 999);
-
+    const range = createHourRange(archiveDate, hour);
     const dateStr = archiveDate.toISOString().split("T")[0];
     const hourStr = hour.toString().padStart(2, "0");
-    const envPrefix = getEnvironmentPrefix();
-    const storageFileName = `archives/${envPrefix}/${tableName}/${dateStr}/${hourStr}.parquet`;
+    const storageFileName = buildStoragePath(tableName, dateStr, hourStr);
 
-    const privateDir = process.env.PRIVATE_OBJECT_DIR;
-    if (!privateDir) {
-      throw new Error("PRIVATE_OBJECT_DIR not configured");
-    }
-
-    const fullPath = `${privateDir}/${storageFileName}`;
-    const pathParts = fullPath.startsWith("/") ? fullPath.slice(1).split("/") : fullPath.split("/");
-    const bucketName = pathParts[0];
-    const objectName = pathParts.slice(1).join("/");
-    const bucket = objectStorageClient.bucket(bucketName);
-    const file = bucket.file(objectName);
-
-    const [existingFile] = await file.exists();
-    if (existingFile) {
+    const fileStatus = await checkFileStatus(storageFileName);
+    if (fileStatus.exists) {
       console.log(`[ArchiveService] FORCE: Deleting existing file ${storageFileName} before re-export`);
-      try {
-        await file.delete();
-      } catch (delErr: any) {
-        console.warn(`[ArchiveService] Could not delete existing file: ${delErr.message}`);
+      const deleted = await deleteFile(storageFileName);
+      if (!deleted) {
+        throw new Error(`Failed to delete existing file ${storageFileName} before re-export`);
       }
     }
 
@@ -477,8 +460,8 @@ class ArchiveService {
       exportResult.maxId,
       exportResult.archived,
       dateColumn,
-      startOfHour,
-      endOfHour,
+      range.start,
+      range.end,
       (count) => {
         if (this.currentProgress) {
           this.currentProgress.recordsDeleted += count;
@@ -504,71 +487,54 @@ class ArchiveService {
     hour: number,
     dateColumn: string
   ): Promise<{ archived: number; deleted: number; filePath: string | null; fileSize: number | null; minId?: number; maxId?: number } | null> {
-    const startOfHour = new Date(archiveDate);
-    startOfHour.setHours(hour, 0, 0, 0);
-    const endOfHour = new Date(archiveDate);
-    endOfHour.setHours(hour, 59, 59, 999);
-
+    const range = createHourRange(archiveDate, hour);
     const dateStr = archiveDate.toISOString().split("T")[0];
     const hourStr = hour.toString().padStart(2, "0");
-    const envPrefix = getEnvironmentPrefix();
-    const storageFileName = `archives/${envPrefix}/${tableName}/${dateStr}/${hourStr}.parquet`;
+    const storageFileName = buildStoragePath(tableName, dateStr, hourStr);
 
-    const privateDir = process.env.PRIVATE_OBJECT_DIR;
-    if (!privateDir) {
-      throw new Error("PRIVATE_OBJECT_DIR not configured");
+    const fileStatus = await checkFileStatus(storageFileName);
+
+    if (fileStatus.exists && fileStatus.hasValidMetadata && fileStatus.info) {
+      console.log(`[ArchiveService] File already exists: ${storageFileName}, deleting only archived records`);
+      const { deleteByIdRange } = await import("./tableCleaner.js");
+      const deletedCount = await deleteByIdRange(
+        tableName,
+        fileStatus.info.minId,
+        fileStatus.info.maxId,
+        fileStatus.info.recordCount
+      );
+      return {
+        archived: fileStatus.info.recordCount,
+        deleted: deletedCount,
+        filePath: storageFileName,
+        fileSize: fileStatus.info.fileSize,
+        minId: fileStatus.info.minId,
+        maxId: fileStatus.info.maxId,
+      };
     }
 
-    const fullPath = `${privateDir}/${storageFileName}`;
-    const pathParts = fullPath.startsWith("/") ? fullPath.slice(1).split("/") : fullPath.split("/");
-    const bucketName = pathParts[0];
-    const objectName = pathParts.slice(1).join("/");
-    const bucket = objectStorageClient.bucket(bucketName);
-    const file = bucket.file(objectName);
-
-    const [existingFile] = await file.exists();
-    if (existingFile) {
-      const [metadata] = await file.getMetadata();
-      const existingRecordCount = Number(metadata.metadata?.recordCount || 0);
-      const archivedMinId = Number(metadata.metadata?.minId || 0);
-      const archivedMaxId = Number(metadata.metadata?.maxId || 0);
-      const fileSize = Number(metadata.size || 0);
-
-      if (existingRecordCount > 0 && archivedMinId > 0 && archivedMaxId > 0) {
-        console.log(`[ArchiveService] File already exists: ${storageFileName}, deleting only archived records`);
-        const { deleteByIdRange } = await import("./tableCleaner.js");
-        const deletedCount = await deleteByIdRange(tableName, archivedMinId, archivedMaxId, existingRecordCount);
-        return {
-          archived: existingRecordCount,
-          deleted: deletedCount,
-          filePath: storageFileName,
-          fileSize,
-          minId: archivedMinId,
-          maxId: archivedMaxId,
-        };
-      }
-
-      if (fileSize > 0) {
-        console.warn(`[ArchiveService] File exists but has no valid metadata: ${storageFileName}, using timestamp fallback for deletion only`);
-        const deletedCount = await deleteByTimeRange(
-          tableName,
-          dateColumn,
-          startOfHour,
-          endOfHour,
-          (count) => {
-            if (this.currentProgress) {
-              this.currentProgress.recordsDeleted += count;
-            }
+    if (fileStatus.exists && fileStatus.hasContent) {
+      console.warn(`[ArchiveService] File exists but has no valid metadata: ${storageFileName}, using timestamp fallback for deletion only`);
+      const deletedCount = await deleteByTimeRange(
+        tableName,
+        dateColumn,
+        range.start,
+        range.end,
+        (count) => {
+          if (this.currentProgress) {
+            this.currentProgress.recordsDeleted += count;
           }
-        );
-        return {
-          archived: 0,
-          deleted: deletedCount,
-          filePath: storageFileName,
-          fileSize,
-        };
-      }
+        }
+      );
+      return {
+        archived: 0,
+        deleted: deletedCount,
+        filePath: storageFileName,
+        fileSize: fileStatus.fileSize ?? 0,
+      };
+    }
 
+    if (fileStatus.exists) {
       console.warn(`[ArchiveService] File exists but is empty: ${storageFileName}, will re-export`);
     }
 
@@ -594,8 +560,8 @@ class ArchiveService {
       exportResult.maxId,
       exportResult.archived,
       dateColumn,
-      startOfHour,
-      endOfHour,
+      range.start,
+      range.end,
       (count) => {
         if (this.currentProgress) {
           this.currentProgress.recordsDeleted += count;

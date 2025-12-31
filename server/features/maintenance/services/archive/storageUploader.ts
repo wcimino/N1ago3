@@ -85,6 +85,54 @@ export async function deleteFileIfInvalid(storageFileName: string): Promise<void
   }
 }
 
+export async function deleteFile(storageFileName: string): Promise<boolean> {
+  const { file } = parseStoragePath(storageFileName);
+  const [exists] = await file.exists();
+  if (exists) {
+    try {
+      await file.delete();
+      return true;
+    } catch (err: any) {
+      console.warn(`[StorageUploader] Could not delete file ${storageFileName}: ${err.message}`);
+      return false;
+    }
+  }
+  return false;
+}
+
+export interface FileCheckResult {
+  exists: boolean;
+  hasValidMetadata: boolean;
+  info: ExistingFileInfo | null;
+  hasContent: boolean;
+  fileSize: number;
+}
+
+export async function checkFileStatus(storageFileName: string): Promise<FileCheckResult> {
+  const { file } = parseStoragePath(storageFileName);
+
+  const [exists] = await file.exists();
+  if (!exists) {
+    return { exists: false, hasValidMetadata: false, info: null, hasContent: false, fileSize: 0 };
+  }
+
+  const [metadata] = await file.getMetadata();
+  const recordCount = Number(metadata.metadata?.recordCount || 0);
+  const minId = Number(metadata.metadata?.minId || 0);
+  const maxId = Number(metadata.metadata?.maxId || 0);
+  const fileSize = Number(metadata.size || 0);
+
+  const hasValidMetadata = recordCount > 0 && minId > 0 && maxId > 0;
+
+  return {
+    exists: true,
+    hasValidMetadata,
+    info: hasValidMetadata ? { recordCount, minId, maxId, fileSize } : null,
+    hasContent: fileSize > 0,
+    fileSize,
+  };
+}
+
 export async function uploadWithVerification(
   tempFilePath: string,
   storageFileName: string,
