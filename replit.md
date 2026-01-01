@@ -102,3 +102,9 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 
 *   **Shared Form Components:**
     - Extracted `ToggleRow` to `shared/components/forms/ToggleRow.tsx`
+
+*   **Summary Generation Moved to Orchestrator Level:**
+    - SummaryAgent now called in ConversationOrchestrator.processMessageEvent() before dispatch loop
+    - Summary is updated on every customer message, regardless of which agent handles it
+    - EnrichmentService simplified to use summary from context (or fallback to storage)
+    - Try/catch ensures resilience - processing continues even if summary fails
