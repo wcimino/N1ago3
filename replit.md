@@ -108,3 +108,10 @@ The React frontend provides a real-time dashboard and administrative interfaces,
     - Summary is updated on every customer message, regardless of which agent handles it
     - EnrichmentService simplified to use summary from context (or fallback to storage)
     - Try/catch ensures resilience - processing continues even if summary fails
+
+*   **ResponseFormatterAgent Refactoring:**
+    - Created `ResponseFormatterAgent` using the standard agent framework (`runAgent`, `buildAgentContextFromEvent`, `buildPromptVariables`)
+    - `ResponseFormatterService` now delegates to the new agent instead of having custom prompt variable substitution
+    - Added `sugestaoResposta` field to `AgentContext` for passing the suggested response to format
+    - All template variables (`{{RESUMO}}`, `{{ULTIMAS_20_MENSAGENS}}`, `{{SUGESTAO_RESPOSTA}}`, etc.) are now correctly substituted
+    - Fixed bug where unsubstituted placeholders caused AI hallucinations in response formatting
