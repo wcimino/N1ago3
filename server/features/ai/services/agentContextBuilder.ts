@@ -256,6 +256,7 @@ export async function buildPromptVariables(context: AgentContext): Promise<Promp
     solucaoNome,
     solucaoDescricao,
     solucaoAcoes,
+    sugestaoResposta: context.sugestaoResposta,
     customVariables: context.customVariables,
   };
 }

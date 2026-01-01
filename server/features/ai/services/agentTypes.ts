@@ -45,6 +45,7 @@ export interface AgentContext {
   };
   clientHubData?: ClientHubData | null;
   customVariables?: Record<string, string>;
+  sugestaoResposta?: string | null;
 }
 
 export interface AgentRunnerResult {
