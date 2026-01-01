@@ -75,3 +75,30 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **wouter:** Lightweight React router.
 *   **AI Services (Chat):** Utilizes Replit AI Integrations (default) or OpenAI (fallback).
 *   **OpenAI API:** Used for AI chat capabilities.
+
+## Recent Refactoring (2026-01-01)
+
+**Code Consolidation:**
+
+*   **OpenAI Services Consolidation:** Unified services in `shared/services/openai/`:
+    - `clientFactory.ts`: Factory for OpenAI/Replit AI clients with provider detection
+    - `chatService.ts`: Unified chat/chatWithTools implementation
+    - `embeddingService.ts`: Embedding-specific logic
+    - `aiService.ts`: Public API layer
+
+*   **App.tsx Modularization:** Reduced from 243 to 35 lines (-85%):
+    - Extracted `AuthenticatedLayout.tsx`, `MobileNavMenu.tsx` to `shared/components/layout/`
+    - Created `routes.tsx` for centralized route definitions
+
+*   **SolutionProviderOrchestrator Modularization:** Reduced from 570 to 200 lines:
+    - Extracted `actionExecutors.ts` (~400 lines): Individual action handlers
+    - Main orchestrator focused on control flow
+
+*   **DemandFinderAgent Modularization:** Reduced from 544 to 320 lines (-41%):
+    - Extracted `demandFinderDecisionHandlers.ts` (~254 lines)
+    - `handleSelectedIntent()`: Demand confirmation and SolutionProvider transition
+    - `handleNeedClarification()`: Clarification flow with interaction counting
+    - Main agent focused on flow: enrich → search → prompt → route to handler
+
+*   **Shared Form Components:**
+    - Extracted `ToggleRow` to `shared/components/forms/ToggleRow.tsx`
