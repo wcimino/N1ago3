@@ -71,7 +71,11 @@ The React frontend provides a real-time dashboard and administrative interfaces,
     - `conversationCrud.ts` - Aggregates and re-exports all modules for backward compatibility
 *   **Idempotent Event Creation:** Ensures unique event processing.
 *   **Modular AI Tools and Prompts:** AI tools in individual files; prompt variables centralized.
-*   **OpenAI Services Architecture:** Centralized services provide wrappers for `chat()` and `chatWithTools()` with automatic logging.
+*   **OpenAI Services Architecture:** Unified architecture with modular services in `shared/services/openai/`:
+    - `clientFactory.ts`: Factory for creating OpenAI/Replit AI clients with provider detection
+    - `chatService.ts`: Unified `chat()` and `chatWithTools()` with automatic provider selection
+    - `embeddingService.ts`: Embedding generation (OpenAI only)
+    - `aiService.ts`: Public API layer exporting all functions with logging
 *   **AI Agent Framework Patterns:** Centralized framework for running agents and saving suggestions, differentiating between conversation-based and non-conversation agents.
 *   **External Knowledge Architecture:** All knowledge retrieval uses the external Solution Center API exclusively (no internal knowledge base).
 
@@ -122,7 +126,30 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **Frontend Pages Refactoring:**
     - `ArchivePage`: Reduced 68% (416→131 lines) by extracting `useArchiveData` hook and presentational components (`ArchiveStatsCards`, `ActiveJobProgress`, `ArchiveHistoryTable`)
     - `UserConversationsPage`: Reduced 18% (385→315 lines) by extracting `ConversationActionButtons` component with mobile/desktop variants
+    - `App.tsx`: Reduced 85% (243→35 lines) by extracting:
+      - `AuthenticatedLayout.tsx`: Header, nav, mobile menu in `shared/components/layout/`
+      - `routes.tsx`: Centralized route definitions
+      - `MobileNavMenu.tsx`: Mobile navigation component
     - Hook pattern: Data fetching and state management in custom hooks, UI in presentational components
+
+## Recent Refactoring (2026-01-01)
+
+**Code Consolidation:**
+
+*   **OpenAI Services Consolidation:** Eliminated code duplication between `openaiService.ts` and `replitAiService.ts` (previously ~660 lines combined):
+    - Created `clientFactory.ts` (~65 lines): Provider detection and client instantiation
+    - Created `chatService.ts` (~250 lines): Unified chat/chatWithTools logic
+    - Created `embeddingService.ts` (~100 lines): Embedding-specific logic
+    - Simplified `aiService.ts` (~35 lines): Public API layer
+    - Total reduction: ~660 → ~450 lines (-30%)
+
+*   **SolutionProviderOrchestrator Modularization:** Separated action execution from orchestration (570 → 200 lines):
+    - Extracted `actionExecutors.ts` (~400 lines): Individual action handlers
+    - Main orchestrator now focused purely on control flow and decision routing
+    - Improved testability by isolating action execution logic
+
+*   **Shared Form Components:**
+    - Extracted `ToggleRow` to `shared/components/forms/ToggleRow.tsx` for reuse across forms
 
 **Code Quality:**
 - Eliminated ~400 lines of duplicated retry/batch logic
