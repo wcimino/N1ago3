@@ -15,14 +15,9 @@ The system employs a decoupled architecture with a React, TypeScript, Vite, Tail
 *   **Standardized Event Architecture:** Ingests and normalizes events via webhooks, an `EventBus`, an `Event Processor` with `Adapters`, and a `Polling Worker`.
 *   **Authentication System:** Uses Replit Auth (Google Login) with an Access Control List (ACL) based on email domains and an `authorized_users` table.
 *   **AI-Powered Features:** A unified architecture supports various AI capabilities (summarization, classification, response generation, knowledge search) using centralized OpenAI services and automatic API call logging.
-*   **ConversationOrchestrator Pipeline:** Manages conversation flow using a 2-field state model (`conversation_owner` + `waiting_for_customer`) with defined owner transition validations and status values. The flow is: DemandFinder → SolutionProvider → Closer. The SolutionProvider handles solution resolution using `case_solutions` and `case_actions` tables.
-*   **SolutionProviderAgent & Orchestrator:** Receives `articleId` or `(solutionId + rootCauseId)` from DemandFinder and resolves the appropriate solution via Solution Center API. Uses a **deterministic orchestrator pattern**:
-    - **ActionStateMachine** (`actionStateMachine.ts`): Categorizes actions as AUTOMATIC, REQUIRES_MESSAGE, or REQUIRES_CUSTOMER_INPUT
-    - **SolutionProviderOrchestrator** (`solutionProviderOrchestrator.ts`): Turn-based loop processing up to 10 actions per invocation
-    - **AI only generates message text** - no control flow decisions; orchestrator handles all workflow logic
-    - **Interaction counting**: MAX_INTERACTIONS=5 enforced across all AI calls, incrementing only when AI is required
-    - Actions: `transferir_humano` (escalate), `consultar_perfil_cliente` (fetch ClientHub data), `informar_cliente` (send message)
-*   **Case Solution and Demand Architecture:** `case_solutions` table tracks solution instances; `case_demand` stores customer demands per conversation, supporting multiple demands and interaction counts.
+*   **ConversationOrchestrator Pipeline:** Manages conversation flow using a 2-field state model (`conversation_owner` + `waiting_for_customer`) with defined owner transition validations and status values. The flow is: DemandFinder → SolutionProvider → Closer.
+*   **SolutionProviderAgent & Orchestrator:** Uses a **deterministic orchestrator pattern** where AI only generates message text, and the orchestrator handles all workflow logic and interaction counting.
+*   **Case Solution and Demand Architecture:** `case_solutions` table tracks solution instances; `case_demand` stores customer demands per conversation.
 *   **External Knowledge via Solution Center API:** All knowledge retrieval uses the external Solution Center API; no internal knowledge base or embeddings.
 
 **UI/UX Decisions:**
@@ -37,24 +32,16 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **AI Integrations:** Includes Conversation Summaries, Product Classification, API Logging, and Configurable Triggers.
 *   **Four-Field Classification System:** Hierarchical conversation classification (Product → Subproduct → Subject → Intent) using sequential AI tools.
 *   **Structured Conversation Summary:** Displays AI-generated summaries with specific structured fields.
-*   **Inbound Conversation Routing:** Unified routing system (`inboundConversationRouting.ts`) that processes routing rules at the very start of webhook processing, before any enrichment. Routes conversations to `n1ago`, `human`, or `bot` using Zendesk Switchboard API. When routing to n1ago, also handles tag addition and welcome message. Designed for minimal latency (~1-10ms).
-*   **TransferService:** Centralized service (`server/features/routing/services/transferService.ts`) that encapsulates all conversation transfer logic including: Zendesk passControl API call, handler persistence in database, tag management, farewell messages (when transferring to human), and welcome messages (when transferring to N1ago). Used by manual transfers, orchestrator (DemandFinder escalations), and inbound routing to ensure consistent behavior.
+*   **Inbound Conversation Routing:** Unified routing system that processes rules at the start of webhook processing, routing conversations to `n1ago`, `human`, or `bot` using Zendesk Switchboard API.
+*   **TransferService:** Centralized service for all conversation transfer logic (Zendesk passControl, handler persistence, tag management, farewell/welcome messages).
 *   **AutoPilot:** Automatically sends suggested responses based on conditions.
-*   **SendMessageService:** Centralized message sending controller for all outbound messages to customers.
+*   **SendMessageService:** Centralized message sending controller for all outbound messages.
 *   **ResponseFormatterService:** Adjusts tone of voice for outbound messages using an AI agent's configuration.
-*   **Solution Center Integration:** External KB API integration (Solution Center) for DemandFinder's article and problem search, storing results in `solution_center_articles_and_problems`. This is the sole knowledge source - no internal knowledge base.
-*   **Scheduled Maintenance Services:** Daily scheduled tasks for archiving old data and performing database vacuuming. Features include:
-    - **Simplified day-based archiving:** Processes entire days in a single Parquet file (no hourly breakdown) for robustness
-    - **Linear pipeline:** export → delete → vacuum flow per day/table with clear progress tracking
-    - **Database-first state:** All job state stored in `archive_jobs` table with `progress` JSONB field for real-time updates
-    - **Concurrency protection:** In-memory lock prevents parallel executions from scheduler, manual start, or retry
-    - **Retry mechanism:** Failed jobs can be retried via UI button, which invalidates old job and creates new one
-    - **Clear error display:** Failed jobs show error message in UI with one-click retry option
-    - Atomic upload via temporary files (.tmp) with metadata verification before finalization
-    - **UI Resilience:** Archive page uses `Promise.allSettled` + `try/finally` to ensure controls remain functional even when individual APIs fail
-*   **Server Bootstrap & Initialization:** Includes preflight checks for environment variables, granular scheduler control via flags, an enhanced `/ready` endpoint, and production static file verification.
-*   **Database Migrations:** Automated migration execution during build process using Drizzle ORM. Supports both Drizzle migrations (`./drizzle/`) and manual SQL migrations (`./migrations/`). Features timeout protection (60s per operation), proper Neon serverless transaction handling, and graceful error recovery.
-*   **Server Resilience:** Server starts even if database is unavailable (degraded mode). Background workers only start when database is healthy. Health endpoints (`/health`, `/ready`) include real-time database status with cached checks.
+*   **Solution Center Integration:** External KB API integration for DemandFinder's article and problem search, serving as the sole knowledge source.
+*   **Scheduled Maintenance Services:** Daily scheduled tasks for archiving old data and performing database vacuuming with robust retry mechanisms and clear error display.
+*   **Server Bootstrap & Initialization:** Includes preflight checks, granular scheduler control, enhanced health endpoints, and production static file verification.
+*   **Database Migrations:** Automated Drizzle and manual SQL migration execution during build with timeout protection and graceful error recovery.
+*   **Server Resilience:** Server starts even if database is unavailable (degraded mode); background workers start when database is healthy.
 
 **System Design Choices:**
 
@@ -64,20 +51,12 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **Shared Types and Constants Architecture:** Centralized type definitions and UI constants.
 *   **Shared Hooks and Form Components:** Reusable frontend components.
 *   **Backend Feature Architecture:** Each feature module contains `routes/`, `storage/`, and `services/`.
-*   **Modular Conversation Storage:** The `conversations/storage/` layer is split into focused modules:
-    - `conversationCore.ts` - CRUD operations and queries
-    - `conversationLifecycle.ts` - Closing and inactivity operations
-    - `conversationOrchestratorState.ts` - Orchestrator state management
-    - `conversationCrud.ts` - Aggregates and re-exports all modules for backward compatibility
+*   **Modular Conversation Storage:** `conversations/storage/` layer split into focused modules for CRUD, lifecycle, and orchestrator state.
 *   **Idempotent Event Creation:** Ensures unique event processing.
 *   **Modular AI Tools and Prompts:** AI tools in individual files; prompt variables centralized.
-*   **OpenAI Services Architecture:** Unified architecture with modular services in `shared/services/openai/`:
-    - `clientFactory.ts`: Factory for creating OpenAI/Replit AI clients with provider detection
-    - `chatService.ts`: Unified `chat()` and `chatWithTools()` with automatic provider selection
-    - `embeddingService.ts`: Embedding generation (OpenAI only)
-    - `aiService.ts`: Public API layer exporting all functions with logging
-*   **AI Agent Framework Patterns:** Centralized framework for running agents and saving suggestions, differentiating between conversation-based and non-conversation agents.
-*   **External Knowledge Architecture:** All knowledge retrieval uses the external Solution Center API exclusively (no internal knowledge base).
+*   **OpenAI Services Architecture:** Unified architecture with modular services for client factory, chat, embeddings, and a public API layer.
+*   **AI Agent Framework Patterns:** Centralized framework for running agents and saving suggestions.
+*   **External Knowledge Architecture:** All knowledge retrieval uses the external Solution Center API exclusively.
 
 ## External Dependencies
 
@@ -96,67 +75,3 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **wouter:** Lightweight React router.
 *   **AI Services (Chat):** Utilizes Replit AI Integrations (default) or OpenAI (fallback).
 *   **OpenAI API:** Used for AI chat capabilities.
-
-## Recent Refactoring (2025-12-31)
-
-**Architectural Improvements:**
-
-*   **Shared Utilities Layer (`shared/utils/`):**
-    - `retry.ts`: Generic retry utility with exponential backoff, configurable delays, and batch processing support. Exported: `withRetry`, `sleep`, `formatDuration`, `processBatch`
-
-*   **Client-Side Architecture:**
-    - `client/src/lib/apiClient.ts`: Typed API client with centralized error handling, automatic JSON serialization
-    - `client/src/shared/components/ui/ListContainer.tsx`: Unified list rendering with loading/empty/pagination states
-
-*   **Archive Services Refactoring (`server/features/maintenance/services/archive/`):**
-    - `schemaRegistry.ts`: Parquet schema definitions for archived tables
-    - `storageUploader.ts`: Object storage upload with verification and atomic rename
-    - `batchQueryBuilder.ts`: Cursor-based batch queries with time range support
-    - `parquetExporter.ts`: Simplified to ~250 lines using above modules
-
-*   **Orchestrator Helpers (`server/features/ai/services/conversationOrchestrator/helpers/orchestratorHelpers.ts`):**
-    - `createAgentLogger(agentName)`: Structured logging wrapper for AI agents
-    - `createSuccessResult(overrides)`: Standardized agent result factory
-    - `createEscalatedResult(error?, message?)`: Escalation result with default messages
-
-*   **AI Agents Refactoring:**
-    - `DemandFinderAgent`: Uses `createAgentLogger` for structured logging, `withRetry` for Solution Center API calls
-    - `SolutionProviderOrchestrator`: Uses `createAgentLogger` for consistent logging patterns
-
-*   **Frontend Pages Refactoring:**
-    - `ArchivePage`: Reduced 68% (416→131 lines) by extracting `useArchiveData` hook and presentational components (`ArchiveStatsCards`, `ActiveJobProgress`, `ArchiveHistoryTable`)
-    - `UserConversationsPage`: Reduced 18% (385→315 lines) by extracting `ConversationActionButtons` component with mobile/desktop variants
-    - `App.tsx`: Reduced 85% (243→35 lines) by extracting:
-      - `AuthenticatedLayout.tsx`: Header, nav, mobile menu in `shared/components/layout/`
-      - `routes.tsx`: Centralized route definitions
-      - `MobileNavMenu.tsx`: Mobile navigation component
-    - Hook pattern: Data fetching and state management in custom hooks, UI in presentational components
-
-## Recent Refactoring (2026-01-01)
-
-**Code Consolidation:**
-
-*   **OpenAI Services Consolidation:** Eliminated code duplication between `openaiService.ts` and `replitAiService.ts` (previously ~660 lines combined):
-    - Created `clientFactory.ts` (~65 lines): Provider detection and client instantiation
-    - Created `chatService.ts` (~250 lines): Unified chat/chatWithTools logic
-    - Created `embeddingService.ts` (~100 lines): Embedding-specific logic
-    - Simplified `aiService.ts` (~35 lines): Public API layer
-    - Total reduction: ~660 → ~450 lines (-30%)
-
-*   **SolutionProviderOrchestrator Modularization:** Separated action execution from orchestration (570 → 200 lines):
-    - Extracted `actionExecutors.ts` (~400 lines): Individual action handlers
-    - Main orchestrator now focused purely on control flow and decision routing
-    - Improved testability by isolating action execution logic
-
-*   **Shared Form Components:**
-    - Extracted `ToggleRow` to `shared/components/forms/ToggleRow.tsx` for reuse across forms
-
-**Code Quality:**
-- Eliminated ~400 lines of duplicated retry/batch logic
-- Centralized error handling patterns
-- Improved type safety across API boundaries
-- Fixed circular dependency in archiveService via dynamic import
-- Added fileSize to FileCheckResult for accurate progress reporting
-- FORCE mode now throws on delete failure to prevent stale artifacts
-- AI agents now use structured logging via createAgentLogger helper
-- Frontend components follow consistent hook + presentational pattern
