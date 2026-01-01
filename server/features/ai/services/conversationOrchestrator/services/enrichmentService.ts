@@ -1,5 +1,4 @@
 import { storage } from "../../../../../storage/index.js";
-import { SummaryAgent } from "../agents/summaryAgent.js";
 import { ClassificationAgent } from "../agents/classificationAgent.js";
 import type { OrchestratorContext } from "../types.js";
 
@@ -22,17 +21,14 @@ export class EnrichmentService {
     try {
       console.log(`[EnrichmentService] Starting enrichment for conversation ${conversationId}`);
 
-      const summaryResult = await SummaryAgent.process(context);
-      
-      if (summaryResult.success && summaryResult.summary) {
-        context.summary = summaryResult.summary;
-        console.log(`[EnrichmentService] Summary generated`);
-      } else {
+      if (!context.summary) {
         const existingSummary = await storage.getConversationSummary(conversationId);
         if (existingSummary) {
           context.summary = existingSummary.summary;
-          console.log(`[EnrichmentService] Using existing summary`);
+          console.log(`[EnrichmentService] Using existing summary from storage`);
         }
+      } else {
+        console.log(`[EnrichmentService] Using summary from context`);
       }
 
       const classificationResult = await ClassificationAgent.process(context);

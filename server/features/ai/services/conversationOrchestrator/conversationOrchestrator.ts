@@ -2,6 +2,7 @@ import { conversationStorage } from "../../../conversations/storage/index.js";
 import { DemandFinderAgent } from "./agents/demandFinderAgent.js";
 import { SolutionProviderAgent } from "./agents/solutionProviderAgent.js";
 import { CloserAgent } from "./agents/closerAgent.js";
+import { SummaryAgent } from "./agents/summaryAgent.js";
 import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type OrchestratorStatus, type ConversationOwner, type OrchestratorContext, type DispatchResult } from "./types.js";
 import type { EventStandard } from "../../../../../shared/schema.js";
 
@@ -61,6 +62,18 @@ export class ConversationOrchestrator {
       conversationId,
       currentStatus,
     };
+
+    try {
+      const summaryResult = await SummaryAgent.process(context);
+      if (summaryResult.success && summaryResult.summary) {
+        context.summary = summaryResult.summary;
+        console.log(`[ConversationOrchestrator] Summary updated for conversation ${conversationId}`);
+      } else {
+        console.log(`[ConversationOrchestrator] Summary not generated, will use existing from storage`);
+      }
+    } catch (summaryError) {
+      console.error(`[ConversationOrchestrator] Summary generation failed, continuing without update:`, summaryError);
+    }
 
     await this.runDispatchLoop(context, owner);
     console.log(`[ConversationOrchestrator] Completed processing for conversation ${conversationId}`);
