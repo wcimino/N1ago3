@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuthorizedUser } from "../../../features/auth/index.js";
+import { requireAuthorizedUser } from "../../auth/middleware/authMiddleware.js";
 import { summaryStorage } from "../../ai/storage/summaryStorage.js";
 import { classificationStorage } from "../../ai/storage/classificationStorage.js";
 

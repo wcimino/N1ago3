@@ -1,7 +1,7 @@
 import { db } from "../../../db.js";
 import { responsesSuggested } from "../../../../shared/schema.js";
 import { eq, and } from "drizzle-orm";
-import { SendMessageService } from "../../send-message/index.js";
+import { SendMessageService } from "../../send-message/services/sendMessageService.js";
 
 type SuggestionStatus = "created" | "sent" | "expired";
 

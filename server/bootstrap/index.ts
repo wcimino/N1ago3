@@ -4,7 +4,8 @@ import { fileURLToPath } from "url";
 import type { Express } from "express";
 import express from "express";
 import { startPollingWorker, isPollingWorkerRunning } from "../features/sync/services/pollingWorker.js";
-import { vacuumService, archiveService } from "../features/maintenance/services/index.js";
+import { vacuumService } from "../features/maintenance/services/vacuumService.js";
+import { archiveService } from "../features/maintenance/services/archive/index.js";
 import { initializePreflight, getPreflightResult, getActiveSchedulerConfig, type PreflightResult, type SchedulerConfig } from "./preflight.js";
 
 const __filename = fileURLToPath(import.meta.url);

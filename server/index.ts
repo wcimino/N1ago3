@@ -1,5 +1,5 @@
 import express from "express";
-import { setupAuth } from "./features/auth/index.js";
+import { setupAuth } from "./features/auth/services/replitAuth.js";
 import { registerRoutes } from "./routes/index.js";
 import { bootstrap, getBootstrapHealth } from "./bootstrap/index.js";
 import { db } from "./db.js";

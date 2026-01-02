@@ -1,5 +1,5 @@
 import { ZendeskApiService } from "../../external-sources/zendesk/services/zendeskApiService.js";
-import { SendMessageService } from "../../send-message/index.js";
+import { SendMessageService } from "../../send-message/services/sendMessageService.js";
 import { conversationStorage } from "../../conversations/storage/conversationStorage.js";
 import { TargetResolver, type ValidTarget } from "./targetResolver.js";
 

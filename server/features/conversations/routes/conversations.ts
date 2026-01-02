@@ -2,7 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { conversationStorage } from "../storage/conversationStorage.js";
 import { userStorage } from "../storage/userStorage.js";
 import { classificationStorage } from "../../ai/storage/classificationStorage.js";
-import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../auth/middleware/authMiddleware.js";
 import { caseSolutionStorage } from "../../ai/storage/caseSolutionStorage.js";
 import type { Triage } from "../../../../shared/types/index.js";
 

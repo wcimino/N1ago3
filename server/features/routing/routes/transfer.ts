@@ -2,7 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { db } from "../../../db.js";
 import { conversations } from "../../../../shared/schema.js";
 import { eq } from "drizzle-orm";
-import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../auth/middleware/authMiddleware.js";
 import { TargetResolver } from "../services/targetResolver.js";
 import { TransferService } from "../services/transferService.js";
 

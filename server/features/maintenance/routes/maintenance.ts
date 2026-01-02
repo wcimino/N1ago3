@@ -3,7 +3,7 @@ import { reprocessingService, type ReprocessingType } from "../../sync/services/
 import { autoCloseService } from "../../conversations/services/autoCloseService.js";
 import { duplicatesService } from "../services/duplicatesService.js";
 import { archiveService } from "../services/archive/index.js";
-import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../auth/middleware/authMiddleware.js";
 
 const router = Router();
 

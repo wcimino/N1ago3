@@ -1,7 +1,7 @@
 import { db } from "../../../db.js";
 import { productsCatalog, type ProductCatalog, type InsertProductCatalog } from "../../../../shared/schema.js";
 import { eq, asc } from "drizzle-orm";
-import { createCrudStorage } from "../../../shared/storage/index.js";
+import { createCrudStorage } from "../../../shared/storage/crudFactory.js";
 
 const baseCrud = createCrudStorage<ProductCatalog, InsertProductCatalog>({
   table: productsCatalog,

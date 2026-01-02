@@ -2,7 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { db } from "../../../db.js";
 import { routingRules } from "../../../../shared/schema.js";
 import { eq, and, desc } from "drizzle-orm";
-import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../auth/middleware/authMiddleware.js";
 
 const router = Router();
 

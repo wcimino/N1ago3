@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import { webhookStorage } from "../storage/webhookStorage.js";
-import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
+import { isAuthenticated, requireAuthorizedUser } from "../../auth/middleware/authMiddleware.js";
 
 const router = Router();
 

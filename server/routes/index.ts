@@ -18,7 +18,7 @@ import generalSettingsRoutes from "../features/ai/routes/generalSettings.js";
 import openaiLogsRoutes from "../features/ai/routes/openaiLogs.js";
 import openaiStatsRoutes from "../features/ai/routes/openaiStats.js";
 
-import { zendeskSupportUsersRouter } from "../features/external-sources/zendesk/index.js";
+import zendeskSupportUsersRouter from "../features/external-sources/zendesk/routes/zendeskSupportUsers.js";
 
 import usersStandardRoutes from "../features/cadastro/routes/usersStandard.js";
 import organizationsStandardRoutes from "../features/cadastro/routes/organizationsStandard.js";
