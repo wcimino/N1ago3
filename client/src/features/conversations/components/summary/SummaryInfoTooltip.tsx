@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect, type ReactNode } from "react";
+import { useState, useRef, useEffect, cloneElement, type ReactElement } from "react";
 import { createPortal } from "react-dom";
 
 export interface SummaryInfoTooltipProps {
-  icon: ReactNode;
+  icon: ReactElement;
   iconColorClass: string;
   title: string;
   content: string | null | undefined;
@@ -65,7 +65,7 @@ export function SummaryInfoTooltip({
         className={`ml-1 ${iconColorClass} hover:opacity-80 transition-opacity`}
         title={title}
       >
-        {icon}
+        {cloneElement(icon, { key: 'trigger' })}
       </button>
       {showTooltip && createPortal(
         <div 
@@ -75,7 +75,7 @@ export function SummaryInfoTooltip({
         >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className={iconColorClass}>{icon}</span>
+              <span className={iconColorClass}>{cloneElement(icon, { key: 'tooltip' })}</span>
               <h5 className="font-medium text-gray-800 text-sm">{title}</h5>
             </div>
             <button 
