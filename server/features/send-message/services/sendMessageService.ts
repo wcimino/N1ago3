@@ -3,6 +3,7 @@ import { conversations, eventsStandard } from "../../../../shared/schema.js";
 import { eq, desc, and, gt } from "drizzle-orm";
 import * as ZendeskApiService from "../../external-sources/zendesk/services/zendeskApiService.js";
 import { ResponseFormatterService } from "./responseFormatterService.js";
+import { conversationOrchestratorState } from "../../conversations/storage/conversationOrchestratorState.js";
 
 export type MessageType = "response" | "transfer";
 export type MessageSource = "autopilot" | "orchestrator" | "solution_provider" | "response_formatter";
@@ -102,6 +103,17 @@ async function validateMessage(request: SendMessageRequest): Promise<SendMessage
   }
 
   // A partir daqui, a última mensagem é do cliente - exige hasNewerEvents check e inResponseTo válido
+  
+  // Verifica se é a primeira mensagem do Closer (pode ignorar inResponseTo)
+  const orchestratorState = await conversationOrchestratorState.getOrchestratorState(conversationId);
+  const isCloserFirstMessage = 
+    orchestratorState.conversationOwner === "closer" && 
+    orchestratorState.waitingForCustomer === false;
+  
+  if (isCloserFirstMessage) {
+    return { sent: true, reason: "validation_passed_closer_first_message" };
+  }
+
   const hasNewer = await hasNewerEvents(conversationId, lastEventId);
   if (hasNewer) {
     return { sent: false, reason: "newer_messages_exist_after_suggestion" };
