@@ -1,5 +1,6 @@
 import { ResponseFormatterAgent } from "../../ai/services/conversationOrchestrator/agents/responseFormatterAgent.js";
 import type { EventStandard } from "../../../../shared/schema.js";
+import { configStorage } from "../../ai/storage/configStorage.js";
 
 export interface FormatMessageRequest {
   message: string;
@@ -36,8 +37,7 @@ export async function formatMessage(request: FormatMessageRequest): Promise<Form
 }
 
 async function isFormattingEnabled(): Promise<boolean> {
-  const { storage } = await import("../../../storage/index.js");
-  const config = await storage.getOpenaiApiConfig("response");
+  const config = await configStorage.getOpenaiApiConfig("response");
   return config?.enabled ?? false;
 }
 
