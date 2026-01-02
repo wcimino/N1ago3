@@ -11,10 +11,6 @@ export function getAdapter(source: string): SourceAdapter | null {
   return adapters[source] || null;
 }
 
-export function getAllAdapters(): SourceAdapter[] {
-  return Object.values(adapters);
-}
-
 registerAdapter(new ZendeskAdapter());
 
 export { ZendeskAdapter } from "./zendesk/index.js";
