@@ -5,4 +5,4 @@ export {
   DEFAULT_MORE_HELP_PROMPT,
   DEFAULT_FOLLOW_UP_MESSAGE,
   type CloserProcessResult,
-} from "../../../../conversation-orchestration/closer/orchestrator.js";
+} from "./orchestrator.js";

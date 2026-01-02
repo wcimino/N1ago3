@@ -1,7 +1,7 @@
 import { conversationStorage } from "../../conversations/storage/index.js";
-import { DemandFinderAgent } from "../../ai/services/conversationOrchestrator/agents/demandFinderAgent.js";
-import { SolutionProviderAgent } from "../../ai/services/conversationOrchestrator/agents/solutionProviderAgent.js";
-import { CloserAgent } from "../../ai/services/conversationOrchestrator/agents/closerAgent.js";
+import { DemandFinderAgent } from "../demandFinder/index.js";
+import { SolutionProviderAgent } from "../solutionProvider/index.js";
+import { CloserAgent } from "../closer/index.js";
 import { SummaryAgent } from "../../ai/services/conversationOrchestrator/agents/summaryAgent.js";
 import { 
   ORCHESTRATOR_STATUS, 

@@ -115,3 +115,43 @@ The React frontend provides a real-time dashboard and administrative interfaces,
     - Added `sugestaoResposta` field to `AgentContext` for passing the suggested response to format
     - All template variables (`{{RESUMO}}`, `{{ULTIMAS_20_MENSAGENS}}`, `{{SUGESTAO_RESPOSTA}}`, etc.) are now correctly substituted
     - Fixed bug where unsubstituted placeholders caused AI hallucinations in response formatting
+
+## Conversation Orchestration Architecture (2026-01-02)
+
+**Major Reorganization:** Moved conversation orchestration out of `ai/services/` into dedicated `conversation-orchestration/` feature module. This separation clarifies that orchestration is deterministic business logic, not AI-specific.
+
+**New Structure:**
+
+```
+server/features/conversation-orchestration/
+├── dispatcher/          # ConversationOrchestrator - routes events to agents
+│   ├── conversationOrchestrator.ts
+│   └── index.ts
+├── demandFinder/        # DemandFinder agent with orchestrator + handlers
+│   ├── orchestrator.ts
+│   ├── handlers.ts      # Decision handlers (handleSelectedIntent, handleNeedClarification)
+│   └── index.ts
+├── solutionProvider/    # SolutionProvider with state machine
+│   ├── stateMachine.ts  # Action categories, decision logic, message variations
+│   └── index.ts         # Re-exports orchestrator and executors from ai/services/
+├── closer/              # Closer agent with two-mode flow
+│   ├── orchestrator.ts  # sendFollowUp → processCustomerResponse
+│   └── index.ts
+├── shared/              # Shared utilities for all orchestration agents
+│   ├── types.ts         # ORCHESTRATOR_STATUS, CONVERSATION_OWNER, OrchestratorContext
+│   ├── actionExecutor.ts # Centralized action execution (SEND_MESSAGE, TRANSFER_TO_HUMAN)
+│   ├── escalation.ts    # escalateConversation, handleAgentError, createEscalatedResult
+│   ├── logger.ts        # createAgentLogger, createSuccessResult
+│   ├── helpers.ts       # isN1agoHandler
+│   └── index.ts
+└── index.ts             # Public API for entire module
+```
+
+**Backward Compatibility:** Old files in `ai/services/conversationOrchestrator/` re-export from new locations, ensuring no breaking changes to existing imports.
+
+**Key Design Decisions:**
+
+*   **Deterministic vs AI Logic:** Orchestration flow, state transitions, and action execution are deterministic. AI only generates message text when needed.
+*   **Standardized Agent Pattern:** Each agent has an orchestrator, optional state machine, and uses shared utilities (ActionExecutor, escalation helpers, logger).
+*   **Single Source of Truth:** Types, constants, and utilities defined once in `shared/`, re-exported through feature indexes.
+*   **Pragmatic Migration:** Large files (actionExecutors.ts - 400+ lines) remain in original location with re-exports rather than full migration.

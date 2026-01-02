@@ -1,3 +1,4 @@
+export { DemandFinderOrchestrator, DemandFinderAgent, type DemandFinderProcessResult } from "./orchestrator.js";
 export { 
   handleSelectedIntent, 
   handleNeedClarification, 
@@ -5,4 +6,4 @@ export {
   type DemandFinderPromptResult,
   type SearchResult,
   type DecisionHandlerResult,
-} from "../../../../conversation-orchestration/demandFinder/handlers.js";
+} from "./handlers.js";
