@@ -1,12 +1,11 @@
 import { db } from "../../../db.js";
-import { conversations, eventsStandard, users } from "../../../../shared/schema.js";
+import { conversations, eventsStandard } from "../../../../shared/schema.js";
 import { eq, desc, sql, and, ne } from "drizzle-orm";
 import type { ExtractedConversation } from "../../events/adapters/types.js";
 import { CONVERSATION_RULES } from "../../../config/conversationRules.js";
 import { ZendeskApiService } from "../../external-sources/zendesk/services/zendeskApiService.js";
 import { createConversationClosedEvent } from "./conversationEvents.js";
-import { fetchClientByAccountRef } from "../../../shared/services/clientHubClient.js";
-import { summaryStorage } from "../../ai/storage/summaryStorage.js";
+import { clientContextService } from "../services/clientContextService.js";
 
 interface ConversationData {
   externalConversationId: string;
@@ -82,40 +81,17 @@ export async function upsertConversation(data: ConversationData): Promise<{ conv
     const accountRef = data.userExternalId || 
       data.metadata?.metadata?.['zen:ticket_field:17571800295309'];
     
-    if (accountRef) {
-      fetchClientHubDataAsync(conversation.id, accountRef, data.userExternalId);
-    }
+    clientContextService.enrich({
+      conversationId: conversation.id,
+      userExternalId: data.userExternalId,
+      externalUserId: data.externalUserId,
+      accountRef,
+    }).catch((error) => {
+      console.error(`[ConversationStorage] Failed to enrich client context for conversation ${conversation.id}:`, error);
+    });
   }
   
   return { conversation, isNew: isNewConversation };
-}
-
-async function fetchClientHubDataAsync(conversationId: number, accountRef: string, userExternalId?: string): Promise<void> {
-  try {
-    console.log(`[ClientHubIntegration] Fetching client data for conversation ${conversationId}, accountRef: ${accountRef}`);
-    const clientData = await fetchClientByAccountRef(accountRef, { conversationId });
-    
-    let authenticated = false;
-    if (userExternalId) {
-      const [user] = await db.select({ authenticated: users.authenticated })
-        .from(users)
-        .where(eq(users.externalId, userExternalId));
-      authenticated = user?.authenticated ?? false;
-    }
-
-    if (clientData) {
-      clientData.authenticated = authenticated;
-      await summaryStorage.updateClientHubData(conversationId, clientData);
-      console.log(`[ClientHubIntegration] Successfully saved client data for conversation ${conversationId}, authenticated: ${authenticated}`);
-    } else {
-      const existingData = await summaryStorage.getClientHubData(conversationId);
-      const mergedData = { ...(existingData ?? {}), authenticated } as any;
-      await summaryStorage.updateClientHubData(conversationId, mergedData);
-      console.log(`[ClientHubIntegration] No client hub data found for accountRef: ${accountRef}, saved/merged with authenticated: ${authenticated}`);
-    }
-  } catch (error) {
-    console.error(`[ClientHubIntegration] Failed to fetch client data for conversation ${conversationId}:`, error);
-  }
 }
 
 export const conversationCore = {
