@@ -4,6 +4,7 @@ import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type OrchestratorContext, type
 import { ActionExecutor } from "../shared/actionExecutor.js";
 import { createAgentLogger } from "../shared/logger.js";
 import { escalateConversation } from "../shared/escalation.js";
+import { handoffAndReturn } from "../shared/helpers.js";
 
 const MAX_INTERACTIONS = 5;
 const log = createAgentLogger("DemandFinderOrchestrator");
@@ -102,43 +103,41 @@ export async function handleSelectedIntent(
     reason: promptResult.reason,
   });
   
-  await conversationStorage.updateOrchestratorState(conversationId, {
-    orchestratorStatus: ORCHESTRATOR_STATUS.PROVIDING_SOLUTION,
-    conversationOwner: CONVERSATION_OWNER.SOLUTION_PROVIDER,
-    waitingForCustomer: false,
-  });
   await caseDemandStorage.updateStatus(conversationId, "demand_found");
   
-  context.currentStatus = ORCHESTRATOR_STATUS.PROVIDING_SOLUTION;
-  context.demandFound = true;
-  
   const selectedResult = searchResults.find(r => r.id === selectedIntentId);
-  
-  if (selectedResult?.source === "article") {
-    context.articleUuid = selectedIntentId;
-  } else if (selectedResult?.source === "problem") {
-    context.problemId = selectedIntentId;
-  }
-  
-  context.lastDispatchLog = {
-    solutionCenterResults: searchResults.length,
-    aiDecision: promptResult.decision,
-    aiReason: promptResult.reason,
-    action: "demand_confirmed_to_solution_provider",
-    details: { 
-      selectedIntentId,
-      selectedIntentLabel: promptResult.selected_intent.label,
-      intentType: selectedResult?.source || "unknown",
+
+  return handoffAndReturn(
+    context,
+    {
+      status: ORCHESTRATOR_STATUS.PROVIDING_SOLUTION,
+      owner: CONVERSATION_OWNER.SOLUTION_PROVIDER,
+      waitingForCustomer: false,
     },
-  };
-  
-  return {
-    success: true,
-    demandConfirmed: true,
-    needsClarification: false,
-    maxInteractionsReached: false,
-    messageSent: false,
-  };
+    {
+      demandFound: true,
+      articleUuid: selectedResult?.source === "article" ? selectedIntentId : undefined,
+      problemId: selectedResult?.source === "problem" ? selectedIntentId : undefined,
+      lastDispatchLog: {
+        solutionCenterResults: searchResults.length,
+        aiDecision: promptResult.decision,
+        aiReason: promptResult.reason,
+        action: "demand_confirmed_to_solution_provider",
+        details: { 
+          selectedIntentId,
+          selectedIntentLabel: promptResult.selected_intent.label,
+          intentType: selectedResult?.source || "unknown",
+        },
+      },
+    },
+    {
+      success: true,
+      demandConfirmed: true,
+      needsClarification: false,
+      maxInteractionsReached: false,
+      messageSent: false,
+    }
+  );
 }
 
 export async function handleNeedClarification(

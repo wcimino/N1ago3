@@ -4,6 +4,7 @@ import { conversationStorage } from "../../conversations/storage/conversationSto
 import { caseDemandStorage } from "../../ai/storage/caseDemandStorage.js";
 import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type OrchestratorContext, type OrchestratorAction } from "../shared/types.js";
 import { ActionExecutor, type ActionExecutorResult } from "../shared/actionExecutor.js";
+import { handoffAndReturn } from "../shared/helpers.js";
 
 const CONFIG_KEY = "closer";
 export const DEFAULT_CLOSING_MESSAGE = "Obrigado por entrar em contato! Tenha um otimo dia!";
@@ -164,6 +165,13 @@ export class CloserOrchestrator {
         sendResult = await ActionExecutor.execute(context, [action]);
       }
 
+      const baseResult = {
+        success: true,
+        wantsMoreHelp,
+        suggestedResponse,
+        suggestionId,
+      };
+
       if (!sendResult.messageSent) {
         console.log(`[CloserOrchestrator] Response not sent (reason: ${sendResult.skipReason}), keeping conversation open for ${conversationId}`);
         await conversationStorage.updateOrchestratorState(conversationId, {
@@ -172,35 +180,39 @@ export class CloserOrchestrator {
           waitingForCustomer: true,
         });
         context.currentStatus = ORCHESTRATOR_STATUS.FINALIZING;
-      } else if (wantsMoreHelp) {
+        return baseResult;
+      }
+      
+      if (wantsMoreHelp) {
         console.log(`[CloserOrchestrator] Customer wants more help, creating new demand`);
 
         const newDemandRecord = await caseDemandStorage.createNewDemand(conversationId);
         console.log(`[CloserOrchestrator] Created new demand ${newDemandRecord.id} for conversation ${conversationId}`);
 
-        await conversationStorage.updateOrchestratorState(conversationId, {
-          orchestratorStatus: ORCHESTRATOR_STATUS.FINDING_DEMAND,
-          conversationOwner: CONVERSATION_OWNER.DEMAND_FINDER,
-          waitingForCustomer: true,
-        });
-        context.currentStatus = ORCHESTRATOR_STATUS.FINDING_DEMAND;
-      } else {
-        console.log(`[CloserOrchestrator] Customer satisfied, closing conversation ${conversationId}`);
-
-        await conversationStorage.updateOrchestratorState(conversationId, {
-          orchestratorStatus: ORCHESTRATOR_STATUS.CLOSED,
-          conversationOwner: null,
-          waitingForCustomer: false,
-        });
-        context.currentStatus = ORCHESTRATOR_STATUS.CLOSED;
+        return handoffAndReturn(
+          context,
+          {
+            status: ORCHESTRATOR_STATUS.FINDING_DEMAND,
+            owner: CONVERSATION_OWNER.DEMAND_FINDER,
+            waitingForCustomer: true,
+          },
+          {},
+          baseResult
+        );
       }
+      
+      console.log(`[CloserOrchestrator] Customer satisfied, closing conversation ${conversationId}`);
 
-      return {
-        success: true,
-        wantsMoreHelp,
-        suggestedResponse,
-        suggestionId,
-      };
+      return handoffAndReturn(
+        context,
+        {
+          status: ORCHESTRATOR_STATUS.CLOSED,
+          owner: null,
+          waitingForCustomer: false,
+        },
+        {},
+        baseResult
+      );
 
     } catch (error: any) {
       console.error(`[CloserOrchestrator] Error processing customer response for conversation ${conversationId}:`, error);
@@ -226,19 +238,21 @@ export class CloserOrchestrator {
         await ActionExecutor.execute(context, [action]);
       }
 
-      await conversationStorage.updateOrchestratorState(conversationId, {
-        orchestratorStatus: ORCHESTRATOR_STATUS.CLOSED,
-        conversationOwner: null,
-        waitingForCustomer: false,
-      });
-      context.currentStatus = ORCHESTRATOR_STATUS.CLOSED;
-
-      return {
-        success: true,
-        wantsMoreHelp: false,
-        suggestedResponse: message,
-        suggestionId: savedSuggestion?.id,
-      };
+      return handoffAndReturn(
+        context,
+        {
+          status: ORCHESTRATOR_STATUS.CLOSED,
+          owner: null,
+          waitingForCustomer: false,
+        },
+        {},
+        {
+          success: true,
+          wantsMoreHelp: false,
+          suggestedResponse: message,
+          suggestionId: savedSuggestion?.id,
+        }
+      );
     } catch (recoveryError) {
       console.error(`[CloserOrchestrator] Fallback close failed for conversation ${conversationId}:`, recoveryError);
       return {

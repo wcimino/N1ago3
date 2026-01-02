@@ -1,8 +1,8 @@
 import { caseSolutionStorage } from "../../ai/storage/caseSolutionStorage.js";
-import { conversationStorage } from "../../conversations/storage/conversationStorage.js";
 import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type OrchestratorContext } from "../shared/types.js";
 import { createAgentLogger } from "../shared/logger.js";
 import { escalateConversation } from "../shared/escalation.js";
+import { handoffAndReturn } from "../shared/helpers.js";
 import {
   selectNextAction,
   allActionsCompleted,
@@ -136,33 +136,32 @@ export class SolutionProviderOrchestrator {
     context: OrchestratorContext,
     caseSolutionId: number
   ): Promise<SolutionProviderOrchestratorResult> {
-    const { conversationId } = context;
-
     await caseSolutionStorage.updateStatus(caseSolutionId, "resolved");
-    
-    await conversationStorage.updateOrchestratorState(conversationId, {
-      orchestratorStatus: ORCHESTRATOR_STATUS.FINALIZING,
-      conversationOwner: CONVERSATION_OWNER.CLOSER,
-      waitingForCustomer: false,
-    });
 
-    context.currentStatus = ORCHESTRATOR_STATUS.FINALIZING;
-
-    context.lastDispatchLog = {
-      solutionCenterResults: 1,
-      aiDecision: "solution_completed",
-      aiReason: "All actions completed",
-      action: "transition_to_closer",
-      details: { caseSolutionId },
-    };
-
-    return {
-      success: true,
-      solutionFound: true,
-      caseSolutionId,
-      actionExecuted: "solution_completed",
-      escalated: false,
-    };
+    return handoffAndReturn(
+      context,
+      {
+        status: ORCHESTRATOR_STATUS.FINALIZING,
+        owner: CONVERSATION_OWNER.CLOSER,
+        waitingForCustomer: false,
+      },
+      {
+        lastDispatchLog: {
+          solutionCenterResults: 1,
+          aiDecision: "solution_completed",
+          aiReason: "All actions completed",
+          action: "transition_to_closer",
+          details: { caseSolutionId },
+        },
+      },
+      {
+        success: true,
+        solutionFound: true,
+        caseSolutionId,
+        actionExecuted: "solution_completed",
+        escalated: false,
+      }
+    );
   }
 
   private static async escalate(
