@@ -2,7 +2,7 @@ import { Router } from "express";
 import { reprocessingService, type ReprocessingType } from "../../sync/services/reprocessingService.js";
 import { autoCloseService } from "../../conversations/services/autoCloseService.js";
 import { duplicatesService } from "../services/duplicatesService.js";
-import { archiveService } from "../services/index.js";
+import { archiveService } from "../services/archive/index.js";
 import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
 
 const router = Router();

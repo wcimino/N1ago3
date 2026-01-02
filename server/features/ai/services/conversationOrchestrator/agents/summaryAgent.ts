@@ -1,4 +1,5 @@
-import { storage } from "../../../../../storage/index.js";
+import { configStorage } from "../../../../ai/storage/configStorage.js";
+import { summaryStorage } from "../../../../ai/storage/summaryStorage.js";
 import { runAgent, buildAgentContextFromEvent } from "../../agentFramework.js";
 import { parseSummaryResponse, type ParsedSummary } from "../../summaryDomain/index.js";
 import type { SummaryAgentResult, OrchestratorContext } from "../../../../conversation-orchestration/shared/types.js";
@@ -41,7 +42,7 @@ export class SummaryAgent {
 
       const structured = parseSummaryResponse(result.responseContent);
 
-      await storage.upsertConversationSummary({
+      await summaryStorage.upsertConversationSummary({
         conversationId,
         externalConversationId: event.externalConversationId || undefined,
         summary: result.responseContent,
@@ -82,7 +83,7 @@ export class SummaryAgent {
   }
 
   private static async shouldGenerate(event: OrchestratorContext["event"]): Promise<boolean> {
-    const config = await storage.getOpenaiApiConfig(CONFIG_KEY);
+    const config = await configStorage.getOpenaiApiConfig(CONFIG_KEY);
     
     if (!config || !config.enabled) {
       return false;

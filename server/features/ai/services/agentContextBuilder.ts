@@ -1,4 +1,5 @@
-import { storage } from "../../../storage/index.js";
+import { eventStorage } from "../../events/storage/eventStorage.js";
+import { summaryStorage } from "../storage/summaryStorage.js";
 import { 
   replacePromptVariables, 
   formatMessagesContext, 
@@ -35,9 +36,9 @@ export async function buildAgentContextFromEvent(
   }
 
   const [last20Messages, existingSummary] = await Promise.all([
-    storage.getLast20MessagesForConversation(event.conversationId),
+    eventStorage.getLast20MessagesForConversation(event.conversationId),
     options?.includeSummary !== false || options?.includeClassification !== false
-      ? storage.getConversationSummary(event.conversationId)
+      ? summaryStorage.getConversationSummary(event.conversationId)
       : null,
   ]);
 

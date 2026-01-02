@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { storage, organizationsStandardStorage } from "../../../storage/index.js";
+import { usersStandardStorage } from "../storage/usersStandardStorage.js";
+import { organizationsStandardStorage } from "../storage/organizationsStandardStorage.js";
 import { requireAuthorizedUser } from "../../../features/auth/index.js";
 
 const router = Router();
@@ -10,7 +11,7 @@ router.get("/", requireAuthorizedUser, async (req, res, next) => {
     const page = parseInt(req.query.page as string) || 1;
     const offset = (page - 1) * limit;
 
-    const { users, total } = await storage.getAllStandardUsers(limit, offset);
+    const { users, total } = await usersStandardStorage.getAllStandardUsers(limit, offset);
     
     res.json({
       users,
@@ -25,7 +26,7 @@ router.get("/", requireAuthorizedUser, async (req, res, next) => {
 
 router.get("/:email", requireAuthorizedUser, async (req, res, next) => {
   try {
-    const user = await storage.getStandardUserByEmail(req.params.email);
+    const user = await usersStandardStorage.getStandardUserByEmail(req.params.email);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -37,7 +38,7 @@ router.get("/:email", requireAuthorizedUser, async (req, res, next) => {
 
 router.get("/:email/history", requireAuthorizedUser, async (req, res, next) => {
   try {
-    const history = await storage.getUserHistory(req.params.email);
+    const history = await usersStandardStorage.getUserHistory(req.params.email);
     res.json(history);
   } catch (error) {
     next(error);

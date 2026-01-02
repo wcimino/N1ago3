@@ -2,7 +2,8 @@ import { db } from "../../../db.js";
 import { zendeskConversationsWebhookRaw } from "../../../../shared/schema.js";
 import { sql, asc } from "drizzle-orm";
 import { ZendeskAdapter } from "../../events/adapters/zendesk/index.js";
-import { usersStandardStorage, organizationsStandardStorage } from "../../../storage/index.js";
+import { usersStandardStorage } from "../../cadastro/storage/usersStandardStorage.js";
+import { organizationsStandardStorage } from "../../cadastro/storage/organizationsStandardStorage.js";
 
 export type ReprocessingType = "users" | "organizations";
 

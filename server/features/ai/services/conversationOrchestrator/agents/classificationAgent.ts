@@ -1,4 +1,5 @@
-import { storage } from "../../../../../storage/index.js";
+import { configStorage } from "../../../../ai/storage/configStorage.js";
+import { classificationStorage } from "../../../../ai/storage/classificationStorage.js";
 import { runAgent, buildAgentContextFromEvent } from "../../agentFramework.js";
 import { productCatalogStorage } from "../../../../products/storage/productCatalogStorage.js";
 import type { ClassificationAgentResult, OrchestratorContext } from "../../../../conversation-orchestration/shared/types.js";
@@ -72,7 +73,7 @@ export class ClassificationAgent {
           : `${parsed.product}/${parsed.subproduct || 'N/A'} (not found in catalog)`;
       }
 
-      await storage.updateConversationClassification(conversationId, {
+      await classificationStorage.updateConversationClassification(conversationId, {
         productId: productId || null,
         productConfidence: parsed.productConfidence,
         productConfidenceReason: parsed.productConfidenceReason,
@@ -100,7 +101,7 @@ export class ClassificationAgent {
   }
 
   private static async shouldClassify(event: OrchestratorContext["event"]): Promise<boolean> {
-    const config = await storage.getOpenaiApiConfig(CONFIG_KEY);
+    const config = await configStorage.getOpenaiApiConfig(CONFIG_KEY);
     
     if (!config || !config.enabled) {
       return false;

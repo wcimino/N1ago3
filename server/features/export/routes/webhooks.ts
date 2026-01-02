@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from "express";
-import { storage } from "../../../storage/index.js";
+import { webhookStorage } from "../storage/webhookStorage.js";
 import { getAdapter } from "../../events/adapters/index.js";
 import { eventBus, EVENTS } from "../../events/services/eventBus.js";
 
@@ -44,7 +44,7 @@ router.post("/webhook/zendesk", async (req: Request, res: Response) => {
       return res.status(401).json({ status: "error", message: errorMessage });
     }
 
-    const rawEntry = await storage.createWebhookLog({
+    const rawEntry = await webhookStorage.createWebhookLog({
       sourceIp,
       headers: headersDict,
       payload: req.body,

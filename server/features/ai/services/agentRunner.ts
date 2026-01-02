@@ -1,4 +1,5 @@
-import { storage } from "../../../storage/index.js";
+import { configStorage } from "../storage/configStorage.js";
+import { openaiLogsStorage } from "../storage/openaiLogsStorage.js";
 import { callOpenAI } from "./openaiApiService.js";
 import { replacePromptVariables } from "./promptUtils.js";
 import { buildPromptVariables } from "./agentContextBuilder.js";
@@ -15,7 +16,7 @@ export async function runAgent(
   context: AgentContext,
   options?: AgentRunOptions
 ): Promise<AgentRunnerResult> {
-  const config = await storage.getOpenaiApiConfig(configType);
+  const config = await configStorage.getOpenaiApiConfig(configType);
   
   if (!config) {
     console.log(`[AgentFramework] No config found for ${configType}`);
@@ -99,7 +100,7 @@ export async function saveSuggestedResponse(
   options: SaveSuggestionOptions
 ): Promise<{ id: number } | null> {
   try {
-    const savedSuggestion = await storage.saveSuggestedResponse(conversationId, {
+    const savedSuggestion = await openaiLogsStorage.saveSuggestedResponse(conversationId, {
       suggestedResponse,
       lastEventId: options.lastEventId ?? 0,
       openaiLogId: options.openaiLogId ?? 0,

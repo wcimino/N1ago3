@@ -6,7 +6,7 @@ import {
   type ChatResult,
   type ToolDefinition,
 } from "../../../../shared/services/openai/index.js";
-import { storage } from "../../../storage/index.js";
+import { openaiLogsStorage } from "../storage/openaiLogsStorage.js";
 import type { OpenaiApiLog } from "../../../../shared/schema.js";
 
 export type { ToolDefinition };
@@ -71,9 +71,9 @@ export async function callOpenAI(params: OpenAICallParams): Promise<OpenAICallRe
 }
 
 export async function getOpenaiLogs(limit: number = 100, requestType?: string): Promise<OpenaiApiLog[]> {
-  return storage.getOpenaiApiLogs(limit, requestType);
+  return openaiLogsStorage.getOpenaiApiLogs(limit, requestType);
 }
 
 export async function getOpenaiLogById(id: number): Promise<OpenaiApiLog | null> {
-  return storage.getOpenaiApiLogById(id);
+  return openaiLogsStorage.getOpenaiApiLogById(id);
 }

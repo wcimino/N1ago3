@@ -1,6 +1,6 @@
 import { db } from "../../../../../db.js";
 import { sql } from "drizzle-orm";
-import { storage } from "../../../../../storage/index.js";
+import { configStorage } from "../../../../ai/storage/configStorage.js";
 import { runAgent } from "../../agentFramework.js";
 import type { AgentResult } from "../../../../conversation-orchestration/shared/types.js";
 import type { 
@@ -174,7 +174,7 @@ export class TopicClassificationAgent {
     questions: string[], 
     productFilter?: string
   ): Promise<Map<string, string>> {
-    const config = await storage.getOpenaiApiConfig(CONFIG_KEY);
+    const config = await configStorage.getOpenaiApiConfig(CONFIG_KEY);
     
     if (!config || !config.enabled) {
       return new Map();

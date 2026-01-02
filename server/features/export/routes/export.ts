@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireAuthorizedUser } from "../../../features/auth/index.js";
-import { storage } from "../../../storage.js";
+import { summaryStorage } from "../../ai/storage/summaryStorage.js";
+import { classificationStorage } from "../../ai/storage/classificationStorage.js";
 
 const router = Router();
 
@@ -34,7 +35,7 @@ router.get("/api/export/summaries", requireAuthorizedUser, async (req, res) => {
       filters.customerRequestType = customerRequestType;
     }
 
-    const summaries = await storage.getSummariesForExport(filters);
+    const summaries = await summaryStorage.getSummariesForExport(filters);
 
     res.json(summaries);
   } catch (error: any) {
@@ -45,7 +46,7 @@ router.get("/api/export/summaries", requireAuthorizedUser, async (req, res) => {
 
 router.get("/api/export/filters", requireAuthorizedUser, async (req, res) => {
   try {
-    const result = await storage.getUniqueProductsAndRequestTypes();
+    const result = await classificationStorage.getUniqueProductsAndRequestTypes();
     res.json(result);
   } catch (error: any) {
     console.error("[Export Route] Error fetching filters:", error);

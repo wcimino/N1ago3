@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { organizationsStandardStorage } from "../../../storage/index.js";
+import { organizationsStandardStorage } from "../storage/organizationsStandardStorage.js";
 import { requireAuthorizedUser } from "../../../features/auth/index.js";
 
 const router = Router();

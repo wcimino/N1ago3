@@ -1,10 +1,11 @@
-import { storage } from "../../../storage/index.js";
+import { configStorage } from "../storage/configStorage.js";
+import { eventStorage } from "../../events/storage/eventStorage.js";
 import { runAgentAndSaveSuggestion, buildAgentContextFromEvent } from "./agentFramework.js";
 import { AutoPilotService } from "../../autoPilot/services/autoPilotService.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 
 export async function shouldGenerateResponse(event: EventStandard): Promise<boolean> {
-  const config = await storage.getOpenaiApiConfig("response");
+  const config = await configStorage.getOpenaiApiConfig("response");
   
   if (!config || !config.enabled) {
     return false;
@@ -55,7 +56,7 @@ export async function generateConversationResponse(event: EventStandard): Promis
     });
 
     if (result.success && result.suggestionId) {
-      await storage.saveStandardEvent({
+      await eventStorage.saveStandardEvent({
         eventType: "response_suggestion",
         source: "n1ago",
         conversationId: event.conversationId,

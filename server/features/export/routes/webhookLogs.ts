@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from "express";
-import { storage } from "../../../storage.js";
+import { webhookStorage } from "../storage/webhookStorage.js";
 import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
 
 const router = Router();
@@ -10,7 +10,7 @@ router.get("/api/webhook-logs", isAuthenticated, requireAuthorizedUser, async (r
   const limit = parseInt(req.query.limit as string) || 50;
   const offset = parseInt(req.query.offset as string) || 0;
 
-  const { logs, total } = await storage.getWebhookLogs(limit, offset, status, sunshineId);
+  const { logs, total } = await webhookStorage.getWebhookLogs(limit, offset, status, sunshineId);
 
   res.json({
     total,
@@ -28,7 +28,7 @@ router.get("/api/webhook-logs", isAuthenticated, requireAuthorizedUser, async (r
 });
 
 router.get("/api/webhook-logs/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  const stats = await storage.getWebhookLogsStats();
+  const stats = await webhookStorage.getWebhookLogsStats();
   res.json({
     total: stats.total,
     by_status: stats.byStatus,
@@ -37,7 +37,7 @@ router.get("/api/webhook-logs/stats", isAuthenticated, requireAuthorizedUser, as
 
 router.get("/api/webhook-logs/:id", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
-  const log = await storage.getWebhookLogById(id);
+  const log = await webhookStorage.getWebhookLogById(id);
 
   if (!log) {
     return res.status(404).json({ error: "Log not found" });

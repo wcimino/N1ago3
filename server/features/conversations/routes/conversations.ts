@@ -1,5 +1,7 @@
 import { Router, type Request, type Response } from "express";
-import { storage } from "../../../storage.js";
+import { conversationStorage } from "../storage/index.js";
+import { userStorage } from "../storage/userStorage.js";
+import { classificationStorage } from "../../ai/storage/classificationStorage.js";
 import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
 import { caseSolutionStorage } from "../../ai/storage/caseSolutionStorage.js";
 import type { Triage } from "../../../../shared/types/index.js";
@@ -55,12 +57,12 @@ function extractDemandFinderData(demandFinderAiResponse: unknown): DemandFinderD
 const router = Router();
 
 router.get("/api/conversations/stats", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  const stats = await storage.getConversationsStats();
+  const stats = await conversationStorage.getConversationsStats();
   res.json(stats);
 });
 
 router.get("/api/conversations/filters", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
-  const filters = await storage.getUniqueProductsAndRequestTypes();
+  const filters = await classificationStorage.getUniqueProductsAndRequestTypes();
   res.json(filters);
 });
 
@@ -77,7 +79,7 @@ router.get("/api/conversations/list", isAuthenticated, requireAuthorizedUser, as
   const objectiveProblem = req.query.objectiveProblem as string | undefined;
   const customerRequestType = req.query.customerRequestType as string | undefined;
 
-  const { conversations, total } = await storage.getConversationsList(limit, offset, productStandard, handler, emotionLevel, client, userAuthenticated, handledByN1ago, objectiveProblem, productId, customerRequestType);
+  const { conversations, total } = await conversationStorage.getConversationsList(limit, offset, productStandard, handler, emotionLevel, client, userAuthenticated, handledByN1ago, objectiveProblem, productId, customerRequestType);
 
   const enrichedConversations = conversations.map((conv: any) => ({
     id: conv.id,
@@ -114,8 +116,8 @@ router.get("/api/conversations/list", isAuthenticated, requireAuthorizedUser, as
 
 router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireAuthorizedUser, async (req: Request, res: Response) => {
   const [result, user] = await Promise.all([
-    storage.getUserConversationsWithMessagesOptimized(req.params.userId),
-    storage.getUserBySunshineId(req.params.userId),
+    conversationStorage.getUserConversationsWithMessagesOptimized(req.params.userId),
+    userStorage.getUserBySunshineId(req.params.userId),
   ]);
 
   if (!result) {
@@ -123,7 +125,7 @@ router.get("/api/conversations/user/:userId/messages", isAuthenticated, requireA
   }
 
   const conversationIds = result.map((row: any) => row.conv_id);
-  const suggestedResponsesRaw = await storage.getSuggestedResponsesBatch(conversationIds);
+  const suggestedResponsesRaw = await conversationStorage.getSuggestedResponsesBatch(conversationIds);
   
   const suggestedResponsesByConversation = new Map<number, any[]>();
   for (const sr of suggestedResponsesRaw as any[]) {
@@ -269,7 +271,7 @@ router.patch("/api/conversations/:id/autopilot", isAuthenticated, requireAuthori
     return res.status(400).json({ error: "enabled must be a boolean" });
   }
 
-  const result = await storage.updateConversationAutopilot(id, enabled);
+  const result = await conversationStorage.updateConversationAutopilot(id, enabled);
   
   if (!result) {
     return res.status(404).json({ error: "Conversation not found" });

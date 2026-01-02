@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from "express";
-import { storage } from "../../../storage.js";
+import { openaiLogsStorage } from "../storage/openaiLogsStorage.js";
 import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
 
 const router = Router();
@@ -29,7 +29,7 @@ router.get("/api/openai-config/:configType", isAuthenticated, requireAuthorizedU
     return res.status(400).json({ error: `Invalid config type. Must be one of: ${VALID_CONFIG_TYPES.join(", ")}` });
   }
 
-  const config = await storage.getOpenaiApiConfig(configType);
+  const config = await openaiLogsStorage.getOpenaiApiConfig(configType);
   
   if (!config) {
     return res.status(404).json({ 
@@ -58,7 +58,7 @@ router.put("/api/openai-config/:configType", isAuthenticated, requireAuthorizedU
   
   const finalPromptTemplate = hasPromptTemplate ? prompt_template : prompt_system;
 
-  const existingConfig = await storage.getOpenaiApiConfig(configType);
+  const existingConfig = await openaiLogsStorage.getOpenaiApiConfig(configType);
   
   let finalPromptSystem: string | null;
   if (prompt_system !== undefined) {
@@ -78,7 +78,7 @@ router.put("/api/openai-config/:configType", isAuthenticated, requireAuthorizedU
     finalResponseFormat = null;
   }
   
-  const config = await storage.upsertOpenaiApiConfig(configType, {
+  const config = await openaiLogsStorage.upsertOpenaiApiConfig(configType, {
     enabled: enabled ?? false,
     triggerEventTypes: trigger_event_types || [],
     triggerAuthorTypes: trigger_author_types || [],

@@ -1,7 +1,7 @@
 import { db } from "../../../../../db.js";
 import { eventsStandard } from "../../../../../../shared/schema.js";
 import { eq, desc, and } from "drizzle-orm";
-import { storage } from "../../../../../storage/index.js";
+import { configStorage } from "../../../../ai/storage/configStorage.js";
 import { runAgent, buildAgentContextFromEvent } from "../../agentFramework.js";
 import type { BuildContextOptions } from "../../agentTypes.js";
 import type { EventStandard } from "../../../../../../shared/schema.js";
@@ -38,7 +38,7 @@ async function getLatestCustomerEvent(conversationId: number): Promise<EventStan
 }
 
 async function isFormattingEnabled(): Promise<boolean> {
-  const config = await storage.getOpenaiApiConfig(CONFIG_KEY);
+  const config = await configStorage.getOpenaiApiConfig(CONFIG_KEY);
   return config?.enabled ?? false;
 }
 

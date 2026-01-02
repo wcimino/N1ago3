@@ -1,4 +1,4 @@
-import { storage } from "../../../../../storage/index.js";
+import { summaryStorage } from "../../../../ai/storage/summaryStorage.js";
 import { ClassificationAgent } from "../agents/classificationAgent.js";
 import type { OrchestratorContext } from "../../../../conversation-orchestration/shared/types.js";
 
@@ -22,7 +22,7 @@ export class EnrichmentService {
       console.log(`[EnrichmentService] Starting enrichment for conversation ${conversationId}`);
 
       if (!context.summary) {
-        const existingSummary = await storage.getConversationSummary(conversationId);
+        const existingSummary = await summaryStorage.getConversationSummary(conversationId);
         if (existingSummary) {
           context.summary = existingSummary.summary;
           console.log(`[EnrichmentService] Using existing summary from storage`);
@@ -44,7 +44,7 @@ export class EnrichmentService {
       }
 
       const currentClassification = context.classification;
-      const latestSummary = await storage.getConversationSummary(conversationId);
+      const latestSummary = await summaryStorage.getConversationSummary(conversationId);
       
       if (latestSummary) {
         context.classification = {
