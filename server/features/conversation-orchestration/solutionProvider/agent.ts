@@ -77,22 +77,6 @@ export class SolutionProviderAgent {
 
       const result = await SolutionProviderOrchestrator.process(context, caseSolution.id, existingActions);
 
-      if (result.waitingForCustomer === false && !result.escalated && result.success) {
-        const updatedActions = await caseSolutionStorage.getActions(caseSolution.id);
-        const allCompleted = updatedActions.every(a => a.status === "completed" || a.status === "skipped");
-        
-        if (allCompleted) {
-          console.log(`[SolutionProviderAgent] All actions completed, transitioning to Closer`);
-          await caseSolutionStorage.updateStatus(caseSolution.id, "resolved");
-          await conversationStorage.updateOrchestratorState(conversationId, {
-            orchestratorStatus: ORCHESTRATOR_STATUS.FINALIZING,
-            conversationOwner: CONVERSATION_OWNER.CLOSER,
-            waitingForCustomer: false,
-          });
-          context.currentStatus = ORCHESTRATOR_STATUS.FINALIZING;
-        }
-      }
-
       return result;
 
     } catch (error: any) {
