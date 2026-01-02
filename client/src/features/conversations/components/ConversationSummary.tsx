@@ -1,6 +1,5 @@
 import { Sparkles, User, Headphones, Clock, Info as InfoIcon, CheckCircle2 } from "lucide-react";
 import {
-  SummaryCardItem,
   ProductRow,
   RequestTypeRow,
   ObjectiveProblemsCard,
@@ -17,6 +16,7 @@ import {
   type ClientRequestVersions,
   type StageProgress,
 } from "./summary";
+import { SummaryInfoTooltip } from "./summary/SummaryInfoTooltip";
 
 const DEFAULT_STAGE_PROGRESS: StageProgress = {
   summary: { status: "pending" },
@@ -219,7 +219,30 @@ export function ConversationSummary({ summary, conversationId }: ConversationSum
                       <div className="flex items-center gap-2 mb-2">
                         <div className="text-blue-600"><User className="w-4 h-4" /></div>
                         <h4 className="font-medium text-gray-800 text-sm">Solicitação do Cliente</h4>
-                        <ClientRequestVersionsTooltip versions={clientData.versions} />
+                        <div className="flex items-center ml-auto">
+                          <ClientRequestVersionsTooltip versions={clientData.versions} />
+                          <SummaryInfoTooltip
+                            icon={<Headphones className="w-4 h-4" />}
+                            iconColorClass="text-green-500"
+                            title="Ações do Atendente"
+                            content={summary.agent_actions}
+                            bgColorClass="bg-green-50"
+                          />
+                          <SummaryInfoTooltip
+                            icon={<Clock className="w-4 h-4" />}
+                            iconColorClass="text-amber-500"
+                            title="Status Atual"
+                            content={summary.current_status}
+                            bgColorClass="bg-amber-50"
+                          />
+                          <SummaryInfoTooltip
+                            icon={<InfoIcon className="w-4 h-4" />}
+                            iconColorClass="text-purple-500"
+                            title="Informações Importantes"
+                            content={summary.important_info}
+                            bgColorClass="bg-purple-50"
+                          />
+                        </div>
                       </div>
                       <p className="text-sm text-gray-700 leading-relaxed">{clientData.text}</p>
                     </div>
@@ -227,39 +250,6 @@ export function ConversationSummary({ summary, conversationId }: ConversationSum
                 })()
               ) : (
                 <StageSkeleton title="Gerando resumo..." isRunning={isStageRunning(stageProgress.summary)} />
-              )}
-              
-              {summary.agent_actions && (
-                <SummaryCardItem
-                  icon={<Headphones className="w-4 h-4" />}
-                  title="Ações do Atendente"
-                  content={summary.agent_actions}
-                  bgColor="bg-green-50"
-                  borderColor="border-green-200"
-                  iconColor="text-green-600"
-                />
-              )}
-              
-              {summary.current_status && (
-                <SummaryCardItem
-                  icon={<Clock className="w-4 h-4" />}
-                  title="Status Atual"
-                  content={summary.current_status}
-                  bgColor="bg-amber-50"
-                  borderColor="border-amber-200"
-                  iconColor="text-amber-600"
-                />
-              )}
-              
-              {summary.important_info && (
-                <SummaryCardItem
-                  icon={<InfoIcon className="w-4 h-4" />}
-                  title="Informações Importantes"
-                  content={summary.important_info}
-                  bgColor="bg-purple-50"
-                  borderColor="border-purple-200"
-                  iconColor="text-purple-600"
-                />
               )}
               
               {demandFinderReady ? (
@@ -293,7 +283,30 @@ export function ConversationSummary({ summary, conversationId }: ConversationSum
                       <div className="flex items-center gap-2 mb-2">
                         <div className="text-blue-600"><User className="w-4 h-4" /></div>
                         <h4 className="font-medium text-gray-800 text-sm">Solicitação do Cliente</h4>
-                        <ClientRequestVersionsTooltip versions={parsedJson.clientRequestVersions} />
+                        <div className="flex items-center ml-auto">
+                          <ClientRequestVersionsTooltip versions={parsedJson.clientRequestVersions} />
+                          <SummaryInfoTooltip
+                            icon={<Headphones className="w-4 h-4" />}
+                            iconColorClass="text-green-500"
+                            title="Ações do Atendente"
+                            content={summary.agent_actions}
+                            bgColorClass="bg-green-50"
+                          />
+                          <SummaryInfoTooltip
+                            icon={<Clock className="w-4 h-4" />}
+                            iconColorClass="text-amber-500"
+                            title="Status Atual"
+                            content={summary.current_status}
+                            bgColorClass="bg-amber-50"
+                          />
+                          <SummaryInfoTooltip
+                            icon={<InfoIcon className="w-4 h-4" />}
+                            iconColorClass="text-purple-500"
+                            title="Informações Importantes"
+                            content={summary.important_info}
+                            bgColorClass="bg-purple-50"
+                          />
+                        </div>
                       </div>
                       <p className="text-sm text-gray-700 leading-relaxed">{parsedJson.clientRequest}</p>
                     </div>
