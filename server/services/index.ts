@@ -9,6 +9,7 @@ export { processResponseForEvent, generateConversationResponse } from "../featur
 export { 
   SummaryAgent,
   ClassificationAgent,
-  DemandFinderAgent,
   TopicClassificationAgent,
 } from "../features/ai/services/conversationOrchestrator/agents/index.js";
+
+export { DemandFinderAgent } from "../features/conversation-orchestration/index.js";

@@ -1,5 +1,5 @@
 import { eventStorage } from "../storage/eventStorage.js";
-import { processConversationEvent } from "../../ai/services/conversationOrchestrator/index.js";
+import { processConversationEvent } from "../../conversation-orchestration/index.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 
 type StandardEventInput = Parameters<typeof eventStorage.saveStandardEvent>[0];

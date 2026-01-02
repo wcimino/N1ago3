@@ -1,7 +1,7 @@
 import { db } from "../../../db.js";
 import { conversationsSummary } from "../../../../shared/schema.js";
 import { eq, and, sql } from "drizzle-orm";
-import { isValidOwnerTransition, type ConversationOwner } from "../../ai/services/conversationOrchestrator/types.js";
+import { isValidOwnerTransition, type ConversationOwner } from "../../conversation-orchestration/shared/types.js";
 import type { ClientHubData } from "../../../../shared/schema/clientHub.js";
 
 export const conversationOrchestratorState = {
