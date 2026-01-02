@@ -1,4 +1,5 @@
 import type { InsertZendeskSupportUser } from "../../../../../shared/schema.js";
+import { fetchWithRetry as sharedFetchWithRetry } from "../../../../shared/services/fetchWithRetry.js";
 
 export const ZENDESK_SUBDOMAIN = "movilepay";
 export const SOURCE_TYPE = "zendesk-support-users";
@@ -72,50 +73,13 @@ async function fetchWithRetry<T>(
   options: RequestInit,
   retries = MAX_RETRIES
 ): Promise<T> {
-  let lastError: Error | null = null;
-  let backoffMs = INITIAL_BACKOFF_MS;
-  
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const response = await fetch(url, options);
-      
-      if (response.status === 429) {
-        const retryAfter = response.headers.get('Retry-After');
-        const waitMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : backoffMs;
-        console.log(`[ZendeskSupportUsers] Rate limited (429). Waiting ${waitMs}ms before retry ${attempt}/${retries}...`);
-        await sleep(waitMs);
-        backoffMs = Math.min(backoffMs * 2, 60000);
-        continue;
-      }
-      
-      if (response.status >= 500) {
-        const errorBody = await response.text();
-        console.log(`[ZendeskSupportUsers] Server error (${response.status}). Retrying ${attempt}/${retries} after ${backoffMs}ms...`);
-        await sleep(backoffMs);
-        backoffMs = Math.min(backoffMs * 2, 60000);
-        lastError = new Error(`Zendesk API error: ${response.status} ${response.statusText} - ${errorBody}`);
-        continue;
-      }
-      
-      if (!response.ok) {
-        const errorBody = await response.text();
-        throw new Error(`Zendesk API error: ${response.status} ${response.statusText} - ${errorBody}`);
-      }
-      
-      return response.json() as Promise<T>;
-    } catch (error) {
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        console.log(`[ZendeskSupportUsers] Network error. Retrying ${attempt}/${retries} after ${backoffMs}ms...`);
-        await sleep(backoffMs);
-        backoffMs = Math.min(backoffMs * 2, 60000);
-        lastError = error as Error;
-        continue;
-      }
-      throw error;
-    }
-  }
-  
-  throw lastError || new Error('Max retries exceeded');
+  return sharedFetchWithRetry<T>(url, options, {
+    maxRetries: retries,
+    initialBackoffMs: INITIAL_BACKOFF_MS,
+    onRetry: (attempt, error, waitMs) => {
+      console.log(`[ZendeskSupportUsers] ${error.message}. Retrying ${attempt}/${retries} after ${waitMs}ms...`);
+    },
+  });
 }
 
 export function getAuthHeader(): string {
