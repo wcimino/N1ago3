@@ -44,7 +44,7 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **Server Bootstrap & Initialization:** Includes preflight checks, granular scheduler control, enhanced health endpoints, and production static file verification.
 *   **Database Migrations:** Automated Drizzle and manual SQL migration execution during build.
 *   **Server Resilience:** Server starts even if database is unavailable (degraded mode); background workers start when database is healthy.
-*   **Progressive Stage Progress Tracking:** AI agents (Summary, Classification, DemandFinder, SolutionProvider) track processing status (pending, running, completed, error) in `stage_progress` JSONB column, enabling frontend to show skeleton loaders that progressively reveal components as agents complete. Polling interval: 3 seconds.
+*   **Progressive UI Updates:** Frontend derives component visibility from `orchestrator_status` field (values: new, finding_demand, providing_solution, finalizing, escalated, completed). Components appear progressively as backend agents complete processing, using skeleton loaders during transitions. Polling interval: 3 seconds.
 
 **System Design Choices:**
 
