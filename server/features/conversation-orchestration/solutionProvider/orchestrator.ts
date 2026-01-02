@@ -1,12 +1,8 @@
 import { caseSolutionStorage } from "../../ai/storage/caseSolutionStorage.js";
 import { conversationStorage } from "../../conversations/storage/conversationStorage.js";
-import { 
-  ORCHESTRATOR_STATUS, 
-  CONVERSATION_OWNER, 
-  type OrchestratorContext,
-  createAgentLogger,
-  escalateConversation,
-} from "../shared/index.js";
+import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type OrchestratorContext } from "../shared/types.js";
+import { createAgentLogger } from "../shared/logger.js";
+import { escalateConversation } from "../shared/escalation.js";
 import {
   selectNextAction,
   allActionsCompleted,

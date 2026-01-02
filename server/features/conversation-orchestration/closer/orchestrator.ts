@@ -1,15 +1,9 @@
 import { runAgentAndSaveSuggestion, buildAgentContextFromEvent, saveSuggestedResponse } from "../../ai/services/agentFramework.js";
-import { buildResolvedClassification } from "../../ai/services/helpers/index.js";
+import { buildResolvedClassification } from "../../ai/services/helpers/searchContextHelpers.js";
 import { conversationStorage } from "../../conversations/storage/conversationStorage.js";
 import { caseDemandStorage } from "../../ai/storage/caseDemandStorage.js";
-import { 
-  ActionExecutor, 
-  ORCHESTRATOR_STATUS, 
-  CONVERSATION_OWNER, 
-  type OrchestratorContext, 
-  type OrchestratorAction,
-  type ActionExecutorResult,
-} from "../shared/index.js";
+import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type OrchestratorContext, type OrchestratorAction } from "../shared/types.js";
+import { ActionExecutor, type ActionExecutorResult } from "../shared/actionExecutor.js";
 
 const CONFIG_KEY = "closer";
 export const DEFAULT_CLOSING_MESSAGE = "Obrigado por entrar em contato! Tenha um otimo dia!";

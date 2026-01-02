@@ -11,7 +11,7 @@ import {
 import { productCatalogStorage } from "../../products/storage/productCatalogStorage.js";
 import { caseSolutionStorage } from "../storage/caseSolutionStorage.js";
 import { caseDemandStorage } from "../storage/caseDemandStorage.js";
-import { resolveProductById, resolveProductByName } from "./helpers/index.js";
+import { resolveProductById, resolveProductByName } from "./helpers/productHelpers.js";
 import type { EventStandard } from "../../../../shared/schema.js";
 import type { AgentContext, BuildContextOptions } from "./agentTypes.js";
 import memoize from "memoizee";

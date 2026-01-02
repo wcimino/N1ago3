@@ -1,13 +1,8 @@
 import { conversationStorage } from "../../conversations/storage/conversationStorage.js";
 import { caseSolutionStorage } from "../../ai/storage/caseSolutionStorage.js";
-import { 
-  ActionExecutor,
-  ORCHESTRATOR_STATUS, 
-  CONVERSATION_OWNER, 
-  escalateConversation,
-  type OrchestratorContext, 
-  type OrchestratorAction 
-} from "../shared/index.js";
+import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type OrchestratorContext, type OrchestratorAction } from "../shared/types.js";
+import { ActionExecutor } from "../shared/actionExecutor.js";
+import { escalateConversation } from "../shared/escalation.js";
 import { getSolutionFromCenter, type SolutionProviderResponse } from "../../../shared/services/solutionCenterClient.js";
 import { SolutionProviderOrchestrator } from "./orchestrator.js";
 import type { CaseAction } from "./stateMachine.js";

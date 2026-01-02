@@ -1,7 +1,8 @@
 import { configStorage } from "../../../../ai/storage/configStorage.js";
 import { summaryStorage } from "../../../../ai/storage/summaryStorage.js";
 import { runAgent, buildAgentContextFromEvent } from "../../agentFramework.js";
-import { parseSummaryResponse, type ParsedSummary } from "../../summaryDomain/index.js";
+import { parseSummaryResponse } from "../../summaryDomain/parser.js";
+import type { ParsedSummary } from "../../summaryDomain/types.js";
 import type { SummaryAgentResult, OrchestratorContext } from "../../../../conversation-orchestration/shared/types.js";
 
 const CONFIG_KEY = "summary";

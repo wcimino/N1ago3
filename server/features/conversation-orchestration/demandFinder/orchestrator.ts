@@ -1,15 +1,13 @@
 import { runAgentAndSaveSuggestion, buildAgentContextFromEvent } from "../../ai/services/agentFramework.js";
 import { caseDemandStorage } from "../../ai/storage/caseDemandStorage.js";
 import { conversationStorage } from "../../conversations/storage/conversationStorage.js";
-import { getClientRequestVersions, getSearchQueries, getCustomerRequestType, buildResolvedClassification, resolveProductById } from "../../ai/services/helpers/index.js";
+import { getClientRequestVersions, getSearchQueries, getCustomerRequestType } from "../../ai/services/summaryDomain/parser.js";
+import { buildResolvedClassification } from "../../ai/services/helpers/searchContextHelpers.js";
+import { resolveProductById } from "../../ai/services/helpers/productHelpers.js";
 import { EnrichmentService } from "../../ai/services/conversationOrchestrator/services/enrichmentService.js";
-import { 
-  ORCHESTRATOR_STATUS, 
-  type DemandFinderAgentResult, 
-  type OrchestratorContext,
-  createAgentLogger,
-  escalateConversation,
-} from "../shared/index.js";
+import { ORCHESTRATOR_STATUS, type DemandFinderAgentResult, type OrchestratorContext } from "../shared/types.js";
+import { createAgentLogger } from "../shared/logger.js";
+import { escalateConversation } from "../shared/escalation.js";
 import { searchSolutionCenter, type SearchLogContext } from "../../../shared/services/solutionCenterClient.js";
 import { withRetry } from "../../../../shared/utils/retry.js";
 import { 

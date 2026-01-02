@@ -1,13 +1,8 @@
 import { caseSolutionStorage } from "../../ai/storage/caseSolutionStorage.js";
 import { conversationStorage } from "../../conversations/storage/conversationStorage.js";
 import { summaryStorage } from "../../ai/storage/summaryStorage.js";
-import { 
-  ActionExecutor,
-  ORCHESTRATOR_STATUS, 
-  CONVERSATION_OWNER, 
-  type OrchestratorContext, 
-  type OrchestratorAction 
-} from "../shared/index.js";
+import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type OrchestratorContext, type OrchestratorAction } from "../shared/types.js";
+import { ActionExecutor } from "../shared/actionExecutor.js";
 import { saveSuggestedResponse } from "../../ai/services/agentFramework.js";
 import { callOpenAI } from "../../ai/services/openaiApiService.js";
 import {

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { reportsService } from "../services/reportsService.js";
 import { validatePeriod } from "../utils/dateFilter.js";
-import { TopicClassificationAgent, type PeriodFilter } from "../../ai/services/conversationOrchestrator/agents/index.js";
+import { TopicClassificationAgent, type PeriodFilter } from "../../ai/services/conversationOrchestrator/agents/topicClassificationAgent.js";
 
 const router = Router();
 

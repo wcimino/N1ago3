@@ -1,14 +1,9 @@
 import { caseDemandStorage } from "../../ai/storage/caseDemandStorage.js";
 import { conversationStorage } from "../../conversations/storage/conversationStorage.js";
-import { 
-  ActionExecutor,
-  ORCHESTRATOR_STATUS, 
-  CONVERSATION_OWNER, 
-  type OrchestratorContext, 
-  type OrchestratorAction,
-  createAgentLogger,
-  escalateConversation,
-} from "../shared/index.js";
+import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type OrchestratorContext, type OrchestratorAction } from "../shared/types.js";
+import { ActionExecutor } from "../shared/actionExecutor.js";
+import { createAgentLogger } from "../shared/logger.js";
+import { escalateConversation } from "../shared/escalation.js";
 
 const MAX_INTERACTIONS = 5;
 const log = createAgentLogger("DemandFinderOrchestrator");
