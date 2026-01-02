@@ -1,6 +1,23 @@
 ## Overview
 
-N1ago is a system for managing and monitoring customer credit inquiry interactions. It processes webhooks from Zendesk Sunshine Conversations, stores conversation data, and provides a real-time React dashboard. The project aims to improve customer service efficiency, offer insights from interactions, and enable future AI-driven automations like conversation summarization, product classification, and automated support to enhance customer experience and generate business insights.
+N1ago is a system for managing and monitoring customer credit inquiry interactions.
+
+## Recent Changes (2026-01-02)
+
+**Bug Fixes for Conversation Orchestration:**
+
+1. **Message Variation Selection Fix (conversationCore.ts):**
+   - Fixed issue where `client_hub_data` was NULL, preventing message variation matching
+   - Now propagates `authenticated` field from Zendesk user data even when ClientHub returns no data
+   - Uses safe merge pattern: `{ ...(existingData ?? {}), authenticated }` to preserve existing data
+
+2. **Closer Orchestrator Fix (orchestrator.ts):**
+   - Fixed duplicate solution message sending and incorrect workflow execution
+   - Changed condition from single check (`currentStatus === FINALIZING`) to dual check (`FINALIZING && waitingForCustomer === true`)
+   - Added try-catch error handling with fallback to `waitingForCustomer = false`
+   - Uses defensive null coalescing: `state?.waitingForCustomer ?? false`
+
+It processes webhooks from Zendesk Sunshine Conversations, stores conversation data, and provides a real-time React dashboard. The project aims to improve customer service efficiency, offer insights from interactions, and enable future AI-driven automations like conversation summarization, product classification, and automated support to enhance customer experience and generate business insights.
 
 ## User Preferences
 

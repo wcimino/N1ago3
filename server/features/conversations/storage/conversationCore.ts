@@ -95,20 +95,23 @@ async function fetchClientHubDataAsync(conversationId: number, accountRef: strin
     console.log(`[ClientHubIntegration] Fetching client data for conversation ${conversationId}, accountRef: ${accountRef}`);
     const clientData = await fetchClientByAccountRef(accountRef, { conversationId });
     
+    let authenticated = false;
+    if (userExternalId) {
+      const [user] = await db.select({ authenticated: users.authenticated })
+        .from(users)
+        .where(eq(users.externalId, userExternalId));
+      authenticated = user?.authenticated ?? false;
+    }
+
     if (clientData) {
-      if (userExternalId) {
-        const [user] = await db.select({ authenticated: users.authenticated })
-          .from(users)
-          .where(eq(users.externalId, userExternalId));
-        clientData.authenticated = user?.authenticated ?? false;
-      } else {
-        clientData.authenticated = false;
-      }
-      
+      clientData.authenticated = authenticated;
       await summaryStorage.updateClientHubData(conversationId, clientData);
-      console.log(`[ClientHubIntegration] Successfully saved client data for conversation ${conversationId}, authenticated: ${clientData.authenticated}`);
+      console.log(`[ClientHubIntegration] Successfully saved client data for conversation ${conversationId}, authenticated: ${authenticated}`);
     } else {
-      console.log(`[ClientHubIntegration] No client data found for accountRef: ${accountRef}`);
+      const existingData = await summaryStorage.getClientHubData(conversationId);
+      const mergedData = { ...(existingData ?? {}), authenticated } as any;
+      await summaryStorage.updateClientHubData(conversationId, mergedData);
+      console.log(`[ClientHubIntegration] No client hub data found for accountRef: ${accountRef}, saved/merged with authenticated: ${authenticated}`);
     }
   } catch (error) {
     console.error(`[ClientHubIntegration] Failed to fetch client data for conversation ${conversationId}:`, error);

@@ -22,9 +22,17 @@ export class CloserOrchestrator {
   static async process(context: OrchestratorContext): Promise<CloserProcessResult> {
     const { conversationId, currentStatus } = context;
 
-    const isProcessingCustomerResponse = currentStatus === ORCHESTRATOR_STATUS.FINALIZING;
+    let waitingForCustomer = false;
+    try {
+      const state = await conversationStorage.getOrchestratorState(conversationId);
+      waitingForCustomer = state?.waitingForCustomer ?? false;
+    } catch (stateError) {
+      console.error(`[CloserOrchestrator] Failed to get orchestrator state for conversation ${conversationId}, defaulting waitingForCustomer to false:`, stateError);
+    }
+    
+    const isProcessingCustomerResponse = currentStatus === ORCHESTRATOR_STATUS.FINALIZING && waitingForCustomer === true;
 
-    console.log(`[CloserOrchestrator] Processing conversation ${conversationId}, mode: ${isProcessingCustomerResponse ? "processing_response" : "sending_followup"}`);
+    console.log(`[CloserOrchestrator] Processing conversation ${conversationId}, status: ${currentStatus}, waitingForCustomer: ${waitingForCustomer}, mode: ${isProcessingCustomerResponse ? "processing_response" : "sending_followup"}`);
 
     if (isProcessingCustomerResponse) {
       return this.processCustomerResponse(context);
