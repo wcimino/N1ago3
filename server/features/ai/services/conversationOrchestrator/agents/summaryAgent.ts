@@ -1,7 +1,7 @@
 import { storage } from "../../../../../storage/index.js";
 import { runAgent, buildAgentContextFromEvent } from "../../agentFramework.js";
 import { parseSummaryResponse, type ParsedSummary } from "../../summaryDomain/index.js";
-import type { SummaryAgentResult, OrchestratorContext } from "../types.js";
+import type { SummaryAgentResult, OrchestratorContext } from "../../../../conversation-orchestration/shared/types.js";
 
 const CONFIG_KEY = "summary";
 

@@ -1,7 +1,7 @@
 import { storage } from "../../../../../storage/index.js";
 import { runAgent, buildAgentContextFromEvent } from "../../agentFramework.js";
 import { productCatalogStorage } from "../../../../products/storage/productCatalogStorage.js";
-import type { ClassificationAgentResult, OrchestratorContext } from "../types.js";
+import type { ClassificationAgentResult, OrchestratorContext } from "../../../../conversation-orchestration/shared/types.js";
 
 const CONFIG_KEY = "classification";
 

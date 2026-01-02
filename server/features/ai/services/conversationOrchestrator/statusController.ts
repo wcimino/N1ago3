@@ -1,5 +1,5 @@
 import { caseDemandStorage } from "../../storage/caseDemandStorage.js";
-import type { OrchestratorContext } from "./types.js";
+import type { OrchestratorContext } from "../../../conversation-orchestration/shared/types.js";
 
 export interface StatusEvaluationResult {
   canTransition: boolean;

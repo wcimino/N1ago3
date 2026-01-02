@@ -1,6 +1,6 @@
 import { storage } from "../../../../../storage/index.js";
 import { ClassificationAgent } from "../agents/classificationAgent.js";
-import type { OrchestratorContext } from "../types.js";
+import type { OrchestratorContext } from "../../../../conversation-orchestration/shared/types.js";
 
 export interface EnrichmentResult {
   success: boolean;

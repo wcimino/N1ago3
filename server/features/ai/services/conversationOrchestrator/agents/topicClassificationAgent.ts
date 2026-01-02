@@ -2,7 +2,7 @@ import { db } from "../../../../../db.js";
 import { sql } from "drizzle-orm";
 import { storage } from "../../../../../storage/index.js";
 import { runAgent } from "../../agentFramework.js";
-import type { AgentResult } from "../types.js";
+import type { AgentResult } from "../../../../conversation-orchestration/shared/types.js";
 import type { 
   QuestionTopic, 
   ThemeSummary, 
