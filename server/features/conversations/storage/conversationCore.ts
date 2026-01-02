@@ -71,10 +71,10 @@ export async function upsertConversation(data: ConversationData): Promise<{ conv
     try {
       const closed = await closePreviousConversationsForUserInternal(data.userExternalId, conversation.id);
       if (closed.length > 0) {
-        console.log(`Closed ${closed.length} previous conversations for user ${data.userExternalId}`);
+        console.log(`[ConversationStorage] Closed ${closed.length} previous conversations for user ${data.userExternalId}`);
       }
     } catch (error) {
-      console.error(`Failed to close previous conversations for user ${data.userExternalId}:`, error);
+      console.error(`[ConversationStorage] Failed to close previous conversations for user ${data.userExternalId}:`, error);
     }
   }
   

@@ -11,7 +11,7 @@ router.get('/api/auth/user', isAuthenticated, requireAuthorizedUser, async (req:
     const user = await authStorage.getAuthUser(userId);
     res.json(user);
   } catch (error) {
-    console.error("Error fetching user:", error);
+    console.error("[Auth] Error fetching user:", error);
     res.status(500).json({ message: "Failed to fetch user" });
   }
 });

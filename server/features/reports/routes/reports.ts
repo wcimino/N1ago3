@@ -18,7 +18,7 @@ router.get("/api/reports/product-problem-counts", async (req, res) => {
     const results = await reportsService.getProductProblemCounts(period, pagination);
     res.json(results);
   } catch (error) {
-    console.error("Error fetching product-problem counts:", error);
+    console.error("[Reports] Error fetching product-problem counts:", error);
     res.status(500).json({ error: "Falha ao gerar relatório" });
   }
 });
@@ -30,7 +30,7 @@ router.get("/api/reports/customer-conversation-counts", async (req, res) => {
     const results = await reportsService.getCustomerConversationCounts(period, pagination);
     res.json(results);
   } catch (error) {
-    console.error("Error fetching customer conversation counts:", error);
+    console.error("[Reports] Error fetching customer conversation counts:", error);
     res.status(500).json({ error: "Falha ao gerar relatório" });
   }
 });
@@ -41,7 +41,7 @@ router.get("/api/reports/problem-hierarchy", async (req, res) => {
     const results = await reportsService.getHierarchicalProblemData(period);
     res.json(results);
   } catch (error) {
-    console.error("Error fetching hierarchical problem data:", error);
+    console.error("[Reports] Error fetching hierarchical problem data:", error);
     res.status(500).json({ error: "Falha ao gerar relatório" });
   }
 });
@@ -57,7 +57,7 @@ router.get("/api/reports/question-topics", async (req, res) => {
     const results = await TopicClassificationAgent.process(product, subproduct, period);
     res.json(results);
   } catch (error) {
-    console.error("Error fetching question topics:", error);
+    console.error("[Reports] Error fetching question topics:", error);
     res.status(500).json({ error: "Falha ao gerar relatório de temas" });
   }
 });
@@ -67,7 +67,7 @@ router.get("/api/reports/question-topics/products", async (req, res) => {
     const products = await TopicClassificationAgent.getAvailableProducts();
     res.json(products);
   } catch (error) {
-    console.error("Error fetching available products:", error);
+    console.error("[Reports] Error fetching available products:", error);
     res.status(500).json({ error: "Falha ao buscar produtos" });
   }
 });
@@ -78,7 +78,7 @@ router.get("/api/reports/question-topics/subproducts", async (req, res) => {
     const subproducts = await TopicClassificationAgent.getAvailableSubproducts(product);
     res.json(subproducts);
   } catch (error) {
-    console.error("Error fetching available subproducts:", error);
+    console.error("[Reports] Error fetching available subproducts:", error);
     res.status(500).json({ error: "Falha ao buscar subprodutos" });
   }
 });

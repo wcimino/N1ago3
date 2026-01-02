@@ -8,21 +8,21 @@ const MAX_RETRIES = 5;
 
 export function startPollingWorker(intervalMs: number = POLLING_INTERVAL_MS) {
   if (isRunning) {
-    console.log("Polling worker already running");
+    console.log("[PollingWorker] Already running");
     return;
   }
 
   isRunning = true;
-  console.log(`Starting polling worker with ${intervalMs}ms interval`);
+  console.log(`[PollingWorker] Starting with ${intervalMs}ms interval`);
 
   intervalId = setInterval(async () => {
     try {
       const processed = await processPendingRaws();
       if (processed > 0) {
-        console.log(`Polling worker processed ${processed} pending events`);
+        console.log(`[PollingWorker] Processed ${processed} pending events`);
       }
     } catch (error) {
-      console.error("Polling worker error:", error);
+      console.error("[PollingWorker] Error:", error);
     }
   }, intervalMs);
 }
@@ -35,7 +35,7 @@ export function stopPollingWorker() {
   clearInterval(intervalId);
   intervalId = null;
   isRunning = false;
-  console.log("Polling worker stopped");
+  console.log("[PollingWorker] Stopped");
 }
 
 export function isPollingWorkerRunning(): boolean {

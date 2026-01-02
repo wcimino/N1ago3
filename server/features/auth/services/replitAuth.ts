@@ -135,10 +135,10 @@ export async function setupAuth(app: Express) {
   app.get("/api/login", async (req, res, next) => {
     try {
       const domain = getCallbackDomain(req);
-      console.log("Login attempt - domain:", domain);
-      console.log("REPLIT_DOMAINS:", process.env.REPLIT_DOMAINS);
-      console.log("REPLIT_DEV_DOMAIN:", process.env.REPLIT_DEV_DOMAIN);
-      console.log("Callback URL will be:", `https://${domain}/api/callback`);
+      console.log("[ReplitAuth] Login attempt - domain:", domain);
+      console.log("[ReplitAuth] REPLIT_DOMAINS:", process.env.REPLIT_DOMAINS);
+      console.log("[ReplitAuth] REPLIT_DEV_DOMAIN:", process.env.REPLIT_DEV_DOMAIN);
+      console.log("[ReplitAuth] Callback URL will be:", `https://${domain}/api/callback`);
       await ensureStrategy(domain);
       passport.authenticate(`replitauth:${domain}`, {
         prompt: "login consent",
@@ -153,7 +153,7 @@ export async function setupAuth(app: Express) {
   app.get("/api/callback", async (req, res, next) => {
     try {
       const domain = getCallbackDomain(req);
-      console.log("Callback - domain:", domain);
+      console.log("[ReplitAuth] Callback - domain:", domain);
       await ensureStrategy(domain);
       passport.authenticate(`replitauth:${domain}`, {
         successReturnToOrRedirect: "/",

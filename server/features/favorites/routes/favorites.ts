@@ -14,7 +14,7 @@ router.get("/api/favorites", isAuthenticated, requireAuthorizedUser, async (req:
     const favorites = await favoritesStorage.getFavoriteConversations(authUserId);
     res.json({ favorites });
   } catch (error: any) {
-    console.error("Error fetching favorites:", error);
+    console.error("[Favorites] Error fetching favorites:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -29,7 +29,7 @@ router.get("/api/favorites/ids", isAuthenticated, requireAuthorizedUser, async (
     const conversationIds = await favoritesStorage.getFavoriteConversationIds(authUserId);
     res.json({ conversationIds });
   } catch (error: any) {
-    console.error("Error fetching favorite ids:", error);
+    console.error("[Favorites] Error fetching favorite ids:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -52,7 +52,7 @@ router.post("/api/favorites/:conversationId", isAuthenticated, requireAuthorized
     });
     res.status(201).json(favorite);
   } catch (error: any) {
-    console.error("Error adding favorite:", error);
+    console.error("[Favorites] Error adding favorite:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -72,7 +72,7 @@ router.delete("/api/favorites/:conversationId", isAuthenticated, requireAuthoriz
     await favoritesStorage.removeFavorite(authUserId, conversationId);
     res.json({ success: true });
   } catch (error: any) {
-    console.error("Error removing favorite:", error);
+    console.error("[Favorites] Error removing favorite:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -92,7 +92,7 @@ router.get("/api/favorites/:conversationId/check", isAuthenticated, requireAutho
     const isFavorite = await favoritesStorage.isFavorite(authUserId, conversationId);
     res.json({ isFavorite });
   } catch (error: any) {
-    console.error("Error checking favorite:", error);
+    console.error("[Favorites] Error checking favorite:", error);
     res.status(500).json({ error: error.message });
   }
 });

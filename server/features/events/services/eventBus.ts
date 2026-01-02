@@ -23,7 +23,7 @@ class EventBus {
       try {
         await handler(data);
       } catch (error) {
-        console.error(`Error in event handler for ${event}:`, error);
+        console.error(`[EventBus] Error in handler for ${event}:`, error);
       }
     }
   }

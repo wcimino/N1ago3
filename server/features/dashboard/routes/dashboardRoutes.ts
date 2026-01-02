@@ -14,7 +14,7 @@ router.get("/analytics", isAuthenticated, requireAuthorizedUser, async (req, res
     
     res.json(analytics);
   } catch (error) {
-    console.error("Error fetching dashboard analytics:", error);
+    console.error("[Dashboard] Error fetching dashboard analytics:", error);
     res.status(500).json({ error: "Failed to fetch dashboard analytics" });
   }
 });

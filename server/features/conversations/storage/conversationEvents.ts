@@ -32,8 +32,8 @@ export async function createConversationClosedEvent(
       conversationId: conversation.id,
     });
     
-    console.log(`Created conversation_closed event for conversation ${conversation.id} (${reason})`);
+    console.log(`[ConversationStorage] Created conversation_closed event for conversation ${conversation.id} (${reason})`);
   } catch (error) {
-    console.error(`Failed to create conversation_closed event for conversation ${conversation.id}:`, error);
+    console.error(`[ConversationStorage] Failed to create conversation_closed event for conversation ${conversation.id}:`, error);
   }
 }

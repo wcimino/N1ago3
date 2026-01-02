@@ -40,7 +40,7 @@ router.post("/webhook/zendesk", async (req: Request, res: Response) => {
     const { isValid, errorMessage } = adapter.verifyAuth(rawBodyBuffer, headersDict, webhookSecret);
 
     if (!isValid) {
-      console.log(`Webhook auth failed: ${errorMessage}`);
+      console.log(`[Webhook] Auth failed: ${errorMessage}`);
       return res.status(401).json({ status: "error", message: errorMessage });
     }
 
@@ -52,7 +52,7 @@ router.post("/webhook/zendesk", async (req: Request, res: Response) => {
       processingStatus: "processing",
     });
 
-    console.log(`Webhook received - Raw ID: ${rawEntry.id}, Source: ${source}`);
+    console.log(`[Webhook] Received - Raw ID: ${rawEntry.id}, Source: ${source}`);
 
     eventBus.emit(EVENTS.RAW_CREATED, { rawId: rawEntry.id, source, skipStatusCheck: true });
 
@@ -62,7 +62,7 @@ router.post("/webhook/zendesk", async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     const errorMsg = error.message || String(error);
-    console.error(`Erro ao receber webhook: ${errorMsg}`);
+    console.error(`[Webhook] Error receiving: ${errorMsg}`);
     return res.status(500).json({
       status: "error",
       message: errorMsg,

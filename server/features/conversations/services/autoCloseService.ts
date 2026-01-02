@@ -10,12 +10,12 @@ const AUTO_CLOSE_INTERVAL_MS = 60000;
 export const autoCloseService = {
   start() {
     if (isRunning) {
-      console.log("Auto-close worker already running");
+      console.log("[AutoCloseService] Worker already running");
       return;
     }
 
     isRunning = true;
-    console.log(`Starting auto-close worker with ${AUTO_CLOSE_INTERVAL_MS}ms interval`);
+    console.log(`[AutoCloseService] Starting worker with ${AUTO_CLOSE_INTERVAL_MS}ms interval`);
 
     intervalId = setInterval(async () => {
       if (!autoCloseEnabled) return;
@@ -23,10 +23,10 @@ export const autoCloseService = {
       try {
         const closed = await conversationCrud.closeInactiveConversations(50);
         if (closed.length > 0) {
-          console.log(`Auto-close worker closed ${closed.length} inactive conversations`);
+          console.log(`[AutoCloseService] Closed ${closed.length} inactive conversations`);
         }
       } catch (error) {
-        console.error("Auto-close worker error:", error);
+        console.error("[AutoCloseService] Worker error:", error);
       }
     }, AUTO_CLOSE_INTERVAL_MS);
   },
@@ -38,7 +38,7 @@ export const autoCloseService = {
     }
     isRunning = false;
     autoCloseEnabled = false;
-    console.log("Auto-close worker stopped");
+    console.log("[AutoCloseService] Worker stopped");
   },
 
   isRunning(): boolean {
@@ -50,17 +50,17 @@ export const autoCloseService = {
     if (!isRunning) {
       this.start();
     }
-    console.log("Auto-close enabled");
+    console.log("[AutoCloseService] Enabled");
   },
 
   disable() {
     this.stop();
-    console.log("Auto-close disabled and worker stopped");
+    console.log("[AutoCloseService] Disabled and worker stopped");
   },
 
   async closeManual(limit: number) {
     const closed = await conversationCrud.closeInactiveConversationsManual(limit);
-    console.log(`Manual close: ${closed.length} conversations closed`);
+    console.log(`[AutoCloseService] Manual close: ${closed.length} conversations closed`);
     return closed;
   },
 

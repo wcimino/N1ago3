@@ -77,7 +77,7 @@ export const webhookStorage = {
 
   async getWebhookRawById(id: number, source: string): Promise<ZendeskConversationsWebhookRaw | null> {
     if (source !== "zendesk") {
-      console.warn(`Unknown source: ${source}, only zendesk is supported`);
+      console.warn(`[WebhookStorage] Unknown source: ${source}, only zendesk is supported`);
       return null;
     }
     const [raw] = await db.select().from(zendeskConversationsWebhookRaw).where(eq(zendeskConversationsWebhookRaw.id, id));
@@ -86,7 +86,7 @@ export const webhookStorage = {
 
   async updateWebhookRawStatus(id: number, source: string, status: string, errorMessage?: string) {
     if (source !== "zendesk") {
-      console.warn(`Unknown source: ${source}, only zendesk is supported`);
+      console.warn(`[WebhookStorage] Unknown source: ${source}, only zendesk is supported`);
       return;
     }
     if (status === "error") {
@@ -111,7 +111,7 @@ export const webhookStorage = {
 
   async updateWebhookRawStatusWithEventsCount(id: number, source: string, status: string, eventsCount: number) {
     if (source !== "zendesk") {
-      console.warn(`Unknown source: ${source}, only zendesk is supported`);
+      console.warn(`[WebhookStorage] Unknown source: ${source}, only zendesk is supported`);
       return;
     }
     await db.update(zendeskConversationsWebhookRaw)
@@ -126,7 +126,7 @@ export const webhookStorage = {
 
   async getPendingWebhookRaws(source: string, limit = 100): Promise<ZendeskConversationsWebhookRaw[]> {
     if (source !== "zendesk") {
-      console.warn(`Unknown source: ${source}, only zendesk is supported`);
+      console.warn(`[WebhookStorage] Unknown source: ${source}, only zendesk is supported`);
       return [];
     }
     return await db.select()
@@ -143,7 +143,7 @@ export const webhookStorage = {
 
   async getStuckProcessingWebhookRaws(source: string, stuckMinutes = 5, limit = 50): Promise<ZendeskConversationsWebhookRaw[]> {
     if (source !== "zendesk") {
-      console.warn(`Unknown source: ${source}, only zendesk is supported`);
+      console.warn(`[WebhookStorage] Unknown source: ${source}, only zendesk is supported`);
       return [];
     }
     return await db.select()
@@ -162,7 +162,7 @@ export const webhookStorage = {
 
   async resetStuckWebhook(id: number, source: string) {
     if (source !== "zendesk") {
-      console.warn(`Unknown source: ${source}, only zendesk is supported`);
+      console.warn(`[WebhookStorage] Unknown source: ${source}, only zendesk is supported`);
       return;
     }
     await db.update(zendeskConversationsWebhookRaw)
