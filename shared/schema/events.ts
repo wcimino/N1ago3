@@ -18,6 +18,22 @@ export interface OrchestratorLogEntry {
   details?: Record<string, unknown>;
 }
 
+export type StageStatus = "pending" | "running" | "completed" | "error";
+
+export interface StageProgress {
+  summary: { status: StageStatus; updatedAt?: string };
+  classification: { status: StageStatus; updatedAt?: string };
+  demandFinder: { status: StageStatus; updatedAt?: string };
+  solutionProvider: { status: StageStatus; updatedAt?: string };
+}
+
+export const DEFAULT_STAGE_PROGRESS: StageProgress = {
+  summary: { status: "pending" },
+  classification: { status: "pending" },
+  demandFinder: { status: "pending" },
+  solutionProvider: { status: "pending" },
+};
+
 export const eventsStandard = pgTable("events_standard", {
   id: serial("id").primaryKey(),
   eventType: text("event_type").notNull(),
@@ -111,6 +127,7 @@ export const conversationsSummary = pgTable("conversations_summary", {
   clientRequestVersions: json("client_request_versions").$type<{ clientRequestStandardVersion?: string; clientRequestQuestionVersion?: string; clientRequestProblemVersion?: string }>(),
   conversationOrchestratorLog: json("conversation_orchestrator_log").$type<OrchestratorLogEntry[]>().default([]),
   clientHubData: json("client_hub_data").$type<ClientHubData>(),
+  stageProgress: json("stage_progress").$type<StageProgress>(),
   generatedAt: timestamp("generated_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

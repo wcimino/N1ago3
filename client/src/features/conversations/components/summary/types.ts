@@ -57,6 +57,15 @@ export interface ClientHubData {
   fetchedAt?: string;
 }
 
+export type StageStatus = "pending" | "running" | "completed" | "error";
+
+export interface StageProgress {
+  summary: { status: StageStatus; updatedAt?: string };
+  classification: { status: StageStatus; updatedAt?: string };
+  demandFinder: { status: StageStatus; updatedAt?: string };
+  solutionProvider: { status: StageStatus; updatedAt?: string };
+}
+
 export interface SummaryData {
   product?: string | null;
   subproduct?: string | null;
@@ -83,6 +92,7 @@ export interface SummaryData {
   demand_finder_interaction_count?: number | null;
   conversation_orchestrator_log?: OrchestratorLogEntry[] | null;
   client_hub_data?: ClientHubData | null;
+  stage_progress?: StageProgress | null;
 }
 
 export type { Triage, ObjectiveProblemIdentified };

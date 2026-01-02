@@ -1,7 +1,10 @@
 import { db } from "../../../db.js";
 import { conversationsSummary } from "../../../../shared/schema.js";
 import { eq, desc, gte, lte, and, isNotNull, sql, type SQL } from "drizzle-orm";
-import type { ConversationSummary, InsertConversationSummary, ClientHubData } from "../../../../shared/schema.js";
+import type { ConversationSummary, InsertConversationSummary, ClientHubData, StageProgress, StageStatus } from "../../../../shared/schema.js";
+import { DEFAULT_STAGE_PROGRESS } from "../../../../shared/schema.js";
+
+export type StageName = keyof StageProgress;
 
 export const summaryStorage = {
   async getConversationSummary(conversationId: number): Promise<ConversationSummary | null> {
@@ -122,5 +125,36 @@ export const summaryStorage = {
       .from(conversationsSummary)
       .where(eq(conversationsSummary.conversationId, conversationId));
     return summary?.clientHubData || null;
+  },
+
+  async updateStageProgress(conversationId: number, stage: StageName, status: StageStatus): Promise<void> {
+    const existing = await this.getConversationSummary(conversationId);
+    const currentProgress: StageProgress = existing?.stageProgress || { ...DEFAULT_STAGE_PROGRESS };
+    
+    currentProgress[stage] = {
+      status,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await db.insert(conversationsSummary)
+      .values({
+        conversationId,
+        summary: existing?.summary || "",
+        stageProgress: currentProgress,
+      })
+      .onConflictDoUpdate({
+        target: conversationsSummary.conversationId,
+        set: {
+          stageProgress: currentProgress,
+          updatedAt: new Date(),
+        },
+      });
+  },
+
+  async getStageProgress(conversationId: number): Promise<StageProgress> {
+    const [summary] = await db.select({ stageProgress: conversationsSummary.stageProgress })
+      .from(conversationsSummary)
+      .where(eq(conversationsSummary.conversationId, conversationId));
+    return summary?.stageProgress || { ...DEFAULT_STAGE_PROGRESS };
   },
 };

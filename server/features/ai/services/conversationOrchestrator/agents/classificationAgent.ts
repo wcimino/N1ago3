@@ -1,5 +1,6 @@
 import { configStorage } from "../../../../ai/storage/configStorage.js";
 import { classificationStorage } from "../../../../ai/storage/classificationStorage.js";
+import { summaryStorage } from "../../../../ai/storage/summaryStorage.js";
 import { runAgent, buildAgentContextFromEvent } from "../../agentFramework.js";
 import { productCatalogStorage } from "../../../../products/storage/productCatalogStorage.js";
 import type { ClassificationAgentResult, OrchestratorContext } from "../../../../conversation-orchestration/shared/types.js";
@@ -34,6 +35,7 @@ export class ClassificationAgent {
       });
 
       console.log(`[ClassificationAgent] Classifying conversation ${conversationId} with ${agentContext.messages?.length || 0} messages${agentContext.summary ? ' and existing summary' : ''}`);
+      await summaryStorage.updateStageProgress(conversationId, "classification", "running");
 
       const result = await runAgent(CONFIG_KEY, agentContext, {
         maxIterations: 5,
@@ -41,6 +43,7 @@ export class ClassificationAgent {
 
       if (!result.success) {
         console.error(`[ClassificationAgent] Failed to classify conversation ${conversationId}: ${result.error}`);
+        await summaryStorage.updateStageProgress(conversationId, "classification", "error");
         return {
           success: false,
           error: result.error || "Failed to classify",
@@ -49,6 +52,7 @@ export class ClassificationAgent {
 
       if (!result.responseContent) {
         console.log(`[ClassificationAgent] Empty response for conversation ${conversationId}`);
+        await summaryStorage.updateStageProgress(conversationId, "classification", "completed");
         return { success: true };
       }
 
@@ -59,6 +63,7 @@ export class ClassificationAgent {
           ? result.responseContent.substring(0, 200) + '...' 
           : result.responseContent;
         console.error(`[ClassificationAgent] Failed to parse classification response for conversation ${conversationId}. Response preview: ${preview}`);
+        await summaryStorage.updateStageProgress(conversationId, "classification", "completed");
         return { success: true };
       }
 
@@ -82,6 +87,7 @@ export class ClassificationAgent {
         customerRequestTypeReason: parsed.customerRequestTypeReason,
       });
 
+      await summaryStorage.updateStageProgress(conversationId, "classification", "completed");
       console.log(`[ClassificationAgent] Classification saved for conversation ${conversationId}: ${productName} (${parsed.productConfidence || 0}%), requestType: ${parsed.customerRequestType} (${parsed.customerRequestTypeConfidence || 0}%), logId: ${result.logId}`);
 
       return {
@@ -93,6 +99,7 @@ export class ClassificationAgent {
       };
     } catch (error: any) {
       console.error(`[ClassificationAgent] Error processing conversation ${conversationId}:`, error);
+      await summaryStorage.updateStageProgress(conversationId, "classification", "error");
       return {
         success: false,
         error: error.message || "Failed to classify",

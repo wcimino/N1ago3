@@ -11,5 +11,6 @@ export { TriageCard, type TriageCardProps } from "./TriageCard";
 export { OrchestratorLogsCard, type OrchestratorLogsCardProps } from "./OrchestratorLogsCard";
 export { DemandFinderTooltip, type DemandFinderTooltipProps } from "./DemandFinderTooltip";
 export { ClientProfileCard } from "./ClientProfileCard";
+export { StageSkeleton } from "./StageSkeleton";
 export { emotionConfig, severityConfig } from "./config";
-export type { SummaryData, ClientRequestVersions, SolutionCenterResult, OrchestratorLogEntry, ClientHubData, ClientHubField } from "./types";
+export type { SummaryData, ClientRequestVersions, SolutionCenterResult, OrchestratorLogEntry, ClientHubData, ClientHubField, StageProgress, StageStatus } from "./types";

@@ -20,6 +20,7 @@ export class SummaryAgent {
       }
 
       console.log(`[SummaryAgent] Generating summary for conversation ${conversationId}`);
+      await summaryStorage.updateStageProgress(conversationId, "summary", "running");
 
       const agentContext = await buildAgentContextFromEvent(event, {
         includeSummary: true,
@@ -30,6 +31,7 @@ export class SummaryAgent {
 
       if (!result.success) {
         console.error(`[SummaryAgent] Failed to generate summary for conversation ${conversationId}: ${result.error}`);
+        await summaryStorage.updateStageProgress(conversationId, "summary", "error");
         return {
           success: false,
           error: result.error || "Failed to generate summary",
@@ -38,6 +40,7 @@ export class SummaryAgent {
 
       if (!result.responseContent) {
         console.log(`[SummaryAgent] Empty response for conversation ${conversationId}`);
+        await summaryStorage.updateStageProgress(conversationId, "summary", "completed");
         return { success: true, summary: undefined };
       }
 
@@ -57,6 +60,7 @@ export class SummaryAgent {
         lastEventId: event.id,
       });
 
+      await summaryStorage.updateStageProgress(conversationId, "summary", "completed");
       console.log(`[SummaryAgent] Summary generated for conversation ${conversationId}, logId: ${result.logId}`);
 
       return {
@@ -76,6 +80,7 @@ export class SummaryAgent {
       };
     } catch (error: any) {
       console.error(`[SummaryAgent] Error processing conversation ${conversationId}:`, error);
+      await summaryStorage.updateStageProgress(conversationId, "summary", "error");
       return {
         success: false,
         error: error.message || "Failed to generate summary",

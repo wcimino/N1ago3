@@ -18,7 +18,7 @@ export function useUserConversations({ userId, conversationIdFromUrl }: UseUserC
     queryFn: () => fetchApi<UserConversationsMessagesResponse>(
       `/api/conversations/user/${encodeURIComponent(userId)}/messages`
     ),
-    refetchInterval: 10000,
+    refetchInterval: 3000,
   });
 
   const sortedConversations = useMemo(() => {

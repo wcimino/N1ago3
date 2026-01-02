@@ -1,5 +1,6 @@
 import { conversationStorage } from "../../conversations/storage/conversationStorage.js";
 import { caseSolutionStorage } from "../../ai/storage/caseSolutionStorage.js";
+import { summaryStorage } from "../../ai/storage/summaryStorage.js";
 import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type OrchestratorContext, type OrchestratorAction } from "../shared/types.js";
 import { ActionExecutor } from "../shared/actionExecutor.js";
 import { escalateConversation } from "../shared/escalation.js";
@@ -26,6 +27,7 @@ export class SolutionProviderAgent {
 
     try {
       console.log(`[SolutionProviderAgent] Starting solution provision for conversation ${conversationId}`);
+      await summaryStorage.updateStageProgress(conversationId, "solutionProvider", "running");
       console.log(`[SolutionProviderAgent] Received: articleId=${articleId}, solutionId=${solutionId}, rootCauseId=${rootCauseId}`);
       console.log(`[SolutionProviderAgent] UUIDs: articleUuid=${articleUuid}, problemId=${problemId}, rootCauseUuid=${rootCauseUuid}`);
 
@@ -93,10 +95,12 @@ export class SolutionProviderAgent {
         }
       }
 
+      await summaryStorage.updateStageProgress(conversationId, "solutionProvider", "completed");
       return result;
 
     } catch (error: any) {
       console.error(`[SolutionProviderAgent] Error processing conversation ${conversationId}:`, error);
+      await summaryStorage.updateStageProgress(conversationId, "solutionProvider", "error");
       
       try {
         await this.escalateConversation(conversationId, context, error.message || "Solution provider error");
@@ -241,6 +245,7 @@ export class SolutionProviderAgent {
     };
 
     console.log(`[SolutionProviderAgent] Fallback executed, conversation ${conversationId} escalated`);
+    await summaryStorage.updateStageProgress(conversationId, "solutionProvider", "completed");
 
     return {
       success: true,

@@ -11,10 +11,27 @@ import {
   ClientRequestVersionsTooltip,
   DemandFinderTooltip,
   ClientProfileCard,
+  StageSkeleton,
   emotionConfig,
   type SummaryData,
   type ClientRequestVersions,
+  type StageProgress,
 } from "./summary";
+
+const DEFAULT_STAGE_PROGRESS: StageProgress = {
+  summary: { status: "pending" },
+  classification: { status: "pending" },
+  demandFinder: { status: "pending" },
+  solutionProvider: { status: "pending" },
+};
+
+function isStageReady(stage: { status: string } | undefined): boolean {
+  return stage?.status === "completed" || stage?.status === "error";
+}
+
+function isStageRunning(stage: { status: string } | undefined): boolean {
+  return stage?.status === "running";
+}
 
 interface ParsedClientRequest {
   clientRequest?: string;
@@ -73,6 +90,11 @@ interface ConversationSummaryProps {
 
 export function ConversationSummary({ summary, conversationId }: ConversationSummaryProps) {
   const hasStructuredData = summary?.client_request || summary?.agent_actions || summary?.current_status || summary?.important_info || summary?.objective_problems?.length || summary?.solution_center_articles_and_problems?.length || summary?.triage;
+  
+  const stageProgress = summary?.stage_progress || DEFAULT_STAGE_PROGRESS;
+  const summaryReady = isStageReady(stageProgress.summary) || !!summary?.client_request;
+  const classificationReady = isStageReady(stageProgress.classification) || !!summary?.product;
+  const demandFinderReady = isStageReady(stageProgress.demandFinder) || !!summary?.solution_center_articles_and_problems?.length;
 
   return (
     <div className="p-4">
@@ -90,12 +112,16 @@ export function ConversationSummary({ summary, conversationId }: ConversationSum
             </div>
             
             <div className="mb-4">
-              <ProductRow 
-                product={summary.product}
-                subproduct={summary.subproduct}
-                confidence={summary.product_confidence}
-                confidenceReason={summary.product_confidence_reason}
-              />
+              {classificationReady ? (
+                <ProductRow 
+                  product={summary.product}
+                  subproduct={summary.subproduct}
+                  confidence={summary.product_confidence}
+                  confidenceReason={summary.product_confidence_reason}
+                />
+              ) : (
+                <StageSkeleton title="Classificando produto..." isRunning={isStageRunning(stageProgress.classification)} />
+              )}
               
               <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-3 pt-3 border-t border-gray-100">
                 <div className="flex items-center gap-2">
@@ -184,20 +210,24 @@ export function ConversationSummary({ summary, conversationId }: ConversationSum
             <div className="flex flex-col gap-3">
               <ClientProfileCard data={summary.client_hub_data} />
               
-              {(() => {
-                const clientData = extractClientRequestData(summary.client_request, summary.client_request_versions);
-                if (!clientData) return null;
-                return (
-                  <div className={`rounded-lg p-3 bg-blue-50 border border-blue-200`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="text-blue-600"><User className="w-4 h-4" /></div>
-                      <h4 className="font-medium text-gray-800 text-sm">Solicitação do Cliente</h4>
-                      <ClientRequestVersionsTooltip versions={clientData.versions} />
+              {summaryReady ? (
+                (() => {
+                  const clientData = extractClientRequestData(summary.client_request, summary.client_request_versions);
+                  if (!clientData) return null;
+                  return (
+                    <div className={`rounded-lg p-3 bg-blue-50 border border-blue-200`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="text-blue-600"><User className="w-4 h-4" /></div>
+                        <h4 className="font-medium text-gray-800 text-sm">Solicitação do Cliente</h4>
+                        <ClientRequestVersionsTooltip versions={clientData.versions} />
+                      </div>
+                      <p className="text-sm text-gray-700 leading-relaxed">{clientData.text}</p>
                     </div>
-                    <p className="text-sm text-gray-700 leading-relaxed">{clientData.text}</p>
-                  </div>
-                );
-              })()}
+                  );
+                })()
+              ) : (
+                <StageSkeleton title="Gerando resumo..." isRunning={isStageRunning(stageProgress.summary)} />
+              )}
               
               {summary.agent_actions && (
                 <SummaryCardItem
@@ -232,12 +262,16 @@ export function ConversationSummary({ summary, conversationId }: ConversationSum
                 />
               )}
               
-              <SolutionCenterCard 
-                items={summary.solution_center_articles_and_problems} 
-                selectedId={summary.solution_center_selected_id}
-                selectedReason={summary.solution_center_selected_reason}
-                selectedConfidence={summary.solution_center_selected_confidence}
-              />
+              {demandFinderReady ? (
+                <SolutionCenterCard 
+                  items={summary.solution_center_articles_and_problems} 
+                  selectedId={summary.solution_center_selected_id}
+                  selectedReason={summary.solution_center_selected_reason}
+                  selectedConfidence={summary.solution_center_selected_confidence}
+                />
+              ) : isStageRunning(stageProgress.demandFinder) ? (
+                <StageSkeleton title="Buscando soluções..." isRunning />
+              ) : null}
               
               {conversationId && <SolutionCard conversationId={conversationId} />}
               
