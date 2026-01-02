@@ -8,6 +8,7 @@ import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type OrchestratorContext, type
 const CONFIG_KEY = "closer";
 export const DEFAULT_CLOSING_MESSAGE = "Obrigado por entrar em contato! Tenha um otimo dia!";
 export const DEFAULT_MORE_HELP_PROMPT = "Claro! Em que posso te ajudar agora?";
+export const DEFAULT_FOLLOW_UP_MESSAGE = "Posso te ajudar com mais alguma coisa?";
 
 export interface CloserProcessResult {
   success: boolean;
@@ -19,10 +20,104 @@ export interface CloserProcessResult {
 
 export class CloserAgent {
   static async process(context: OrchestratorContext): Promise<CloserProcessResult> {
+    const { conversationId, currentStatus } = context;
+
+    // Distinguir entre primeira chamada (enviar follow-up) e segunda chamada (processar resposta)
+    const isProcessingCustomerResponse = currentStatus === ORCHESTRATOR_STATUS.FINALIZING;
+
+    console.log(`[CloserAgent] Processing conversation ${conversationId}, mode: ${isProcessingCustomerResponse ? "processing_response" : "sending_followup"}`);
+
+    if (isProcessingCustomerResponse) {
+      return this.processCustomerResponse(context);
+    } else {
+      return this.sendFollowUp(context);
+    }
+  }
+
+  /**
+   * Primeira chamada: Envia follow-up "Te ajudo com mais alguma coisa?"
+   * Após enviar, mantém FINALIZING e waitingForCustomer=true
+   */
+  private static async sendFollowUp(context: OrchestratorContext): Promise<CloserProcessResult> {
     const { conversationId, event } = context;
 
     try {
-      console.log(`[CloserAgent] Analyzing conversation ${conversationId}`);
+      console.log(`[CloserAgent] Sending follow-up for conversation ${conversationId}`);
+
+      const followUpMessage = DEFAULT_FOLLOW_UP_MESSAGE;
+      const savedSuggestion = await saveSuggestedResponse(conversationId, followUpMessage, {
+        lastEventId: event.id,
+        externalConversationId: event.externalConversationId || null,
+        inResponseTo: String(event.id),
+      });
+
+      if (!savedSuggestion?.id) {
+        console.log(`[CloserAgent] Failed to save follow-up suggestion, keeping conversation open`);
+        await conversationStorage.updateOrchestratorState(conversationId, {
+          orchestratorStatus: ORCHESTRATOR_STATUS.FINALIZING,
+          conversationOwner: CONVERSATION_OWNER.CLOSER,
+          waitingForCustomer: true,
+        });
+        context.currentStatus = ORCHESTRATOR_STATUS.FINALIZING;
+        return {
+          success: true,
+          wantsMoreHelp: false,
+          error: "Failed to save follow-up suggestion",
+        };
+      }
+
+      // Tentar enviar o follow-up
+      const action: OrchestratorAction = {
+        type: "SEND_MESSAGE",
+        payload: { suggestionId: savedSuggestion.id, responsePreview: followUpMessage }
+      };
+      const sendResult = await ActionExecutor.execute(context, [action]);
+
+      // Independente de ter enviado ou não, mantém FINALIZING aguardando resposta do cliente
+      console.log(`[CloserAgent] Follow-up ${sendResult.messageSent ? "sent" : "not sent"} (reason: ${sendResult.skipReason}), waiting for customer response`);
+
+      await conversationStorage.updateOrchestratorState(conversationId, {
+        orchestratorStatus: ORCHESTRATOR_STATUS.FINALIZING,
+        conversationOwner: CONVERSATION_OWNER.CLOSER,
+        waitingForCustomer: true,
+      });
+      context.currentStatus = ORCHESTRATOR_STATUS.FINALIZING;
+
+      return {
+        success: true,
+        wantsMoreHelp: false,
+        suggestedResponse: followUpMessage,
+        suggestionId: savedSuggestion.id,
+      };
+
+    } catch (error: any) {
+      console.error(`[CloserAgent] Error sending follow-up for conversation ${conversationId}:`, error);
+      
+      // Em caso de erro, mantém FINALIZING aguardando resposta
+      await conversationStorage.updateOrchestratorState(conversationId, {
+        orchestratorStatus: ORCHESTRATOR_STATUS.FINALIZING,
+        conversationOwner: CONVERSATION_OWNER.CLOSER,
+        waitingForCustomer: true,
+      });
+      context.currentStatus = ORCHESTRATOR_STATUS.FINALIZING;
+
+      return {
+        success: true,
+        wantsMoreHelp: false,
+        error: error.message || "Error sending follow-up",
+      };
+    }
+  }
+
+  /**
+   * Segunda chamada: Processa resposta do cliente ao follow-up
+   * Usa IA para determinar se cliente quer mais ajuda ou está satisfeito
+   */
+  private static async processCustomerResponse(context: OrchestratorContext): Promise<CloserProcessResult> {
+    const { conversationId, event } = context;
+
+    try {
+      console.log(`[CloserAgent] Analyzing customer response for conversation ${conversationId}`);
 
       const resolvedClassification = await buildResolvedClassification(context.classification);
 
@@ -42,36 +137,7 @@ export class CloserAgent {
 
       if (!result.success) {
         console.log(`[CloserAgent] Agent call failed for conversation ${conversationId}: ${result.error}, using fallback`);
-        
-        const fallbackResponse = DEFAULT_CLOSING_MESSAGE;
-        const savedSuggestion = await saveSuggestedResponse(conversationId, fallbackResponse, {
-          lastEventId: event.id,
-          externalConversationId: event.externalConversationId || null,
-          inResponseTo: String(event.id),
-        });
-        
-        // Send fallback message and close conversation
-        if (savedSuggestion?.id) {
-          const action: OrchestratorAction = {
-            type: "SEND_MESSAGE",
-            payload: { suggestionId: savedSuggestion.id, responsePreview: fallbackResponse }
-          };
-          await ActionExecutor.execute(context, [action]);
-        }
-
-        await conversationStorage.updateOrchestratorState(conversationId, {
-          orchestratorStatus: ORCHESTRATOR_STATUS.CLOSED,
-          conversationOwner: null,
-          waitingForCustomer: false,
-        });
-        context.currentStatus = ORCHESTRATOR_STATUS.CLOSED;
-        
-        return {
-          success: true,
-          wantsMoreHelp: false,
-          suggestedResponse: fallbackResponse,
-          suggestionId: savedSuggestion?.id,
-        };
+        return this.handleFallbackClose(context, DEFAULT_CLOSING_MESSAGE);
       }
 
       const wantsMoreHelp = result.parsedContent?.wantsMoreHelp === true;
@@ -93,26 +159,9 @@ export class CloserAgent {
 
       console.log(`[CloserAgent] Analysis complete - wantsMoreHelp: ${wantsMoreHelp}`);
 
-      // Require suggestionId for message sending
-      if (!suggestionId && suggestedResponse) {
-        console.log(`[CloserAgent] Failed to save suggestion (no suggestionId), escalating`);
-        await conversationStorage.updateOrchestratorState(conversationId, {
-          orchestratorStatus: ORCHESTRATOR_STATUS.ESCALATED,
-          conversationOwner: null,
-          waitingForCustomer: false,
-        });
-        context.currentStatus = ORCHESTRATOR_STATUS.ESCALATED;
-        return {
-          success: true,
-          wantsMoreHelp: false,
-          error: "Failed to save suggestion",
-        };
-      }
-
-      // Send message (ActionExecutor handles isN1agoHandler check)
+      // Enviar resposta
       let sendResult: ActionExecutorResult = { messageSent: false, messageSkipped: false };
-      if (suggestedResponse && suggestionId) {
-        console.log(`[CloserAgent] Sending response for conversation ${conversationId}`);
+      if (suggestionId && suggestedResponse) {
         const action: OrchestratorAction = {
           type: "SEND_MESSAGE",
           payload: { suggestionId, responsePreview: suggestedResponse }
@@ -120,8 +169,17 @@ export class CloserAgent {
         sendResult = await ActionExecutor.execute(context, [action]);
       }
 
-      if (wantsMoreHelp) {
-        // Customer wants more help - start new demand cycle
+      // Se a mensagem não foi enviada, mantém FINALIZING aguardando
+      if (!sendResult.messageSent) {
+        console.log(`[CloserAgent] Response not sent (reason: ${sendResult.skipReason}), keeping conversation open for ${conversationId}`);
+        await conversationStorage.updateOrchestratorState(conversationId, {
+          orchestratorStatus: ORCHESTRATOR_STATUS.FINALIZING,
+          conversationOwner: CONVERSATION_OWNER.CLOSER,
+          waitingForCustomer: true,
+        });
+        context.currentStatus = ORCHESTRATOR_STATUS.FINALIZING;
+      } else if (wantsMoreHelp) {
+        // Cliente quer mais ajuda - inicia novo ciclo de demanda
         console.log(`[CloserAgent] Customer wants more help, creating new demand`);
 
         const newDemandRecord = await caseDemandStorage.createNewDemand(conversationId);
@@ -133,9 +191,9 @@ export class CloserAgent {
           waitingForCustomer: true,
         });
         context.currentStatus = ORCHESTRATOR_STATUS.FINDING_DEMAND;
-      } else if (sendResult.messageSent) {
-        // Message was sent successfully - close conversation
-        console.log(`[CloserAgent] Message sent successfully, closing conversation ${conversationId}`);
+      } else {
+        // Cliente está satisfeito e mensagem foi enviada - fecha a conversa
+        console.log(`[CloserAgent] Customer satisfied, closing conversation ${conversationId}`);
 
         await conversationStorage.updateOrchestratorState(conversationId, {
           orchestratorStatus: ORCHESTRATOR_STATUS.CLOSED,
@@ -143,16 +201,6 @@ export class CloserAgent {
           waitingForCustomer: false,
         });
         context.currentStatus = ORCHESTRATOR_STATUS.CLOSED;
-      } else {
-        // Message was NOT sent (skipped/expired) - keep conversation open, wait for customer
-        console.log(`[CloserAgent] Message not sent (reason: ${sendResult.skipReason}), keeping conversation open for ${conversationId}`);
-
-        await conversationStorage.updateOrchestratorState(conversationId, {
-          orchestratorStatus: ORCHESTRATOR_STATUS.FINALIZING,
-          conversationOwner: CONVERSATION_OWNER.CLOSER,
-          waitingForCustomer: true,
-        });
-        context.currentStatus = ORCHESTRATOR_STATUS.FINALIZING;
       }
 
       return {
@@ -163,46 +211,52 @@ export class CloserAgent {
       };
 
     } catch (error: any) {
-      console.error(`[CloserAgent] Error analyzing conversation ${conversationId}:`, error);
-      
-      try {
-        const savedSuggestion = await saveSuggestedResponse(conversationId, DEFAULT_CLOSING_MESSAGE, {
-          lastEventId: event.id,
-          externalConversationId: event.externalConversationId || null,
-          inResponseTo: String(event.id),
-        });
-        
-        // Send fallback message and close conversation
-        if (savedSuggestion?.id) {
-          const action: OrchestratorAction = {
-            type: "SEND_MESSAGE",
-            payload: { suggestionId: savedSuggestion.id, responsePreview: DEFAULT_CLOSING_MESSAGE }
-          };
-          await ActionExecutor.execute(context, [action]);
-        }
+      console.error(`[CloserAgent] Error processing customer response for conversation ${conversationId}:`, error);
+      return this.handleFallbackClose(context, DEFAULT_CLOSING_MESSAGE);
+    }
+  }
 
-        await conversationStorage.updateOrchestratorState(conversationId, {
-          orchestratorStatus: ORCHESTRATOR_STATUS.CLOSED,
-          conversationOwner: null,
-          waitingForCustomer: false,
-        });
-        context.currentStatus = ORCHESTRATOR_STATUS.CLOSED;
-        
-        return {
-          success: true,
-          wantsMoreHelp: false,
-          suggestedResponse: DEFAULT_CLOSING_MESSAGE,
-          suggestionId: savedSuggestion?.id,
-          error: error.message || "Recovered from error with fallback",
+  /**
+   * Fallback: Envia mensagem de fechamento e fecha a conversa
+   */
+  private static async handleFallbackClose(context: OrchestratorContext, message: string): Promise<CloserProcessResult> {
+    const { conversationId, event } = context;
+
+    try {
+      const savedSuggestion = await saveSuggestedResponse(conversationId, message, {
+        lastEventId: event.id,
+        externalConversationId: event.externalConversationId || null,
+        inResponseTo: String(event.id),
+      });
+
+      if (savedSuggestion?.id) {
+        const action: OrchestratorAction = {
+          type: "SEND_MESSAGE",
+          payload: { suggestionId: savedSuggestion.id, responsePreview: message }
         };
-      } catch (recoveryError) {
-        console.error(`[CloserAgent] Recovery failed for conversation ${conversationId}:`, recoveryError);
-        return {
-          success: false,
-          wantsMoreHelp: false,
-          error: error.message || "Failed to process closer agent",
-        };
+        await ActionExecutor.execute(context, [action]);
       }
+
+      await conversationStorage.updateOrchestratorState(conversationId, {
+        orchestratorStatus: ORCHESTRATOR_STATUS.CLOSED,
+        conversationOwner: null,
+        waitingForCustomer: false,
+      });
+      context.currentStatus = ORCHESTRATOR_STATUS.CLOSED;
+
+      return {
+        success: true,
+        wantsMoreHelp: false,
+        suggestedResponse: message,
+        suggestionId: savedSuggestion?.id,
+      };
+    } catch (recoveryError) {
+      console.error(`[CloserAgent] Fallback close failed for conversation ${conversationId}:`, recoveryError);
+      return {
+        success: false,
+        wantsMoreHelp: false,
+        error: "Failed to close conversation",
+      };
     }
   }
 }
