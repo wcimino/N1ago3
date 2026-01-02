@@ -16,11 +16,16 @@ import { conversationStorage } from "../features/conversations/storage/index.js"
 
 // --- Events Domain ---
 import { eventStorage } from "../features/events/storage/eventStorage.js";
+import { externalEventSourcesStorage } from "../features/events/storage/externalEventSourcesStorage.js";
 
 // --- AI Domain ---
 import { configStorage } from "../features/ai/storage/configStorage.js";
 import { classificationStorage } from "../features/ai/storage/classificationStorage.js";
 import { summaryStorage } from "../features/ai/storage/summaryStorage.js";
+import { openaiLogsStorage } from "../features/ai/storage/openaiLogsStorage.js";
+import { caseSolutionStorage } from "../features/ai/storage/caseSolutionStorage.js";
+import { caseDemandStorage } from "../features/ai/storage/caseDemandStorage.js";
+import { generalSettingsStorage } from "../features/ai/storage/generalSettingsStorage.js";
 
 // --- Cadastro Domain ---
 import { usersStandardStorage } from "../features/cadastro/storage/usersStandardStorage.js";
@@ -40,10 +45,15 @@ export const storage = {
   ...conversationStorage,
   // Events
   ...eventStorage,
+  ...externalEventSourcesStorage,
   // AI
   ...configStorage,
   ...classificationStorage,
   ...summaryStorage,
+  ...openaiLogsStorage,
+  ...caseSolutionStorage,
+  ...caseDemandStorage,
+  ...generalSettingsStorage,
   // Cadastro
   ...usersStandardStorage,
   ...organizationsStandardStorage,
@@ -64,9 +74,16 @@ export { conversationStorage } from "../features/conversations/storage/index.js"
 
 // --- Events ---
 export { eventStorage } from "../features/events/storage/eventStorage.js";
+export { externalEventSourcesStorage } from "../features/events/storage/externalEventSourcesStorage.js";
 
 // --- AI ---
 export { configStorage } from "../features/ai/storage/configStorage.js";
+export { classificationStorage } from "../features/ai/storage/classificationStorage.js";
+export { summaryStorage } from "../features/ai/storage/summaryStorage.js";
+export { openaiLogsStorage } from "../features/ai/storage/openaiLogsStorage.js";
+export { caseSolutionStorage } from "../features/ai/storage/caseSolutionStorage.js";
+export { caseDemandStorage } from "../features/ai/storage/caseDemandStorage.js";
+export { generalSettingsStorage } from "../features/ai/storage/generalSettingsStorage.js";
 
 // --- Cadastro ---
 export { usersStandardStorage } from "../features/cadastro/storage/usersStandardStorage.js";

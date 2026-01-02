@@ -58,6 +58,36 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 *   **External Knowledge Architecture:** All knowledge retrieval uses the external Solution Center API exclusively.
 *   **Agent Framework Placement Rules:** Clear guidelines for placing AI-driven components vs. deterministic orchestration logic.
 
+### Agent Framework Placement Decision Tree
+
+When adding new AI-powered functionality, use this decision tree to determine the correct location:
+
+```
+Is the component making OpenAI API calls?
+├── YES: Place in server/features/ai/services/
+│   ├── Is it a conversational agent (generates responses)?
+│   │   └── Place in ai/services/conversationOrchestrator/agents/
+│   ├── Is it a tool (classification, embedding, etc)?
+│   │   └── Place in ai/services/openai/tools/
+│   └── Otherwise: Create new module under ai/services/
+│
+└── NO: Place in server/features/conversation-orchestration/
+    ├── Is it workflow logic (state transitions, routing)?
+    │   └── Place in conversation-orchestration/dispatcher/
+    ├── Is it a phase orchestrator (DemandFinder, SolutionProvider)?
+    │   └── Create feature folder: conversation-orchestration/<phase>/
+    └── Is it shared utilities (types, helpers)?
+        └── Place in conversation-orchestration/shared/
+```
+
+**Key Principle:** AI agents generate text; orchestrators make decisions. Keep them separate.
+
+**Examples:**
+- `SummaryAgent` → `ai/services/` (makes OpenAI calls to generate summary)
+- `DemandFinderOrchestrator` → `conversation-orchestration/demandFinder/` (deterministic workflow logic)
+- `classifyConversation()` → `ai/services/openai/tools/` (OpenAI tool call)
+- `TransferService` → `conversation-orchestration/shared/` (deterministic transfer logic)
+
 ## External Dependencies
 
 *   **Zendesk Sunshine Conversations:** Webhook source for conversation data.
