@@ -1,5 +1,5 @@
 import { caseSolutionStorage } from "../../ai/storage/caseSolutionStorage.js";
-import { conversationStorage } from "../../conversations/storage/index.js";
+import { conversationStorage } from "../../conversations/storage/conversationStorage.js";
 import { summaryStorage } from "../../ai/storage/summaryStorage.js";
 import { 
   ActionExecutor,

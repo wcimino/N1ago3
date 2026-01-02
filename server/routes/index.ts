@@ -11,7 +11,7 @@ import externalEventSourcesRoutes from "../features/events/routes/externalEventS
 import eventIngestRoutes from "../features/events/routes/eventIngest.js";
 import docsDownloadRoutes from "../features/events/routes/docsDownload.js";
 
-import { conversationsRoutes } from "../features/conversations/routes/index.js";
+import conversationsRoutes from "../features/conversations/routes/conversations.js";
 
 import openaiConfigRoutes from "../features/ai/routes/openaiConfig.js";
 import generalSettingsRoutes from "../features/ai/routes/generalSettings.js";

@@ -1,4 +1,4 @@
-import { conversationStorage } from "../../conversations/storage/index.js";
+import { conversationStorage } from "../../conversations/storage/conversationStorage.js";
 import { DemandFinderAgent } from "../demandFinder/index.js";
 import { SolutionProviderAgent } from "../solutionProvider/index.js";
 import { CloserAgent } from "../closer/index.js";

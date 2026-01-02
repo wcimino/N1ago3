@@ -1,4 +1,4 @@
-import { conversationStorage } from "../../../../conversations/storage/index.js";
+import { conversationStorage } from "../../../../conversations/storage/conversationStorage.js";
 import { 
   ORCHESTRATOR_STATUS, 
   CONVERSATION_OWNER, 

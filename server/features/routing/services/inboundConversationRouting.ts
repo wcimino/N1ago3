@@ -4,7 +4,7 @@ import { TargetResolver } from "./targetResolver.js";
 import { TransferService } from "./transferService.js";
 import { ZendeskApiService } from "../../external-sources/zendesk/services/zendeskApiService.js";
 import { userStorage } from "../../conversations/storage/userStorage.js";
-import { conversationStorage } from "../../conversations/storage/index.js";
+import { conversationStorage } from "../../conversations/storage/conversationStorage.js";
 import type { RoutingRule } from "../../../../shared/schema.js";
 
 interface InboundEventData {

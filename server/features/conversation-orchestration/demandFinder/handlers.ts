@@ -1,5 +1,5 @@
 import { caseDemandStorage } from "../../ai/storage/caseDemandStorage.js";
-import { conversationStorage } from "../../conversations/storage/index.js";
+import { conversationStorage } from "../../conversations/storage/conversationStorage.js";
 import { 
   ActionExecutor,
   ORCHESTRATOR_STATUS, 

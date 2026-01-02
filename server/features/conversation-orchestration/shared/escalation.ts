@@ -1,4 +1,4 @@
-import { conversationStorage } from "../../conversations/storage/index.js";
+import { conversationStorage } from "../../conversations/storage/conversationStorage.js";
 import { caseDemandStorage } from "../../ai/storage/caseDemandStorage.js";
 import { ActionExecutor } from "./actionExecutor.js";
 import { ORCHESTRATOR_STATUS, type OrchestratorContext, type OrchestratorAction } from "./types.js";

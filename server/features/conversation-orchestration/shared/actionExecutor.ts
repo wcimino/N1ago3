@@ -1,4 +1,4 @@
-import { conversationStorage } from "../../conversations/storage/index.js";
+import { conversationStorage } from "../../conversations/storage/conversationStorage.js";
 import { AutoPilotService } from "../../autoPilot/services/autoPilotService.js";
 import { TransferService } from "../../routing/services/transferService.js";
 import { isN1agoHandler } from "./helpers.js";

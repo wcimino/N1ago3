@@ -1,6 +1,6 @@
 import { ZendeskApiService } from "../../external-sources/zendesk/services/zendeskApiService.js";
 import { SendMessageService } from "../../send-message/index.js";
-import { conversationStorage } from "../../conversations/storage/index.js";
+import { conversationStorage } from "../../conversations/storage/conversationStorage.js";
 import { TargetResolver, type ValidTarget } from "./targetResolver.js";
 
 export type TransferSource = "manual_transfer" | "orchestrator" | "routing" | "inbound_routing";

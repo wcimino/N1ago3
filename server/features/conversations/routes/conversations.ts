@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from "express";
-import { conversationStorage } from "../storage/index.js";
+import { conversationStorage } from "../storage/conversationStorage.js";
 import { userStorage } from "../storage/userStorage.js";
 import { classificationStorage } from "../../ai/storage/classificationStorage.js";
 import { isAuthenticated, requireAuthorizedUser } from "../../../features/auth/index.js";
