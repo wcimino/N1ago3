@@ -14,24 +14,8 @@ import {
   emotionConfig,
   type SummaryData,
   type ClientRequestVersions,
-  type StageProgress,
 } from "./summary";
 import { SummaryInfoTooltip } from "./summary/SummaryInfoTooltip";
-
-const DEFAULT_STAGE_PROGRESS: StageProgress = {
-  summary: { status: "pending" },
-  classification: { status: "pending" },
-  demandFinder: { status: "pending" },
-  solutionProvider: { status: "pending" },
-};
-
-function isStageReady(stage: { status: string } | undefined): boolean {
-  return stage?.status === "completed" || stage?.status === "error";
-}
-
-function isStageRunning(stage: { status: string } | undefined): boolean {
-  return stage?.status === "running";
-}
 
 interface ParsedClientRequest {
   clientRequest?: string;
@@ -91,10 +75,15 @@ interface ConversationSummaryProps {
 export function ConversationSummary({ summary, conversationId }: ConversationSummaryProps) {
   const hasStructuredData = summary?.client_request || summary?.agent_actions || summary?.current_status || summary?.important_info || summary?.objective_problems?.length || summary?.solution_center_articles_and_problems?.length || summary?.triage;
   
-  const stageProgress = summary?.stage_progress || DEFAULT_STAGE_PROGRESS;
-  const summaryReady = isStageReady(stageProgress.summary) || !!summary?.client_request;
-  const classificationReady = isStageReady(stageProgress.classification) || !!summary?.product;
-  const demandFinderReady = isStageReady(stageProgress.demandFinder) || !!summary?.solution_center_articles_and_problems?.length;
+  const orchestratorStatus = summary?.orchestrator_status || "new";
+  const summaryReady = !!summary?.client_request;
+  const classificationReady = !!summary?.product;
+  const demandFinderReady = !!summary?.solution_center_articles_and_problems?.length || 
+    ["providing_solution", "finalizing", "escalated", "completed"].includes(orchestratorStatus);
+  
+  const isSummaryLoading = !summaryReady && orchestratorStatus === "new";
+  const isClassificationLoading = !classificationReady && ["new", "finding_demand"].includes(orchestratorStatus);
+  const isDemandFinderLoading = !demandFinderReady && orchestratorStatus === "finding_demand";
 
   return (
     <div className="p-4">
@@ -120,7 +109,7 @@ export function ConversationSummary({ summary, conversationId }: ConversationSum
                   confidenceReason={summary.product_confidence_reason}
                 />
               ) : (
-                <StageSkeleton title="Classificando produto..." isRunning={isStageRunning(stageProgress.classification)} />
+                <StageSkeleton title="Classificando produto..." isRunning={isClassificationLoading} />
               )}
               
               <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-3 pt-3 border-t border-gray-100">
@@ -249,7 +238,7 @@ export function ConversationSummary({ summary, conversationId }: ConversationSum
                   );
                 })()
               ) : (
-                <StageSkeleton title="Gerando resumo..." isRunning={isStageRunning(stageProgress.summary)} />
+                <StageSkeleton title="Gerando resumo..." isRunning={isSummaryLoading} />
               )}
               
               {demandFinderReady ? (
@@ -259,7 +248,7 @@ export function ConversationSummary({ summary, conversationId }: ConversationSum
                   selectedReason={summary.solution_center_selected_reason}
                   selectedConfidence={summary.solution_center_selected_confidence}
                 />
-              ) : isStageRunning(stageProgress.demandFinder) ? (
+              ) : isDemandFinderLoading ? (
                 <StageSkeleton title="Buscando soluções..." isRunning />
               ) : null}
               

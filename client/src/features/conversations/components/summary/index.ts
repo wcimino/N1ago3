@@ -13,4 +13,4 @@ export { DemandFinderTooltip, type DemandFinderTooltipProps } from "./DemandFind
 export { ClientProfileCard } from "./ClientProfileCard";
 export { StageSkeleton } from "./StageSkeleton";
 export { emotionConfig, severityConfig } from "./config";
-export type { SummaryData, ClientRequestVersions, SolutionCenterResult, OrchestratorLogEntry, ClientHubData, ClientHubField, StageProgress, StageStatus } from "./types";
+export type { SummaryData, ClientRequestVersions, SolutionCenterResult, OrchestratorLogEntry, ClientHubData, ClientHubField } from "./types";

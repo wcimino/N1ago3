@@ -1,6 +1,5 @@
 import { runAgentAndSaveSuggestion, buildAgentContextFromEvent } from "../../ai/services/agentFramework.js";
 import { caseDemandStorage } from "../../ai/storage/caseDemandStorage.js";
-import { summaryStorage } from "../../ai/storage/summaryStorage.js";
 import { conversationStorage } from "../../conversations/storage/conversationStorage.js";
 import { getClientRequestVersions, getSearchQueries, getCustomerRequestType } from "../../ai/services/summaryDomain/parser.js";
 import { buildResolvedClassification } from "../../ai/services/helpers/searchContextHelpers.js";
@@ -32,7 +31,6 @@ export class DemandFinderOrchestrator {
 
     try {
       log.action(conversationId, "Starting demand finding");
-      await summaryStorage.updateStageProgress(conversationId, "demandFinder", "running");
 
       await caseDemandStorage.ensureActiveDemand(conversationId);
 
@@ -41,7 +39,6 @@ export class DemandFinderOrchestrator {
       if (!enrichmentResult.success) {
         log.warn(conversationId, `Enrichment failed: ${enrichmentResult.error}, escalating`);
         await this.handleEnrichmentFailure(conversationId, context, enrichmentResult.error);
-        await summaryStorage.updateStageProgress(conversationId, "demandFinder", "error");
         return createEscalationResult(enrichmentResult.error || "Enrichment failed");
       }
 
@@ -54,7 +51,6 @@ export class DemandFinderOrchestrator {
           updateCaseDemandStatus: true,
           caseDemandStatus: "demand_not_found",
         });
-        await summaryStorage.updateStageProgress(conversationId, "demandFinder", "error");
         return createEscalationResult("Solution Center API failed after 3 retries");
       }
       
@@ -69,7 +65,6 @@ export class DemandFinderOrchestrator {
           updateCaseDemandStatus: true,
           caseDemandStatus: "demand_not_found",
         });
-        await summaryStorage.updateStageProgress(conversationId, "demandFinder", "error");
         return createEscalationResult();
       }
 
@@ -82,12 +77,10 @@ export class DemandFinderOrchestrator {
         result = await handleNeedClarification(context, promptResult, searchResult.results || []);
       }
 
-      await summaryStorage.updateStageProgress(conversationId, "demandFinder", "completed");
       return result;
 
     } catch (error: any) {
       log.error(conversationId, "Error processing", error);
-      await summaryStorage.updateStageProgress(conversationId, "demandFinder", "error");
       await this.handleProcessError(conversationId, context);
       return createEscalationResult(error.message || "Failed to process demand finder");
     }
