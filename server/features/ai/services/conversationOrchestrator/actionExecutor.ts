@@ -5,33 +5,51 @@ import { isN1agoHandler } from "./helpers.js";
 import type { OrchestratorAction, OrchestratorContext } from "./types.js";
 import { ORCHESTRATOR_STATUS } from "./types.js";
 
+export interface ActionExecutorResult {
+  messageSent: boolean;
+  messageSkipped: boolean;
+  skipReason?: string;
+}
+
 export class ActionExecutor {
-  static async execute(context: OrchestratorContext, actions: OrchestratorAction[]): Promise<void> {
+  static async execute(context: OrchestratorContext, actions: OrchestratorAction[]): Promise<ActionExecutorResult> {
     const { conversationId } = context;
+    const result: ActionExecutorResult = { messageSent: false, messageSkipped: false };
 
     if (actions.length === 0) {
       console.log(`[ActionExecutor] No actions to execute for conversation ${conversationId}`);
-      return;
+      return result;
     }
 
     console.log(`[ActionExecutor] Executing ${actions.length} action(s) for conversation ${conversationId}`);
 
     for (const action of actions) {
-      await this.executeAction(context, action);
+      const actionResult = await this.executeAction(context, action);
+      if (actionResult.messageSent) result.messageSent = true;
+      if (actionResult.messageSkipped) {
+        result.messageSkipped = true;
+        result.skipReason = actionResult.skipReason;
+      }
     }
+
+    return result;
   }
 
-  private static async executeAction(context: OrchestratorContext, action: OrchestratorAction): Promise<void> {
+  private static async executeAction(context: OrchestratorContext, action: OrchestratorAction): Promise<ActionExecutorResult> {
     const { conversationId } = context;
+    const result: ActionExecutorResult = { messageSent: false, messageSkipped: false };
 
     switch (action.type) {
       case "SEND_MESSAGE":
-        await this.executeSendMessage(conversationId, action.payload);
-        break;
+        const sendResult = await this.executeSendMessage(conversationId, action.payload);
+        result.messageSent = sendResult.messageSent;
+        result.messageSkipped = sendResult.messageSkipped;
+        result.skipReason = sendResult.skipReason;
+        return result;
 
       case "TRANSFER_TO_HUMAN":
         await this.executeTransferToHuman(context, action.payload);
-        break;
+        return result;
 
       case "INSTRUCTION":
         console.log(`[ActionExecutor] INSTRUCTION action: ${action.payload.name}`);
@@ -39,7 +57,7 @@ export class ActionExecutor {
         if (action.payload.agentInstructions) {
           console.log(`[ActionExecutor] Agent Instructions: ${action.payload.agentInstructions.substring(0, 100)}...`);
         }
-        break;
+        return result;
 
       case "LINK":
         console.log(`[ActionExecutor] LINK action: ${action.payload.name}`);
@@ -47,7 +65,7 @@ export class ActionExecutor {
         if (action.payload.agentInstructions) {
           console.log(`[ActionExecutor] Agent Instructions: ${action.payload.agentInstructions.substring(0, 100)}...`);
         }
-        break;
+        return result;
 
       case "API_CALL":
         console.log(`[ActionExecutor] API_CALL action: ${action.payload.name}`);
@@ -55,7 +73,7 @@ export class ActionExecutor {
         if (action.payload.agentInstructions) {
           console.log(`[ActionExecutor] Agent Instructions: ${action.payload.agentInstructions.substring(0, 100)}...`);
         }
-        break;
+        return result;
 
       case "INTERNAL_ACTION":
         console.log(`[ActionExecutor] INTERNAL_ACTION: ${action.payload.name}`);
@@ -64,7 +82,7 @@ export class ActionExecutor {
         if (action.payload.agentInstructions) {
           console.log(`[ActionExecutor] Agent Instructions: ${action.payload.agentInstructions.substring(0, 100)}...`);
         }
-        break;
+        return result;
 
       case "ASK_CUSTOMER":
         console.log(`[ActionExecutor] ASK_CUSTOMER: ${action.payload.name}`);
@@ -72,17 +90,18 @@ export class ActionExecutor {
         if (action.payload.agentInstructions) {
           console.log(`[ActionExecutor] Agent Instructions: ${action.payload.agentInstructions.substring(0, 100)}...`);
         }
-        break;
+        return result;
 
       default:
         console.log(`[ActionExecutor] Unknown or unsupported action type: ${(action as any).type} - skipping`);
+        return result;
     }
   }
 
   private static async executeSendMessage(
     conversationId: number, 
     payload: { suggestionId: number; responsePreview: string }
-  ): Promise<void> {
+  ): Promise<ActionExecutorResult> {
     console.log(`[ActionExecutor] SEND_MESSAGE for conversation ${conversationId}`);
     console.log(`[ActionExecutor] Response preview: "${payload.responsePreview.substring(0, 100)}..."`);
 
@@ -90,7 +109,7 @@ export class ActionExecutor {
     if (!isN1ago) {
       console.log(`[ActionExecutor] SEND_MESSAGE skipped - handler is not N1ago (observation-only mode)`);
       console.log(`[ActionExecutor] Response saved as suggestion ${payload.suggestionId} but not sent`);
-      return;
+      return { messageSent: false, messageSkipped: true, skipReason: "handler_not_n1ago" };
     }
 
     console.log(`[ActionExecutor] Sending suggestion ${payload.suggestionId} via AutoPilot`);
@@ -98,8 +117,10 @@ export class ActionExecutor {
 
     if (result.action === "sent") {
       console.log(`[ActionExecutor] SEND_MESSAGE completed successfully`);
+      return { messageSent: true, messageSkipped: false };
     } else {
       console.log(`[ActionExecutor] SEND_MESSAGE not sent - action=${result.action}, reason=${result.reason}`);
+      return { messageSent: false, messageSkipped: true, skipReason: result.reason };
     }
   }
 

@@ -89,19 +89,22 @@ async function validateMessage(request: SendMessageRequest): Promise<SendMessage
     return { sent: false, reason: "missing_last_event_id" };
   }
 
-  const hasNewer = await hasNewerEvents(conversationId, lastEventId);
-  if (hasNewer) {
-    return { sent: false, reason: "newer_messages_exist_after_suggestion" };
-  }
-
   const lastMessage = await getLastMessage(conversationId);
   
   if (!lastMessage) {
     return { sent: false, reason: "no_message_found" };
   }
 
+  // Se a última mensagem for do agente, permite enviar sem validar hasNewerEvents e inResponseTo
+  // Isso permite que agentes (ex: Closer) enviem follow-up após outro agente (ex: Solution Provider)
   if (lastMessage.authorType !== "customer") {
-    return { sent: false, reason: `last_message_not_from_client (authorType: ${lastMessage.authorType})` };
+    return { sent: true, reason: "validation_passed_last_message_from_agent" };
+  }
+
+  // A partir daqui, a última mensagem é do cliente - exige hasNewerEvents check e inResponseTo válido
+  const hasNewer = await hasNewerEvents(conversationId, lastEventId);
+  if (hasNewer) {
+    return { sent: false, reason: "newer_messages_exist_after_suggestion" };
   }
 
   if (!inResponseTo) {

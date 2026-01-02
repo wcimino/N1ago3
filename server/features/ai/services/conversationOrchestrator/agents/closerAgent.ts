@@ -2,7 +2,7 @@ import { runAgentAndSaveSuggestion, buildAgentContextFromEvent, saveSuggestedRes
 import { buildResolvedClassification } from "../../helpers/index.js";
 import { conversationStorage } from "../../../../conversations/storage/index.js";
 import { caseDemandStorage } from "../../../storage/caseDemandStorage.js";
-import { ActionExecutor } from "../actionExecutor.js";
+import { ActionExecutor, type ActionExecutorResult } from "../actionExecutor.js";
 import { ORCHESTRATOR_STATUS, CONVERSATION_OWNER, type OrchestratorContext, type OrchestratorAction } from "../types.js";
 
 const CONFIG_KEY = "closer";
@@ -110,13 +110,14 @@ export class CloserAgent {
       }
 
       // Send message (ActionExecutor handles isN1agoHandler check)
+      let sendResult: ActionExecutorResult = { messageSent: false, messageSkipped: false };
       if (suggestedResponse && suggestionId) {
         console.log(`[CloserAgent] Sending response for conversation ${conversationId}`);
         const action: OrchestratorAction = {
           type: "SEND_MESSAGE",
           payload: { suggestionId, responsePreview: suggestedResponse }
         };
-        await ActionExecutor.execute(context, [action]);
+        sendResult = await ActionExecutor.execute(context, [action]);
       }
 
       if (wantsMoreHelp) {
@@ -132,9 +133,9 @@ export class CloserAgent {
           waitingForCustomer: true,
         });
         context.currentStatus = ORCHESTRATOR_STATUS.FINDING_DEMAND;
-      } else {
-        // Customer is done - close conversation (demand already finalized with demand_found/demand_not_found)
-        console.log(`[CloserAgent] Closing conversation ${conversationId}`);
+      } else if (sendResult.messageSent) {
+        // Message was sent successfully - close conversation
+        console.log(`[CloserAgent] Message sent successfully, closing conversation ${conversationId}`);
 
         await conversationStorage.updateOrchestratorState(conversationId, {
           orchestratorStatus: ORCHESTRATOR_STATUS.CLOSED,
@@ -142,6 +143,16 @@ export class CloserAgent {
           waitingForCustomer: false,
         });
         context.currentStatus = ORCHESTRATOR_STATUS.CLOSED;
+      } else {
+        // Message was NOT sent (skipped/expired) - keep conversation open, wait for customer
+        console.log(`[CloserAgent] Message not sent (reason: ${sendResult.skipReason}), keeping conversation open for ${conversationId}`);
+
+        await conversationStorage.updateOrchestratorState(conversationId, {
+          orchestratorStatus: ORCHESTRATOR_STATUS.FINALIZING,
+          conversationOwner: CONVERSATION_OWNER.CLOSER,
+          waitingForCustomer: true,
+        });
+        context.currentStatus = ORCHESTRATOR_STATUS.FINALIZING;
       }
 
       return {
