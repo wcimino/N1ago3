@@ -120,7 +120,7 @@ The React frontend provides a real-time dashboard and administrative interfaces,
 
 **Major Reorganization:** Moved conversation orchestration out of `ai/services/` into dedicated `conversation-orchestration/` feature module. This separation clarifies that orchestration is deterministic business logic, not AI-specific.
 
-**New Structure:**
+**Final Structure (Clean - No Re-exports):**
 
 ```
 server/features/conversation-orchestration/
@@ -131,9 +131,12 @@ server/features/conversation-orchestration/
 │   ├── orchestrator.ts
 │   ├── handlers.ts      # Decision handlers (handleSelectedIntent, handleNeedClarification)
 │   └── index.ts
-├── solutionProvider/    # SolutionProvider with state machine
+├── solutionProvider/    # SolutionProvider with full implementation
+│   ├── agent.ts         # SolutionProviderAgent entry point
+│   ├── orchestrator.ts  # Main orchestrator logic
+│   ├── actionExecutors.ts # Action handlers (~400 lines)
 │   ├── stateMachine.ts  # Action categories, decision logic, message variations
-│   └── index.ts         # Re-exports orchestrator and executors from ai/services/
+│   └── index.ts
 ├── closer/              # Closer agent with two-mode flow
 │   ├── orchestrator.ts  # sendFollowUp → processCustomerResponse
 │   └── index.ts
@@ -147,11 +150,27 @@ server/features/conversation-orchestration/
 └── index.ts             # Public API for entire module
 ```
 
-**Backward Compatibility:** Old files in `ai/services/conversationOrchestrator/` re-export from new locations, ensuring no breaking changes to existing imports.
+**AI Agents (Pure AI Logic) remain in `ai/services/conversationOrchestrator/`:**
+
+```
+server/features/ai/services/conversationOrchestrator/
+├── agents/
+│   ├── classificationAgent.ts   # Product/request type classification
+│   ├── summaryAgent.ts          # Conversation summarization
+│   ├── topicClassificationAgent.ts # Topic analysis for reports
+│   ├── responseFormatterAgent.ts # Tone of voice formatting
+│   └── index.ts
+├── helpers/
+│   ├── orchestratorHelpers.ts   # Status update helpers
+│   └── index.ts
+├── services/
+│   └── enrichmentService.ts     # Classification enrichment
+└── statusController.ts          # Status evaluation logic
+```
 
 **Key Design Decisions:**
 
-*   **Deterministic vs AI Logic:** Orchestration flow, state transitions, and action execution are deterministic. AI only generates message text when needed.
-*   **Standardized Agent Pattern:** Each agent has an orchestrator, optional state machine, and uses shared utilities (ActionExecutor, escalation helpers, logger).
-*   **Single Source of Truth:** Types, constants, and utilities defined once in `shared/`, re-exported through feature indexes.
-*   **Pragmatic Migration:** Large files (actionExecutors.ts - 400+ lines) remain in original location with re-exports rather than full migration.
+*   **Clean Separation:** Orchestration logic (deterministic) in `conversation-orchestration/`, AI agents (prompts, OpenAI calls) in `ai/services/conversationOrchestrator/`.
+*   **No Re-exports:** All backward compatibility re-exports have been eliminated. Imports use canonical paths.
+*   **Standardized Agent Pattern:** Each orchestration agent has an orchestrator, optional state machine, and uses shared utilities (ActionExecutor, escalation helpers, logger).
+*   **Single Source of Truth:** Types, constants, and utilities defined once in `shared/`, consumed directly by all modules.
