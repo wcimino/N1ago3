@@ -80,7 +80,8 @@ export async function runAgent(
   if (response.responseContent) {
     try {
       parsedContent = JSON.parse(response.responseContent);
-    } catch {
+    } catch (parseError) {
+      console.warn(`[AgentFramework] Failed to parse JSON response for ${configType}, using rawResponse fallback. Error: ${parseError instanceof Error ? parseError.message : 'Unknown'}. Content preview: ${response.responseContent.substring(0, 100)}...`);
       parsedContent = { rawResponse: response.responseContent };
     }
   }

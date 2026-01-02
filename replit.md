@@ -88,6 +88,117 @@ Is the component making OpenAI API calls?
 - `classifyConversation()` → `ai/services/openai/tools/` (OpenAI tool call)
 - `TransferService` → `conversation-orchestration/shared/` (deterministic transfer logic)
 
+### Storage Placement Decision Tree
+
+When adding new storage modules, use this decision tree:
+
+```
+Is this storage specific to a single feature?
+├── YES: Place in server/features/<feature>/storage/
+│   ├── Name the file: <entity>Storage.ts (e.g., webhookStorage.ts)
+│   └── Export a singleton object: export const <entity>Storage = { ... }
+│
+└── NO: Is it a generic utility used by multiple features?
+    ├── YES: Place in server/shared/storage/
+    │   └── Examples: crudFactory.ts, filterHelpers.ts
+    │
+    └── NO: Consider if it belongs to an existing feature
+        └── Avoid creating new top-level storage modules
+```
+
+**Examples:**
+- `webhookStorage.ts` → `features/export/storage/` (specific to export feature)
+- `conversationStorage.ts` → `features/conversations/storage/` (specific to conversations)
+- `crudFactory.ts` → `shared/storage/` (generic utility used everywhere)
+- `configStorage.ts` → `features/ai/storage/` (AI configuration)
+
+### Routes Placement Decision Tree
+
+When adding new API routes, use this decision tree:
+
+```
+Is this route specific to a single feature?
+├── YES: Place in server/features/<feature>/routes/
+│   ├── Name the file: <resource>.ts (e.g., webhooks.ts)
+│   └── Export default router
+│
+└── NO: Is it a cross-cutting concern (health, auth, etc)?
+    ├── YES: Place in server/routes/
+    └── NO: Create a new feature folder if justified
+```
+
+**URL Patterns:**
+- REST resources: `/api/<plural-resource>` (e.g., `/api/conversations`)
+- Config endpoints: `/api/<singular-config>` (e.g., `/api/openai-config`)
+- Actions: `/api/<resource>/<verb>` (e.g., `/api/events/ingest`)
+
+### Naming Conventions
+
+| Context | Convention | Examples |
+|---------|------------|----------|
+| **Classes/Types** | PascalCase | `SummaryAgent`, `ConversationStorage`, `RoutingResult` |
+| **Functions/Variables** | camelCase | `getSummaries`, `processEvent`, `userId` |
+| **Database Tables** | snake_case, plural | `conversations`, `webhook_logs`, `users_standard` |
+| **Database Columns** | snake_case | `created_at`, `external_id`, `processing_status` |
+| **API URLs** | kebab-case | `/api/webhook-logs`, `/api/openai-config` |
+| **Files** | camelCase | `eventStorage.ts`, `agentRunner.ts`, `inboundRouting.ts` |
+| **Constants** | UPPER_SNAKE_CASE | `MAX_RETRIES`, `DEFAULT_TIMEOUT`, `EVENTS` |
+
+### When to Create a New Feature Folder
+
+Create a new feature folder (`server/features/<name>/`) when:
+
+1. **Independence**: The functionality is self-contained with its own storage, routes, and services
+2. **Size**: It has 3+ files (not just a single utility)
+3. **Domain**: It represents a distinct business domain (e.g., `routing`, `sync`, `export`)
+4. **Reusability**: It could theoretically be extracted as a separate module
+
+**Do NOT create a new feature for:**
+- Single utility files → use `shared/`
+- Extensions of existing features → add to existing feature folder
+- Temporary experiments → use existing structure
+
+**Standard Feature Structure:**
+```
+server/features/<feature>/
+├── routes/           # API endpoints (optional)
+├── services/         # Business logic
+└── storage/          # Database operations
+```
+
+**Note on Barrel Files (index.ts):**
+- **Avoid** creating barrel files that re-export from multiple modules
+- Feature-level `index.ts` files are acceptable ONLY when they export a single public API for the feature
+- Prefer direct imports (e.g., `from "../storage/webhookStorage.js"`) over barrel imports
+- This reduces hidden coupling and makes dependencies explicit
+
+### Logging Standards
+
+All log statements must follow these patterns:
+
+**Prefixes (Required):**
+- Format: `[ModuleName]` at the start of every log message
+- Examples: `[EventProcessor]`, `[AgentFramework]`, `[InboundRouting]`
+
+**Log Levels:**
+| Level | Usage |
+|-------|-------|
+| `console.log` | Normal operations, status updates |
+| `console.warn` | Recoverable issues, fallbacks, deprecations |
+| `console.error` | Failures, exceptions (always include error object) |
+
+**Required Fields for Key Operations:**
+- `conversationId` or `externalConversationId` when processing conversations
+- `rawId` and `source` when processing webhooks
+- Duration in ms for performance-sensitive operations
+
+**Examples:**
+```typescript
+console.log(`[EventProcessor] Processed raw event ${rawId}: ${count} events created`);
+console.warn(`[AgentFramework] Failed to parse JSON, using rawResponse fallback`);
+console.error(`[InboundRouting] Rule ${ruleId}: Error:`, error);
+```
+
 ## External Dependencies
 
 *   **Zendesk Sunshine Conversations:** Webhook source for conversation data.

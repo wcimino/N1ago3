@@ -23,15 +23,6 @@ interface RoutingResult {
   durationMs: number;
 }
 
-const NON_ROUTABLE_EVENT_TYPES = [
-  "conversation:read",
-  "conversation:typing",
-  "conversation:message:delivery:channel",
-  "conversation:message:delivery:user",
-  "typing:start",
-  "typing:stop",
-];
-
 function extractEventDataFromZendeskPayload(payload: any): InboundEventData | null {
   if (!payload) return null;
 

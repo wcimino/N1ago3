@@ -19,12 +19,12 @@ export async function processRawEvent(rawId: number, source: string, skipStatusC
   }
 
   if (raw.processingStatus === "success") {
-    console.log(`Raw event ${rawId} already processed, skipping`);
+    console.log(`[EventProcessor] Raw event ${rawId} already processed, skipping`);
     return;
   }
 
   if (!skipStatusCheck && raw.processingStatus === "processing") {
-    console.log(`Raw event ${rawId} already being processed, skipping`);
+    console.log(`[EventProcessor] Raw event ${rawId} already being processed, skipping`);
     return;
   }
 
@@ -49,16 +49,16 @@ export async function processRawEvent(rawId: number, source: string, skipStatusC
     if (userData) {
       const user = await userStorage.upsertUserByExternalId(userData);
       userId = user?.id;
-      console.log(`User upsert - externalId: ${userData.externalId}, authenticated: ${userData.authenticated}`);
+      console.log(`[EventProcessor] User upsert - externalId: ${userData.externalId}, authenticated: ${userData.authenticated}`);
     }
 
     const standardUserData = adapter.extractStandardUser(payload);
     if (standardUserData) {
       try {
         await usersStandardStorage.upsertStandardUser(standardUserData);
-        console.log(`Standard user upsert - email: ${standardUserData.email}`);
+        console.log(`[EventProcessor] Standard user upsert - email: ${standardUserData.email}`);
       } catch (error) {
-        console.error(`Failed to upsert standard user ${standardUserData.email}:`, error);
+        console.error(`[EventProcessor] Failed to upsert standard user ${standardUserData.email}:`, error);
       }
     }
 
@@ -66,14 +66,14 @@ export async function processRawEvent(rawId: number, source: string, skipStatusC
     if (standardOrgData) {
       try {
         await organizationsStandardStorage.upsertStandardOrganization(standardOrgData);
-        console.log(`Standard organization upsert - cnpjRoot: ${standardOrgData.cnpjRoot}`);
+        console.log(`[EventProcessor] Standard organization upsert - cnpjRoot: ${standardOrgData.cnpjRoot}`);
 
         if (standardUserData?.email) {
           await organizationsStandardStorage.linkUserToOrganization(standardUserData.email, standardOrgData.cnpjRoot);
-          console.log(`User-Organization link created - email: ${standardUserData.email}, cnpjRoot: ${standardOrgData.cnpjRoot}`);
+          console.log(`[EventProcessor] User-Organization link created - email: ${standardUserData.email}, cnpjRoot: ${standardOrgData.cnpjRoot}`);
         }
       } catch (error) {
-        console.error(`Failed to upsert standard organization ${standardOrgData.cnpjRoot}:`, error);
+        console.error(`[EventProcessor] Failed to upsert standard organization ${standardOrgData.cnpjRoot}:`, error);
       }
     }
 
@@ -116,7 +116,7 @@ export async function processRawEvent(rawId: number, source: string, skipStatusC
     await webhookStorage.updateWebhookRawStatusWithEventsCount(rawId, source, "success", newEventsCount);
     await eventBus.emit(EVENTS.RAW_PROCESSED, { rawId, source, eventsCount: newEventsCount });
 
-    console.log(`Processed raw event ${rawId}: ${newEventsCount} new events created (${standardEvents.length - newEventsCount} duplicates skipped)`);
+    console.log(`[EventProcessor] Processed raw event ${rawId}: ${newEventsCount} new events created (${standardEvents.length - newEventsCount} duplicates skipped)`);
   } catch (error: any) {
     const errorMsg = error.message || String(error);
     await webhookStorage.updateWebhookRawStatus(rawId, source, "error", errorMsg);
@@ -131,7 +131,7 @@ export async function processPendingRaws(): Promise<number> {
   for (const source of SUPPORTED_SOURCES) {
     const stuckRaws = await webhookStorage.getStuckProcessingWebhookRaws(source, 5, 50);
     for (const raw of stuckRaws) {
-      console.log(`Resetting stuck webhook ${raw.id} (was processing for too long)`);
+      console.log(`[EventProcessor] Resetting stuck webhook ${raw.id} (was processing for too long)`);
       await webhookStorage.resetStuckWebhook(raw.id, source);
     }
 
@@ -142,7 +142,7 @@ export async function processPendingRaws(): Promise<number> {
         await processRawEvent(raw.id, source);
         processedCount++;
       } catch (error) {
-        console.error(`Failed to process raw ${raw.id} (source: ${source}):`, error);
+        console.error(`[EventProcessor] Failed to process raw ${raw.id} (source: ${source}):`, error);
       }
     }
   }
@@ -154,6 +154,6 @@ eventBus.on(EVENTS.RAW_CREATED, async ({ rawId, source, skipStatusCheck }: { raw
   try {
     await processRawEvent(rawId, source, skipStatusCheck);
   } catch (error) {
-    console.error(`Failed to process raw ${rawId} (source: ${source}) via event:`, error);
+    console.error(`[EventProcessor] Failed to process raw ${rawId} (source: ${source}) via event:`, error);
   }
 });
